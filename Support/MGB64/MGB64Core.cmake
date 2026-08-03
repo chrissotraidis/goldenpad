@@ -136,6 +136,16 @@ set_source_files_properties(
     "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_metal.mm"
     PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 
+add_library(goldenpad_mgb64_fast3d STATIC
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_pc.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_room_normals.c"
+)
+goldenpad_configure_mgb64_target(goldenpad_mgb64_fast3d)
+target_compile_definitions(goldenpad_mgb64_fast3d PRIVATE
+    MGB64_APPLE_MOBILE)
+target_include_directories(goldenpad_mgb64_fast3d BEFORE PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Support/MGB64/MobileRendererShim")
+
 target_compile_definitions(GoldenPad PRIVATE
     GOLDENPAD_MGB64_CORE
     GOLDENPAD_MGB64_COMMIT="${GOLDENPAD_MGB64_COMMIT}"

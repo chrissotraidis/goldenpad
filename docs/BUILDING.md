@@ -55,6 +55,7 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/fetch-mgb64.sh
 ./scripts/verify-mgb64-ios-core.sh
 ./scripts/verify-mgb64-ios-metal.sh
+./scripts/verify-mgb64-ios-fast3d.sh
 ```
 
 The verifier compiles all 135 `src/game/*.c` translation units plus 26 explicit
@@ -85,6 +86,13 @@ SDKs, and reverses the patch on exit. The patch gates two macOS-only
 `CAMetalLayer.displaySyncEnabled` writes; presentation cadence remains owned by
 the iOS view/display lifecycle. This is a backend compilation gate, not yet a
 linked renderer or displayed game frame.
+
+The Fast3D verifier builds the display-list interpreter and room-normal helper
+as two-object ARM64 archives for both SDKs. It requires the public `gfx_init`,
+`gfx_run_dl`, and `gfx_end_frame` entry points and rejects unresolved SDL window,
+desktop OpenGL readback, or OpenGL swap symbols. GoldenPad's default app also
+contains the ARC layer bridge consumed by `gfx_metal.mm`; the static Fast3D and
+Metal archives are not yet force-linked into the app together.
 
 ## RT64 iOS static renderer
 

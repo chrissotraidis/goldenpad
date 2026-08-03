@@ -43,8 +43,13 @@ add_executable(GoldenPad MACOSX_BUNDLE
     Sources/TouchControlsView.swift
     Sources/TouchLayout.swift
     Support/MGB64/mgb64_core_bridge.c
+    Support/MGB64/mgb64_metal_surface_bridge.mm
     ${goldenpad_rt64_bridge}
 )
+
+set_source_files_properties(
+    Support/MGB64/mgb64_metal_surface_bridge.mm
+    PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 
 include(Support/MGB64/MGB64Core.cmake)
 

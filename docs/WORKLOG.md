@@ -1,5 +1,30 @@
 # Worklog
 
+## 2026-08-03 — compile Fast3D and hand off the UIKit Metal layer
+
+- Isolated MGB64's Fast3D display-list interpreter and room-normal helper into
+  an opt-in mobile static target. Target-local fail-closed shims cover the three
+  desktop-only SDL/OpenGL calls without adding either framework to iOS.
+- Built two-object, non-fat ARM64 archives for `iphonesimulator` and `iphoneos`.
+  Both export `gfx_init`, `gfx_run_dl`, and `gfx_end_frame`; neither retains an
+  unresolved SDL, desktop OpenGL readback, or OpenGL swap symbol.
+- Added a reusable verifier that enforces the exact clean MGB64 pin, both SDKs,
+  architecture/object/symbol expectations, and the desktop-dependency audit.
+- Added an ARC Objective-C++ bridge implementing MGB64's existing
+  `platformGetMetalLayer` entry point as a weak observation of GoldenPad's
+  UIKit-owned `CAMetalLayer`.
+- Rebuilt the default no-ROM app and ran iPhone 16 Pro first. The attached
+  console logged the MGB64 handoff at 1206x2622; the app was removed and the
+  phone shut down. Then iPad Pro 11-inch (M4) logged 1668x2420 and was likewise
+  removed and shut down. The next gate is resolving and linking the combined
+  Fast3D/Metal closure, not title/menu completion yet.
+- Rebuilt the generic unsigned device app and retained `platformGetMetalLayer`
+  in its final ARM64 executable. Packaged the current foundation twice; both
+  eight-member ROM-free audits passed and both IPAs matched SHA-256
+  `bf101037f91d723b6819e2fedefaa100de4582d9f685190cd4d0ed7e9b343e75`,
+  with sorted app-content digest
+  `8945edcf01b1cb760c2651e17eeb8017334c4b09318174459e4193b214a42f87`.
+
 ## 2026-08-03 — compile the MGB64 native Metal backend for iOS
 
 - Isolated MGB64's complete native Metal renderer backend from its larger SDL

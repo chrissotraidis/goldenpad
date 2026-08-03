@@ -100,6 +100,16 @@ and launcher return, require the original full drawable size again. The current
 sequential pass observed 1206×2622 at 60 Hz on iPhone 16 Pro and 1668×2420 at
 60 Hz on iPad Pro 11-inch (M4).
 
+The MGB64 layer-adapter pass reused that strict sequence. Require
+`MGB64 Metal surface ready` before accepting the existing RT64/drawable-size
+line. The 2026-08-03 run observed the MGB64 handoff at 1206×2622 on iPhone,
+removed and shut down the phone, then observed 1668×2420 on iPad and removed and
+shut down the tablet. This proves host-layer ownership, not a game frame.
+
+Run `./scripts/verify-mgb64-ios-fast3d.sh` for the corresponding static gate. It
+requires two ARM64 objects and the three public Fast3D entry points for each SDK,
+and fails if SDL or desktop OpenGL symbols remain unresolved.
+
 The touch lab must be driven through the real UI on both form factors. Verify
 that movement/look axes clamp to `[-1, 1]`, momentary action bits clear after
 release, the last non-neutral event remains visible for evidence, and controller

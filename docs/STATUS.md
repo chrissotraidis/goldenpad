@@ -35,6 +35,14 @@ longer blocks MGB64 integration.
   SDKs. The only source changes required were guards around two macOS-only
   `CAMetalLayer.displaySyncEnabled` writes. The verifier applies and reverses
   that exact-source patch, confirms `gfx_metal_api`, and leaves upstream clean.
+- MGB64's Fast3D display-list interpreter and room-normal helper compile into
+  two-object, non-fat ARM64 archives for both mobile SDKs. The archive exports
+  `gfx_init`, `gfx_run_dl`, and `gfx_end_frame` and retains no unresolved SDL,
+  desktop OpenGL readback, or OpenGL swap symbols.
+- GoldenPad now implements MGB64's exact `platformGetMetalLayer` contract with a
+  weak ARC bridge to the UIKit-owned layer. Sequential no-ROM launches logged
+  the handoff at 1206x2622 on iPhone 16 Pro, then 1668x2420 on iPad Pro 11-inch
+  (M4); each install was removed and each simulator shut down.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -109,10 +117,10 @@ longer blocks MGB64 integration.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `93b089ca95ad6372ac49d4f69e3bd6645755431deea3a0bd0187d08f3246c4f1`.
+  `bf101037f91d723b6819e2fedefaa100de4582d9f685190cd4d0ed7e9b343e75`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `74cc07b77e58b72a168eab2d2404b035508cbaf0578aa96c8d5d315eaa3729a8`.
+  `8945edcf01b1cb760c2651e17eeb8017334c4b09318174459e4193b214a42f87`.
 
 ## Failed or blocked
 
@@ -120,9 +128,9 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- MGB64's Fast3D frontend, desktop platform, audio, input, resource-loading and
-  main-loop seams are not yet connected to GoldenPad. The Metal backend compiles
-  but is not linked to the app; the core probe does not start menus or gameplay.
+- MGB64's Fast3D and Metal archives are not yet linked together in the app;
+  renderer-support resolution, audio, input, resource-loading and main-loop
+  seams remain. The core probe does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
@@ -134,7 +142,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Compile the MGB64 Fast3D frontend without OpenGL/SDL window ownership, provide a
-GoldenPad `CAMetalLayer`/drawable-size host adapter, and link the resulting Metal
-path before attempting title/menu startup. Do not import matching-target SDK
+Link the proven MGB64 Fast3D and Metal archives with the minimum remaining
+renderer support, then start one UIKit-timed no-ROM-safe renderer lifecycle
+before attempting title/menu startup. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

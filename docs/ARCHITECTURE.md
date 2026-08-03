@@ -63,9 +63,13 @@ game-rendering stacks through initial gameplay bring-up.
 
 The complete MGB64 Metal backend now compiles for both Apple mobile SDKs as a
 separate static target. Its two macOS-only display-sync assignments are removed
-for mobile because `MTKView`/UIKit owns cadence. The next boundary supplies the
-existing `CAMetalLayer` and drawable dimensions to the Fast3D frontend while
-excluding its SDL window and OpenGL fallback paths.
+for mobile because `MTKView`/UIKit owns cadence. The Fast3D interpreter and room
+normal helper also compile as a separate two-object mobile archive. Target-local
+trap shims make accidental SDL/OpenGL ownership fail closed and leave no desktop
+window or GL readback/swap symbols in that archive. A small ARC Objective-C++
+bridge now implements MGB64's existing `platformGetMetalLayer` contract using
+the weakly observed UIKit-owned layer. The next boundary links these archives
+with the remaining renderer support closure and starts the display-list loop.
 
 ## ROM and resources
 

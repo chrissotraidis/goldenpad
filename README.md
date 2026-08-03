@@ -23,13 +23,17 @@ first production-core gate now passes: all 135 MGB64 game translation units plus
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
 game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
-The UIKit host exposes the exact
+Its Fast3D interpreter now compiles as a separate two-object ARM64 archive for
+both SDKs without SDL or desktop OpenGL symbols, and the UIKit host supplies
+MGB64's exact `platformGetMetalLayer` boundary. Sequential phone/tablet launches
+proved that handoff at full drawable size. The same host also exposes the exact
 `UIView`/`CAMetalLayer` pair RT64 expects. All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into
 GoldenPad, and the real Metal device/command-queue/swapchain initializes on
 both iPhone and iPad simulators. MGB64 is the selected production-core
-candidate; replacing its desktop platform/renderer seams is the next build gate.
+candidate; linking the Fast3D/Metal closure and starting the game render loop is
+the next build gate.
 GoldenRecomp remains a static-recomp reference because its public input pipeline
 is incomplete. See [`docs/STATUS.md`](docs/STATUS.md).
 

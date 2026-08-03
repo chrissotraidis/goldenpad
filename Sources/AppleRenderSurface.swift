@@ -10,6 +10,12 @@ private func goldenPadRT64Initialize(
 @_silgen_name("goldenpad_rt64_shutdown")
 private func goldenPadRT64Shutdown()
 
+@_silgen_name("goldenpad_mgb64_set_metal_layer")
+private func goldenPadMGB64SetMetalLayer(_ layer: UnsafeMutableRawPointer?)
+
+@_silgen_name("goldenpad_mgb64_has_metal_layer")
+private func goldenPadMGB64HasMetalLayer() -> Int32
+
 struct RT64MetalWindowHandle {
     let window: UnsafeMutableRawPointer
     let view: UnsafeMutableRawPointer
@@ -28,6 +34,9 @@ final class AppleRenderSurface: ObservableObject {
     func attach(to view: MTKView) {
         metalView = view
         commandQueue = view.device?.makeCommandQueue()
+        if let metalLayer = view.layer as? CAMetalLayer {
+            goldenPadMGB64SetMetalLayer(Unmanaged.passUnretained(metalLayer).toOpaque())
+        }
         view.isPaused = !isActive
         refreshStatus(for: view)
     }
@@ -35,6 +44,7 @@ final class AppleRenderSurface: ObservableObject {
     func detach(from view: MTKView) {
         guard metalView === view else { return }
         goldenPadRT64Shutdown()
+        goldenPadMGB64SetMetalLayer(nil)
         metalView = nil
         commandQueue = nil
         status = "renderer: waiting for Metal surface"
@@ -77,7 +87,7 @@ final class AppleRenderSurface: ObservableObject {
     }
 
     private func refreshStatus(for view: MTKView) {
-        guard rt64WindowHandle() != nil else {
+        guard rt64WindowHandle() != nil, goldenPadMGB64HasMetalLayer() == 1 else {
             status = "renderer: Metal layer unavailable"
             return
         }
@@ -102,6 +112,7 @@ final class AppleRenderSurface: ObservableObject {
         } else {
             status = foundationStatus
         }
+        print("[GoldenPad] MGB64 Metal surface ready")
         print("[GoldenPad] RT64 surface ready: \(Int(size.width))x\(Int(size.height)) @ \(refreshRate) Hz")
     }
 }

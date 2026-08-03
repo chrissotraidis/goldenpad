@@ -95,7 +95,11 @@ On this Apple M1 host, commit `cd9b58f`:
   deterministic probe on iPhone and iPad simulators.
 - compiled the complete native Metal backend and its combiner/backend/MSAA
   support for both Apple mobile SDKs after guarding two macOS-only
-  `CAMetalLayer.displaySyncEnabled` writes.
+  `CAMetalLayer.displaySyncEnabled` writes;
+- compiled the Fast3D interpreter plus room-normal helper into two-object ARM64
+  archives for both mobile SDKs without unresolved SDL or desktop OpenGL calls;
+- supplied `platformGetMetalLayer` from the UIKit host and observed it live at
+  1206x2622 on iPhone followed by 1668x2420 on iPad.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
@@ -143,9 +147,11 @@ not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. Which minimum MGB64 platform/renderer sources must be replaced or patched for
-   UIKit-owned lifecycle, input, audio, filesystem and `CAMetalLayer`?
-2. Can the Fast3D frontend use GoldenPad's existing UIKit layer/drawable size
-   without retaining SDL desktop window or OpenGL fallback ownership?
-3. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
+1. Which remaining MGB64 renderer support objects and host stubs are required to
+   link the proven Fast3D and Metal archives into the game-bearing app?
+2. What is the smallest mobile main-loop adapter that starts title/menu display
+   lists while UIKit owns lifecycle, timing and drawable acquisition?
+3. Which audio, input, filesystem and ROM-resource callbacks must be connected
+   before the first interactive mission frame?
+4. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
    metadata eventually be restored for a comparative RT64 build?
