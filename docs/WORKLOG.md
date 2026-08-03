@@ -1,5 +1,39 @@
 # Worklog
 
+## 2026-08-03 — complete RT64 mobile static renderer gate
+
+- Mapped RT64's remaining desktop seams to SDL window/events, NFD, inspector UI
+  and host shader tools. Added three small embedded-host shims instead of
+  carrying those desktop dependencies into the Apple target.
+- Added a pinned incremental RT64 patch that consumes host-generated shader
+  sources, compiles SDK-specific Metal libraries, excludes desktop tools and
+  builds the full renderer for iOS. The verifier applies/reverses all patches
+  around an exact clean reference checkout.
+- Generated 113 shader blob sources, including all 56 Metal and 56 SPIR-V blobs,
+  and built 210-object RT64 archives for `iphoneos` and `iphonesimulator`.
+  Force-loaded all 246 RT64/Plume/re-spirv/zstd members into ARM64 link probes;
+  neither probe retained SDL, NFD, AppKit, IOKit, X11 or macOS Vulkan symbols.
+- Added an opt-in GoldenPad C++ bridge plus a default null stub. The ordinary
+  ROM-free app still builds without `ref/`; explicit verified archives create a
+  real Plume Metal device, direct command queue and swapchain on the existing
+  UIKit-owned layer.
+- The first Simulator launch exposed Plume calling the macOS-only Metal
+  `location` selector on `MTLSimDevice`. Added a Simulator-only virtual-device
+  fallback, reran the complete clean-source build, and kept the native hardware
+  query unchanged.
+- Built the linked Simulator app as ARM64. Ran iPhone 16 Pro first and visibly
+  observed `RT64 Metal Apple iOS simulator GPU 1206x2622`, then terminated,
+  uninstalled and shut it down. Repeated on iPad Pro 11-inch (M4) at 1668x2420,
+  then removed and shut down that simulator. No game data was used.
+- Built the linked Release app against `iphoneos`; its executable is ARM64 and
+  the desktop-symbol audit remains empty. G2 is complete; G3 remains blocked on
+  the production GoldenRecomp input/code-generation gate.
+- Rebuilt the default null-bridge foundation and packaged it twice. Both
+  eight-member ROM-free audits passed; both IPAs matched SHA-256
+  `2fea2b01f1c2af095fbc77eb88f93bcdb62fd07356bab7a14deb3044a3903392`
+  with sorted app-content digest
+  `48eff2250257d920e472f7ad9763b40bd1b8ab13f5800a1ebf86c40a6f14c770`.
+
 ## 2026-08-03 — RT64 iOS Metal feasibility and surface boundary
 
 - Confirmed pinned RT64 `5473732a` still matches current upstream and pinned its

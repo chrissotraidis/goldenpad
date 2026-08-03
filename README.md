@@ -18,9 +18,11 @@ and common touch/Game Controller snapshots are also live. The host includes
 exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
 sensitivity, dead-zone and gyro settings. It does not run the game yet: the
-UIKit host now also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects,
-and all 56 generated RT64 Metal shaders compile for both Apple mobile SDKs.
-The full renderer is not linked yet, and the selected static-recomp core remains
+UIKit host exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects. All 56
+generated Metal shaders compile for both Apple mobile SDKs, the complete
+210-object RT64 static library and its 246-object dependency closure link into
+GoldenPad, and the real Metal device/command-queue/swapchain initializes on
+both iPhone and iPad simulators. The selected static-recomp core remains
 blocked on a reproducible, provenance-clean public input pipeline; see
 [`docs/STATUS.md`](docs/STATUS.md).
 

@@ -35,17 +35,22 @@ not contain bulk media. Their public-distribution status is a legal gate in
 ## Graphics
 
 RT64 consumes N64 display lists and emits Metal work. Its macOS Metal path is
-the starting point. Tracked patches make shader generation SDK-aware and keep
-the Plume backend portable across AppKit and UIKit; they are applied only to the
-exact pinned references by `scripts/verify-rt64-ios-metal.sh` and reversed on
-exit. Generated shaders are build products and are never committed.
+the starting point. Tracked patches make shader generation SDK-aware, keep the
+Plume backend portable across AppKit and UIKit, and replace desktop
+window/dialog/inspector ownership with three small embedded-host shims. They are
+applied only to exact pinned references by the RT64 verification scripts and
+reversed on exit. Generated shaders and archives are never committed.
 
 `AppleRenderSurface` owns the live `MTKView` command queue and lifecycle. While
 the view is attached, it exposes non-retaining opaque pointers to that `UIView`
 and its `CAMetalLayer`, matching RT64's Apple `RenderWindow { window, view }`
 boundary. UIKit retains both objects. The surface pauses rendering outside the
-active scene, refreshes the drawable dimensions/refresh rate on layout and
-currently clears the foundation frame until the C++ renderer bridge is linked.
+active scene and refreshes the drawable dimensions/refresh rate on layout. The
+default ROM-free build clears the foundation frame. When verified RT64 archives
+are supplied explicitly, `rt64_metal_bridge.cpp` force-links the full renderer
+closure and retains a Plume Metal interface, device, direct command queue and
+swapchain for that surface. The default build uses a null bridge stub, so a
+clean checkout does not depend on an ignored reference tree.
 
 MGB64's Metal/WebGPU renderer remains an oracle/fallback reference only.
 

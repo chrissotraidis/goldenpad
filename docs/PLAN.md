@@ -62,19 +62,20 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 ### G — Game integration
 
 - [ ] G1: compile generated GoldenEye code for Apple ARM64 simulator/device.
-- [ ] G2: parameterize RT64 Metal shaders/surfaces for iOS.
+- [x] G2: parameterize RT64 Metal shaders/surfaces for iOS.
 - [ ] G3: title, menus and mission load render correctly.
 - [ ] G4: complete one mission with correct audio and persisted save.
 - [ ] G5: background/foreground and audio route/interruption recovery.
 
 Gate: full mission completion after clean install and ROM import.
 
-G2 is partially proven but remains open: all 56 RT64 Metal shaders and the
-patched Plume Apple backend compile for ARM64 `iphoneos` and
-`iphonesimulator`, and the UIKit host exposes RT64's expected surface pair. A
-complete RT64 static library still requires separating or supplying its desktop
-SDL2, NFD and `ApplicationWindow` layer. A1b remains open because neither RT64
-nor the blocked production game core is linked into GoldenPad.
+G2 passes: all 56 RT64 Metal shaders compile for ARM64 `iphoneos` and
+`iphonesimulator`; the embedded build replaces desktop window, NFD and inspector
+ownership with narrow host shims; and the complete 210-object RT64 archive plus
+its 246-object closure force-links without desktop symbols. The linked GoldenPad
+app created the real Plume Metal device, command queue and swapchain on iPhone
+and iPad simulators. A1b remains open because the blocked production game core
+is not linked, so G3 has no GoldenEye display lists to render yet.
 
 ### I — Input and touch
 

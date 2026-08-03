@@ -253,7 +253,18 @@ index 373c87e..0c24a02 100644
 
          const std::string deviceName(mtl->name()->utf8String());
          description.name = deviceName;
-@@ -4193,10 +4205,16 @@ namespace plume {
+@@ -3797,6 +3809,10 @@ namespace plume {
+         const std::string deviceName(mtl->name()->utf8String());
+         description.name = deviceName;
++#if TARGET_OS_SIMULATOR
++        description.type = RenderDeviceType::VIRTUAL;
++#else
+         description.type = mapDeviceType(mtl->location());
++#endif
+         description.driverVersion = 1; // Unavailable
+         description.vendor = mtl->supportsFamily(MTL::GPUFamilyApple1) ? RenderDeviceVendor::APPLE : getRenderDeviceVendor(mtl->registryID());
+         description.dedicatedVideoMemory = mtl->recommendedMaxWorkingSetSize();
+@@ -4193,10 +4209,16 @@ namespace plume {
          capabilities.shaderFormat = RenderShaderFormat::METAL;
 
          // Fill device names.

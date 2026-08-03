@@ -1,0 +1,301 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,8 +20,20 @@
+ endif()
+
+ option(RT64_STATIC "Build RT64 as a static library" OFF)
++option(RT64_EMBEDDED_APPLE "Build RT64 for an Apple-owned embedded surface" OFF)
++set(RT64_PREGENERATED_SHADER_DIR "" CACHE PATH "Host-generated RT64 shader source directory")
++set(RT64_EMBEDDED_APPLE_SOURCE_DIR "" CACHE PATH "GoldenPad RT64 embedded shim directory")
+
++if (RT64_EMBEDDED_APPLE)
++    if (NOT APPLE OR NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        message(FATAL_ERROR "RT64_EMBEDDED_APPLE is only supported for iOS builds")
++    endif()
++    if (NOT RT64_PREGENERATED_SHADER_DIR OR NOT RT64_EMBEDDED_APPLE_SOURCE_DIR)
++        message(FATAL_ERROR "Embedded Apple builds require pregenerated shaders and shim sources")
++    endif()
++endif()
+
++
+ option(RT64_SDL_WINDOW_VULKAN "Build RT64 to expect an SDL Window outside of Windows" OFF)
+
+ if (NOT ${RT64_STATIC})
+@@ -80,9 +92,13 @@
+ set(ZSTD_BUILD_STATIC ON)
+ set(ZSTD_BUILD_SHARED OFF)
+
+-add_subdirectory(src/tools/file_to_c)
++if (NOT RT64_PREGENERATED_SHADER_DIR)
++    add_subdirectory(src/tools/file_to_c)
++endif()
+ add_subdirectory(src/contrib/re-spirv)
+-add_subdirectory(src/contrib/nativefiledialog-extended)
++if (NOT RT64_EMBEDDED_APPLE)
++    add_subdirectory(src/contrib/nativefiledialog-extended)
++endif()
+ add_subdirectory(src/contrib/zstd/build/cmake)
+
+ if (CMAKE_SYSTEM_NAME MATCHES "Linux" AND RT64_SDL_WINDOW_VULKAN)
+@@ -125,6 +141,10 @@
+ set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-target-env=vulkan1.1spirv1.4" "-fspv-extension=SPV_KHR_ray_tracing" "-fspv-extension=SPV_EXT_descriptor_indexing")
+
+ function(build_shader_spirv_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
++    if (RT64_PREGENERATED_SHADER_DIR)
++        target_sources(${TARGETOBJ} PRIVATE ${OUTNAME}.spirv.c)
++        return()
++    endif()
+     add_custom_command(OUTPUT ${OUTNAME}.spv
+         COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+         DEPENDS ${FILENAME})
+@@ -147,6 +167,10 @@
+ endfunction()
+
+ function(build_shader_msl_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
++    if (RT64_PREGENERATED_SHADER_DIR)
++        target_sources(${TARGETOBJ} PRIVATE ${OUTNAME}.metal.c)
++        return()
++    endif()
+     add_custom_command(OUTPUT ${OUTNAME}.spv
+             COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+             DEPENDS ${FILENAME})
+@@ -168,7 +192,13 @@
+
+ function(build_shader TARGETOBJ SHADERNAME OPTIONS)
+     set(FILENAME "${PROJECT_SOURCE_DIR}/${SHADERNAME}")
+-    if (${ARGC} GREATER 3)
++    if (RT64_PREGENERATED_SHADER_DIR)
++        if (${ARGC} GREATER 3)
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${ARGV3}")
++        else()
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${SHADERNAME}")
++        endif()
++    elseif (${ARGC} GREATER 3)
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${ARGV3}")
+     else()
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${SHADERNAME}")
+@@ -213,7 +243,13 @@
+
+ function(build_shader_spirv TARGETOBJ SHADERNAME OPTIONS)
+     set(FILENAME "${PROJECT_SOURCE_DIR}/${SHADERNAME}")
+-    if (${ARGC} GREATER 3)
++    if (RT64_PREGENERATED_SHADER_DIR)
++        if (${ARGC} GREATER 3)
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${ARGV3}")
++        else()
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${SHADERNAME}")
++        endif()
++    elseif (${ARGC} GREATER 3)
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${ARGV3}")
+     else()
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${SHADERNAME}")
+@@ -231,7 +267,13 @@
+
+ function(build_shader_msl TARGETOBJ SHADERNAME OPTIONS)
+     set(FILENAME "${PROJECT_SOURCE_DIR}/${SHADERNAME}")
+-    if (${ARGC} GREATER 3)
++    if (RT64_PREGENERATED_SHADER_DIR)
++        if (${ARGC} GREATER 3)
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${ARGV3}")
++        else()
++            set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${SHADERNAME}")
++        endif()
++    elseif (${ARGC} GREATER 3)
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${ARGV3}")
+     else()
+         set(OUTNAME "${CMAKE_BINARY_DIR}/${SHADERNAME}")
+@@ -249,6 +291,11 @@
+
+ function(preprocess_shader TARGETOBJ SHADERNAME)
+     set(FILENAME "${PROJECT_SOURCE_DIR}/${SHADERNAME}")
++    if (RT64_PREGENERATED_SHADER_DIR)
++        set(OUTNAME "${RT64_PREGENERATED_SHADER_DIR}/${SHADERNAME}")
++        target_sources(${TARGETOBJ} PRIVATE ${OUTNAME}.rw.c)
++        return()
++    endif()
+     set(OUTNAME "${CMAKE_BINARY_DIR}/${SHADERNAME}")
+     cmake_path(GET SHADERNAME STEM TARGET_NAME)
+     cmake_path(GET OUTNAME PARENT_PATH OUTPUT_DIR)
+@@ -296,7 +343,10 @@
+ endfunction()
+
+ # Point cmake at src/contrib/mupen64plus-win32-deps/SDL2-2.26.3 for SDL2 on windows, look for an installed package on other systems
+-if (WIN32)
++if (RT64_EMBEDDED_APPLE)
++    set(SDL2_INCLUDE_DIRS "")
++    set(SDL2_LIBRARIES "")
++elseif (WIN32)
+     set(SDL2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src/contrib/mupen64plus-win32-deps/SDL2-2.26.3/include")
+     set(SDL2_LIBRARIES "SDL2" "SDL2main")
+     link_directories("${PROJECT_SOURCE_DIR}/src/contrib/mupen64plus-win32-deps/SDL2-2.26.3/lib/x64")
+@@ -350,11 +400,8 @@
+
+     "${PROJECT_SOURCE_DIR}/src/gui/rt64_camera_controller.cpp"
+     "${PROJECT_SOURCE_DIR}/src/gui/rt64_debugger_inspector.cpp"
+-    "${PROJECT_SOURCE_DIR}/src/gui/rt64_file_dialog.cpp"
+-    "${PROJECT_SOURCE_DIR}/src/gui/rt64_inspector.cpp"
+
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_application.cpp"
+-    "${PROJECT_SOURCE_DIR}/src/hle/rt64_application_window.cpp"
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_color_converter.cpp"
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_command_warning.cpp"
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_draw_call.cpp"
+@@ -377,7 +424,6 @@
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_workload.cpp"
+     "${PROJECT_SOURCE_DIR}/src/hle/rt64_workload_queue.cpp"
+
+-    "${PROJECT_SOURCE_DIR}/src/imgui/imgui_impl_sdl2_custom.cpp"
+
+     "${PROJECT_SOURCE_DIR}/src/render/rt64_buffer_uploader.cpp"
+     "${PROJECT_SOURCE_DIR}/src/render/rt64_framebuffer_renderer.cpp"
+@@ -425,8 +471,22 @@
+     "${PROJECT_SOURCE_DIR}/src/contrib/miniz/miniz.c"
+ )
+
++if (RT64_EMBEDDED_APPLE)
++    list(APPEND SOURCES
++        "${RT64_EMBEDDED_APPLE_SOURCE_DIR}/rt64_application_window_embedded.cpp"
++        "${RT64_EMBEDDED_APPLE_SOURCE_DIR}/rt64_file_dialog_embedded.cpp"
++        "${RT64_EMBEDDED_APPLE_SOURCE_DIR}/rt64_inspector_embedded.cpp"
++    )
++else()
++    list(APPEND SOURCES
++        "${PROJECT_SOURCE_DIR}/src/gui/rt64_file_dialog.cpp"
++        "${PROJECT_SOURCE_DIR}/src/gui/rt64_inspector.cpp"
++        "${PROJECT_SOURCE_DIR}/src/hle/rt64_application_window.cpp"
++        "${PROJECT_SOURCE_DIR}/src/imgui/imgui_impl_sdl2_custom.cpp"
++    )
++endif()
++
+ include_directories(
+-    "${SDL2_INCLUDE_DIRS}"
+     "${PROJECT_SOURCE_DIR}/src"
+     "${PROJECT_SOURCE_DIR}/src/contrib"
+     "${PROJECT_SOURCE_DIR}/src/contrib/plume"
+@@ -436,6 +496,10 @@
+     "${PROJECT_SOURCE_DIR}/src/contrib/nativefiledialog-extended/src/include"
+ )
+
++if (SDL2_INCLUDE_DIRS)
++    include_directories("${SDL2_INCLUDE_DIRS}")
++endif()
++
+ if (WIN32)
+     # DXC only needs to be included during runtime for Windows.
+     include_directories("${PROJECT_SOURCE_DIR}/src/contrib/dxc/inc")
+@@ -452,23 +516,32 @@
+
+ # Add common libraries.
+ target_link_libraries(rt64 re-spirv)
+-target_link_libraries(rt64 nfd)
++if (NOT RT64_EMBEDDED_APPLE)
++    target_link_libraries(rt64 nfd)
++endif()
+ target_link_libraries(rt64 libzstd_static)
+ target_link_libraries(rt64 plume)
+
+ # Add tools.
+-add_subdirectory(src/tools/texture_hasher)
+-add_subdirectory(src/tools/texture_packer)
++if (NOT RT64_EMBEDDED_APPLE)
++    add_subdirectory(src/tools/texture_hasher)
++    add_subdirectory(src/tools/texture_packer)
++endif()
+
+ # Add any Apple-specific source files and libraries
+ if (APPLE)
+-    add_subdirectory(src/tools/spirv_cross_msl)
++    if (NOT RT64_PREGENERATED_SHADER_DIR)
++        add_subdirectory(src/tools/spirv_cross_msl)
++    endif()
+
+     target_sources(rt64 PRIVATE
+         "${PROJECT_SOURCE_DIR}/src/apple/rt64_apple.mm"
+     )
+     target_include_directories(rt64 PRIVATE "${PROJECT_SOURCE_DIR}/src/contrib/metal-cpp")
+-    target_link_libraries(rt64 "-framework Metal -framework QuartzCore -framework CoreGraphics -framework IOKit")
++    target_link_libraries(rt64 "-framework Metal -framework QuartzCore -framework CoreGraphics")
++    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        target_link_libraries(rt64 "-framework IOKit")
++    endif()
+ endif()
+
+ # Add any Windows-specific source files and libraries
+@@ -489,7 +562,7 @@
+
+ target_link_directories(rt64 PRIVATE ${PROJECT_SOURCE_DIR}/src/contrib/dxc)
+
+-if (NOT ANDROID)
++if (NOT ANDROID AND NOT RT64_EMBEDDED_APPLE)
+     target_link_libraries(rt64 ${SDL2_LIBRARIES})
+ endif()
+
+@@ -567,4 +640,13 @@
+ build_pixel_shader(  rt64 "src/shaders/PostProcessPS.hlsl")
+
+ target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/src)
+-
++if (RT64_PREGENERATED_SHADER_DIR)
++    target_include_directories(rt64 PRIVATE ${RT64_PREGENERATED_SHADER_DIR}/src)
++endif()
++if (RT64_EMBEDDED_APPLE)
++    target_compile_definitions(rt64 PRIVATE RT64_EMBEDDED_APPLE)
++    target_compile_options(rt64 PRIVATE
++        "$<$<COMPILE_LANGUAGE:CXX>:-include>"
++        "$<$<COMPILE_LANGUAGE:CXX>:stdlib.h>"
++    )
++endif()
+--- a/src/apple/rt64_apple.mm
++++ b/src/apple/rt64_apple.mm
+@@ -1,6 +1,9 @@
+ #include "rt64_apple.h"
+
++#include <TargetConditionals.h>
++#if !TARGET_OS_IPHONE
+ #import <AppKit/AppKit.h>
++#endif
+ #import <Foundation/Foundation.h>
+ #import <Foundation/Foundation.h>
+
+ const char* GetHomeDirectory() {
+--- a/src/hle/rt64_application.cpp
++++ b/src/hle/rt64_application.cpp
+@@ -588,6 +588,10 @@
+ #endif
+
+     bool Application::sdlEventFilter(SDL_Event *event) {
++#ifdef RT64_EMBEDDED_APPLE
++        (void)event;
++        return false;
++#else
+         if (userConfig.developerMode && (presentQueue != nullptr) && (state != nullptr) && !FileDialog::isOpen) {
+             const std::lock_guard lock(presentQueue->inspectorMutex);
+             if ((presentQueue->inspector != nullptr) && presentQueue->inspector->handleSdlEvent(event)) {
+@@ -616,6 +620,7 @@
+         }
+
+         return false;
++#endif
+     }
+
+     bool Application::usesWindowMessageFilter() {
+--- a/src/hle/rt64_application_window.h
++++ b/src/hle/rt64_application_window.h
+@@ -12,11 +12,17 @@
+ #include "plume_apple.h"
+ #endif
+
++#ifdef RT64_EMBEDDED_APPLE
++union SDL_Event;
++struct SDL_Window;
++using SDL_EventFilter = int (*)(void *, SDL_Event *);
++#else
+ #include "SDL.h"
+ #include "SDL_events.h"
+ #include "SDL_system.h"
+ #include "SDL_syswm.h"
+ #include "SDL_video.h"
++#endif
+
+ // Remove macros defined by x11 from a header included by SDL_syswm.h.
+ #undef None

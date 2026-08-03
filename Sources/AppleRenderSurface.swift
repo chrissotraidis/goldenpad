@@ -1,6 +1,15 @@
 import MetalKit
 import UIKit
 
+@_silgen_name("goldenpad_rt64_initialize")
+private func goldenPadRT64Initialize(
+    _ window: UnsafeMutableRawPointer,
+    _ view: UnsafeMutableRawPointer
+) -> UnsafePointer<CChar>?
+
+@_silgen_name("goldenpad_rt64_shutdown")
+private func goldenPadRT64Shutdown()
+
 struct RT64MetalWindowHandle {
     let window: UnsafeMutableRawPointer
     let view: UnsafeMutableRawPointer
@@ -25,6 +34,7 @@ final class AppleRenderSurface: ObservableObject {
 
     func detach(from view: MTKView) {
         guard metalView === view else { return }
+        goldenPadRT64Shutdown()
         metalView = nil
         commandQueue = nil
         status = "renderer: waiting for Metal surface"
@@ -84,7 +94,14 @@ final class AppleRenderSurface: ObservableObject {
         guard size != lastReportedSize || refreshRate != lastReportedRefreshRate else { return }
         lastReportedSize = size
         lastReportedRefreshRate = refreshRate
-        status = "renderer: Metal \(Int(size.width))×\(Int(size.height)) @ \(refreshRate) Hz"
+        let foundationStatus = "renderer: Metal \(Int(size.width))×\(Int(size.height)) @ \(refreshRate) Hz"
+        if let handle = rt64WindowHandle(),
+           let message = goldenPadRT64Initialize(handle.window, handle.view) {
+            status = String(cString: message)
+            print("[GoldenPad] \(status)")
+        } else {
+            status = foundationStatus
+        }
         print("[GoldenPad] RT64 surface ready: \(Int(size.width))x\(Int(size.height)) @ \(refreshRate) Hz")
     }
 }

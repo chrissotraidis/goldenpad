@@ -4,9 +4,10 @@ Updated: 2026-08-03
 
 ## Summary
 
-Research, Apple Silicon feasibility, and a ROM-free native mobile foundation are
-established. No production game core has been incorporated yet. Public release
-is blocked by the GoldenRecomp input-generation/provenance gate.
+Research, Apple Silicon feasibility, a ROM-free native mobile foundation, and
+the complete RT64 mobile Metal linkage/surface gate are established. No
+production game core has been incorporated yet. Public release is blocked by
+the GoldenRecomp input-generation/provenance gate.
 
 ## Passed
 
@@ -28,6 +29,16 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
   compile for both `iphoneos` and `iphonesimulator`. Patched Plume Apple/Metal
   objects archive for both ARM64 targets, its macOS target still builds, and two
   runs reproduced per-SDK aggregate digests recorded in `RESEARCH.md`.
+- A clean pinned-source build now produces a 210-object RT64 static archive for
+  each mobile SDK. Force-loading all 246 RT64/Plume/re-spirv/zstd members links
+  as ARM64 with only expected Apple frameworks/runtime libraries and no SDL,
+  NFD, AppKit, IOKit, X11 or macOS Vulkan-surface residue.
+- The opt-in GoldenPad bridge force-links that complete closure and creates the
+  real Plume Metal device, direct command queue and swapchain. Sequential live
+  status reported `Apple iOS simulator GPU` at 1206×2622 on iPhone 16 Pro and
+  1668×2420 on iPad Pro 11-inch (M4). Both installs were removed and both
+  simulators shut down. The same linked app builds as Release ARM64 for
+  `iphoneos`.
 - Debug simulator builds succeeded and rendered responsively on an iPhone 16
   Pro and an iPad Pro 11-inch (M4), sequentially; both simulators were stopped.
 - The local V64 passed in-memory size, header, V64-to-Z64 normalization and
@@ -79,10 +90,10 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `35b37ffacc24803a1550030e4c2885e17b2afbddff4458431bbc7caa4a0091bd`.
+  `2fea2b01f1c2af095fbc77eb88f93bcdb62fd07356bab7a14deb3044a3903392`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `bf1483d8e2a58f94076cfe9bff62608b5d2a3ab08273807b91a4a8c29fd61065`.
+  `48eff2250257d920e472f7ad9763b40bd1b8ab13f5800a1ebf86c40a6f14c770`.
 
 ## Failed or blocked
 
@@ -91,10 +102,6 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
 - Selected production core has not yet built or run on macOS/iOS.
-- RT64's complete iOS CMake configuration still stops at the desktop SDL2
-  package dependency; its NFD/SDL `ApplicationWindow` layer is not yet split
-  from the embeddable renderer. The shader/backend probe is not a linked RT64
-  library or rendered game frame.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.

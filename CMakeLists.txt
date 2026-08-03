@@ -1,9 +1,32 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(GoldenPad LANGUAGES Swift)
+project(GoldenPad LANGUAGES Swift CXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(FATAL_ERROR "GoldenPad currently configures only for iOS/iPadOS. See docs/BUILDING.md.")
+endif()
+
+set(GOLDENPAD_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing the four RT64 mobile archives")
+set(GOLDENPAD_RT64_SOURCE_DIR "" CACHE PATH "Pinned RT64 source checkout used for Plume headers")
+
+set(goldenpad_rt64_bridge Support/RT64/rt64_bridge_stub.cpp)
+if(GOLDENPAD_RT64_ARCHIVE_DIR)
+    if(NOT GOLDENPAD_RT64_SOURCE_DIR)
+        message(FATAL_ERROR "GOLDENPAD_RT64_SOURCE_DIR is required when linking RT64")
+    endif()
+
+    set(goldenpad_rt64_bridge Support/RT64/rt64_metal_bridge.cpp)
+    set(goldenpad_rt64_archives
+        "${GOLDENPAD_RT64_ARCHIVE_DIR}/rt64.a"
+        "${GOLDENPAD_RT64_ARCHIVE_DIR}/libplume.a"
+        "${GOLDENPAD_RT64_ARCHIVE_DIR}/libre-spirv.a"
+        "${GOLDENPAD_RT64_ARCHIVE_DIR}/libzstd.a"
+    )
+    foreach(archive IN LISTS goldenpad_rt64_archives)
+        if(NOT EXISTS "${archive}")
+            message(FATAL_ERROR "Missing RT64 archive: ${archive}")
+        endif()
+    endforeach()
 endif()
 
 add_executable(GoldenPad MACOSX_BUNDLE
@@ -16,6 +39,7 @@ add_executable(GoldenPad MACOSX_BUNDLE
     Sources/ROMValidator.swift
     Sources/TouchControlsView.swift
     Sources/TouchLayout.swift
+    ${goldenpad_rt64_bridge}
 )
 
 set_target_properties(GoldenPad PROPERTIES
@@ -50,3 +74,12 @@ target_link_libraries(GoldenPad PRIVATE
     "-framework UniformTypeIdentifiers"
     "-framework CryptoKit"
 )
+
+if(GOLDENPAD_RT64_ARCHIVE_DIR)
+    target_include_directories(GoldenPad PRIVATE
+        "${GOLDENPAD_RT64_SOURCE_DIR}/src/contrib/plume"
+    )
+    foreach(archive IN LISTS goldenpad_rt64_archives)
+        target_link_options(GoldenPad PRIVATE "LINKER:-force_load,${archive}")
+    endforeach()
+endif()

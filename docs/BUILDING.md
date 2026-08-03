@@ -46,21 +46,42 @@ This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
 Its filename says `foundation` because it does not contain the game core and is
 not the final deliverable.
 
-## RT64 iOS Metal feasibility probe
+## RT64 iOS static renderer
 
 Initialize the exact RT64 checkout and submodules recorded in `RESEARCH.md`
 under ignored `ref/rt64`, then run:
 
 ```sh
 ./scripts/verify-rt64-ios-metal.sh
+GOLDENPAD_RT64_ARTIFACT_DIR="$PWD/build-rt64-static" \
+  ./scripts/verify-rt64-ios-static.sh
 ```
 
-This generates the pinned RT64 MSL, compiles all 56 shaders independently for
-both `iphoneos` and `iphonesimulator`, builds the patched Plume Apple/Metal
-objects for both ARM64 targets, and checks the macOS Plume build. The patches
-are temporary and automatically reversed. This is not the final RT64 build:
-the complete mobile library still needs its desktop SDL2/NFD/window layer split
-or replaced before it can be linked into GoldenPad.
+The first command is the fast shader/backend feasibility check. The second
+generates 113 shader blob sources, compiles all 56 Metal shaders for each SDK,
+builds the complete RT64/Plume/re-spirv/zstd static closure, and force-loads all
+246 archive members into a link probe. Patches are temporary and automatically
+reversed. Supplying `GOLDENPAD_RT64_ARTIFACT_DIR` retains only the four verified
+archives for each SDK under the ignored output directory.
+
+Link those archives into GoldenPad's opt-in renderer bridge:
+
+```sh
+cmake -S . -B build-ios-simulator-rt64 -G Xcode \
+  -DCMAKE_SYSTEM_NAME=iOS \
+  -DCMAKE_OSX_SYSROOT=iphonesimulator \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DGOLDENPAD_RT64_ARCHIVE_DIR="$PWD/build-rt64-static/iphonesimulator" \
+  -DGOLDENPAD_RT64_SOURCE_DIR="$PWD/ref/rt64"
+xcodebuild -project build-ios-simulator-rt64/GoldenPad.xcodeproj \
+  -scheme GoldenPad -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+The linked host initializes RT64's real Plume Metal device, command queue and
+swapchain. It still cannot render game display lists until the production
+GoldenRecomp code-generation gate is resolved.
 
 ## Apple Silicon research oracle
 

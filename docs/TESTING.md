@@ -128,24 +128,36 @@ For repository contamination checks:
 ./scripts/check-no-rom-data.sh
 ```
 
-## RT64 mobile Metal feasibility
+## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under
 ignored `ref/rt64`, run:
 
 ```sh
 ./scripts/verify-rt64-ios-metal.sh
+GOLDENPAD_RT64_ARTIFACT_DIR="$PWD/build-rt64-static" \
+  ./scripts/verify-rt64-ios-static.sh
 ```
 
-The script refuses dirty or mismatched target sources, temporarily applies the
-two tracked patches, and reverses them on exit. It must produce 56 metallibs for
-each mobile SDK, patched ARM64 Plume archives for each, and a successful macOS
-Plume regression build. Expected stable aggregate digests are:
+The scripts refuse dirty or mismatched target sources, temporarily apply their
+tracked patches, and reverse them on exit. The fast probe must produce 56
+metallibs for each mobile SDK, patched ARM64 Plume archives for each, and a
+successful macOS Plume regression build. Expected stable aggregate digests are:
 
 - `iphoneos`: `04c7eb0f7719dc27ea3f4ca4b2f95fc7bb5a59837c1c77af68ce421d081cc838`
 - `iphonesimulator`: `7b9a5a185799bd8bda7f7e2b25fe4bcb18223200cf14df781c442441f93f2212`
 
-This does not satisfy G2 until the complete RT64 library is linked and renders.
+The full verifier must report, for both SDKs, 210 RT64 archive members, 246
+force-loaded closure members, ARM64, and dependencies limited to expected Apple
+frameworks/runtime libraries. It rejects SDL, NFD, AppKit, IOKit, X11 and macOS
+Vulkan-surface symbols.
+
+Configure the opt-in linked app using `BUILDING.md`, then run strictly iPhone
+first and iPad second. Require visible `renderer: RT64 Metal DEVICE WIDTHxHEIGHT`
+status, terminate/uninstall/shut down the phone, and only then repeat on iPad.
+The 2026-08-03 pass reported `Apple iOS simulator GPU` at 1206x2622 and
+1668x2420 respectively. A Release `iphoneos` linked app also built as ARM64.
+This satisfies G2; GoldenEye frames begin at G3 and remain core-gated.
 
 ## Package gate
 
