@@ -128,6 +128,25 @@ For repository contamination checks:
 ./scripts/check-no-rom-data.sh
 ```
 
+## MGB64 Apple ARM64 core gate
+
+```sh
+./scripts/verify-mgb64-ios-core.sh
+```
+
+At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
+2026-08-03 gate passed the upstream native SDK guard and produced 161-object
+archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
+Release app linked for both SDKs, and binary inspection found the exact commit,
+`goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, and the real
+upstream `randomSetSeed`/`randomGetNext` implementations.
+
+Runtime validation used no ROM. iPhone 16 Pro launched first and visibly
+reported deterministic probe `0x80c24316`; it was terminated, uninstalled and
+shut down before iPad Pro 11-inch (M4) launched and reported the same value.
+The iPad app was then removed and shut down. This passes compilation/linkage and
+a bounded game-code execution seam, not title/menu/gameplay acceptance.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

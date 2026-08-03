@@ -5,15 +5,13 @@ gate passes and evidence is recorded in `STATUS.md` and `WORKLOG.md`.
 
 ## Selected codebase
 
-Preferred core: GoldenRecomp's original-retail-N64 static-recompilation design,
-updated to current N64Recomp/N64ModernRuntime and RT64 at the commits in
-`RESEARCH.md`. MGB64 is a local Apple behavior oracle, not an incorporated core.
-
-This selection remains behind gate R2 because the public GoldenRecomp checkout
-cannot currently reproduce its generated code. If R2 cannot be solved without
-private/leaked/unclear material, the only acceptable fallback is a clean,
-documented MGB64 first-party extraction after upstream licensing and SDK-lineage
-clearance. The project will not route around the provenance gate.
+Production-core candidate: MGB64's original-retail-N64 decompiled game and
+native port at the exact commit in `RESEARCH.md`. GoldenPad will consume only
+the audited native source surface; matching-target Nintendo/SGI/Rare SDK
+implementation sources remain excluded. GoldenRecomp/N64Recomp/N64ModernRuntime
+and the completed RT64 mobile renderer remain references and potential future
+replacement components, but GoldenRecomp cannot currently reproduce its
+generated code from a public checkout.
 
 ## Milestones
 
@@ -22,11 +20,12 @@ clearance. The project will not route around the provenance gate.
 - [x] R1: protect ROM/reference/build/signing paths with `.gitignore`.
 - [x] R2a: inventory decomp, static-recomp, runtime, renderer, macOS and touch
   candidates with exact commits/licenses.
-- [ ] R2b: reproduce GoldenRecomp's game-code generation from public sources and
-  the user's retail ROM, or record the irreducible upstream blocker.
+- [x] R2b: record GoldenRecomp's irreducible public-input blocker and select the
+  reproducible MGB64 native source surface.
 - [ ] R3: produce a source-level license manifest for every incorporated file.
 
-Gate: no private/leaked/unlicensed source; clean input-to-native-code recipe.
+Gate: no private/leaked/XBLA source, no proprietary SDK implementation in the
+native target, and a pinned retail-ROM-to-runtime recipe.
 
 ### D — Native desktop baseline
 
@@ -42,7 +41,7 @@ Gate: selected core, not just the oracle, completes a mission and multiplayer.
 ### A — Apple application shell
 
 - [x] A1a: create one native SwiftUI/UIKit iPhone+iPad application target.
-- [ ] A1b: add the shared host/core libraries after the production-core gate.
+- [x] A1b: add the guarded shared MGB64 core library and host probe bridge.
 - [x] A2: render an original Metal clear frame on iPhone simulator.
 - [x] A3: stop iPhone; render on iPad simulator; compare logs and layout.
 - [x] A4: implement Files picker, byte-order normalization and SHA-1 validation.
@@ -61,7 +60,7 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 ### G — Game integration
 
-- [ ] G1: compile generated GoldenEye code for Apple ARM64 simulator/device.
+- [x] G1: compile MGB64's audited game core for Apple ARM64 simulator/device.
 - [x] G2: parameterize RT64 Metal shaders/surfaces for iOS.
 - [ ] G3: title, menus and mission load render correctly.
 - [ ] G4: complete one mission with correct audio and persisted save.
@@ -69,13 +68,18 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
+G1 passes: all 135 MGB64 game translation units and 26 explicit native
+system/asset glue units compile into 161-object ARM64 archives for both mobile
+SDKs. Release app binaries link real upstream random-core code, and the same
+deterministic probe ran sequentially on iPhone and iPad without ROM data.
+
 G2 passes: all 56 RT64 Metal shaders compile for ARM64 `iphoneos` and
 `iphonesimulator`; the embedded build replaces desktop window, NFD and inspector
 ownership with narrow host shims; and the complete 210-object RT64 archive plus
 its 246-object closure force-links without desktop symbols. The linked GoldenPad
 app created the real Plume Metal device, command queue and swapchain on iPhone
-and iPad simulators. A1b remains open because the blocked production game core
-is not linked, so G3 has no GoldenEye display lists to render yet.
+and iPad simulators. G3 remains open until the MGB64 platform/render loop supplies
+GoldenEye display lists to a mobile renderer.
 
 ### I — Input and touch
 

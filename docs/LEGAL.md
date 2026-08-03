@@ -22,10 +22,25 @@ Ignore rules are necessary but are not a substitute for a staged-file audit.
 
 ## Source boundary
 
-- `n64decomp/007` has no discovered license and is research-only.
-- MGB64's MIT license applies to its contributors' first-party work, not the
-  decompiled game or SDK-lineage inventory. It is research-only unless a file's
-  origin and license are independently proven compatible.
+- Matching decompilation and static recompilation carry the same unresolved
+  copyright boundary seen in other community N64 ports: a public repository or
+  project license does not grant rights in the original game. That uncertainty
+  is disclosed here; it is not treated as a GoldenEye-specific development
+  blocker.
+- MGB64 is the selected production-core candidate. Its MIT license applies to
+  first-party port work, while the decompiled game remains attributed to its
+  rights holders. GoldenPad may build that independently reconstructed retail
+  N64 code under the same noncommercial research/developer-preview model used
+  by comparable community ports, without claiming ownership or guaranteed
+  redistribution rights.
+- The MGB64 tree also retains Nintendo/SGI/Rare SDK-lineage material for its
+  matching-N64 target. GoldenPad must compile only MGB64's native source surface:
+  no `src/libultra/**` or `src/libultrare/**` implementation file may enter
+  the Apple target. The exact upstream native SDK-surface guard must pass before
+  every core build.
+- `n64decomp/007` remains a provenance/symbol reference. GoldenPad uses MGB64's
+  documented native build surface rather than directly packaging the matching
+  N64 source tree.
 - HarkinianPad integration code/art is all rights reserved and is reference-only.
 - GoldenRecomp and N64ModernRuntime are GPL-3.0; N64Recomp and RT64 are MIT.
   If used, GoldenPad must satisfy the combined license obligations and publish
@@ -38,9 +53,11 @@ HarkinianPad was used only to identify product-level control requirements, and
 the clean GoldenEye decomp was used only to verify public N64 button constants;
 no reference source was copied into GoldenPad.
 
-The tracked RT64 and Plume patch files and original GoldenPad bridge/shim files
-are narrow integration work against the exact MIT-licensed commits in
-`RESEARCH.md`. They contain no game code, ROM data or generated shader output.
+The tracked RT64/Plume patches and GoldenPad RT64/MGB64 bridge/shim files are
+narrow integration work against the exact commits in `RESEARCH.md`. They
+contain no ROM data, extracted media or generated shader output. The MGB64 core
+itself is compiled only from an ignored exact upstream checkout and is never
+copied into this repository.
 Verification applies the patches only inside an ignored reference checkout and
 removes them on exit; generated Metal products and static archives remain
 untracked build artifacts.
@@ -66,6 +83,8 @@ Before any IPA/archive is shared:
 4. verify the installed app requires user-selected retail data;
 5. record the audit command and result in `docs/WORKLOG.md`.
 
-This policy is conservative engineering guidance, not legal advice. Public
-distribution remains blocked until the static-recomp/decomp source boundary has
-been reviewed by qualified counsel or cleared explicitly by the relevant owners.
+This policy is conservative engineering guidance, not legal advice. Development,
+private builds, source publication, and a clearly labelled free ROM-free
+developer preview may proceed with the boundary above. Paid access, commercial
+distribution, official-store submission, or any claim of guaranteed
+redistribution rights remains a separate qualified-legal-review gate.

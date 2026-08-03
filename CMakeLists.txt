@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(GoldenPad LANGUAGES Swift CXX)
+project(GoldenPad LANGUAGES Swift C CXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(FATAL_ERROR "GoldenPad currently configures only for iOS/iPadOS. See docs/BUILDING.md.")
 endif()
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum iOS/iPadOS version")
+
 set(GOLDENPAD_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing the four RT64 mobile archives")
 set(GOLDENPAD_RT64_SOURCE_DIR "" CACHE PATH "Pinned RT64 source checkout used for Plume headers")
+set(GOLDENPAD_MGB64_SOURCE_DIR "" CACHE PATH "Pinned MGB64 checkout used for the native game core")
 
 set(goldenpad_rt64_bridge Support/RT64/rt64_bridge_stub.cpp)
 if(GOLDENPAD_RT64_ARCHIVE_DIR)
@@ -39,8 +42,11 @@ add_executable(GoldenPad MACOSX_BUNDLE
     Sources/ROMValidator.swift
     Sources/TouchControlsView.swift
     Sources/TouchLayout.swift
+    Support/MGB64/mgb64_core_bridge.c
     ${goldenpad_rt64_bridge}
 )
+
+include(Support/MGB64/MGB64Core.cmake)
 
 set_target_properties(GoldenPad PROPERTIES
     MACOSX_BUNDLE TRUE

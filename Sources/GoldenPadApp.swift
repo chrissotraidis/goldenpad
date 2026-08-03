@@ -1,6 +1,20 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+@_silgen_name("goldenpad_mgb64_core_identity")
+private func goldenPadMGB64CoreIdentity() -> UnsafePointer<CChar>
+
+@_silgen_name("goldenpad_mgb64_core_probe")
+private func goldenPadMGB64CoreProbe() -> UInt32
+
+private enum MGB64CoreInfo {
+    static let status: String = {
+        let identity = String(cString: goldenPadMGB64CoreIdentity())
+        let probe = goldenPadMGB64CoreProbe()
+        return "\(identity) • probe 0x\(String(probe, radix: 16))"
+    }()
+}
+
 @main
 struct GoldenPadApp: App {
     @Environment(\.scenePhase) private var scenePhase
@@ -80,6 +94,10 @@ private struct FoundationView: View {
                         .labelStyle(.titleAndIcon)
 
                         Text("\(platform.statusSummary)  •  \(renderSurface.status)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
+
+                        Text(MGB64CoreInfo.status)
                             .font(.caption2.monospaced())
                             .foregroundStyle(.white.opacity(0.46))
 

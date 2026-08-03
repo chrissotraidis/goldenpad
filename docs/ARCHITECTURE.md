@@ -9,9 +9,9 @@ ApplePlatform (paths, audio session, controllers, touch, lifecycle, Metal view)
     |
 NormalizedInput + PortableHost APIs
     |
-GoldenRecomp-generated game code + N64ModernRuntime
+MGB64 decompiled game core + native compatibility layer
     |
-RT64 display-list renderer
+MGB64 Fast3D/Metal first; RT64 remains a verified renderer option
     |
 Metal / CAMetalLayer
 ```
@@ -23,14 +23,17 @@ into game simulation code.
 
 ## Core and undecompiled code
 
-GoldenRecomp is the preferred core. Decompiled functions needed as deliberate
-patches remain small GPL sources with explicit provenance; all remaining MIPS
-functions are statically recompiled by N64Recomp. No interpreter, JIT, or general
-N64 emulator is embedded. The app only accepts one supported game/revision.
+MGB64 is the production-core candidate. Its decompiled retail-N64 game logic is
+built ahead of time as Apple ARM64 C code; it is not an interpreter, JIT, or
+general N64 emulator. The app accepts only the supported GoldenEye revision and
+loads bulk media from the user's ROM at runtime.
 
-The generated native functions are built ahead of time for Apple ARM64. They do
-not contain bulk media. Their public-distribution status is a legal gate in
-`docs/LEGAL.md`.
+MGB64's matching-N64 tree contains historical SDK-lineage compatibility files,
+but its native build uses platform replacements and an explicit empty libultra/
+libultrare implementation source set. GoldenPad reproduces that narrow boundary
+and runs the upstream guard before compiling the core. GoldenRecomp remains a
+future static-recomp alternative if its missing public ELF/metadata pipeline is
+restored.
 
 ## Graphics
 
@@ -52,7 +55,11 @@ closure and retains a Plume Metal interface, device, direct command queue and
 swapchain for that surface. The default build uses a null bridge stub, so a
 clean checkout does not depend on an ignored reference tree.
 
-MGB64's Metal/WebGPU renderer remains an oracle/fallback reference only.
+MGB64's Fast3D Metal path is the shortest initial game renderer because it is
+already coupled to the selected core and proven on Apple Silicon. The completed
+RT64 mobile closure remains available for a later renderer migration or a
+restored GoldenRecomp path; integrating one renderer first avoids carrying two
+game-rendering stacks through initial gameplay bring-up.
 
 ## ROM and resources
 
@@ -99,8 +106,9 @@ exact N64 masks, classic,
 modern and southpaw presets, four deterministic controller slots,
 extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
 Simulator-only synthetic MFi controllers are excluded from auto-hide without
-changing physical-device behavior. Real-controller auto-hide, physical gyro and
-gameplay semantics remain acceptance gates once the production core is present.
+changing physical-device behavior. The selected core now compiles and exposes a
+bounded live probe; real-controller auto-hide, physical gyro and gameplay
+semantics remain acceptance gates once its platform/render loop is running.
 
 ## Targets
 

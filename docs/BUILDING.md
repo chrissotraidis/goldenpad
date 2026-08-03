@@ -1,8 +1,8 @@
 # Building
 
 GoldenPad has a native ROM-free iPhone/iPad foundation target. It validates a
-user-selected retail dump but intentionally cannot start the game until the
-production static-recomp gate passes.
+user-selected retail dump and can link the audited MGB64 game core, but it does
+not start the game until the remaining platform/renderer adapters are present.
 
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
@@ -46,6 +46,37 @@ This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
 Its filename says `foundation` because it does not contain the game core and is
 not the final deliverable.
 
+## MGB64 iOS game core
+
+Fetch the exact ignored upstream checkout, run its native SDK-surface guard, and
+build the complete audited C core for both Apple mobile SDKs:
+
+```sh
+./scripts/fetch-mgb64.sh
+./scripts/verify-mgb64-ios-core.sh
+```
+
+The verifier compiles all 135 `src/game/*.c` translation units plus 26 explicit
+native system/asset glue units into 161-object ARM64 archives. It rejects a
+mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
+`src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
+Simulator and device, and requires the final executables to retain the exact
+MGB64 identity and real upstream random-core probe symbols.
+
+The opt-in configuration used by that script is equivalent to:
+
+```sh
+cmake -S . -B build-mgb64-core-simulator -G Xcode \
+  -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DGOLDENPAD_MGB64_SOURCE_DIR="$PWD/ref/mgb64"
+```
+
+The ordinary foundation configuration remains independent of `ref/`. The core
+configuration proves compilation and a small deterministic game-code execution
+seam; it does not yet provide MGB64's renderer, audio, input, ROM-resource or
+main-loop platform adapters.
+
 ## RT64 iOS static renderer
 
 Initialize the exact RT64 checkout and submodules recorded in `RESEARCH.md`
@@ -80,8 +111,8 @@ xcodebuild -project build-ios-simulator-rt64/GoldenPad.xcodeproj \
 ```
 
 The linked host initializes RT64's real Plume Metal device, command queue and
-swapchain. It still cannot render game display lists until the production
-GoldenRecomp code-generation gate is resolved.
+swapchain. It still cannot render game display lists until the selected MGB64
+core is connected through its mobile platform/render loop.
 
 ## Apple Silicon research oracle
 
@@ -107,5 +138,5 @@ GE007_RENDERER=webgpu ref/mgb64/build-goldenpad-webgpu/ge007 \
 The upstream `-DMGB64_WEBGPU_BACKEND=OFF` option currently fails to link at the
 pinned commit and is intentionally not the documented baseline.
 
-Production-core and final unsigned-IPA instructions remain gated on clean core
-integration.
+Full gameplay and final unsigned-IPA instructions remain gated on clean mobile
+platform/renderer integration.

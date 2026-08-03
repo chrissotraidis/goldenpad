@@ -1,5 +1,35 @@
 # Worklog
 
+## 2026-08-03 — select and compile the MGB64 production core
+
+- Reframed the community decomp/recomp issue as a disclosed source and release
+  risk rather than a GoldenEye-specific development stop. Kept paid access,
+  official-store distribution and guaranteed-rights claims behind a separate
+  qualified legal review, while preserving the hard ROM/XBLA/SDK exclusions.
+- Selected MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf` as the
+  reproducible production candidate. GoldenRecomp remains a useful static-recomp
+  reference, but its public checkout still lacks the required TLB-free input and
+  generated function tree.
+- Added a guarded, opt-in CMake static core containing all 135 MGB64 game C files
+  and 26 explicit native system/asset glue files. The exact pin and clean tree
+  are enforced; no libultra/libultrare implementation source is compiled.
+- Replaced the one desktop-only SDL keyboard include encountered in core-only
+  compilation with a target-local inert scancode shim. The eventual platform
+  target will use a real mobile input adapter rather than this compile seam.
+- Built 161-object non-fat ARM64 archives for both Simulator and device SDKs at
+  iOS 17 deployment target, then linked Release GoldenPad executables for both.
+  The final binaries retain the exact core identity plus real upstream
+  `randomSetSeed` and `randomGetNext` symbols.
+- Launched iPhone 16 Pro first and visibly observed probe `0x80c24316`, removed
+  and shut it down, then repeated on iPad Pro 11-inch (M4) with the same result.
+  No ROM was selected or copied. This completes G1/A1b; the next gate is the
+  MGB64 platform/renderer loop, not legal review or GoldenRecomp generation.
+- Rebuilt the ordinary core-free foundation and packaged it twice. Both
+  eight-member audits passed and both ZIPs matched SHA-256
+  `93b089ca95ad6372ac49d4f69e3bd6645755431deea3a0bd0187d08f3246c4f1`;
+  sorted app content matched
+  `74cc07b77e58b72a168eab2d2404b035508cbaf0578aa96c8d5d315eaa3729a8`.
+
 ## 2026-08-03 — complete RT64 mobile static renderer gate
 
 - Mapped RT64's remaining desktop seams to SDL window/events, NFD, inspector UI

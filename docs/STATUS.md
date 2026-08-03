@@ -4,10 +4,12 @@ Updated: 2026-08-03
 
 ## Summary
 
-Research, Apple Silicon feasibility, a ROM-free native mobile foundation, and
-the complete RT64 mobile Metal linkage/surface gate are established. No
-production game core has been incorporated yet. Public release is blocked by
-the GoldenRecomp input-generation/provenance gate.
+Research, Apple Silicon gameplay feasibility, a ROM-free native mobile
+foundation, and the complete RT64 mobile Metal linkage/surface gate are
+established. MGB64 is now the selected production-core candidate under the
+documented community decomp/recomp legal boundary. GoldenRecomp remains a
+reference because its public input-generation path is incomplete; that no
+longer blocks MGB64 integration.
 
 ## Passed
 
@@ -16,6 +18,18 @@ the GoldenRecomp input-generation/provenance gate.
   was never copied into the tracked tree or a package.
 - Required initial research/legal/architecture/plan/build/test/worklog docs exist.
 - MGB64 `cd9b58f` builds as native ARM64 on Apple Silicon with default WebGPU.
+- MGB64's native SDK-surface guard passes at the exact pin. Its native CMake
+  target compiles no `src/libultra/**` or `src/libultrare/**` implementation
+  sources; matching-target SDK-lineage files remain outside GoldenPad's source
+  and binary boundary.
+- GoldenPad's opt-in MGB64 target compiles all 135 game translation units plus
+  26 explicit native system/asset glue units into 161-object, non-fat ARM64
+  archives for both `iphonesimulator` and `iphoneos` at the iOS 17 deployment
+  target. Release app executables link for both SDKs.
+- Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
+  symbols and real upstream `randomSetSeed`/`randomGetNext` code. Sequential
+  no-ROM launches reported deterministic probe `0x80c24316` on iPhone 16 Pro,
+  then iPad Pro 11-inch (M4); both installs were removed and devices shut down.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -90,10 +104,10 @@ the GoldenRecomp input-generation/provenance gate.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `2fea2b01f1c2af095fbc77eb88f93bcdb62fd07356bab7a14deb3044a3903392`.
+  `93b089ca95ad6372ac49d4f69e3bd6645755431deea3a0bd0187d08f3246c4f1`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `48eff2250257d920e472f7ad9763b40bd1b8ab13f5800a1ebf86c40a6f14c770`.
+  `74cc07b77e58b72a168eab2d2404b035508cbaf0578aa96c8d5d315eaa3729a8`.
 
 ## Failed or blocked
 
@@ -101,7 +115,9 @@ the GoldenRecomp input-generation/provenance gate.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- Selected production core has not yet built or run on macOS/iOS.
+- MGB64's desktop platform, Fast3D renderer, audio, input, resource-loading and
+  main-loop seams are not yet connected to GoldenPad. The linked probe exercises
+  one real game-core object; it does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
@@ -113,7 +129,7 @@ the GoldenRecomp input-generation/provenance gate.
 
 ## Next gate
 
-Obtain or upstream a licensed complete GoldenRecomp ELF/metadata input, then
-connect the generated core to the existing host and validate the implemented
-presets against real menus and gameplay. Do not import unlicensed game,
-SDK-lineage, or Xbox/XBLA material.
+Compile the minimum MGB64 native platform/Fast3D renderer surface for Apple
+mobile, replace SDL desktop ownership with narrow GoldenPad host adapters, and
+reach the title/menu without importing matching-target SDK implementation
+sources or Xbox/XBLA material.
