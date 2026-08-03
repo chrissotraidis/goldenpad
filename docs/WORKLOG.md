@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-08-03 — extend Facility to a two-door input chain
+
+- MGB64's promoted
+  `facility_spawn_obj159_obj155_door_chain_contract` passed independently at the
+  exact pin with 1402 records, 1291.82 units of movement, both door models fully
+  opened and no setup automation.
+- Extended the read-only Facility snapshot to door model object 155 and added a
+  separate `--facility-door-chain-probe`. A broad model-ID snapshot initially
+  produced a false positive by observing the wrong model-155 door. The final
+  snapshot is exact: model 159 at pads 67/68 and model 155 at pad 75.
+- The upstream left continuation also reached the wrong same-model door under
+  mobile timing. The final fixed mobile input uses backward movement after the
+  first door, then a right-stick/B sweep while inside pad 75's interaction range.
+  No player, door, objective or stage state is forced.
+- Strict iPhone-then-iPad runs opened both exact targets fully and reached 817
+  and 827 world units respectively. Each installed app, private temporary ROM
+  and container was removed before simulator shutdown.
+- This proves deeper chained world interaction only. Facility objectives and
+  organic mission completion remain open.
+
 ## 2026-08-03 — open a stock Facility door through normal input
 
 - Independently reran MGB64's pinned

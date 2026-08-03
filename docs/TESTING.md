@@ -407,6 +407,27 @@ before proceeding. This closes the simulator context-interaction subgate. It
 does not claim the desktop route's later 1200-unit milestone, Facility objective
 completion, touch hardware, or organic mission completion.
 
+For the next chained-interaction gate, first run the upstream route
+`facility_spawn_obj159_obj155_door_chain_contract`. The 2026-08-03 desktop run
+passed with 1402 records, 1291.82 units of movement, both door models opened and
+no setup automation. Then launch GoldenPad with `--facility-door-chain-probe`.
+Require `Facility door chain probe controller interaction: PASS` with both the
+model-159 fields and `door155Open=90000`, `door155Max=90000`,
+`door155SawOpening=1`, and `door155FinishedOpen=1`.
+
+Do not reuse the upstream second-leg left input blindly: under mobile timing it
+opens a different model-155 door. The mobile route observes only model 159 at
+setup pads 67/68 and model 155 at pad 75. After the first-door stream it uses
+fixed backward movement on frames 700–739, then a right-stick sweep on frames
+740–959 with four-frame B pulses every eight frames through 956. This is still
+normal controller input; the snapshots never steer or mutate game state.
+
+The same built app passed first on iPhone at 817 world units and then iPad at
+827, with both exact door targets fully open. Each app/private ROM was removed
+and each simulator shut down in strict sequence. This proves a second normal-
+input interaction and deeper corridor traversal; it still does not prove
+Facility objectives or organic mission completion.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

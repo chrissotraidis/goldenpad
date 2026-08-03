@@ -42,10 +42,11 @@ scripted diagnostic also reached the real mission-status/statistics reports and
 proved the resulting Dam/Agent EEPROM progression survives relaunch on both
 classes. A controller-only Facility probe then advanced through the authentic
 next-mission briefing, waited for first-person control, approached the stock
-bathroom door cluster, and opened model object 159 fully with normal movement,
-look and B input on iPhone followed by iPad. That closes the simulator world-
-interaction subgate; organic objectives and mission completion, physical-device
-controls, multiplayer, and final packaging remain open.
+bathroom door cluster, opened model object 159, continued into the next corridor,
+and opened model object 155 with normal movement, look and B input on iPhone
+followed by iPad. That closes the first chained-world-interaction subgate;
+organic objectives and mission completion, physical-device controls,
+multiplayer, and final packaging remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

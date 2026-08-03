@@ -68,6 +68,16 @@ private func goldenPadMGB64FacilityDoorState(
     _ cameraMode: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_facility_door155_state")
+private func goldenPadMGB64FacilityDoor155State(
+    _ count: UnsafeMutablePointer<Int32>?,
+    _ state: UnsafeMutablePointer<Int32>?,
+    _ openPosition: UnsafeMutablePointer<Int32>?,
+    _ maxOpenPosition: UnsafeMutablePointer<Int32>?,
+    _ sawOpening: UnsafeMutablePointer<Int32>?,
+    _ finishedOpen: UnsafeMutablePointer<Int32>?
+)
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -422,7 +432,8 @@ final class InputCoordinator: ObservableObject {
         guard arguments.contains("--menu-probe") ||
                 arguments.contains("--gameplay-probe") ||
                 arguments.contains("--mission-flow-probe") ||
-                arguments.contains("--facility-door-probe") else { return }
+                arguments.contains("--facility-door-probe") ||
+                arguments.contains("--facility-door-chain-probe") else { return }
         if arguments.contains("--mission-flow-probe") {
             if case .complete = missionFlowProbePhase {
                 touch = .neutral
@@ -747,7 +758,14 @@ final class InputCoordinator: ObservableObject {
     }
 
     private func runFacilityDoorProbeIfRequested() {
-        guard ProcessInfo.processInfo.arguments.contains("--facility-door-probe") else {
+        let isDoorChainProbe = ProcessInfo.processInfo.arguments.contains(
+            "--facility-door-chain-probe"
+        )
+        let resultLabel = isDoorChainProbe
+            ? "Facility door chain probe"
+            : "Facility door probe"
+        guard isDoorChainProbe ||
+                ProcessInfo.processInfo.arguments.contains("--facility-door-probe") else {
             return
         }
 
@@ -767,6 +785,12 @@ final class InputCoordinator: ObservableObject {
         var doorMaxOpenPosition: Int32 = 0
         var doorSawOpening: Int32 = 0
         var doorFinishedOpen: Int32 = 0
+        var door155Count: Int32 = 0
+        var door155State: Int32 = -1
+        var door155OpenPosition: Int32 = 0
+        var door155MaxOpenPosition: Int32 = 0
+        var door155SawOpening: Int32 = 0
+        var door155FinishedOpen: Int32 = 0
         var cameraMode: Int32 = -1
         goldenPadMGB64RuntimeState(
             &menu, &stage, nil, &selectedStage, nil, nil, nil
@@ -780,6 +804,11 @@ final class InputCoordinator: ObservableObject {
             &doorReady, &doorCount, &doorState, &doorOpenPosition,
             &doorMaxOpenPosition, &doorSawOpening, &doorFinishedOpen,
             &cameraMode
+        )
+        goldenPadMGB64FacilityDoor155State(
+            &door155Count, &door155State, &door155OpenPosition,
+            &door155MaxOpenPosition, &door155SawOpening,
+            &door155FinishedOpen
         )
 
         facilityDoorRouteInput = nil
@@ -889,7 +918,18 @@ final class InputCoordinator: ObservableObject {
             if (350..<610).contains(facilityDoorRouteFrame) {
                 routeFrame.secondary.stick = SIMD2(-1, 0)
             }
+            if isDoorChainProbe && (700..<740).contains(facilityDoorRouteFrame) {
+                routeFrame.primary.stick = SIMD2(0, -1)
+            }
+            if isDoorChainProbe && (740..<960).contains(facilityDoorRouteFrame) {
+                routeFrame.secondary.stick = SIMD2(-1, 0)
+            }
             if [400, 440, 480, 520, 560, 600].contains(where: {
+                ($0..<($0 + 4)).contains(facilityDoorRouteFrame)
+            }) {
+                routeFrame.primary.buttons.insert(.b)
+            }
+            if isDoorChainProbe && stride(from: 740, through: 956, by: 8).contains(where: {
                 ($0..<($0 + 4)).contains(facilityDoorRouteFrame)
             }) {
                 routeFrame.primary.buttons.insert(.b)
@@ -897,7 +937,9 @@ final class InputCoordinator: ObservableObject {
             facilityDoorRouteInput = routeFrame
             facilityDoorRouteFrame += 1
 
-            if [100, 180, 360, 440, 600, 740].contains(facilityDoorRouteFrame) {
+            if [100, 180, 360, 440, 600, 740, 760, 800, 920, 1060, 1240, 1380].contains(
+                facilityDoorRouteFrame
+            ) {
                 let deltaX = playerX - facilityDoorRouteStartX
                 let deltaZ = playerZ - facilityDoorRouteStartZ
                 print(
@@ -908,22 +950,32 @@ final class InputCoordinator: ObservableObject {
                 )
             }
 
-            guard facilityDoorRouteFrame >= 760 else { return }
+            let finalRouteFrame = isDoorChainProbe ? 1400 : 760
+            guard facilityDoorRouteFrame >= finalRouteFrame else { return }
             let deltaX = Double(playerX - facilityDoorRouteStartX)
             let deltaZ = Double(playerZ - facilityDoorRouteStartZ)
             let distance = Int(sqrt(deltaX * deltaX + deltaZ * deltaZ).rounded())
-            let passed = doorReady == 1 && doorSawOpening == 1 &&
+            let firstDoorPassed = doorReady == 1 && doorSawOpening == 1 &&
                 doorFinishedOpen == 1 && doorMaxOpenPosition > 0 &&
                 distance >= 68_000
+            let secondDoorPassed = !isDoorChainProbe ||
+                (door155Count > 0 && door155SawOpening == 1 &&
+                 door155FinishedOpen == 1 && door155MaxOpenPosition > 0)
+            let passed = firstDoorPassed && secondDoorPassed
             facilityDoorProbePhase = .complete
             facilityDoorRouteInput = nil
             touch = .neutral
             print(
-                "[GoldenPad] Facility door probe controller interaction: " +
+                "[GoldenPad] \(resultLabel) controller interaction: " +
                 "\(passed ? "PASS" : "FAIL") doors=\(doorCount) " +
                 "state=\(doorState) open=\(doorOpenPosition) " +
                 "max=\(doorMaxOpenPosition) sawOpening=\(doorSawOpening) " +
                 "finishedOpen=\(doorFinishedOpen) distance=\(distance / 100) " +
+                "door155Count=\(door155Count) door155State=\(door155State) " +
+                "door155Open=\(door155OpenPosition) " +
+                "door155Max=\(door155MaxOpenPosition) " +
+                "door155SawOpening=\(door155SawOpening) " +
+                "door155FinishedOpen=\(door155FinishedOpen) " +
                 "final=\(playerX),\(playerZ) yaw=\(playerYaw)"
             )
 

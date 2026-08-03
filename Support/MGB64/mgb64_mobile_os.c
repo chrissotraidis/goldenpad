@@ -76,6 +76,12 @@ static _Atomic int goldenpad_facility_door_open_position;
 static _Atomic int goldenpad_facility_door_max_open_position;
 static _Atomic int goldenpad_facility_door_saw_opening;
 static _Atomic int goldenpad_facility_door_finished_open;
+static _Atomic int goldenpad_facility_door155_count;
+static _Atomic int goldenpad_facility_door155_state = -1;
+static _Atomic int goldenpad_facility_door155_open_position;
+static _Atomic int goldenpad_facility_door155_max_open_position;
+static _Atomic int goldenpad_facility_door155_saw_opening;
+static _Atomic int goldenpad_facility_door155_finished_open;
 static _Atomic int goldenpad_facility_camera_mode = -1;
 static int goldenpad_scripted_mission_saved_debug_flag;
 static int goldenpad_scripted_mission_restore_debug_flag;
@@ -431,6 +437,9 @@ static void goldenpad_mgb64_sample_facility_door(void) {
     int count = 0;
     int state = -1;
     int open_position = 0;
+    int count155 = 0;
+    int state155 = -1;
+    int open_position155 = 0;
 
     if (g_CurrentSetup.propDefs == NULL) {
         atomic_store(&goldenpad_facility_door_ready, 0);
@@ -441,7 +450,7 @@ static void goldenpad_mgb64_sample_facility_door(void) {
     while (record->type != PROPDEF_END) {
         if (record->type == PROPDEF_DOOR) {
             DoorRecord *door = (DoorRecord *)record;
-            if (door->obj == 159) {
+            if (door->obj == 159 && (door->pad == 67 || door->pad == 68)) {
                 int scaled_position = (int)(door->openPosition * 1000.0f);
                 count++;
                 if (scaled_position >= open_position) {
@@ -456,6 +465,21 @@ static void goldenpad_mgb64_sample_facility_door(void) {
                     atomic_store(&goldenpad_facility_door_finished_open, 1);
                 }
             }
+            if (door->obj == 155 && door->pad == 75) {
+                int scaled_position = (int)(door->openPosition * 1000.0f);
+                count155++;
+                if (scaled_position >= open_position155) {
+                    open_position155 = scaled_position;
+                    state155 = door->openstate;
+                }
+                if (door->openstate == DOORSTATE_OPENING) {
+                    atomic_store(&goldenpad_facility_door155_saw_opening, 1);
+                }
+                if (door->openstate == DOORSTATE_STATIONARY &&
+                    door->openPosition > 0.0f) {
+                    atomic_store(&goldenpad_facility_door155_finished_open, 1);
+                }
+            }
         }
         record += sizepropdef(record);
     }
@@ -467,6 +491,15 @@ static void goldenpad_mgb64_sample_facility_door(void) {
         atomic_store(&goldenpad_facility_door_max_open_position, open_position);
     }
     atomic_store(&goldenpad_facility_door_ready, count > 0);
+    atomic_store(&goldenpad_facility_door155_count, count155);
+    atomic_store(&goldenpad_facility_door155_state, state155);
+    atomic_store(&goldenpad_facility_door155_open_position, open_position155);
+    if (open_position155 >
+        atomic_load(&goldenpad_facility_door155_max_open_position)) {
+        atomic_store(
+            &goldenpad_facility_door155_max_open_position,
+            open_position155);
+    }
 }
 
 s32 osContInit(OSMesgQueue *mq, u8 *bitpattern, OSContStatus *status) {
@@ -603,6 +636,12 @@ s32 osContGetReadData(OSContPad *pads) {
         atomic_store(&goldenpad_facility_door_max_open_position, 0);
         atomic_store(&goldenpad_facility_door_saw_opening, 0);
         atomic_store(&goldenpad_facility_door_finished_open, 0);
+        atomic_store(&goldenpad_facility_door155_count, 0);
+        atomic_store(&goldenpad_facility_door155_state, -1);
+        atomic_store(&goldenpad_facility_door155_open_position, 0);
+        atomic_store(&goldenpad_facility_door155_max_open_position, 0);
+        atomic_store(&goldenpad_facility_door155_saw_opening, 0);
+        atomic_store(&goldenpad_facility_door155_finished_open, 0);
         atomic_store(&goldenpad_facility_camera_mode, -1);
     }
 
@@ -717,6 +756,27 @@ void goldenpad_mgb64_facility_door_state(
     }
     if (camera_mode != NULL) {
         *camera_mode = atomic_load(&goldenpad_facility_camera_mode);
+    }
+}
+
+void goldenpad_mgb64_facility_door155_state(
+    int *count, int *state, int *open_position, int *max_open_position,
+    int *saw_opening, int *finished_open) {
+    if (count != NULL) *count = atomic_load(&goldenpad_facility_door155_count);
+    if (state != NULL) *state = atomic_load(&goldenpad_facility_door155_state);
+    if (open_position != NULL) {
+        *open_position = atomic_load(&goldenpad_facility_door155_open_position);
+    }
+    if (max_open_position != NULL) {
+        *max_open_position =
+            atomic_load(&goldenpad_facility_door155_max_open_position);
+    }
+    if (saw_opening != NULL) {
+        *saw_opening = atomic_load(&goldenpad_facility_door155_saw_opening);
+    }
+    if (finished_open != NULL) {
+        *finished_open =
+            atomic_load(&goldenpad_facility_door155_finished_open);
     }
 }
 

@@ -89,6 +89,7 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_request_scripted_mission_success'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_progression_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_facility_door_state'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_facility_door155_state'
     nm -gU "$binary" | grep -q '_platformOverlayWantsInput'
     nm -gU "$binary" | grep -q '_modelConvertFreeAll'
     nm -gU "$binary" | grep -q '_platformApplyRadialDeadzone'

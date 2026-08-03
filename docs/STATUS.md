@@ -176,6 +176,19 @@ longer blocks MGB64 integration.
   after each. The mobile gate deliberately requires the 680-unit post-door
   milestone plus full door opening; it does not claim the desktop route's later
   1200-unit reach, Facility objectives, or organic mission completion.
+- MGB64's promoted
+  `facility_spawn_obj159_obj155_door_chain_contract` independently passed with
+  1402 records, 1291.82 units of movement, both door models fully opened and no
+  setup automation. The upstream left-movement continuation opens a different
+  same-model door under mobile timing, so GoldenPad's
+  `--facility-door-chain-probe` instead uses a fixed backward continuation and
+  right-stick/B sweep after the exact first-door input stream. Its snapshots are
+  pad-specific: two model-159 records at pads 67/68 and one model-155 record at
+  pad 75. iPhone opened all targets fully and reached 817 world units; iPad
+  repeated the result at 827. Both reported `open=90000`, `max=90000`, opening
+  and finished-open states, then received full uninstall and simulator-shutdown
+  cleanup. This is deeper normal-input Facility progression, not objective or
+  mission completion.
 - The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
   restored from Application Support at bootstrap, and atomically flushed with
   file protection on scene deactivation/backgrounding. Strict sequential
@@ -278,8 +291,8 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Extend normal-input Facility progression beyond the first bathroom-door cluster,
+Extend normal-input Facility progression beyond the two-door corridor chain,
 then replace the diagnostic success prerequisite with organic objectives and
-mission completion through input. The world-interaction, report, EEPROM write,
+mission completion through input. The chained-interaction, report, EEPROM write,
 lifecycle flush and relaunch progression seams no longer need to be rediscovered.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

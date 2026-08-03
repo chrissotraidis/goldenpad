@@ -135,6 +135,11 @@ reach the authentic Facility briefing. After normal Start input and the real
 first-person camera transition, the route opened Facility door model object 159
 fully and moved 702 world units on iPhone followed by iPad. This proves a real
 world interaction, not Facility objectives or organic mission completion.
+The promoted two-door extension identified model object 155 at exact setup pad
+75. Mobile timing required a fixed backward continuation plus a right-stick/B
+view sweep after the first door. iPhone reached 817 world units and iPad 827;
+both opened pads 67/68 and pad 75 fully. No transform, door, objective or stage
+state was forced.
 
 ### I — Input and touch
 
@@ -156,9 +161,10 @@ Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
 still need device acceptance. I5 now has strict sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. It also has strict sequential proof that normal controller movement,
-look and B input opens a stock Facility door fully. Crouch, objectives flow and
-organic mission completion remain open. The downstream report and persisted-save
-path is independently proven through an explicitly scripted diagnostic trigger.
+look and B input opens two chained stock Facility door models. Crouch, objectives
+flow and organic mission completion remain open. The downstream report and
+persisted-save path is independently proven through an explicitly scripted
+diagnostic trigger.
 
 ### M — Multiplayer
 
