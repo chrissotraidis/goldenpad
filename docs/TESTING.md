@@ -145,7 +145,7 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 193-object
+2026-08-03 gate passed the upstream native SDK guard and produced 194-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
 `goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, the real upstream
@@ -235,6 +235,14 @@ fidelity helpers. The final core probe must retain and execute `sins`, `coss`,
 sequentially on iPhone then iPad, with uninstall/shutdown cleanup. A temporary
 `bossEntry` map closed 61 symbols, introduced zero and left 185; the probe was
 removed before the normal combined-renderer pass.
+
+The mobile-configuration subgate must retain
+`goldenpad_mgb64_mobile_config_probe` and `g_pcFovY` in both final core apps.
+The unit supplies exactly the 68 settings/startup globals present in the prior
+map while leaving SDL window/event ownership absent. Its expanded probe remained
+`0x80c24316` sequentially on iPhone then iPad with complete cleanup. The
+temporary startup map fell from 185 to 117 with zero newly introduced symbols,
+then was removed before the clean renderer verifier.
 
 ## RT64 mobile Metal and static-library gate
 

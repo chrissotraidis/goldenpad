@@ -105,6 +105,11 @@ fidelity decisions. Keeping them separate from audio, settings, input and
 window ownership lets the linker map prove progress without importing a desktop
 subsystem.
 
+Game-side configuration and direct-start globals are owned by
+`mgb64_mobile_config.c` on Apple mobile. These are plain typed defaults consumed
+by the decompiled game code; UIKit settings can update them through a narrow
+bridge later. The SDL platform file remains excluded.
+
 ## ROM and resources
 
 ```text

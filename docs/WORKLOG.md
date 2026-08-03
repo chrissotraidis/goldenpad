@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-08-03 — move game configuration ownership off SDL
+
+- Added one project-owned mobile configuration unit for the 68 game-side
+  settings and startup globals previously defined only inside `platform_sdl.c`.
+  It keeps conservative upstream-compatible defaults without importing SDL
+  event, controller or window ownership.
+- The audited core is now 194 ARM64 objects. Both SDK core and combined
+  Fast3D/Metal gates pass, and final apps retain the mobile config probe.
+- Representative defaults execute inside the deterministic probe, which visibly
+  remained `0x80c24316` on iPhone then iPad. Each app/container was removed and
+  each simulator shut down in strict sequence.
+- A temporary `bossEntry` map fell from 185 to 117: all 68 `g_pc*` names closed,
+  zero new unresolved symbols. The probe was removed before clean verification.
+
 ## 2026-08-03 — add the SDL-free portable leaf closure
 
 - Explicitly added 28 small upstream leaf units for native segment constants,

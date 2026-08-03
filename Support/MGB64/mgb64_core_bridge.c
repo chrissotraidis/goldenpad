@@ -9,6 +9,7 @@ int16_t coss(uint16_t angle);
 int aimBoneArg0Proceeds(int arg0, int legacy);
 float watchInvPerspAspect(int legacy);
 extern uint32_t _rarewarelogoSegmentRomStart;
+int goldenpad_mgb64_mobile_config_probe(void);
 
 #ifndef GOLDENPAD_MGB64_COMMIT
 #define GOLDENPAD_MGB64_COMMIT "unknown"
@@ -34,7 +35,8 @@ uint32_t goldenpad_mgb64_core_probe(void) {
     if (sins(0) != 0 || coss(0) != 32767 ||
         aimBoneArg0Proceeds(0, 0) != 1 ||
         watchInvPerspAspect(0) != 4.0f / 3.0f ||
-        _rarewarelogoSegmentRomStart != UINT32_C(0x0029e560)) {
+        _rarewarelogoSegmentRomStart != UINT32_C(0x0029e560) ||
+        !goldenpad_mgb64_mobile_config_probe()) {
         return 0;
     }
     randomSetSeed(UINT64_C(0x47504d47423634));

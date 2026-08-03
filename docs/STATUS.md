@@ -23,8 +23,8 @@ longer blocks MGB64 integration.
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
 - GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 56
-  explicit upstream native system/portable leaf units and two project-owned
-  mobile adapters into 193-object, non-fat ARM64 archives for both
+  explicit upstream native system/portable leaf units and three project-owned
+  mobile adapters into 194-object, non-fat ARM64 archives for both
   `iphonesimulator` and `iphoneos` at the iOS 17 deployment target. Release app
   executables link for both SDKs.
 - Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
@@ -88,6 +88,11 @@ longer blocks MGB64 integration.
   probe, which remained `0x80c24316` sequentially on iPhone and iPad. A fresh
   temporary `bossEntry` map closed 61 symbols, introduced none and left 185;
   the normal core and combined-renderer gates then passed after probe removal.
+- A mobile configuration owner now supplies the 68 game settings/startup globals
+  previously trapped inside `platform_sdl.c`, without importing its SDL event or
+  window ownership. The deterministic probe executes representative defaults and
+  remains `0x80c24316` sequentially on phone/tablet. The startup map closes all
+  68 names with no new symbol and now leaves 117.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.

@@ -90,7 +90,7 @@ On this Apple M1 host, commit `cd9b58f`:
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
 - compiled all 135 game C files, 56 explicit upstream native system/portable
-  leaf files and two project-owned mobile adapters into 193-object ARM64 archives
+  leaf files and three project-owned mobile adapters into 194-object ARM64 archives
   for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
@@ -122,6 +122,10 @@ On this Apple M1 host, commit `cd9b58f`:
   compatibility and isolated fidelity helpers; representative paths executed in
   the unchanged phone/tablet probe, while the startup map closed 61 symbols,
   introduced none and fell from 246 to 185.
+- moved the 68 game settings/startup globals needed by the title path into a
+  project-owned mobile configuration unit rather than SDL; representative
+  defaults executed on both device classes and the startup map fell from 185 to
+  117 with no new unresolved name.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.

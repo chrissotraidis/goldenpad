@@ -34,7 +34,7 @@ do
     test -f "$archive"
     xcrun lipo -info "$archive"
     objects=$(xcrun ar -t "$archive" | grep -c '\.o$')
-    if [ "$objects" -ne 193 ]; then
+    if [ "$objects" -ne 194 ]; then
         echo "Unexpected MGB64 core archive: $objects objects" >&2
         exit 1
     fi
@@ -73,6 +73,8 @@ do
     nm -gU "$binary" | grep -q '_aimBoneArg0Proceeds'
     nm -gU "$binary" | grep -q '_watchInvPerspAspect'
     nm -gU "$binary" | grep -q '__rarewarelogoSegmentRomStart'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_config_probe'
+    nm -gU "$binary" | grep -q '_g_pcFovY'
     strings "$binary" | grep -q \
         'MGB64 game core cd9b58f5f91291579b8e551aa925aab000d311cf'
     if otool -L "$binary" | grep -Ei 'SDL|AppKit|OpenGL' >/dev/null; then
