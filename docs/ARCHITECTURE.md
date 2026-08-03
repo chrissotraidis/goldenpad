@@ -175,10 +175,11 @@ table pointers, then zeroes and frees the old allocation.
   lock-protected ring. An `AVAudioSourceNode` pulls it into `AVAudioEngine`,
   which resamples to the current device rate; `AVAudioSession` handles
   interruption, route changes and sample-rate changes.
-- **Saves:** the game-facing 16 Kbit EEPROM API and bounds behavior are live,
-  but its bytes are currently volatile. The next save slice bridges that buffer
-  to atomic Application Support storage. Settings and generic host save slots
-  already persist separately. Flush game EEPROM on backgrounding once bridged.
+- **Saves:** the game-facing 16 Kbit EEPROM API and bounds behavior are live.
+  Swift restores the exact 2 KiB image from Application Support at bootstrap and
+  snapshots it under a C mutex for an atomic, protected write on scene
+  deactivation/backgrounding. Settings and generic host save slots persist
+  separately.
 - **Timing:** `mach_continuous_time`/display callbacks drive a fixed simulation
   cadence. Rendering may interpolate but never advances game state twice.
 - **Filesystem:** all paths are injected by the host; core code never assumes

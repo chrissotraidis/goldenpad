@@ -32,8 +32,8 @@ controller boundary; a deterministic end-to-end probe observed movement,
 right-stick aim, and `B|Z` in the C host. MGB64's clean-room sequence/SFX
 synthesizer decodes the retail banks, pumps on game retraces, and feeds a bounded
 22.05 kHz stereo PCM ring consumed by `AVAudioEngine`; both device classes
-produced non-zero PCM in runtime proof. Game EEPROM remains volatile until its
-Application Support bridge lands, and interactive menu/mission completion,
+produced non-zero PCM in runtime proof. The 2 KiB game EEPROM now restores from
+and flushes atomically to Application Support across relaunch. Interactive menu/mission completion,
 physical-device controls, multiplayer, and final packaging remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56

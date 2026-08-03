@@ -83,6 +83,22 @@ The expected visible state is `storage: relaunch verified`. Inspect
 `settings.json` and `Saves/player-1.sav` inside the private app container, then
 uninstall the app so the probe is removed.
 
+The game EEPROM has a separate exact 2 KiB relaunch probe:
+
+```sh
+xcrun simctl launch DEVICE_ID com.chrissotraidis.goldenpad \
+  --eeprom-probe-write
+xcrun simctl terminate DEVICE_ID com.chrissotraidis.goldenpad
+xcrun simctl launch DEVICE_ID com.chrissotraidis.goldenpad \
+  --eeprom-probe-verify
+```
+
+Require `storage: EEPROM relaunch verified`, a 2,048-byte
+`Library/Application Support/GoldenPad/Saves/goldeneye-us.eep`, and exact probe
+SHA-256 `2048cf697fb66b6c25186c3fdb1ad524cbbdc506a4904ac9c95598f2630f4c4c`.
+The 2026-08-03 gate passed first on iPhone and then iPad, with uninstall and
+shutdown between classes.
+
 Lifecycle acceptance must use the real Simulator UI with an attached console:
 
 1. Launch GoldenPad with `xcrun simctl launch --console-pty DEVICE_ID ...`.

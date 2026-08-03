@@ -9,6 +9,16 @@ private func goldenPadMGB64AudioRender(
     _ frames: UInt32
 ) -> UInt32
 
+@_silgen_name("goldenpad_mgb64_eeprom_load")
+private func goldenPadMGB64EEPROMLoad(
+    _ bytes: UnsafePointer<UInt8>?, _ size: UInt32
+) -> Int32
+
+@_silgen_name("goldenpad_mgb64_eeprom_snapshot")
+private func goldenPadMGB64EEPROMSnapshot(
+    _ bytes: UnsafeMutablePointer<UInt8>?, _ size: UInt32
+) -> UInt32
+
 enum ControlPreset: String, Codable, Sendable, CaseIterable {
     case classic
     case modern
@@ -106,6 +116,7 @@ struct PlatformPaths {
     let derivedCache: URL
     let saves: URL
     let settings: URL
+    let gameEEPROM: URL
 
     static func bootstrap(fileManager: FileManager = .default) throws -> PlatformPaths {
         let support = try fileManager.url(
@@ -131,7 +142,8 @@ struct PlatformPaths {
             root: root,
             derivedCache: derivedCache,
             saves: saves,
-            settings: root.appendingPathComponent("settings.json")
+            settings: root.appendingPathComponent("settings.json"),
+            gameEEPROM: saves.appendingPathComponent("goldeneye-us.eep")
         )
     }
 }
@@ -185,6 +197,20 @@ struct PlatformStorage {
         try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 
+    func loadGameEEPROM() throws -> Data? {
+        guard fileManager.fileExists(atPath: paths.gameEEPROM.path) else { return nil }
+        let data = try Data(contentsOf: paths.gameEEPROM)
+        return data.count == 2_048 ? data : nil
+    }
+
+    func saveGameEEPROM(_ data: Data) throws {
+        guard data.count == 2_048 else { return }
+        try data.write(
+            to: paths.gameEEPROM,
+            options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+        )
+    }
+
     private func saveURL(slot: Int) throws -> URL {
         guard Self.saveSlotRange.contains(slot) else {
             throw PlatformStorageError.invalidSaveSlot(slot)
@@ -204,6 +230,7 @@ final class PlatformCoordinator: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private let audioEngine = AVAudioEngine()
     private var audioSourceNode: AVAudioSourceNode?
+    private var persistedEEPROMGeneration: UInt32 = 0
 
     var statusSummary: String {
         "\(storageState)  •  \(audioState)"
@@ -219,6 +246,7 @@ final class PlatformCoordinator: ObservableObject {
             self.storage = storage
             self.settings = settings
             try storage.saveSettings(settings)
+            try restoreGameEEPROM(from: storage)
             storageState = "storage: sandbox ready"
             runStorageProbeIfRequested()
         } catch {
@@ -259,6 +287,7 @@ final class PlatformCoordinator: ObservableObject {
         case .active:
             activateAudioSession()
         case .inactive, .background:
+            persistGameEEPROM()
             persistSettings()
             deactivateAudioSession()
         @unknown default:
@@ -327,12 +356,74 @@ final class PlatformCoordinator: ObservableObject {
         }
     }
 
+    private func restoreGameEEPROM(from storage: PlatformStorage) throws {
+        guard let data = try storage.loadGameEEPROM() else { return }
+        let loaded = data.withUnsafeBytes { bytes in
+            goldenPadMGB64EEPROMLoad(
+                bytes.bindMemory(to: UInt8.self).baseAddress,
+                UInt32(data.count)
+            )
+        }
+        if loaded == 1 {
+            persistedEEPROMGeneration = 0
+            print("[GoldenPad] Game EEPROM restored from Application Support")
+        }
+    }
+
+    private func persistGameEEPROM(force: Bool = false) {
+        guard let storage else { return }
+        var data = Data(count: 2_048)
+        let size: UInt32 = 2_048
+        let generation = data.withUnsafeMutableBytes { bytes in
+            goldenPadMGB64EEPROMSnapshot(
+                bytes.bindMemory(to: UInt8.self).baseAddress,
+                size
+            )
+        }
+        guard generation != UInt32.max,
+              force || generation != persistedEEPROMGeneration else { return }
+        do {
+            try storage.saveGameEEPROM(data)
+            persistedEEPROMGeneration = generation
+            print("[GoldenPad] Game EEPROM persisted atomically")
+        } catch {
+            storageState = "storage: EEPROM write failed"
+            print("[GoldenPad] EEPROM persistence failed: \(error.localizedDescription)")
+        }
+    }
+
     private func runStorageProbeIfRequested() {
         let arguments = ProcessInfo.processInfo.arguments
         let probeBytes = Data("GOLDENPAD_PLATFORM_SAVE_PROBE_V1".utf8)
+        let eepromProbe = Data((0..<2_048).map { UInt8(truncatingIfNeeded: $0 ^ 0x47) })
 
         do {
-            if arguments.contains("--storage-probe-write") {
+            if arguments.contains("--eeprom-probe-write") {
+                let loaded = eepromProbe.withUnsafeBytes { bytes in
+                    goldenPadMGB64EEPROMLoad(
+                        bytes.bindMemory(to: UInt8.self).baseAddress,
+                        UInt32(eepromProbe.count)
+                    )
+                }
+                guard loaded == 1 else {
+                    storageState = "storage: EEPROM probe load failed"
+                    return
+                }
+                persistGameEEPROM(force: true)
+                storageState = "storage: EEPROM probe written"
+            } else if arguments.contains("--eeprom-probe-verify") {
+                var restored = Data(count: 2_048)
+                let size: UInt32 = 2_048
+                let generation = restored.withUnsafeMutableBytes { bytes in
+                    goldenPadMGB64EEPROMSnapshot(
+                        bytes.bindMemory(to: UInt8.self).baseAddress,
+                        size
+                    )
+                }
+                storageState = generation != UInt32.max && restored == eepromProbe
+                    ? "storage: EEPROM relaunch verified"
+                    : "storage: EEPROM relaunch failed"
+            } else if arguments.contains("--storage-probe-write") {
                 settings.lookSensitivity = 1.37
                 settings.touchOpacity = 0.62
                 try storage?.saveSettings(settings)

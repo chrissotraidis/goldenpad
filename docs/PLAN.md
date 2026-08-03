@@ -119,9 +119,9 @@ remaining boundary without importing the excluded desktop/SDK owners. The real
 title sequence and demo-stage setup now render through Fast3D/Metal sequentially
 on iPhone and iPad, the MGB64 synth feeds a bounded native PCM ring, and Swift
 input reaches `osContGetReadData`. G3 remains open only for interactive menu
-navigation and a controlled mission load. The timer and EEPROM round-trip
-execute in the unchanged probe; Application Support persistence remains open
-before G4.
+navigation and a controlled mission load. The game EEPROM now restores from and
+flushes atomically to Application Support; exact 2 KiB relaunch probes passed
+sequentially on iPhone and iPad before full cleanup.
 
 ### I — Input and touch
 

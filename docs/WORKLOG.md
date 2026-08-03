@@ -1,5 +1,18 @@
 # Worklog
 
+## 2026-08-03 — persist the real game EEPROM
+
+- Added a mutex-protected import/snapshot boundary around the exact 2 KiB MGB64
+  EEPROM surface while preserving the game-facing `osEeprom*` API.
+- Swift restores `goldeneye-us.eep` from Application Support before gameplay and
+  atomically flushes changed generations with file protection whenever the scene
+  becomes inactive or enters the background.
+- Both SDK core gates pass and final binaries retain the persistence boundary.
+- A no-ROM deterministic image survived terminate/relaunch on iPhone 16 Pro with
+  SHA-256 `2048cf697fb66b6c25186c3fdb1ad524cbbdc506a4904ac9c95598f2630f4c4c`.
+  After uninstall/shutdown, iPad Pro 11-inch (M4) reproduced the same exact
+  2,048-byte hash and received identical cleanup.
+
 ## 2026-08-03 — start the real game with native input, Metal and PCM
 
 - Closed the portable `bossEntry` link boundary from 70 unresolved names to

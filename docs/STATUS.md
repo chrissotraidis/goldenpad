@@ -140,6 +140,11 @@ longer blocks MGB64 integration.
   then 2420x1668 on iPad Pro 11-inch (M4). Both runs decoded 261/261 SFX,
   parsed 75 music instruments, initialized the native sequence synthesizer,
   reported non-zero PCM, and were fully removed/shut down in sequence.
+- The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
+  restored from Application Support at bootstrap, and atomically flushed with
+  file protection on scene deactivation/backgrounding. Strict sequential
+  write/terminate/relaunch probes produced the same exact 2,048-byte SHA-256 on
+  iPhone and iPad before uninstall/shutdown cleanup.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.

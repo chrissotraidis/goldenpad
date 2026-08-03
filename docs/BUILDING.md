@@ -89,7 +89,8 @@ the same probe blocks on a delayed mobile timer and round-trips the volatile
 16 Kbit EEPROM surface. The complete app link has no unresolved `bossEntry`
 boundary, starts the game once after all readiness gates, feeds Swift controller
 frames through `osCont*`, and renders MGB64 synth PCM through `AVAudioEngine`.
-Persistent game saves and interactive menu/mission acceptance remain open.
+Persistent game EEPROM now crosses the atomic Application Support bridge;
+interactive menu/mission acceptance remains open.
 
 The core also includes the real upstream model converter, CLI stage table,
 radial deadzone, setup-name and weapon-cue services. A small native data unit

@@ -46,6 +46,8 @@ typedef struct {
 static GoldenPadTimer goldenpad_timers[GOLDENPAD_MAX_TIMERS];
 static pthread_mutex_t goldenpad_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static u8 goldenpad_eeprom[GOLDENPAD_EEPROM_SIZE];
+static pthread_mutex_t goldenpad_eeprom_mutex = PTHREAD_MUTEX_INITIALIZER;
+static _Atomic u32 goldenpad_eeprom_generation;
 
 static u64 goldenpad_mgb64_monotonic_us(void) {
     struct timespec now;
@@ -436,7 +438,9 @@ s32 osEepromLongRead(OSMesgQueue *mq, u8 address, u8 *buffer, s32 nbytes) {
     if (nbytes > GOLDENPAD_EEPROM_SIZE - offset) {
         nbytes = GOLDENPAD_EEPROM_SIZE - offset;
     }
+    pthread_mutex_lock(&goldenpad_eeprom_mutex);
     memcpy(buffer, goldenpad_eeprom + offset, (size_t)nbytes);
+    pthread_mutex_unlock(&goldenpad_eeprom_mutex);
     return 0;
 }
 
@@ -450,8 +454,34 @@ s32 osEepromLongWrite(OSMesgQueue *mq, u8 address, u8 *buffer, s32 nbytes) {
     if (nbytes > GOLDENPAD_EEPROM_SIZE - offset) {
         nbytes = GOLDENPAD_EEPROM_SIZE - offset;
     }
+    pthread_mutex_lock(&goldenpad_eeprom_mutex);
     memcpy(goldenpad_eeprom + offset, buffer, (size_t)nbytes);
+    atomic_fetch_add(&goldenpad_eeprom_generation, 1);
+    pthread_mutex_unlock(&goldenpad_eeprom_mutex);
     return 0;
+}
+
+int goldenpad_mgb64_eeprom_load(const u8 *bytes, u32 size) {
+    if (bytes == NULL || size != GOLDENPAD_EEPROM_SIZE) {
+        return 0;
+    }
+    pthread_mutex_lock(&goldenpad_eeprom_mutex);
+    memcpy(goldenpad_eeprom, bytes, GOLDENPAD_EEPROM_SIZE);
+    atomic_store(&goldenpad_eeprom_generation, 0);
+    pthread_mutex_unlock(&goldenpad_eeprom_mutex);
+    return 1;
+}
+
+u32 goldenpad_mgb64_eeprom_snapshot(u8 *bytes, u32 size) {
+    u32 generation;
+    if (bytes == NULL || size != GOLDENPAD_EEPROM_SIZE) {
+        return UINT32_MAX;
+    }
+    pthread_mutex_lock(&goldenpad_eeprom_mutex);
+    memcpy(bytes, goldenpad_eeprom, GOLDENPAD_EEPROM_SIZE);
+    generation = atomic_load(&goldenpad_eeprom_generation);
+    pthread_mutex_unlock(&goldenpad_eeprom_mutex);
+    return generation;
 }
 
 s32 osEepromRead(OSMesgQueue *mq, u8 address, u8 *buffer) {
