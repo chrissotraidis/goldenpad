@@ -94,6 +94,11 @@ Neutral controller, rumble, task and sequence-audio seams are explicitly
 provisional; normalized Swift input, Game Controller haptics, Fast3D dispatch
 and AVAudio must own them before gameplay acceptance.
 
+Portable GU matrix/vector math is similarly isolated into
+`mgb64_mobile_gu.c`. The functions are MGB64's real native host algorithms, not
+matching-target SDK implementation sources, and do not pull the SDL-owned
+platform unit into the app. This is the first bounded `bossEntry` closure slice.
+
 ## ROM and resources
 
 ```text

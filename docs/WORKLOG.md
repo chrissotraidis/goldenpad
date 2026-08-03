@@ -1,5 +1,21 @@
 # Worklog
 
+## 2026-08-03 — isolate portable GU math from the desktop platform unit
+
+- Added one project-owned mobile GU source containing MGB64's real host-side
+  matrix, projection, look-at, rotation, scale, translation and normalization
+  implementations without importing its monolithic SDL compatibility unit.
+- The audited core is now 165 ARM64 objects. Simulator/device core and combined
+  Fast3D/Metal verifiers pass, final binaries retain `guNormalize`, and the
+  exact ignored upstream checkout returns clean.
+- Extended the deterministic core probe to normalize 3/4/0 before running the
+  upstream random check. Sequential no-ROM launches visibly reported the
+  unchanged `0x80c24316` result on iPhone and iPad; each app was removed and
+  each simulator shut down before the next device or handoff.
+- A temporary non-executing `bossEntry` force-link probe reduced the startup
+  map from 261 to 246 unique unresolved symbols—exactly the 15 GU helpers—and
+  left no GU name unresolved. The probe was removed after recording the map.
+
 ## 2026-08-03 — deliver the first UIKit-owned scheduler retrace
 
 - Connected the existing MTKView draw callback to the cooperative scheduler
@@ -27,7 +43,7 @@
   the graphics client after the validated ROM and file table are ready. It
   exposes a timed retrace fallback; MTKView signaling, Fast3D task dispatch,
   normalized game input, rumble and AVAudio remain explicit next gates.
-- The complete audited core is now 164 ARM64 objects. Core and combined
+- The complete audited core was 164 ARM64 objects at this checkpoint. Core and combined
   Fast3D/Metal verifiers passed for both Simulator and device SDKs; the exact
   ignored MGB64 checkout remained clean.
 - Attached-console runtime reported `MGB64 scheduler ready` and a real Metal

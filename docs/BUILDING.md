@@ -62,11 +62,12 @@ build the complete audited C core for both Apple mobile SDKs:
 
 The verifier compiles all 135 `src/game/*.c` translation units, 28 explicit
 upstream native system/asset glue units and the project-owned SDL-free mobile OS
-adapter into 164-object ARM64 archives. It rejects a
+and GU adapters into 165-object ARM64 archives. It rejects a
 mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
 `src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
 Simulator and device, and requires the final executables to retain the exact
-MGB64 identity and real upstream random-core probe symbols.
+MGB64 identity, real upstream random-core symbols and the mobile `guNormalize`
+implementation.
 
 The opt-in configuration used by that script is equivalent to:
 
@@ -79,7 +80,8 @@ cmake -S . -B build-mgb64-core-simulator -G Xcode \
 
 The ordinary foundation configuration remains independent of `ref/`. The core
 configuration proves compilation and a small deterministic game-code execution
-seam. The current mobile OS adapter initializes MGB64's real cooperative
+seam. That probe normalizes a real vector through the isolated GU math before
+executing the upstream random check. The current mobile OS adapter initializes MGB64's real cooperative
 scheduler and graphics-client queues after a validated ROM/file-table handoff;
 audio, game input, task dispatch and the title/main loop are not complete.
 

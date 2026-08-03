@@ -90,7 +90,7 @@ On this Apple M1 host, commit `cd9b58f`:
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
 - compiled all 135 game C files, 28 explicit upstream native system/asset glue
-  files and one project-owned mobile OS adapter into 164-object ARM64 archives
+  files and two project-owned mobile adapters into 165-object ARM64 archives
   for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
@@ -114,6 +114,10 @@ On this Apple M1 host, commit `cd9b58f`:
 - linked upstream native ROM-offset and zero-content asset-symbol units, patched
   the complete file table, and verified its first background and Dam entries
   inside the owned buffer on both mobile device classes.
+- isolated the real host-side GU matrix/vector helpers from the desktop SDL
+  compatibility unit, executed `guNormalize` inside the mobile core probe on
+  both device classes, and reduced the measured `bossEntry` link gap from 261
+  to 246 unique symbols with no GU blocker remaining.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.

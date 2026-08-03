@@ -122,6 +122,7 @@ endfunction()
 add_library(goldenpad_mgb64_core STATIC
     ${goldenpad_mgb64_game_sources}
     ${goldenpad_mgb64_system_sources}
+    Support/MGB64/mgb64_mobile_gu.c
     Support/MGB64/mgb64_mobile_os.c
 )
 goldenpad_configure_mgb64_target(goldenpad_mgb64_core)

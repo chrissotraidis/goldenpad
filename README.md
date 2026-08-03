@@ -19,10 +19,10 @@ exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
 sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
 yet, but the first production-core gate now passes: all 135 MGB64 game
-translation units plus 28 upstream native system/asset glue units and one
-GoldenPad mobile OS adapter compile into 164-object ARM64 archives for
+translation units plus 28 upstream native system/asset glue units and two
+GoldenPad mobile adapters compile into 165-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
-game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
+game-code probe plus real GU vector math on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
 Its Fast3D interpreter now compiles as a separate two-object ARM64 archive for
 both SDKs without SDL or desktop OpenGL symbols, and the UIKit host supplies
@@ -38,6 +38,10 @@ owned buffer, including the Dam background resource. The real MGB64 scheduler
 and its graphics-client queues now initialize without SDL on both mobile SDKs;
 MTKView now delivers a bounded cooperative retrace after that state is ready,
 with sequential phone/tablet proof at full drawable size.
+The first portable `bossEntry` closure slice now isolates MGB64's real GU matrix
+and vector helpers from its desktop SDL compatibility unit. This removes all 15
+GU blockers from the measured startup link map, reducing the remaining gap from
+261 to 246 symbols.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

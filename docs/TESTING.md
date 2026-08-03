@@ -145,17 +145,18 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 164-object
+2026-08-03 gate passed the upstream native SDK guard and produced 165-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
-`goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, and the real
-upstream `randomSetSeed`/`randomGetNext` implementations.
+`goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, the real upstream
+`randomSetSeed`/`randomGetNext` implementations, and the project-owned mobile
+`guNormalize` implementation.
 
 Runtime validation used no ROM. iPhone 16 Pro launched first and visibly
 reported deterministic probe `0x80c24316`; it was terminated, uninstalled and
 shut down before iPad Pro 11-inch (M4) launched and reported the same value.
 The iPad app was then removed and shut down. This passes compilation/linkage and
-a bounded game-code execution seam, not title/menu/gameplay acceptance.
+a bounded game-code/GU execution seam, not title/menu/gameplay acceptance.
 
 The coupled-renderer gates are:
 
@@ -216,6 +217,15 @@ rather than filling all 32 slots. Attached-console runs observed the line at
 1206x2622 on iPhone, removed/shut down the phone, then repeated at 1668x2420 on
 iPad before identical cleanup. This proves UIKit-to-scheduler cadence ownership,
 not simulation or title rendering.
+
+The first portable startup-closure subgate extracts MGB64's real host-side GU
+matrix/vector implementations from the desktop SDL compatibility translation
+unit. A temporary non-executing `bossEntry` reference must fail only after
+linking the core and renderer archives; the 2026-08-03 map fell from 261 to 246
+unique unresolved symbols and contained none of the 15 extracted GU names. The
+reference was removed, both clean verifiers passed, and the no-ROM core probe
+again reported `0x80c24316` sequentially on iPhone and iPad before uninstall and
+shutdown.
 
 ## RT64 mobile Metal and static-library gate
 

@@ -3,6 +3,7 @@
 #ifdef GOLDENPAD_MGB64_CORE
 void randomSetSeed(uint64_t seed);
 uint32_t randomGetNext(void);
+void guNormalize(float *x, float *y, float *z);
 
 #ifndef GOLDENPAD_MGB64_COMMIT
 #define GOLDENPAD_MGB64_COMMIT "unknown"
@@ -18,6 +19,13 @@ const char *goldenpad_mgb64_core_identity(void) {
 }
 
 uint32_t goldenpad_mgb64_core_probe(void) {
+    float x = 3.0f;
+    float y = 4.0f;
+    float z = 0.0f;
+    guNormalize(&x, &y, &z);
+    if (x < 0.599f || x > 0.601f || y < 0.799f || y > 0.801f || z != 0.0f) {
+        return 0;
+    }
     randomSetSeed(UINT64_C(0x47504d47423634));
     return randomGetNext();
 }
