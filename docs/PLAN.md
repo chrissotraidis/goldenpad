@@ -140,6 +140,12 @@ The promoted two-door extension identified model object 155 at exact setup pad
 view sweep after the first door. iPhone reached 817 world units and iPad 827;
 both opened pads 67/68 and pad 75 fully. No transform, door, objective or stage
 state was forced.
+MGB64's separate clean Dam multiwaypoint route now also runs through the mobile
+controller boundary. GoldenPad waits for real first-person control, replays the
+promoted input sequence with a bounded iPad-cadence tail, and preserves the
+upstream 4700-unit gate. iPhone reached 5038 units and iPad 4784 while the
+read-only four-objective vector remained `[0,0,0,0]`. This is a bridge toward
+organic objectives, not objective progress itself.
 
 ### I — Input and touch
 
@@ -164,7 +170,11 @@ pause/watch. It also has strict sequential proof that normal controller movement
 look and B input opens two chained stock Facility door models. Crouch, objectives
 flow and organic mission completion remain open. The downstream report and
 persisted-save path is independently proven through an explicitly scripted
-diagnostic trigger.
+diagnostic trigger. A separate clean Dam probe now proves more than 4700 units
+of controller-only stock-spawn traversal on both simulator classes without
+changing any objective state.
+Hands-on feedback also leaves control feel and the visible FPS counter open:
+mapping correctness is proven, but tuning and counter accuracy are not.
 
 ### M — Multiplayer
 

@@ -208,7 +208,11 @@ doors at setup pads 67/68, and the model-155 door at pad 75 on the game thread.
 The Facility routes wait for
 `CAMERAMODE_FP`, then publish only ordinary normalized movement, look and B
 frames through the same controller setter used by touch and physical pads. They
-never forces a player transform or door state. Real-controller auto-hide,
+never force a player transform or door state. The separate Dam route uses that
+same boundary for MGB64's promoted multiwaypoint controller sequence. Its
+game-thread diagnostic publishes only camera mode, player position, and the
+four objective statuses; acceptance requires that the objective vector remain
+unchanged. Real-controller auto-hide,
 physical gyro, crouch/objectives flow and organic mission-completion semantics
 remain acceptance gates.
 

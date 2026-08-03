@@ -13,6 +13,7 @@
 #include "game/file2.h"
 #include "game/loadobjectmodel.h"
 #include "game/mp_music.h"
+#include "game/objective_status.h"
 #include "game/player.h"
 
 extern bool fileGetSaveStageCompletedForDifficulty(
@@ -69,6 +70,9 @@ static _Atomic int goldenpad_progression_ready;
 static _Atomic int goldenpad_progression_dam_agent_completed;
 static _Atomic int goldenpad_progression_dam_agent_time;
 static _Atomic int goldenpad_progression_mission_state;
+static _Atomic int goldenpad_dam_camera_mode = -1;
+static _Atomic int goldenpad_dam_objective_count;
+static _Atomic int goldenpad_dam_objective_statuses[4] = {-1, -1, -1, -1};
 static _Atomic int goldenpad_facility_door_ready;
 static _Atomic int goldenpad_facility_door_count;
 static _Atomic int goldenpad_facility_door_state = -1;
@@ -645,6 +649,23 @@ s32 osContGetReadData(OSContPad *pads) {
         atomic_store(&goldenpad_facility_camera_mode, -1);
     }
 
+    if (g_StageNum == LEVELID_DAM) {
+        int count = objectiveGetCount();
+        atomic_store(&goldenpad_dam_camera_mode, g_CameraMode);
+        atomic_store(&goldenpad_dam_objective_count, count);
+        for (int objective = 0; objective < 4; ++objective) {
+            atomic_store(
+                &goldenpad_dam_objective_statuses[objective],
+                objective < count ? get_status_of_objective(objective) : -1);
+        }
+    } else {
+        atomic_store(&goldenpad_dam_camera_mode, -1);
+        atomic_store(&goldenpad_dam_objective_count, 0);
+        for (int objective = 0; objective < 4; ++objective) {
+            atomic_store(&goldenpad_dam_objective_statuses[objective], -1);
+        }
+    }
+
     atomic_store(&goldenpad_progression_mission_state, get_mission_state());
     dam_save = fileGetSaveForFoldernum(FOLDER1);
     if (dam_save != NULL) {
@@ -731,6 +752,29 @@ void goldenpad_mgb64_progression_state(
     if (scripted_success_applied != NULL) {
         *scripted_success_applied =
             atomic_load(&goldenpad_scripted_mission_success_applied);
+    }
+}
+
+void goldenpad_mgb64_dam_route_state(
+    int *camera_mode, int *objective_count, int *objective0,
+    int *objective1, int *objective2, int *objective3) {
+    if (camera_mode != NULL) {
+        *camera_mode = atomic_load(&goldenpad_dam_camera_mode);
+    }
+    if (objective_count != NULL) {
+        *objective_count = atomic_load(&goldenpad_dam_objective_count);
+    }
+    if (objective0 != NULL) {
+        *objective0 = atomic_load(&goldenpad_dam_objective_statuses[0]);
+    }
+    if (objective1 != NULL) {
+        *objective1 = atomic_load(&goldenpad_dam_objective_statuses[1]);
+    }
+    if (objective2 != NULL) {
+        *objective2 = atomic_load(&goldenpad_dam_objective_statuses[2]);
+    }
+    if (objective3 != NULL) {
+        *objective3 = atomic_load(&goldenpad_dam_objective_statuses[3]);
     }
 }
 

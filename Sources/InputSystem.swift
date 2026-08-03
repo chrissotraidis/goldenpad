@@ -56,6 +56,16 @@ private func goldenPadMGB64ProgressionState(
     _ scriptedSuccessApplied: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_dam_route_state")
+private func goldenPadMGB64DamRouteState(
+    _ cameraMode: UnsafeMutablePointer<Int32>?,
+    _ objectiveCount: UnsafeMutablePointer<Int32>?,
+    _ objective0: UnsafeMutablePointer<Int32>?,
+    _ objective1: UnsafeMutablePointer<Int32>?,
+    _ objective2: UnsafeMutablePointer<Int32>?,
+    _ objective3: UnsafeMutablePointer<Int32>?
+)
+
 @_silgen_name("goldenpad_mgb64_facility_door_state")
 private func goldenPadMGB64FacilityDoorState(
     _ ready: UnsafeMutablePointer<Int32>?,
@@ -244,6 +254,10 @@ private enum FacilityDoorProbePhase {
     case route, complete
 }
 
+private enum DamRouteProbePhase {
+    case waitingForDam, route, complete
+}
+
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
@@ -284,6 +298,12 @@ final class InputCoordinator: ObservableObject {
     private var facilityDoorRouteStartZ: Int32 = 0
     private var facilityDoorRouteStartYaw: Int32 = 0
     private var facilityDoorRouteInput: GoldenEyeInputFrame?
+    private var damRouteProbePhase = DamRouteProbePhase.waitingForDam
+    private var damRouteFrame = 0
+    private var damRouteStartX: Int32 = 0
+    private var damRouteStartZ: Int32 = 0
+    private var damRouteStartObjectives: [Int32] = []
+    private var damRouteInput: GoldenEyeInputFrame?
     private var didReportProgressionProbe = false
 
     init() {
@@ -391,6 +411,7 @@ final class InputCoordinator: ObservableObject {
         runMenuProbeIfRequested()
         runGameplayProbeIfRequested()
         runMissionFlowProbeIfRequested()
+        runDamRouteProbeIfRequested()
         runFacilityDoorProbeIfRequested()
         runProgressionProbeIfRequested()
         if !didReportCoreInputProbe,
@@ -404,7 +425,7 @@ final class InputCoordinator: ObservableObject {
         }
         for player in 0..<controllerSlots.count {
             let frame = player == 0
-                ? facilityDoorRouteInput ?? mappedFrame(player: player)
+                ? damRouteInput ?? facilityDoorRouteInput ?? mappedFrame(player: player)
                 : mappedFrame(player: player)
             let primary = frame.primary
             let secondary = frame.secondary
@@ -432,6 +453,7 @@ final class InputCoordinator: ObservableObject {
         guard arguments.contains("--menu-probe") ||
                 arguments.contains("--gameplay-probe") ||
                 arguments.contains("--mission-flow-probe") ||
+                arguments.contains("--dam-route-probe") ||
                 arguments.contains("--facility-door-probe") ||
                 arguments.contains("--facility-door-chain-probe") else { return }
         if arguments.contains("--mission-flow-probe") {
@@ -492,6 +514,111 @@ final class InputCoordinator: ObservableObject {
                 "[GoldenPad] Menu probe waiting for folder: hover=\(hoverFolder) " +
                 "cursor=\(cursorX),\(cursorY)"
             )
+        }
+    }
+
+    private func runDamRouteProbeIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("--dam-route-probe") else {
+            return
+        }
+
+        var stage: Int32 = -1
+        var ready: Int32 = 0
+        var viewMode: Int32 = -1
+        var playerX: Int32 = 0
+        var playerZ: Int32 = 0
+        var yaw: Int32 = 0
+        var cameraMode: Int32 = -1
+        var objectiveCount: Int32 = 0
+        var objective0: Int32 = -1
+        var objective1: Int32 = -1
+        var objective2: Int32 = -1
+        var objective3: Int32 = -1
+        goldenPadMGB64RuntimeState(nil, &stage, nil, nil, nil, nil, nil)
+        goldenPadMGB64GameplayState(
+            &ready, &viewMode, &playerX, &playerZ, &yaw, nil,
+            nil, nil, nil, nil, nil, nil, nil
+        )
+        goldenPadMGB64DamRouteState(
+            &cameraMode, &objectiveCount, &objective0, &objective1,
+            &objective2, &objective3
+        )
+
+        damRouteInput = nil
+        switch damRouteProbePhase {
+        case .waitingForDam:
+            guard stage == 33, ready == 1, viewMode == 0, cameraMode == 4 else {
+                return
+            }
+            damRouteStartX = playerX
+            damRouteStartZ = playerZ
+            damRouteStartObjectives = [
+                objective0, objective1, objective2, objective3
+            ]
+            damRouteFrame = 0
+            damRouteProbePhase = .route
+            print(
+                "[GoldenPad] Dam native route stock spawn: PASS " +
+                "pos=\(playerX),\(playerZ) yaw=\(yaw) camera=\(cameraMode) " +
+                "objectives=\(objectiveCount):" +
+                "[\(objective0),\(objective1),\(objective2),\(objective3)]"
+            )
+
+        case .route:
+            var routeFrame = GoldenEyeInputFrame()
+            if (80..<125).contains(damRouteFrame) {
+                routeFrame.primary.stick.y = 1
+            }
+            if (140..<185).contains(damRouteFrame) {
+                routeFrame.primary.buttons.insert(.cRight)
+            }
+            if (200..<245).contains(damRouteFrame) {
+                routeFrame.primary.stick.y = 1
+                routeFrame.primary.buttons.insert(.cRight)
+            }
+            // MGB64's desktop contract releases at frame 620. Mobile display
+            // cadence can publish fewer of those samples on the higher-cost
+            // iPad surface, so retain the same input for a bounded 20-frame
+            // tail while keeping the upstream 4,700-unit acceptance line.
+            if (260..<640).contains(damRouteFrame) {
+                routeFrame.primary.stick = SIMD2(-1, 1)
+            }
+            damRouteInput = routeFrame
+            damRouteFrame += 1
+
+            if [80, 125, 140, 185, 200, 245, 260, 440, 620, 640, 900].contains(
+                damRouteFrame
+            ) {
+                let deltaX = playerX - damRouteStartX
+                let deltaZ = playerZ - damRouteStartZ
+                print(
+                    "[GoldenPad] Dam native route frame \(damRouteFrame): " +
+                    "pos=\(playerX),\(playerZ) delta=\(deltaX),\(deltaZ) yaw=\(yaw)"
+                )
+            }
+
+            guard damRouteFrame >= 900 else { return }
+            let deltaX = Double(playerX - damRouteStartX)
+            let deltaZ = Double(playerZ - damRouteStartZ)
+            let distance = Int(sqrt(deltaX * deltaX + deltaZ * deltaZ).rounded())
+            let finalObjectives = [objective0, objective1, objective2, objective3]
+            let objectivesUnchanged = finalObjectives == damRouteStartObjectives
+            let passed = distance >= 470_000 && objectiveCount == 4 &&
+                objectivesUnchanged
+            damRouteProbePhase = .complete
+            damRouteInput = nil
+            touch = .neutral
+            print(
+                "[GoldenPad] Dam native multiwaypoint controller route: " +
+                "\(passed ? "PASS" : "FAIL") distance=\(distance / 100) " +
+                "final=\(playerX),\(playerZ) camera=\(cameraMode) " +
+                "objectives=\(objectiveCount):" +
+                "[\(objective0),\(objective1),\(objective2),\(objective3)] " +
+                "stateMutation=\(objectivesUnchanged ? 0 : 1)"
+            )
+
+        case .complete:
+            touch = .neutral
         }
     }
 

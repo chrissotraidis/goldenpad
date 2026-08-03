@@ -371,6 +371,35 @@ reported time `1023`, and the iPad received the same cleanup. This proves the
 real report/save/relaunch seam only. Organic objectives and mission completion
 remain open.
 
+### Dam native multiwaypoint controller gate
+
+First run MGB64's promoted clean route with a private ignored retail ROM:
+
+```sh
+python3 ref/mgb64/tools/campaign_route_smoke.py \
+  --binary ref/mgb64/build-goldenpad-webgpu/ge007 \
+  --rom /private/path/to/retail-game.v64 \
+  --out-dir /tmp/mgb64-dam-native-route \
+  --route dam_native_multiwaypoint_input_traversal --timeout 90
+```
+
+The pinned desktop run passed with 902 records, 4794.07 world units and no
+setup automation. Launch the combined mobile app with `--dam-route-probe`. It
+implies the authentic menu flow, waits for active Dam and `CAMERAMODE_FP`, then
+publishes MGB64's four normal-controller input windows. Mobile retains the final
+forward-left input for 20 additional frames to absorb iPad render-cadence loss;
+the acceptance distance remains the upstream 4700 units.
+
+Require `Dam native multiwaypoint controller route: PASS`, `distance>=4700`,
+`objectives=4:[0,0,0,0]`, and `stateMutation=0`. The objective/camera snapshot
+is read-only and the route must not force a transform, objective, stage, or
+mission state.
+
+The final strict run passed first on iPhone at 5038 units and then on iPad at
+4784. Both objective vectors remained unchanged. Each installed app, private
+ROM and container was removed and each simulator shut down before proceeding.
+This is deep traversal evidence, not objective progress or mission completion.
+
 ### Facility controller-interaction gate
 
 First verify the pinned MGB64 desktop contract with a private ignored retail ROM:

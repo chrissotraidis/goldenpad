@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-08-03 — promote MGB64's clean Dam route to mobile
+
+- Audited MGB64's Dam campaign contracts and separated its controller-only
+  `dam_native_multiwaypoint_input_traversal` from the scripted objective and
+  mission-result contracts. The pinned desktop route passed independently at
+  4794.07 world units with no setup automation.
+- Added `--dam-route-probe`, which reaches Agent/Dam through the authentic front
+  end, waits for `CAMERAMODE_FP`, and publishes the upstream forward, C-right,
+  forward+C-right, and forward-left sequence through the ordinary controller
+  bridge. A bounded 20-frame continuation of the last input compensates for the
+  higher-cost iPad surface while retaining MGB64's 4700-unit acceptance line.
+- Added a read-only game-thread snapshot of Dam's camera mode and four objective
+  statuses. The probe does not write player, stage, mission, or objective state.
+- The final strict iPhone-then-iPad run reached 5038 and 4784 world units. Both
+  began with four incomplete objectives and ended with the same `[0,0,0,0]`
+  vector and `stateMutation=0`. Each install/private ROM was removed and each
+  simulator shut down before continuing.
+- This proves deep stock-spawn Dam traversal under normal controller input. It
+  deliberately does not claim objective progress or organic mission completion.
+
 ## 2026-08-03 — extend Facility to a two-door input chain
 
 - MGB64's promoted

@@ -164,6 +164,15 @@ longer blocks MGB64 integration.
   install restored `completed=1 time=1023` on relaunch. This passed strictly on
   iPhone then iPad with full uninstall/shutdown cleanup.
 - The input-only MGB64 desktop route
+  `dam_native_multiwaypoint_input_traversal` independently passed at the pin
+  with 902 records, 4794.07 world units and no setup automation. GoldenPad's
+  `--dam-route-probe` reaches the same stock spawn through authentic menus,
+  waits for `CAMERAMODE_FP`, and uses only normal controller frames. A bounded
+  20-frame final-input tail covers iPad render cadence while preserving the
+  4700-unit gate. iPhone passed at 5038 and iPad at 4784; their read-only
+  objective vectors stayed `[0,0,0,0]` with `stateMutation=0`. This proves
+  deeper Dam traversal, not objective progress.
+- The input-only MGB64 desktop route
   `facility_spawn_obj159_door_traversal_contract` independently passed at the
   pinned commit with a 1291.83-unit displacement, real door-allow/transition/
   displacement/finish-open events, and no direct state automation. GoldenPad's
@@ -282,7 +291,14 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Organic mission completion, deeper Facility progression, crouch/objectives
+- Hands-on control feel is not accepted: the current mapping functions, but it
+  needs sensitivity/dead-zone/turn-rate tuning against real play rather than
+  automation alone.
+- The visible FPS counter is not trusted yet. Validate it against actual Metal
+  presentation cadence and correct its sampling/label before using it as
+  performance evidence.
+- Organic mission completion, traversal from the promoted Dam endpoint to a
+  real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only
   mission completion, multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
@@ -291,8 +307,10 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Extend normal-input Facility progression beyond the two-door corridor chain,
-then replace the diagnostic success prerequisite with organic objectives and
-mission completion through input. The chained-interaction, report, EEPROM write,
-lifecycle flush and relaunch progression seams no longer need to be rediscovered.
+Extend the clean Dam route from its promoted endpoint to one real objective and
+observe that objective change without mutation, while continuing Facility past
+the two-door corridor chain. Then replace the diagnostic success prerequisite
+with organic objectives and mission completion through input. The traversal,
+chained-interaction, report, EEPROM write, lifecycle flush and relaunch seams no
+longer need to be rediscovered.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

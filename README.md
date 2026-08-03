@@ -47,6 +47,10 @@ and opened model object 155 with normal movement, look and B input on iPhone
 followed by iPad. That closes the first chained-world-interaction subgate;
 organic objectives and mission completion, physical-device controls,
 multiplayer, and final packaging remain open.
+A separate promoted Dam route now travels more than 4700 world units from the
+stock spawn on both simulator classes using only normal N64 controller frames.
+Its read-only objective vector remains unchanged, so this is deliberately
+reported as deep traversal rather than objective completion.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
