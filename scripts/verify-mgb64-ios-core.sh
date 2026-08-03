@@ -34,7 +34,7 @@ do
     test -f "$archive"
     xcrun lipo -info "$archive"
     objects=$(xcrun ar -t "$archive" | grep -c '\.o$')
-    if [ "$objects" -ne 200 ]; then
+    if [ "$objects" -ne 210 ]; then
         echo "Unexpected MGB64 core archive: $objects objects" >&2
         exit 1
     fi
@@ -78,6 +78,11 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_config_probe'
     nm -gU "$binary" | grep -q '_g_pcFovY'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_legacy_data_probe'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_host_probe'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_os_probe'
+    nm -gU "$binary" | grep -q '_osSetTimer'
+    nm -gU "$binary" | grep -q '_osEepromLongWrite'
+    nm -gU "$binary" | grep -q '_platformOverlayWantsInput'
     nm -gU "$binary" | grep -q '_modelConvertFreeAll'
     nm -gU "$binary" | grep -q '_platformApplyRadialDeadzone'
     nm -gU "$binary" | grep -q '_setupPnamesTableOffset'

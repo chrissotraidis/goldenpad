@@ -65,7 +65,17 @@ do
         _goldenpad_mgb64_renderer_initialize \
         _goldenpad_mgb64_renderer_draw_frame \
         _goldenpad_mgb64_deliver_retrace \
-        _platformGetMetalLayer
+        _platformGetMetalLayer \
+        _bossEntry \
+        _portAudioInit \
+        _portAudioFrame \
+        _goldenpad_mgb64_start_game \
+        _goldenpad_mgb64_game_state \
+        _goldenpad_mgb64_set_controller_state \
+        _goldenpad_mgb64_audio_render \
+        _goldenpad_mgb64_audio_output_probe \
+        _alBnkfNew \
+        _portAudioPlaySfxDetailed
     do
         nm -gU "$binary" | grep -q "$symbol"
     done
@@ -77,7 +87,7 @@ do
         echo "Desktop renderer framework entered $binary" >&2
         exit 1
     fi
-    echo "Verified $binary (ARM64, linked MGB64 Fast3D/Metal lifecycle)"
+    echo "Verified $binary (ARM64, linked MGB64 game/Metal/audio lifecycle)"
 done
 
-echo "MGB64 iOS linked renderer lifecycle passed."
+echo "MGB64 iOS linked game/renderer/audio lifecycle passed."

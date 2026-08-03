@@ -12,6 +12,10 @@ float watchInvPerspAspect(int legacy);
 extern uint32_t _rarewarelogoSegmentRomStart;
 int goldenpad_mgb64_mobile_config_probe(void);
 int goldenpad_mgb64_mobile_legacy_data_probe(void);
+int goldenpad_mgb64_mobile_host_probe(void);
+int goldenpad_mgb64_mobile_os_probe(void);
+int osEepromLongWrite(void *queue, uint8_t address, uint8_t *buffer, int32_t bytes);
+int platformOverlayWantsInput(void);
 void modelConvertFreeAll(void);
 void platformApplyRadialDeadzone(float *x, float *y, float deadzone, int radial);
 uint32_t setupPnamesTableOffset(const uint8_t *base, int index, int legacy);
@@ -44,7 +48,11 @@ uint32_t goldenpad_mgb64_core_probe(void) {
         watchInvPerspAspect(0) != 4.0f / 3.0f ||
         _rarewarelogoSegmentRomStart != UINT32_C(0x0029e560) ||
         !goldenpad_mgb64_mobile_config_probe() ||
-        !goldenpad_mgb64_mobile_legacy_data_probe()) {
+        !goldenpad_mgb64_mobile_legacy_data_probe() ||
+        !goldenpad_mgb64_mobile_host_probe() ||
+        !goldenpad_mgb64_mobile_os_probe() ||
+        osEepromLongWrite(NULL, 0, NULL, 0) != 0 ||
+        platformOverlayWantsInput() != 0) {
         return 0;
     }
     x = 0.0f;

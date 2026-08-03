@@ -22,6 +22,9 @@ private func goldenPadMGB64RendererInitialize() -> Int32
 @_silgen_name("goldenpad_mgb64_renderer_draw_frame")
 private func goldenPadMGB64RendererDrawFrame(_ width: UInt32, _ height: UInt32) -> Int32
 
+@_silgen_name("goldenpad_mgb64_set_external_retrace_active")
+private func goldenPadMGB64SetExternalRetraceActive(_ active: Int32)
+
 struct RT64MetalWindowHandle {
     let window: UnsafeMutableRawPointer
     let view: UnsafeMutableRawPointer
@@ -43,6 +46,7 @@ final class AppleRenderSurface: ObservableObject {
         if let metalLayer = view.layer as? CAMetalLayer {
             goldenPadMGB64SetMetalLayer(Unmanaged.passUnretained(metalLayer).toOpaque())
             if goldenPadMGB64RendererInitialize() == 1 {
+                goldenPadMGB64SetExternalRetraceActive(isActive ? 1 : 0)
                 print("[GoldenPad] MGB64 Fast3D/Metal renderer initialized")
             }
         }
@@ -52,6 +56,7 @@ final class AppleRenderSurface: ObservableObject {
 
     func detach(from view: MTKView) {
         guard metalView === view else { return }
+        goldenPadMGB64SetExternalRetraceActive(0)
         goldenPadRT64Shutdown()
         goldenPadMGB64SetMetalLayer(nil)
         metalView = nil
@@ -61,6 +66,9 @@ final class AppleRenderSurface: ObservableObject {
 
     func setActive(_ active: Bool) {
         isActive = active
+        if metalView != nil {
+            goldenPadMGB64SetExternalRetraceActive(active ? 1 : 0)
+        }
         metalView?.isPaused = !active
     }
 

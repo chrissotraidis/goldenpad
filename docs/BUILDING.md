@@ -60,9 +60,9 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
 
-The verifier compiles all 135 `src/game/*.c` translation units, 61 explicit
-upstream native system/portable units and four project-owned SDL-free mobile
-adapters into 200-object ARM64 archives. It rejects a
+The verifier compiles all 135 `src/game/*.c` translation units, 70 explicit
+upstream native system/portable units and five project-owned SDL-free mobile
+adapters into 210-object ARM64 archives. It rejects a
 mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
 `src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
 Simulator and device, and requires the final executables to retain the exact
@@ -85,7 +85,11 @@ fidelity, watch-aspect and segment-constant paths, then executes the upstream
 random check. It also verifies conservative mobile-owned settings/startup
 defaults. The current mobile OS adapter initializes MGB64's real cooperative
 scheduler and graphics-client queues after a validated ROM/file-table handoff;
-audio, game input, task dispatch and the title/main loop are not complete.
+the same probe blocks on a delayed mobile timer and round-trips the volatile
+16 Kbit EEPROM surface. The complete app link has no unresolved `bossEntry`
+boundary, starts the game once after all readiness gates, feeds Swift controller
+frames through `osCont*`, and renders MGB64 synth PCM through `AVAudioEngine`.
+Persistent game saves and interactive menu/mission acceptance remain open.
 
 The core also includes the real upstream model converter, CLI stage table,
 radial deadzone, setup-name and weapon-cue services. A small native data unit
@@ -101,8 +105,8 @@ linked renderer or displayed game frame.
 
 The Fast3D verifier temporarily applies `patches/mgb64-ios-fast3d.patch`, which
 selects Metal directly for the mobile build and removes the retained desktop GL
-selector. It builds the display-list interpreter and room-normal helper
-as two-object ARM64 archives for both SDKs. It requires the public `gfx_init`,
+selector. It builds the display-list interpreter, room-normal helper, screenshot
+and texture units as five-object ARM64 archives for both SDKs. It requires the public `gfx_init`,
 `gfx_run_dl`, and `gfx_end_frame` entry points and rejects unresolved SDL window,
 desktop OpenGL readback, or OpenGL swap symbols. GoldenPad's default app also
 contains the ARC layer bridge consumed by `gfx_metal.mm`.
@@ -120,14 +124,17 @@ cmake -S . -B build-mgb64-renderer-simulator -G Xcode \
   -DGOLDENPAD_MGB64_RENDERER=ON
 ```
 
-This starts and presents ROM-free empty frames through MGB64's real backend. It
+Before validation this starts and presents ROM-free empty frames through
+MGB64's real backend. It
 also enables the existing validator to install a supported normalized ROM into
 volatile MGB64-owned memory after the exact SHA-1 passes. The generated native
 offset unit patches the complete file table and verifies known background/Dam
 entries. It also initializes the upstream scheduler through the SDL-free mobile
 OS adapter, and the UIKit draw callback delivers a bounded cooperative retrace
-when the graphics queue is empty. It does not yet submit title/menu display
-lists.
+when the graphics queue is empty. Once UIKit owns retrace, scene suspension
+blocks production instead of starting the fallback clock. A valid private ROM
+then starts `bossEntry`; the game thread submits the real title/demo display
+lists while the native audio and input bridges remain active.
 
 ## RT64 iOS static renderer
 

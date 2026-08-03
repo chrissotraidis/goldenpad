@@ -1,5 +1,45 @@
 # Worklog
 
+## 2026-08-03 — start the real game with native input, Metal and PCM
+
+- Closed the portable `bossEntry` link boundary from 70 unresolved names to
+  zero using explicit native service modules and project-owned mobile adapters;
+  SDL and matching-target SDK implementations remain excluded.
+- Added a one-shot readiness-gated game thread. After exact ROM validation,
+  file-table patching, scheduler setup and renderer attachment, it enters the
+  real non-returning game main loop and lets `gfx_run_dl` own Metal frames.
+- Connected four Swift-fed controller states to MGB64's real `osCont*` surface.
+  The deterministic core input probe passed on iPhone and iPad.
+- Connected MGB64's 22.05 kHz stereo synth to a bounded PCM ring and
+  `AVAudioSourceNode`; 261/261 SFX and 75 instruments/138 sounds decoded, and the
+  native nonzero-output probe passed on both simulator classes.
+- Strict sequential private-ROM proof rendered the real title/Bond animation and
+  demo-stage setup at 2622x1206 on iPhone 16 Pro, then 2420x1668 on iPad Pro
+  11-inch (M4). Each app was uninstalled and each simulator shut down before the
+  next run. Screenshots and retail data remained ignored local evidence only.
+- Both SDK archives now contain 210 core objects and five Fast3D objects. The
+  next production slice is persistent EEPROM, followed by interactive menu and
+  controlled mission-load acceptance.
+
+## 2026-08-03 — make the mobile host safe for the game thread
+
+- Replaced the non-graphics immediate-return behavior with thread-safe message
+  queues and cooperative blocking receives. Added real one-shot/repeating timer
+  delivery and `osClockRate`, including the 100 ms contract used by boss init.
+- Added the 16 Kbit EEPROM API with exact 8-byte addressing/bounds behavior. Its
+  storage is deliberately volatile until the atomic Application Support bridge
+  lands; the probe preserves the block it uses.
+- Added neutral SDL-free UIKit host ownership for input, frame stats,
+  deterministic flags, renderer recovery and lifecycle watchdog state, plus
+  MGB64's real portable overlay hook dispatcher. MTKView retrace now distinguishes
+  pre-attach fallback from active/inactive UIKit ownership.
+- Both SDK gates pass with 202-object ARM64 core archives. The expanded probe
+  blocks on a delayed timer, round-trips EEPROM and remains `0x80c24316` on
+  iPhone then iPad while real Metal first frames encode at 1206x2622 and
+  1668x2420. Each app was uninstalled and each simulator shut down in sequence.
+- A temporary `bossEntry` map fell from 97 to 70: 27 closed, zero introduced.
+  The probe was removed before the clean combined-renderer pass.
+
 ## 2026-08-03 — link real portable services and legacy data
 
 - Added MGB64's real model conversion, CLI stage lookup, radial deadzone,

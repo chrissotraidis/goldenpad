@@ -63,17 +63,21 @@ game-rendering stacks through initial gameplay bring-up.
 
 The complete MGB64 Metal backend now compiles for both Apple mobile SDKs as a
 separate static target. Its two macOS-only display-sync assignments are removed
-for mobile because `MTKView`/UIKit owns cadence. The Fast3D interpreter and room
-normal helper also compile as a separate two-object mobile archive. Target-local
+for mobile because `MTKView`/UIKit owns cadence. The Fast3D interpreter,
+room-normal helper, screenshot and texture units compile as a separate
+five-object mobile archive. Target-local
 trap shims make accidental SDL/OpenGL ownership fail closed and leave no desktop
 window or GL readback/swap symbols in that archive. A small ARC Objective-C++
 bridge implements MGB64's existing `platformGetMetalLayer` contract using the
 weakly observed UIKit-owned layer. The opt-in renderer target now links both
 archives, selects Metal directly, supplies neutral mobile renderer settings and
-lets `MTKView` drive real backend `start_frame`/`end_frame` calls. Host-owned ROM
+lets the game thread's real `gfx_run_dl` own backend `start_frame`/`end_frame`
+calls after startup; before startup, `MTKView` presents an empty frame and offers
+the scheduler a retrace. Host-owned ROM
 globals remain null/zero until a validated private import succeeds. The minimap
 queue is an explicit lifecycle-only no-op until the real game overlay is wired.
-The next boundary starts the title/menu display-list loop.
+The native title animation and demo-stage setup now render through this path on
+both simulator classes; interactive menu navigation is the next boundary.
 
 ## Scheduler and mobile OS surface
 
@@ -88,11 +92,24 @@ neutral-controller and scheduler bootstrap surface.
 The UIKit-owned `MTKView` now offers a retrace after each presented empty frame,
 but only when the scheduler is initialized and its graphics queue is empty.
 This naturally leaves exactly one pending message before `bossEntry` supplies a
-consumer. A timed fallback remains inside blocking `osRecvMesg` for bring-up and
-will be removed once lifecycle-aware producer/consumer synchronization is live.
-Neutral controller, rumble, task and sequence-audio seams are explicitly
-provisional; normalized Swift input, Game Controller haptics, Fast3D dispatch
-and AVAudio must own them before gameplay acceptance.
+consumer. Queue mutation is protected for the future game/UI thread split.
+Before UIKit attaches, a timed fallback permits bounded bring-up; after attach,
+blocking receives wait for MTKView and inactive/background scenes produce no
+synthetic frames. Non-graphics queues also honor real one-shot/repeating timers,
+including the 100 ms waits in `bossInitMainthreadData`.
+
+`mgb64_mobile_host.c` owns the four pthread-protected controller states fed by
+Swift, deterministic-mode flags, frame stats, renderer recovery state,
+lifecycle-watchdog state and the bounded PCM ring without an SDL window. MGB64's
+portable `app_overlay_hooks.c` remains the real overlay dispatch owner. Rumble
+and Game Controller haptics remain provisional; controller reads, Fast3D
+dispatch and native PCM output now cross the real game boundary.
+
+After ROM, file-table, scheduler and renderer readiness, the host calls
+`goldenpad_mgb64_start_game` exactly once. A named detached pthread initializes
+the portable audio/watchdog services and enters non-returning `bossEntry`.
+UIKit continues to provide retrace cadence while display-list submission and
+Metal presentation remain on the game thread.
 
 Portable GU matrix/vector math is similarly isolated into
 `mgb64_mobile_gu.c`. The functions are MGB64's real native host algorithms, not
@@ -154,10 +171,14 @@ table pointers, then zeroes and frees the old allocation.
   deltas, so phone and tablet changes do not copy or overwrite each other.
   Per-control position, 70–150% size and visibility plus global opacity, scale,
   sensitivity, dead zone, gyro and controller auto-hide settings are supported.
-- **Audio:** an engine PCM callback feeds `AVAudioEngine`; `AVAudioSession`
-  handles interruption, route changes and sample-rate changes.
-- **Saves:** EEPROM/SRAM/Flash callbacks write atomically under Application
-  Support. Settings use a separate versioned file. Flush on backgrounding.
+- **Audio:** MGB64's native synth produces 22.05 kHz stereo PCM into a bounded
+  lock-protected ring. An `AVAudioSourceNode` pulls it into `AVAudioEngine`,
+  which resamples to the current device rate; `AVAudioSession` handles
+  interruption, route changes and sample-rate changes.
+- **Saves:** the game-facing 16 Kbit EEPROM API and bounds behavior are live,
+  but its bytes are currently volatile. The next save slice bridges that buffer
+  to atomic Application Support storage. Settings and generic host save slots
+  already persist separately. Flush game EEPROM on backgrounding once bridged.
 - **Timing:** `mach_continuous_time`/display callbacks drive a fixed simulation
   cadence. Rendering may interpolate but never advances game state twice.
 - **Filesystem:** all paths are injected by the host; core code never assumes
@@ -170,9 +191,10 @@ exact N64 masks, classic,
 modern and southpaw presets, four deterministic controller slots,
 extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
 Simulator-only synthetic MFi controllers are excluded from auto-hide without
-changing physical-device behavior. The selected core now compiles and exposes a
-bounded live probe; real-controller auto-hide, physical gyro and gameplay
-semantics remain acceptance gates once its platform/render loop is running.
+changing physical-device behavior. The selected core now consumes these frames
+through its real `osCont*` calls, renders its title/demo path, and emits decoded
+game audio through the native PCM chain. Real-controller auto-hide, physical
+gyro and interactive gameplay semantics remain acceptance gates.
 
 ## Targets
 

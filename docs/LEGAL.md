@@ -68,6 +68,10 @@ narrow integration work against the exact commits in `RESEARCH.md`. They
 contain no ROM data, extracted media or generated shader output. The MGB64 core
 itself is compiled only from an ignored exact upstream checkout and is never
 copied into this repository.
+The mobile audio build compiles MGB64's native clean-room synth, decoder and
+sequence modules. Matching-target Nintendo/SGI/Rare SDK-lineage audio
+implementations remain excluded by the same source guard as the rest of the SDK
+tree; the Apple output bridge and PCM ring are project-owned code.
 Verification applies the patches only inside an ignored reference checkout and
 removes them on exit; generated Metal products and static archives remain
 untracked build artifacts.
@@ -75,7 +79,7 @@ ROM state begins null/zero. Only the existing exact SHA-1 validator may pass
 normalized bytes to the core-owned heap; the C boundary rechecks size, header
 and internal title. Replacement zeroes the prior allocation before freeing it,
 and no bridge writes retail bytes to persistent storage. Renderer lifecycle
-frames remain empty until the game main loop is connected.
+frames remain empty until the validated game main loop starts.
 MGB64's one-byte native asset-symbol placeholders contain no extracted content;
 the validated runtime table replaces them with private owned-buffer offsets.
 

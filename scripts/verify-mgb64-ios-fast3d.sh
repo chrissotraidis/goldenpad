@@ -50,14 +50,21 @@ do
     test -f "$archive"
     xcrun lipo -info "$archive" | grep -q 'architecture: arm64'
     objects=$(xcrun ar -t "$archive" | grep -c '\.o$')
-    if [ "$objects" -ne 2 ]; then
+    if [ "$objects" -ne 5 ]; then
         echo "Unexpected MGB64 Fast3D archive: $objects objects" >&2
         exit 1
     fi
-    for symbol in _gfx_init _gfx_run_dl _gfx_end_frame; do
+    for symbol in \
+        _gfx_init \
+        _gfx_run_dl \
+        _gfx_end_frame \
+        _screenshot_series_capture_if_due \
+        _texture_pack_try_load
+    do
         nm -gU "$archive" | grep -q "$symbol"
     done
-    if nm -u "$archive" | grep -E -q '_SDL_|_glGetTexImage|_glReadPixels|_gfx_opengl_api'; then
+    if nm -u "$archive" | grep -E -q \
+        '_SDL_|_glGetTexImage|_glReadPixels|_gfx_opengl_|_gfx_webgpu_api|_g_sdlWindow'; then
         echo "Desktop graphics/window symbol entered $archive" >&2
         exit 1
     fi

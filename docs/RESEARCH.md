@@ -89,15 +89,16 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
-- compiled all 135 game C files, 61 explicit upstream native system/portable
-  files and four project-owned mobile adapters into 200-object ARM64 archives
+- compiled all 135 game C files, 70 explicit upstream native system/portable
+  files and five project-owned mobile adapters into 210-object ARM64 archives
   for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
 - compiled the complete native Metal backend and its combiner/backend/MSAA
   support for both Apple mobile SDKs after guarding two macOS-only
   `CAMetalLayer.displaySyncEnabled` writes;
-- compiled the Fast3D interpreter plus room-normal helper into two-object ARM64
+- compiled the Fast3D interpreter, room-normal helper, screenshot and texture
+  units into five-object ARM64
   archives for both mobile SDKs without unresolved SDL or desktop OpenGL calls;
 - supplied `platformGetMetalLayer` from the UIKit host and observed it live at
   1206x2622 on iPhone followed by 1668x2420 on iPad;
@@ -130,6 +131,19 @@ On this Apple M1 host, commit `cd9b58f`:
   weapon-cue services plus a mobile legacy-data unit; representative paths ran
   on both device classes and the startup map fell from 117 to 97 with no new
   unresolved symbol.
+- linked the real portable overlay dispatcher plus project-owned thread-safe
+  queues/timers, volatile EEPROM and neutral UIKit host services. Their delayed
+  timer, EEPROM and lifecycle probes ran on both device classes; the startup map
+  closed 27, introduced none and fell from 97 to 70.
+- closed the remaining portable `bossEntry` boundary with no unresolved symbol,
+  without importing SDL or matching-target SDK implementation sources, and
+  started it once on a dedicated game thread after all readiness gates.
+- rendered the real title animation and demo-stage setup through Fast3D/Metal
+  sequentially at 2622x1206 on iPhone and 2420x1668 on iPad.
+- connected Swift controller frames to the real mobile `osCont*` reads; the
+  deterministic input probe passed on both simulator classes.
+- decoded 261/261 SFX and parsed 75 music instruments/138 sounds on each class;
+  the 22.05 kHz synth fed a bounded PCM ring and the native output probe passed.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.

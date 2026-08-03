@@ -145,7 +145,7 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 200-object
+2026-08-03 gate passed the upstream native SDK guard and produced 210-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
 `goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, the real upstream
@@ -172,7 +172,7 @@ writes to macOS, after which the complete `gfx_metal.mm` backend and its
 combiner/backend/MSAA support compiled into four-object, non-fat ARM64 archives
 for both mobile SDKs. Both export `gfx_metal_api`, and the verifier restored the
 ignored MGB64 checkout to a clean tree. The Fast3D verifier also builds its
-two-object ARM64 frontend for both SDKs while rejecting SDL/OpenGL residue.
+five-object ARM64 frontend for both SDKs while rejecting SDL/OpenGL residue.
 
 The combined verifier links the core, Fast3D and Metal targets into both final
 Release apps and requires `gfx_init`, `gfx_metal_api`, the renderer init/draw
@@ -250,6 +250,33 @@ weapon cue, setup-null and stage-null probes plus native constants. The result
 remained `0x80c24316` sequentially on iPhone then iPad with full cleanup. A
 temporary `bossEntry` map closed 20 symbols, introduced none and fell from 117
 to 97 before removal and the normal renderer pass.
+
+The mobile-host subgate requires both archives to retain the OS/host probes,
+`osSetTimer`, `osEepromLongWrite` and upstream overlay dispatch. The core probe
+must block on a delayed timer, round-trip and restore EEPROM block 255, exercise
+neutral host/watchdog state, and remain `0x80c24316`. A temporary `bossEntry`
+map must close 27 symbols with none introduced, leaving 70, before removal and
+the clean combined-renderer pass. The 2026-08-03 sequential no-ROM run passed at
+1206x2622 on iPhone then 1668x2420 on iPad with uninstall/shutdown cleanup.
+
+The permanent game-start gate requires both final apps to retain `bossEntry`,
+`portAudioInit`, `portAudioFrame`, `goldenpad_mgb64_start_game`,
+`goldenpad_mgb64_game_state`, `goldenpad_mgb64_set_controller_state`,
+`goldenpad_mgb64_audio_render`, `alBnkfNew` and
+`portAudioPlaySfxDetailed`, with no unresolved symbol or desktop dependency.
+After a supported private ROM validates, the app must reach all readiness gates
+and enter `bossEntry` exactly once.
+
+The 2026-08-03 private-data proof ran strictly sequentially. iPhone 16 Pro first
+rendered the real title/Rare/Bond animation and demo-stage setup through Metal at
+2622x1206, decoded 261/261 SFX and 75 music instruments/138 sounds, and reported
+`Native PCM output probe: PASS`. It also reported the deterministic mobile core
+input probe as PASS. The app was terminated and uninstalled and the simulator
+was shut down before iPad Pro 11-inch (M4) repeated the title animation, input
+probe and PCM proof at 2420x1668, followed by identical cleanup. Screenshots and
+ROM data remained ignored local evidence. Simulator output proves nonzero native
+PCM delivery; a real-speaker and route/interruption pass remains a physical-device
+gate.
 
 ## RT64 mobile Metal and static-library gate
 

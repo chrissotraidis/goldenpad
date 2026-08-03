@@ -3,9 +3,10 @@ import SwiftUI
 
 struct MetalCanvas: UIViewRepresentable {
     let surface: AppleRenderSurface
+    let input: InputCoordinator
 
     func makeCoordinator() -> Renderer {
-        Renderer(surface: surface)
+        Renderer(surface: surface, input: input)
     }
 
     func makeUIView(context: Context) -> MTKView {
@@ -29,9 +30,11 @@ struct MetalCanvas: UIViewRepresentable {
     @MainActor
     final class Renderer: NSObject, MTKViewDelegate {
         let surface: AppleRenderSurface
+        let input: InputCoordinator
 
-        init(surface: AppleRenderSurface) {
+        init(surface: AppleRenderSurface, input: InputCoordinator) {
             self.surface = surface
+            self.input = input
         }
 
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -39,6 +42,7 @@ struct MetalCanvas: UIViewRepresentable {
         }
 
         func draw(in view: MTKView) {
+            input.publishToCore()
             surface.drawFoundationFrame(in: view)
         }
     }

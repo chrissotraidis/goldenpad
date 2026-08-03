@@ -1,11 +1,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
+
+#ifdef GOLDENPAD_MGB64_RENDERER
+#include <pthread.h>
+#include <stdio.h>
+#endif
 
 #define GOLDENPAD_RETAIL_ROM_SIZE 0x00c00000u
 
 uint8_t *g_romData = NULL;
 uint32_t g_romSize = 0;
+static _Atomic int goldenpad_renderer_ready;
+static _Atomic int goldenpad_game_state;
 
 #ifdef GOLDENPAD_MGB64_CORE
 typedef struct fileentry {
@@ -49,7 +57,18 @@ int goldenpad_mgb64_core_accepts_rom(void) {
 #endif
 }
 
+void goldenpad_mgb64_set_renderer_ready(int ready) {
+    atomic_store(&goldenpad_renderer_ready, ready != 0);
+}
+
+int goldenpad_mgb64_game_state(void) {
+    return atomic_load(&goldenpad_game_state);
+}
+
 void goldenpad_mgb64_clear_rom(void) {
+    if (atomic_load(&goldenpad_game_state) != 0) {
+        return;
+    }
     goldenpad_clear_owned_rom();
 }
 
@@ -85,7 +104,8 @@ int goldenpad_mgb64_prepare_scheduler(void) {
 
 int goldenpad_mgb64_install_validated_rom(const uint8_t *source, uint32_t size) {
 #ifdef GOLDENPAD_MGB64_CORE
-    if (source == NULL || size != GOLDENPAD_RETAIL_ROM_SIZE ||
+    if (atomic_load(&goldenpad_game_state) != 0 ||
+        source == NULL || size != GOLDENPAD_RETAIL_ROM_SIZE ||
         source[0] != 0x80 || source[1] != 0x37 ||
         source[2] != 0x12 || source[3] != 0x40) {
         return 0;
@@ -119,6 +139,46 @@ int goldenpad_mgb64_install_validated_rom(const uint8_t *source, uint32_t size) 
 #else
     (void)source;
     (void)size;
+    return 0;
+#endif
+}
+
+#if defined(GOLDENPAD_MGB64_CORE) && defined(GOLDENPAD_MGB64_RENDERER)
+extern void bossEntry(void);
+extern void portAudioInit(void);
+extern void portWatchdogInit(void);
+
+static void *goldenpad_mgb64_game_thread(void *unused) {
+    (void)unused;
+    pthread_setname_np("GoldenEye game");
+    portAudioInit();
+    portWatchdogInit();
+    atomic_store(&goldenpad_game_state, 2);
+    printf("[GoldenPad] Entering MGB64 bossEntry on background thread\n");
+    bossEntry();
+    atomic_store(&goldenpad_game_state, -1);
+    return NULL;
+}
+#endif
+
+int goldenpad_mgb64_start_game(void) {
+#if defined(GOLDENPAD_MGB64_CORE) && defined(GOLDENPAD_MGB64_RENDERER)
+    int expected = 0;
+    pthread_t thread;
+
+    if (!goldenpad_mgb64_file_table_ready() ||
+        !atomic_load(&goldenpad_renderer_ready) ||
+        !goldenpad_mgb64_prepare_scheduler() ||
+        !atomic_compare_exchange_strong(&goldenpad_game_state, &expected, 1)) {
+        return 0;
+    }
+    if (pthread_create(&thread, NULL, goldenpad_mgb64_game_thread, NULL) != 0) {
+        atomic_store(&goldenpad_game_state, 0);
+        return 0;
+    }
+    pthread_detach(thread);
+    return 1;
+#else
     return 0;
 #endif
 }

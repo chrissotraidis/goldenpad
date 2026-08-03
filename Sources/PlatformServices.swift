@@ -2,6 +2,13 @@ import AVFAudio
 import Foundation
 import SwiftUI
 
+@_silgen_name("goldenpad_mgb64_audio_render")
+private func goldenPadMGB64AudioRender(
+    _ left: UnsafeMutablePointer<Float>?,
+    _ right: UnsafeMutablePointer<Float>?,
+    _ frames: UInt32
+) -> UInt32
+
 enum ControlPreset: String, Codable, Sendable, CaseIterable {
     case classic
     case modern
@@ -195,6 +202,8 @@ final class PlatformCoordinator: ObservableObject {
     private(set) var paths: PlatformPaths?
     private var storage: PlatformStorage?
     private var observers: [NSObjectProtocol] = []
+    private let audioEngine = AVAudioEngine()
+    private var audioSourceNode: AVAudioSourceNode?
 
     var statusSummary: String {
         "\(storageState)  •  \(audioState)"
@@ -239,6 +248,7 @@ final class PlatformCoordinator: ObservableObject {
     }
 
     deinit {
+        audioEngine.stop()
         for observer in observers {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -351,7 +361,8 @@ final class PlatformCoordinator: ObservableObject {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.ambient, mode: .default)
             try session.setActive(true)
-            audioState = "audio: session ready"
+            try startAudioEngine()
+            audioState = "audio: native PCM ready"
             print("[GoldenPad] Audio session active at \(session.sampleRate) Hz")
         } catch {
             audioState = "audio: unavailable"
@@ -361,6 +372,7 @@ final class PlatformCoordinator: ObservableObject {
 
     private func deactivateAudioSession() {
         do {
+            audioEngine.pause()
             try AVAudioSession.sharedInstance().setActive(
                 false,
                 options: .notifyOthersOnDeactivation
@@ -370,6 +382,39 @@ final class PlatformCoordinator: ObservableObject {
         } catch {
             audioState = "audio: deactivate failed"
             print("[GoldenPad] Audio deactivation failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func startAudioEngine() throws {
+        if audioSourceNode == nil {
+            guard let format = AVAudioFormat(
+                commonFormat: .pcmFormatFloat32,
+                sampleRate: 22_050,
+                channels: 2,
+                interleaved: false
+            ) else {
+                throw NSError(domain: "GoldenPad.Audio", code: 1)
+            }
+            let source = AVAudioSourceNode(format: format) {
+                _, _, frameCount, audioBufferList -> OSStatus in
+                let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+                guard buffers.count >= 2,
+                      let leftData = buffers[0].mData,
+                      let rightData = buffers[1].mData else {
+                    return noErr
+                }
+                let left = leftData.assumingMemoryBound(to: Float.self)
+                let right = rightData.assumingMemoryBound(to: Float.self)
+                _ = goldenPadMGB64AudioRender(left, right, UInt32(frameCount))
+                return noErr
+            }
+            audioEngine.attach(source)
+            audioEngine.connect(source, to: audioEngine.mainMixerNode, format: format)
+            audioSourceNode = source
+            audioEngine.prepare()
+        }
+        if !audioEngine.isRunning {
+            try audioEngine.start()
         }
     }
 

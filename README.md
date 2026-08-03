@@ -10,55 +10,38 @@ game code and Metal rendering—not a general N64 emulator.
 
 ## Current status
 
-Research, an Apple Silicon desktop feasibility baseline, and the first native
-iPhone/iPad foundation are complete. The SwiftUI shell renders through Metal,
-builds for ARM64 simulator and device SDKs, and privately validates Z64, V64,
-and N64 retail dumps without retaining them. Atomic settings/save persistence
-and common touch/Game Controller snapshots are also live. The host includes
-exact N64 button masks, modern and southpaw dual-stick presets, and separately
-persisted phone/tablet touch layouts with move, size, visibility, opacity,
-sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
-yet, but the first production-core gate now passes: all 135 MGB64 game
-translation units plus 61 explicit upstream native system/portable units and
-four GoldenPad mobile adapters compile into 200-object ARM64 archives for
-both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
-game-code probe plus real GU vector math on iPhone and iPad. MGB64's complete native Metal backend now
-also compiles for both SDKs after excluding two macOS-only display-sync writes.
-Its Fast3D interpreter now compiles as a separate two-object ARM64 archive for
-both SDKs without SDL or desktop OpenGL symbols, and the UIKit host supplies
-MGB64's exact `platformGetMetalLayer` boundary. The complete Fast3D/Metal closure
-now links into opt-in ARM64 Simulator and device apps and presents real,
-ROM-free empty frames through MGB64's backend. Sequential phone/tablet launches
-proved backend initialization and first-frame encoding at full drawable size.
-After the existing SHA-1 gate, linked-core builds can now hand the normalized
-retail data to MGB64 as a volatile in-memory copy; sequential phone/tablet proof
-confirmed the handoff, followed by complete app-container removal.
-The native file/resource table is now patched to exact offsets inside that
-owned buffer, including the Dam background resource. The real MGB64 scheduler
-and its graphics-client queues now initialize without SDL on both mobile SDKs;
-MTKView now delivers a bounded cooperative retrace after that state is ready,
-with sequential phone/tablet proof at full drawable size.
-The first portable `bossEntry` closure slice now isolates MGB64's real GU matrix
-and vector helpers from its desktop SDL compatibility unit. This removes all 15
-GU blockers from the measured startup link map, reducing the remaining gap from
-261 to 246 symbols. A second audited slice adds 28 small SDL-free upstream leaf
-units for segment constants, trig/stdio compatibility, and isolated fidelity
-helpers. It closes another 61 startup symbols without introducing any, leaving
-185. A mobile-owned configuration unit then replaces the 68 game settings and
-startup globals otherwise owned by SDL; its defaults execute in the live probe
-and leave 117 startup symbols.
-Five more real upstream services—model conversion, stage lookup, radial input,
-setup-name resolution and weapon cues—plus native legacy constants now execute
-in the probe and reduce the startup boundary from 117 to 97 without introducing
-dependencies.
+Research, an Apple Silicon desktop oracle, and the native iPhone/iPad production
+path are established. GoldenPad now compiles all 135 MGB64 game translation
+units, 70 explicitly audited upstream native system/portable units, and five
+project-owned mobile adapters into 210-object ARM64 archives for both Apple
+mobile SDKs. A separate five-object Fast3D frontend and the complete native
+Metal backend link without SDL, OpenGL, AppKit, matching-target SDK
+implementations, ROM data, or extracted media.
+
+After exact SHA-1 validation, the app keeps the supported retail ROM only in a
+private core-owned memory buffer, patches MGB64's native resource table, starts
+`bossEntry` once on a background thread, and lets the UIKit-owned `MTKView`
+drive the cooperative scheduler. The GoldenEye title sequence and demo-stage
+display lists now render natively through Metal. Strict sequential proof passed
+on iPhone 16 Pro at 2622×1206 and iPad Pro 11-inch (M4) at 2420×1668; each app
+was terminated, uninstalled, and its simulator shut down before the next run.
+
+The setup shell yields to a full-screen landscape gameplay surface after boot.
+Phone/tablet touch layouts and `GCController` state feed the real libultra-style
+controller boundary; a deterministic end-to-end probe observed movement,
+right-stick aim, and `B|Z` in the C host. MGB64's clean-room sequence/SFX
+synthesizer decodes the retail banks, pumps on game retraces, and feeds a bounded
+22.05 kHz stereo PCM ring consumed by `AVAudioEngine`; both device classes
+produced non-zero PCM in runtime proof. Game EEPROM remains volatile until its
+Application Support bridge lands, and interactive menu/mission completion,
+physical-device controls, multiplayer, and final packaging remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into
 GoldenPad, and the real Metal device/command-queue/swapchain initializes on
-both iPhone and iPad simulators. MGB64 is the selected production-core
-candidate; the remaining portable platform closure and title/menu startup are
-the next build gates.
+both iPhone and iPad simulators. MGB64 is the selected production core; RT64
+remains a verified optional renderer/reference path.
 GoldenRecomp remains a static-recomp reference because its public input pipeline
 is incomplete. See [`docs/STATUS.md`](docs/STATUS.md).
 

@@ -1,6 +1,46 @@
 import SwiftUI
 import simd
 
+struct GameplayTouchControls: View {
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+    @State private var isEditorPresented = false
+
+    private var deviceClass: TouchDeviceClass {
+        UIDevice.current.userInterfaceIdiom == .pad ? .tablet : .phone
+    }
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if input.shouldShowTouchControls {
+                TouchControlCanvas(
+                    placements: platform.touchLayout(deviceClass: deviceClass),
+                    opacity: platform.settings.touchOpacity,
+                    globalScale: platform.settings.touchScale,
+                    input: input,
+                    showsBackground: false
+                )
+                .ignoresSafeArea()
+            }
+
+            Button { isEditorPresented = true } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 15, weight: .bold))
+                    .frame(width: 42, height: 42)
+                    .background(.black.opacity(0.46), in: Circle())
+            }
+            .foregroundStyle(.white)
+            .padding(14)
+            .accessibilityLabel("Customize controls")
+        }
+        .sheet(isPresented: $isEditorPresented) {
+            TouchLayoutEditor(deviceClass: deviceClass)
+                .environmentObject(input)
+                .environmentObject(platform)
+        }
+    }
+}
+
 struct TouchInputLab: View {
     @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
@@ -341,6 +381,7 @@ private struct TouchControlCanvas: View {
     let opacity: Double
     let globalScale: Double
     let input: InputCoordinator
+    var showsBackground = true
     var editing = false
     var selectedID: TouchControlID?
     var onSelect: ((TouchControlID) -> Void)?
@@ -349,13 +390,15 @@ private struct TouchControlCanvas: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.black.opacity(0.86))
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(.white.opacity(0.12), lineWidth: 1)
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(.white.opacity(editing ? 0.15 : 0), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-                    .padding(12)
+                if showsBackground {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.black.opacity(0.86))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(.white.opacity(editing ? 0.15 : 0), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                        .padding(12)
+                }
 
                 ForEach(placements) { placement in
                     if editing || !placement.isHidden {

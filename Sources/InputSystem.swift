@@ -2,6 +2,20 @@ import CoreMotion
 import Foundation
 import GameController
 
+@_silgen_name("goldenpad_mgb64_set_controller_state")
+private func goldenPadMGB64SetControllerState(
+    _ player: Int32,
+    _ stickX: Int32,
+    _ stickY: Int32,
+    _ buttons: UInt32,
+    _ rightX: Int32,
+    _ rightY: Int32,
+    _ connected: Int32
+)
+
+@_silgen_name("goldenpad_mgb64_controller_input_probe")
+private func goldenPadMGB64ControllerInputProbe() -> Int32
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -162,6 +176,7 @@ final class InputCoordinator: ObservableObject {
     private var settings = HostSettings()
     private let motionManager = CMMotionManager()
     private var motionLook = SIMD2<Float>.zero
+    private var didReportCoreInputProbe = false
 
     init() {
         assignInitialControllers()
@@ -262,6 +277,39 @@ final class InputCoordinator: ObservableObject {
 
     func mappedFrame(player: Int) -> GoldenEyeInputFrame {
         GoldenEyeInputMapper.map(snapshot(player: player), preset: currentPreset)
+    }
+
+    func publishToCore() {
+        if !didReportCoreInputProbe,
+           ProcessInfo.processInfo.arguments.contains("--input-probe") {
+            touch = InputSnapshot(
+                movement: SIMD2(0.5, -0.75),
+                look: SIMD2(-0.25, 1.0),
+                rightTrigger: 1,
+                buttons: [.fire, .interact]
+            )
+        }
+        for player in 0..<controllerSlots.count {
+            let frame = mappedFrame(player: player)
+            let primary = frame.primary
+            let secondary = frame.secondary
+            let connected = player == 0 || controllerSlots[player] != nil
+            goldenPadMGB64SetControllerState(
+                Int32(player),
+                Int32((primary.stick.x * 80).rounded()),
+                Int32((primary.stick.y * 80).rounded()),
+                UInt32(primary.buttons.rawValue),
+                Int32((secondary.stick.x * 32_767).rounded()),
+                Int32((-secondary.stick.y * 32_767).rounded()),
+                connected ? 1 : 0
+            )
+        }
+        if !didReportCoreInputProbe,
+           ProcessInfo.processInfo.arguments.contains("--input-probe") {
+            didReportCoreInputProbe = true
+            let result = goldenPadMGB64ControllerInputProbe()
+            print("[GoldenPad] Mobile core input probe: \(result == 1 ? "PASS" : "FAIL")")
+        }
     }
 
     private func assignInitialControllers() {

@@ -87,8 +87,17 @@ set(goldenpad_mgb64_portable_leaf_sources
 
 set(goldenpad_mgb64_portable_service_sources
     src/app/cli_stage_tables.c
+    src/platform/app_overlay_hooks.c
+    src/platform/audio_compat.c
+    src/platform/audio_pc.c
+    src/platform/audio_queue_controller.c
+    src/platform/audi_port.c
+    src/platform/decor_assets.c
+    src/platform/mixer.c
     src/platform/model_convert.c
+    src/platform/port_trace.c
     src/platform/radial_deadzone.c
+    src/platform/settings.c
     src/platform/setup_pnames.c
     src/platform/weapon_action_sfx.c
 )
@@ -172,6 +181,7 @@ add_library(goldenpad_mgb64_core STATIC
     Support/MGB64/mgb64_mobile_config.c
     Support/MGB64/mgb64_mobile_gu.c
     Support/MGB64/mgb64_mobile_legacy_data.c
+    Support/MGB64/mgb64_mobile_host.c
     Support/MGB64/mgb64_mobile_os.c
 )
 goldenpad_configure_mgb64_target(goldenpad_mgb64_core)
@@ -192,6 +202,9 @@ set_source_files_properties(
 add_library(goldenpad_mgb64_fast3d STATIC
     "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_pc.c"
     "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_room_normals.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/screenshot_series.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/texture_pack.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/texpack_stb.c"
 )
 goldenpad_configure_mgb64_target(goldenpad_mgb64_fast3d)
 target_compile_definitions(goldenpad_mgb64_fast3d PRIVATE
@@ -204,6 +217,8 @@ target_compile_definitions(GoldenPad PRIVATE
     GOLDENPAD_MGB64_COMMIT="${GOLDENPAD_MGB64_COMMIT}"
 )
 target_link_libraries(GoldenPad PRIVATE goldenpad_mgb64_core)
+target_sources(GoldenPad PRIVATE
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/port_env.c")
 
 if(GOLDENPAD_MGB64_RENDERER)
     set_source_files_properties(
@@ -211,8 +226,7 @@ if(GOLDENPAD_MGB64_RENDERER)
         PROPERTIES INCLUDE_DIRECTORIES
         "${GOLDENPAD_MGB64_SOURCE_DIR}/include;${GOLDENPAD_MGB64_SOURCE_DIR}/include/PR")
     target_sources(GoldenPad PRIVATE
-        Support/MGB64/mgb64_renderer_defaults.c
-        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/port_env.c")
+        Support/MGB64/mgb64_renderer_defaults.c)
     target_include_directories(GoldenPad PRIVATE
         "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform"
         "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d")

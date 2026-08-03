@@ -68,9 +68,9 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
-G1 passes: all 135 MGB64 game translation units, 61 explicit upstream native
-system/portable units and four project-owned mobile adapters compile into
-200-object ARM64 archives for both mobile SDKs. Release app binaries link real
+G1 passes: all 135 MGB64 game translation units, 70 explicit upstream native
+system/portable units and five project-owned mobile adapters compile into
+210-object ARM64 archives for both mobile SDKs. Release app binaries link real
 upstream random-core and GU math code, and the same
 deterministic probe ran sequentially on iPhone and iPad without ROM data.
 
@@ -79,19 +79,18 @@ G2 passes: all 56 RT64 Metal shaders compile for ARM64 `iphoneos` and
 ownership with narrow host shims; and the complete 210-object RT64 archive plus
 its 246-object closure force-links without desktop symbols. The linked GoldenPad
 app created the real Plume Metal device, command queue and swapchain on iPhone
-and iPad simulators. G3 remains open until the MGB64 platform/render loop supplies
-GoldenEye display lists to a mobile renderer.
+and iPad simulators.
 
 The first G3 renderer subgate also passes: MGB64's full native Metal backend and
 three support units compile into four-object ARM64 archives for both mobile SDKs
 after two macOS-only display-sync assignments are guarded. The second subgate
-passes too: the Fast3D interpreter and room-normal helper compile into two-object
+passes too: the Fast3D interpreter, room-normal helper, screenshot and texture
+units compile into five-object
 ARM64 archives for both SDKs without SDL/OpenGL symbols, and sequential iPhone
 then iPad launches prove the exact `platformGetMetalLayer` handoff from UIKit.
 The third subgate now passes: both closures link in final ARM64 apps and the real
 MGB64 backend encodes/presents UIKit-timed ROM-free empty frames on both device
-classes. G3 remains open until validated retail resources enter the private
-loader and the mobile main loop submits title/menu display lists. The private
+classes. The private
 loader subgate now passes too: exact-SHA-1 normalized bytes enter only a
 core-owned volatile buffer, with sequential phone/tablet proof and container
 removal. File-table patching now passes too: upstream native offset/placeholder
@@ -102,8 +101,10 @@ message queues and graphics client initialize through an SDL-free mobile OS
 adapter in both final SDK binaries, with sequential phone/tablet runtime proof.
 MTKView-driven cooperative frame delivery now passes as well: it queues one
 retrace only when the graphics queue is empty, and sequential phone/tablet logs
-prove delivery without queue growth. Portable `bossEntry` closure and title
-startup remain open. Its first closure slice isolates 15 real GU helpers from
+prove delivery without queue growth. The portable `bossEntry` boundary now
+links with no unresolved symbols and starts once on a detached game thread after
+ROM, file-table, scheduler and renderer readiness. Its first closure slice
+isolates 15 real GU helpers from
 the desktop compatibility unit; the temporary force-link map dropped from 261
 to 246 unresolved symbols with no GU blocker remaining. The next 28-unit
 SDL-free leaf slice closes another 61 with no new unresolved dependency, leaving
@@ -111,6 +112,16 @@ SDL-free leaf slice closes another 61 with no new unresolved dependency, leaving
 the SDL platform owner without importing it, leaving 117.
 Real model/stage/radial/setup/weapon service modules plus native legacy data then
 close 20 more without a new dependency, leaving 97.
+Thread-safe queue/timer semantics, volatile EEPROM, neutral mobile host services
+and real portable overlay hooks close another 27 without introducing a name,
+leaving 70. Native settings, trace/decor/texture/audio services then close the
+remaining boundary without importing the excluded desktop/SDK owners. The real
+title sequence and demo-stage setup now render through Fast3D/Metal sequentially
+on iPhone and iPad, the MGB64 synth feeds a bounded native PCM ring, and Swift
+input reaches `osContGetReadData`. G3 remains open only for interactive menu
+navigation and a controlled mission load. The timer and EEPROM round-trip
+execute in the unchanged probe; Application Support persistence remains open
+before G4.
 
 ### I — Input and touch
 
@@ -123,12 +134,13 @@ close 20 more without a new dependency, leaving 97.
 
 Gate: a mission is completable with touch alone and with a physical controller.
 
-I1-I3 are host-complete: exact libultra masks, modern/southpaw dual-stick input,
+I1-I3 are core-connected: exact libultra masks, modern/southpaw dual-stick input,
 four deterministic controller slots, touch/controller merge and independent
-phone/tablet layouts were exercised on both simulators. I4 has a compiled and
+phone/tablet layouts were exercised through the real mobile `osCont*` boundary
+on both simulators, including an exact deterministic probe. I4 has a compiled and
 persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
-still need device acceptance. Gameplay mapping against the core remains I5.
+still need device acceptance. Interactive gameplay mapping remains I5.
 
 ### M — Multiplayer
 

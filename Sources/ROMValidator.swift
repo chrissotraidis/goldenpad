@@ -19,6 +19,9 @@ private func goldenPadMGB64InstallValidatedROM(
     _ size: UInt32
 ) -> Int32
 
+@_silgen_name("goldenpad_mgb64_start_game")
+private func goldenPadMGB64StartGame() -> Int32
+
 enum ROMValidator {
     private static let expectedSize = 12 * 1024 * 1024
     private static let expectedUSSHA1 = "abe01e4aeb033b6c0836819f549c791b26cfde83"
@@ -66,6 +69,7 @@ enum ROMValidator {
             }
 
             var coreLoaded = false
+            var gameStarted = false
             if goldenPadMGB64CoreAcceptsROM() == 1 {
                 let installed = normalized.withUnsafeBytes { bytes in
                     goldenPadMGB64InstallValidatedROM(bytes.baseAddress, UInt32(bytes.count))
@@ -77,9 +81,17 @@ enum ROMValidator {
                 }
                 coreLoaded = true
                 print("[GoldenPad] Validated ROM installed; MGB64 scheduler ready")
+                guard goldenPadMGB64StartGame() == 1 else {
+                    return .invalid("The native renderer was not ready to start the validated game.")
+                }
+                gameStarted = true
             }
 
-            return .valid(byteOrder: byteOrder, coreLoaded: coreLoaded)
+            return .valid(
+                byteOrder: byteOrder,
+                coreLoaded: coreLoaded,
+                gameStarted: gameStarted
+            )
         } catch {
             return .invalid("The selected file could not be read: \(error.localizedDescription)")
         }

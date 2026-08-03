@@ -72,6 +72,7 @@ const char *g_pcStartRamrom = NULL;
 int g_pcSteadyView = 1;
 float g_pcSunShadowRadius = 500.0f;
 int g_pcTextureAnisotropy = 16;
+char g_pcTexturePack[1024] = "";
 float g_pcViewmodelFov = 50.0f;
 float g_pcViewmodelSway = 1.0f;
 int g_pcWeaponCycleBack = 0;
@@ -80,5 +81,5 @@ int g_pcWeaponCycleForward = 0;
 int goldenpad_mgb64_mobile_config_probe(void) {
     return g_pcAdsEnabled == 0 && g_pcFovY == 50.0f &&
            g_pcStartLevel == -1 && g_pcStartRamrom == NULL &&
-           g_pcFaithfulSim == 0;
+           g_pcFaithfulSim == 0 && g_pcTexturePack[0] == '\0';
 }

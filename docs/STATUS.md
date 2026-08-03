@@ -22,9 +22,9 @@ longer blocks MGB64 integration.
   target compiles no `src/libultra/**` or `src/libultrare/**` implementation
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
-- GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 61
-  explicit upstream native system/portable units and four project-owned mobile
-  adapters into 200-object, non-fat ARM64 archives for both
+- GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 70
+  explicit upstream native system/portable units and five project-owned mobile
+  adapters into 210-object, non-fat ARM64 archives for both
   `iphonesimulator` and `iphoneos` at the iOS 17 deployment target. Release app
   executables link for both SDKs.
 - Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
@@ -36,8 +36,9 @@ longer blocks MGB64 integration.
   SDKs. The only source changes required were guards around two macOS-only
   `CAMetalLayer.displaySyncEnabled` writes. The verifier applies and reverses
   that exact-source patch, confirms `gfx_metal_api`, and leaves upstream clean.
-- MGB64's Fast3D display-list interpreter and room-normal helper compile into
-  two-object, non-fat ARM64 archives for both mobile SDKs. The archive exports
+- MGB64's Fast3D display-list interpreter, room-normal helper, screenshot-series
+  service and texture-pack services compile into five-object, non-fat ARM64
+  archives for both mobile SDKs. The archive exports
   `gfx_init`, `gfx_run_dl`, and `gfx_end_frame` and retains no unresolved SDL,
   desktop OpenGL readback, or OpenGL swap symbols.
 - GoldenPad now implements MGB64's exact `platformGetMetalLayer` contract with a
@@ -99,6 +100,46 @@ longer blocks MGB64 integration.
   the monolithic compatibility file. Representative paths execute in the
   unchanged phone/tablet probe; the startup map closes 20, introduces none and
   leaves 97.
+- The mobile OS host now supplies thread-safe message queues, delayed/repeating
+  timers, `osClockRate`, and a 16 Kbit EEPROM-compatible memory surface. A new
+  neutral UIKit-owned host supplies input, frame-stat, deterministic-mode,
+  renderer-recovery and lifecycle-watchdog seams, while upstream's portable
+  overlay-hook unit remains the real owner of overlay dispatch. The live probe
+  blocks on a real delayed timer and round-trips the last EEPROM block.
+- MTKView retrace ownership is now explicit across attach, active, inactive and
+  detach states. Once UIKit is configured, the game thread waits for its real
+  producer; it does not synthesize frames while the app is inactive. The queue
+  operations are safe across the future background game thread and UI thread.
+- A fresh temporary `bossEntry` force-link map closed exactly 27 host symbols,
+  introduced none and reduced the remaining boundary from 97 to 70. After probe
+  removal, both SDK core/renderer gates passed. Strict no-ROM runtime proof then
+  showed probe `0x80c24316` and first Metal frames at 1206x2622 on iPhone,
+  followed by 1668x2420 on iPad; each app was uninstalled and each simulator
+  shut down before proceeding.
+- Real upstream settings, trace, decoration, screenshot, texture-pack and
+  clean-room native audio modules close the remaining startup boundary. The
+  permanent background-launch bridge now retains `bossEntry`, `portAudioInit`,
+  the sequence synthesizer and SFX mixer in both final SDK apps with zero
+  unresolved startup symbols and no duplicate definitions.
+- The validated-ROM path starts `bossEntry` once on a detached game thread only
+  after the UIKit Metal renderer and scheduler are ready. MTKView stops drawing
+  empty host frames after launch and supplies retraces while the game thread
+  submits real display lists through Fast3D/Metal.
+- The setup shell yields to a landscape gameplay surface with independent
+  phone/tablet touch profiles. Swift samples touch and assigned Game Controller
+  state once per MTKView frame and publishes exact N64 stick/button state plus
+  modern right-stick aim to the C host. The deterministic bridge probe observed
+  `stick=39,-59`, `right=-7947,-31789`, `buttons=0x6000` and passed.
+- The real MGB64 audio decoder/mixer now pumps on consumed retrace messages. Its
+  22.05 kHz stereo output enters a bounded project-owned PCM ring and is pulled
+  by an `AVAudioSourceNode`; `AVAudioEngine` performs device-rate conversion.
+  Runtime proof requires rendered frames and non-zero samples and passed on
+  both simulator classes.
+- Strict private-ROM runtime proof rendered the GoldenEye title animation and
+  loaded multiple demo-stage setup/resource sets at 2622x1206 on iPhone 16 Pro,
+  then 2420x1668 on iPad Pro 11-inch (M4). Both runs decoded 261/261 SFX,
+  parsed 75 music instruments, initialized the native sequence synthesizer,
+  reported non-zero PCM, and were fully removed/shut down in sequence.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -184,13 +225,13 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The renderer lifecycle remains visually empty. Game startup closure, real
-  minimap overlay, game audio and input seams
-  remain; the volatile ROM handoff alone does not start menus or gameplay.
+- The EEPROM-compatible game surface is currently process-memory only. Existing
+  host save files are persistent, but game EEPROM must still be bridged to an
+  atomic Application Support file before save acceptance.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- No title/menu/mission rendering, game audio/save integration,
+- Interactive menu navigation and mission completion, persistent game saves,
   physical-controller/gyro acceptance, touch-only mission completion,
   multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
@@ -199,7 +240,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Close the remaining `bossEntry` portable-platform surface, then start its
-consumer loop off the UI thread and submit the first title/menu display
-lists. Do not import matching-target SDK
-implementation sources or Xbox/XBLA material.
+Bridge the live 16 Kbit game EEPROM to atomic Application Support storage, then
+use the connected touch input to navigate the front end and begin/complete the
+first mission. Do not import matching-target SDK implementation sources or
+Xbox/XBLA material.
