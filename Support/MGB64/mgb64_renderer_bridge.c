@@ -1,11 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* GoldenPad owns ROM import. Keep the renderer probe explicitly data-free;
- * these become non-null only after the validated private import path is wired. */
-uint8_t *g_romData = 0;
-uint32_t g_romSize = 0;
-
 #ifdef GOLDENPAD_MGB64_RENDERER
 #include "gfx_pc.h"
 #include "gfx_rendering_api.h"

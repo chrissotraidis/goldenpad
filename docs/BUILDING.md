@@ -111,7 +111,9 @@ cmake -S . -B build-mgb64-renderer-simulator -G Xcode \
 ```
 
 This starts and presents ROM-free empty frames through MGB64's real backend. It
-does not load retail resources or submit title/menu display lists.
+also enables the existing validator to install a supported normalized ROM into
+volatile MGB64-owned memory after the exact SHA-1 passes. It does not yet patch
+the file table or submit title/menu display lists.
 
 ## RT64 iOS static renderer
 

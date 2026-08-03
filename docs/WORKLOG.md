@@ -1,5 +1,26 @@
 # Worklog
 
+## 2026-08-03 — hand validated retail bytes to volatile core memory
+
+- Split ROM ownership from the renderer bridge. Core builds now accept bytes
+  only after the existing size/header/byte-order/SHA-1 validator succeeds; the
+  C boundary independently rechecks 12 MiB size, big-endian header and internal
+  `GOLDENEYE` title before making its own heap copy.
+- Replacement zeroes the prior allocation before freeing it. Core-free builds
+  retain validation-only behavior, and no path writes normalized retail bytes
+  into the app bundle, repository or persistent cache.
+- Used the ignored supported V64 through a temporary Simulator app-container
+  copy. iPhone logged the volatile MGB64 install while its real renderer kept
+  presenting at 1206x2622; the app/container was removed and phone shut down
+  before iPad repeated at 1668x2420 and was likewise removed/shut down.
+- The next gate is MGB64 file-table/resource patching followed by the smallest
+  title/menu main-loop adapter.
+- Rebuilt both ordinary core-free SDK targets and reran the enhanced 161-object
+  core verifier. The foundation IPA reproduced twice at SHA-256
+  `7ee9af41309b6b9b52836c4b6974c01087eac9b164984c1f9d949e2aabc49e36`;
+  its eight-member audit passed and sorted app content matched
+  `23da2017f0fa283924c78cb3bc2e1ded0c3c631fd28c5e0f8758a3a3f5c0baf9`.
+
 ## 2026-08-03 — link and run the MGB64 Fast3D/Metal lifecycle
 
 - Added a narrow mobile selector patch that chooses MGB64's Metal backend

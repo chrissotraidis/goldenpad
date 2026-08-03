@@ -182,6 +182,15 @@ iPhone 16 Pro first reported backend init, `MSAA=0`, and `first frame: scene
 reported the same at 1668x2420. Five-second observation windows produced no GPU
 errors. This proves a real ROM-free MGB64 frame lifecycle, not title/menu output.
 
+The next private-data subgate reused the existing automation path with the
+supported V64 copied only into each Simulator app's temporary directory.
+Require `Validated ROM installed in volatile MGB64 memory` after SHA-1
+validation. iPhone passed first while the renderer continued at 1206x2622; its
+app was uninstalled and simulator shut down before iPad repeated at 1668x2420.
+The iPad app was then uninstalled and shut down. The source copy and core-owned
+heap are therefore absent after each pass. This proves volatile ownership, not
+resource-table patching or title startup.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

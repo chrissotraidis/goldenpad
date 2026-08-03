@@ -216,7 +216,7 @@ private struct FoundationView: View {
 enum ROMValidationState {
     case notSelected
     case validating
-    case valid(byteOrder: String)
+    case valid(byteOrder: String, coreLoaded: Bool)
     case invalid(String)
 
     var title: String {
@@ -234,8 +234,12 @@ enum ROMValidationState {
             "Choose your legally obtained original US retail dump. The file is read only for validation and is not bundled with the app."
         case .validating:
             "Normalizing byte order and checking the retail SHA-1 entirely on this device."
-        case let .valid(byteOrder):
-            "Validation passed (\(byteOrder)). Core integration is the next project gate; this foundation build does not start the game."
+        case let .valid(byteOrder, coreLoaded):
+            if coreLoaded {
+                "Validation passed (\(byteOrder)). A private in-memory copy is available to the native core; no retail bytes were written to the app or repository."
+            } else {
+                "Validation passed (\(byteOrder)). This foundation build does not retain the selected file or start the game."
+            }
         case let .invalid(reason):
             reason
         }

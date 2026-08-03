@@ -90,7 +90,10 @@ then iPad launches prove the exact `platformGetMetalLayer` handoff from UIKit.
 The third subgate now passes: both closures link in final ARM64 apps and the real
 MGB64 backend encodes/presents UIKit-timed ROM-free empty frames on both device
 classes. G3 remains open until validated retail resources enter the private
-loader and the mobile main loop submits title/menu display lists.
+loader and the mobile main loop submits title/menu display lists. The private
+loader subgate now passes too: exact-SHA-1 normalized bytes enter only a
+core-owned volatile buffer, with sequential phone/tablet proof and container
+removal. File-table patching and title startup remain open.
 
 ### I — Input and touch
 

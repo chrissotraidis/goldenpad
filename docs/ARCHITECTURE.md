@@ -78,14 +78,16 @@ The next boundary starts the title/menu display-list loop.
 ## ROM and resources
 
 ```text
-UIDocumentPicker -> security-scoped URL -> private temporary copy
+UIDocumentPicker -> security-scoped URL -> mapped private source
     -> normalize Z64/V64/N64 byte order -> SHA-1 validation
-    -> derive/cache only required resources in Application Support
-    -> remove temporary source copy -> start core
+    -> copy normalized bytes into volatile core-owned memory
+    -> close source access -> patch resources/start core
 ```
 
-Early milestones may read the validated ROM directly from the selected URL.
-The final flow never bundles it. Generated caches are versioned by ROM hash,
+The handoff rechecks exact size, big-endian header and internal title before
+copying. Replacement clears the prior heap buffer before freeing it; process or
+app-container removal clears the remainder. The final flow never bundles the
+ROM. Generated caches are versioned by ROM hash,
 core version, schema, and locale, and can be regenerated. Caches must stay in
 `Application Support`, never `Documents` or the app bundle.
 

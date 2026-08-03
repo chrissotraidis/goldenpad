@@ -44,6 +44,7 @@ add_executable(GoldenPad MACOSX_BUNDLE
     Sources/TouchControlsView.swift
     Sources/TouchLayout.swift
     Support/MGB64/mgb64_core_bridge.c
+    Support/MGB64/mgb64_rom_bridge.c
     Support/MGB64/mgb64_renderer_bridge.c
     Support/MGB64/mgb64_metal_surface_bridge.mm
     ${goldenpad_rt64_bridge}

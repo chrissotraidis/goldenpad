@@ -71,9 +71,11 @@ copied into this repository.
 Verification applies the patches only inside an ignored reference checkout and
 removes them on exit; generated Metal products and static archives remain
 untracked build artifacts.
-The renderer lifecycle bridge defines ROM state as null/zero and submits only
-empty frames; it cannot consume or reproduce game media before a validated
-private import path is explicitly connected.
+ROM state begins null/zero. Only the existing exact SHA-1 validator may pass
+normalized bytes to the core-owned heap; the C boundary rechecks size, header
+and internal title. Replacement zeroes the prior allocation before freeing it,
+and no bridge writes retail bytes to persistent storage. Renderer lifecycle
+frames remain empty until the resource table and game main loop are connected.
 
 ## ROM validation
 

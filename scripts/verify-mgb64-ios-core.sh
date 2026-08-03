@@ -53,6 +53,8 @@ do
     file "$binary" | grep -q 'Mach-O 64-bit executable arm64'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_core_identity'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_core_probe'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_install_validated_rom'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_clear_rom'
     nm -gU "$binary" | grep -q '_randomGetNext'
     nm -gU "$binary" | grep -q '_randomSetSeed'
     strings "$binary" | grep -q \

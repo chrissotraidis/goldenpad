@@ -53,6 +53,11 @@ longer blocks MGB64 integration.
   encoded/presented its first ROM-free empty frame at 1206x2622 on iPhone 16 Pro,
   then 1668x2420 on iPad Pro 11-inch (M4). Both runs reported one-sample MSAA,
   no GPU errors during the observation window, and were removed/shut down.
+- The existing exact-SHA-1 validator now installs supported normalized bytes
+  into a core-owned volatile buffer only when MGB64 is linked. The C boundary
+  rechecks 12 MiB size, N64 header and internal title. Sequential private V64
+  runs logged the handoff on iPhone, then iPad; each entire app container and
+  its temporary source copy was removed before shutdown.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -127,10 +132,10 @@ longer blocks MGB64 integration.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `2d28ed0e6944e60974d166450536ae0adb01b8a60fe5316198881a5710d39b03`.
+  `7ee9af41309b6b9b52836c4b6974c01087eac9b164984c1f9d949e2aabc49e36`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `f67321b0f9c234e3b84895f373293c3782bcfa563f438c8608f996d366c8d2d1`.
+  `23da2017f0fa283924c78cb3bc2e1ded0c3c631fd28c5e0f8758a3a3f5c0baf9`.
 
 ## Failed or blocked
 
@@ -138,9 +143,9 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The renderer lifecycle is intentionally data-free. Validated ROM-resource
-  loading, the game/platform main loop, real minimap overlay, audio and input
-  seams remain; the current empty frame does not start menus or gameplay.
+- The renderer lifecycle remains visually empty. File-table/resource patching,
+  the game/platform main loop, real minimap overlay, audio and input seams
+  remain; the volatile ROM handoff alone does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
@@ -153,7 +158,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Connect the validated private ROM-resource loader to MGB64 without retaining
-retail bytes, then add the smallest UIKit-owned platform/main-loop adapter that
-submits the first title/menu display lists. Do not import matching-target SDK
+Patch MGB64's file/resource table from the now-proven volatile ROM buffer, then
+add the smallest UIKit-owned platform/main-loop adapter that submits the first
+title/menu display lists. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

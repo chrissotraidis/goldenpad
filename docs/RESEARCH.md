@@ -102,7 +102,10 @@ On this Apple M1 host, commit `cd9b58f`:
   1206x2622 on iPhone followed by 1668x2420 on iPad;
 - linked the Fast3D/Metal closure into final ARM64 Simulator and device apps,
   then encoded/presented real ROM-free MGB64 empty frames sequentially at those
-  same drawable sizes without SDL/OpenGL/AppKit dependencies or GPU errors.
+  same drawable sizes without SDL/OpenGL/AppKit dependencies or GPU errors;
+- normalized the supported private V64 through the existing exact SHA-1 gate,
+  installed it into core-owned volatile memory on iPhone and then iPad, and
+  removed each entire app container immediately after its sequential pass.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
@@ -150,8 +153,8 @@ verified alternative, not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. What is the smallest validated private resource adapter that populates
-   MGB64's ROM view without retaining or packaging retail bytes?
+1. Which exact MGB64 file-table/resource initialization calls must run after the
+   now-proven volatile ROM handoff and before title startup?
 2. What is the smallest mobile main-loop adapter that starts title/menu display
    lists while UIKit owns lifecycle, timing and drawable acquisition?
 3. Which audio, input, filesystem and ROM-resource callbacks must be connected

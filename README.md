@@ -30,6 +30,9 @@ MGB64's exact `platformGetMetalLayer` boundary. The complete Fast3D/Metal closur
 now links into opt-in ARM64 Simulator and device apps and presents real,
 ROM-free empty frames through MGB64's backend. Sequential phone/tablet launches
 proved backend initialization and first-frame encoding at full drawable size.
+After the existing SHA-1 gate, linked-core builds can now hand the normalized
+retail data to MGB64 as a volatile in-memory copy; sequential phone/tablet proof
+confirmed the handoff, followed by complete app-container removal.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
