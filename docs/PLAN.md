@@ -68,8 +68,8 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
-G1 passes: all 135 MGB64 game translation units and 26 explicit native
-system/asset glue units compile into 161-object ARM64 archives for both mobile
+G1 passes: all 135 MGB64 game translation units and 28 explicit native
+system/asset glue units compile into 163-object ARM64 archives for both mobile
 SDKs. Release app binaries link real upstream random-core code, and the same
 deterministic probe ran sequentially on iPhone and iPad without ROM data.
 
@@ -93,7 +93,10 @@ classes. G3 remains open until validated retail resources enter the private
 loader and the mobile main loop submits title/menu display lists. The private
 loader subgate now passes too: exact-SHA-1 normalized bytes enter only a
 core-owned volatile buffer, with sequential phone/tablet proof and container
-removal. File-table patching and title startup remain open.
+removal. File-table patching now passes too: upstream native offset/placeholder
+units link for both SDKs, known background and Dam entries are verified inside
+the owned buffer, and sequential phone/tablet runtime logs confirm readiness.
+Scheduler/platform closure and title startup remain open.
 
 ### I — Input and touch
 

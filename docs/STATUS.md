@@ -23,7 +23,7 @@ longer blocks MGB64 integration.
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
 - GoldenPad's opt-in MGB64 target compiles all 135 game translation units plus
-  26 explicit native system/asset glue units into 161-object, non-fat ARM64
+  28 explicit native system/asset glue units into 163-object, non-fat ARM64
   archives for both `iphonesimulator` and `iphoneos` at the iOS 17 deployment
   target. Release app executables link for both SDKs.
 - Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
@@ -58,6 +58,11 @@ longer blocks MGB64 integration.
   rechecks 12 MiB size, N64 header and internal title. Sequential private V64
   runs logged the handoff on iPhone, then iPad; each entire app container and
   its temporary source copy was removed before shutdown.
+- The core now includes upstream's generated native ROM offsets and one-byte,
+  zero-content asset-symbol placeholders. After validation it patches the
+  complete file table and verifies the first background plus Dam entries point
+  inside the owned buffer. Both final SDK binaries link the patch function;
+  sequential iPhone/iPad runs reported `MGB64 file table ready` before cleanup.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -132,10 +137,10 @@ longer blocks MGB64 integration.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `7ee9af41309b6b9b52836c4b6974c01087eac9b164984c1f9d949e2aabc49e36`.
+  `fb866882eca3ae019b145eed9dd0ab8efd3b0ddb20594433eb45fa40ad608dae`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `23da2017f0fa283924c78cb3bc2e1ded0c3c631fd28c5e0f8758a3a3f5c0baf9`.
+  `102337b9cb2a07b4471f7e015c7c06459643de98f6d68c62bdae630308e827cd`.
 
 ## Failed or blocked
 
@@ -143,8 +148,8 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The renderer lifecycle remains visually empty. File-table/resource patching,
-  the game/platform main loop, real minimap overlay, audio and input seams
+- The renderer lifecycle remains visually empty. Scheduler/game-platform
+  closure, real minimap overlay, game audio and input seams
   remain; the volatile ROM handoff alone does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
@@ -158,7 +163,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Patch MGB64's file/resource table from the now-proven volatile ROM buffer, then
-add the smallest UIKit-owned platform/main-loop adapter that submits the first
-title/menu display lists. Do not import matching-target SDK
+Resolve the minimum native scheduler/platform closure around `bossEntry`, then
+add the UIKit-owned main-loop adapter that submits the first title/menu display
+lists. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

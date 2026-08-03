@@ -89,8 +89,8 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
-- compiled all 135 game C files plus 26 explicit native system/asset glue files
-  into 161-object ARM64 archives for both Apple mobile SDKs;
+- compiled all 135 game C files plus 28 explicit native system/asset glue files
+  into 163-object ARM64 archives for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
 - compiled the complete native Metal backend and its combiner/backend/MSAA
@@ -106,6 +106,9 @@ On this Apple M1 host, commit `cd9b58f`:
 - normalized the supported private V64 through the existing exact SHA-1 gate,
   installed it into core-owned volatile memory on iPhone and then iPad, and
   removed each entire app container immediately after its sequential pass.
+- linked upstream native ROM-offset and zero-content asset-symbol units, patched
+  the complete file table, and verified its first background and Dam entries
+  inside the owned buffer on both mobile device classes.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
@@ -153,8 +156,8 @@ verified alternative, not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. Which exact MGB64 file-table/resource initialization calls must run after the
-   now-proven volatile ROM handoff and before title startup?
+1. What is the minimum scheduler/platform closure required before `bossEntry`
+   can drive title frames from UIKit without SDL ownership?
 2. What is the smallest mobile main-loop adapter that starts title/menu display
    lists while UIKit owns lifecycle, timing and drawable acquisition?
 3. Which audio, input, filesystem and ROM-resource callbacks must be connected

@@ -48,6 +48,8 @@ set(goldenpad_mgb64_system_sources
     src/tlb_manage.c
     src/tlb_random.c
     src/c_data_filler.c
+    src/platform/rom_offsets.c
+    src/platform/asset_stubs.c
     assets/font_dl.c
     assets/GlobalImageTable.c
 )

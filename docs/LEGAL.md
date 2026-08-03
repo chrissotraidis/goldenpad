@@ -75,7 +75,9 @@ ROM state begins null/zero. Only the existing exact SHA-1 validator may pass
 normalized bytes to the core-owned heap; the C boundary rechecks size, header
 and internal title. Replacement zeroes the prior allocation before freeing it,
 and no bridge writes retail bytes to persistent storage. Renderer lifecycle
-frames remain empty until the resource table and game main loop are connected.
+frames remain empty until the game main loop is connected.
+MGB64's one-byte native asset-symbol placeholders contain no extracted content;
+the validated runtime table replaces them with private owned-buffer offsets.
 
 ## ROM validation
 

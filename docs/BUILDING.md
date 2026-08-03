@@ -60,8 +60,8 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
 
-The verifier compiles all 135 `src/game/*.c` translation units plus 26 explicit
-native system/asset glue units into 161-object ARM64 archives. It rejects a
+The verifier compiles all 135 `src/game/*.c` translation units plus 28 explicit
+native system/asset glue units into 163-object ARM64 archives. It rejects a
 mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
 `src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
 Simulator and device, and requires the final executables to retain the exact
@@ -112,8 +112,9 @@ cmake -S . -B build-mgb64-renderer-simulator -G Xcode \
 
 This starts and presents ROM-free empty frames through MGB64's real backend. It
 also enables the existing validator to install a supported normalized ROM into
-volatile MGB64-owned memory after the exact SHA-1 passes. It does not yet patch
-the file table or submit title/menu display lists.
+volatile MGB64-owned memory after the exact SHA-1 passes. The generated native
+offset unit patches the complete file table and verifies known background/Dam
+entries. It does not yet submit title/menu display lists.
 
 ## RT64 iOS static renderer
 

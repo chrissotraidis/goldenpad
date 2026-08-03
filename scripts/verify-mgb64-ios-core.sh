@@ -34,7 +34,7 @@ do
     test -f "$archive"
     xcrun lipo -info "$archive"
     objects=$(xcrun ar -t "$archive" | grep -c '\.o$')
-    if [ "$objects" -ne 161 ]; then
+    if [ "$objects" -ne 163 ]; then
         echo "Unexpected MGB64 core archive: $objects objects" >&2
         exit 1
     fi
@@ -55,6 +55,8 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_core_probe'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_install_validated_rom'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_clear_rom'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_file_table_ready'
+    nm -gU "$binary" | grep -q '_platformPatchFileTable'
     nm -gU "$binary" | grep -q '_randomGetNext'
     nm -gU "$binary" | grep -q '_randomSetSeed'
     strings "$binary" | grep -q \

@@ -81,7 +81,8 @@ The next boundary starts the title/menu display-list loop.
 UIDocumentPicker -> security-scoped URL -> mapped private source
     -> normalize Z64/V64/N64 byte order -> SHA-1 validation
     -> copy normalized bytes into volatile core-owned memory
-    -> close source access -> patch resources/start core
+    -> patch native file table to owned-buffer offsets
+    -> close source access -> start core
 ```
 
 The handoff rechecks exact size, big-endian header and internal title before
@@ -90,6 +91,12 @@ app-container removal clears the remainder. The final flow never bundles the
 ROM. Generated caches are versioned by ROM hash,
 core version, schema, and locale, and can be regenerated. Caches must stay in
 `Application Support`, never `Documents` or the app bundle.
+
+MGB64's generated `rom_offsets.c` performs the table patch. Its native
+`asset_stubs.c` contributes one-byte link placeholders only; they contain no
+game media and every active table pointer is replaced with a validated ROM
+offset before resource loading begins. Clearing ROM ownership first nulls all
+table pointers, then zeroes and frees the old allocation.
 
 ## Platform services
 

@@ -145,7 +145,7 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 161-object
+2026-08-03 gate passed the upstream native SDK guard and produced 163-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
 `goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, and the real
@@ -184,12 +184,20 @@ errors. This proves a real ROM-free MGB64 frame lifecycle, not title/menu output
 
 The next private-data subgate reused the existing automation path with the
 supported V64 copied only into each Simulator app's temporary directory.
-Require `Validated ROM installed in volatile MGB64 memory` after SHA-1
+Require `Validated ROM installed; MGB64 file table ready` after SHA-1
 validation. iPhone passed first while the renderer continued at 1206x2622; its
 app was uninstalled and simulator shut down before iPad repeated at 1668x2420.
 The iPad app was then uninstalled and shut down. The source copy and core-owned
-heap are therefore absent after each pass. This proves volatile ownership, not
-resource-table patching or title startup.
+heap are therefore absent after each pass. This proves volatile ownership and
+file-table patching, not title startup.
+
+The file-table gate adds upstream `rom_offsets.c` and its zero-content native
+asset-symbol placeholders. Both final SDK binaries must retain
+`platformPatchFileTable` and `goldenpad_mgb64_file_table_ready`. After validation,
+require `Validated ROM installed; MGB64 file table ready`. The 2026-08-03
+sequential run observed that line at 1206x2622 on iPhone, removed the app and
+shut down, then observed it at 1668x2420 on iPad before the same cleanup. The
+bridge verifies entry 1 and Dam entry 14 against exact owned-buffer offsets.
 
 ## RT64 mobile Metal and static-library gate
 

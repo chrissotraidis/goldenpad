@@ -1,5 +1,29 @@
 # Worklog
 
+## 2026-08-03 — patch the native file table from validated ROM memory
+
+- Added upstream `rom_offsets.c` and `asset_stubs.c` to the audited native core.
+  The latter contains only one-byte zero placeholders for legacy link symbols;
+  it carries no ROM-derived media. Activating the table increased the complete
+  core archive from 161 to 163 objects for both Apple mobile SDKs.
+- After exact validation and volatile ownership, the bridge now patches the
+  complete resource table and verifies the first background plus Dam entries
+  against their exact offsets inside the owned buffer. Clearing a ROM nulls
+  every table address before zeroing/freeing the allocation.
+- Core and linked-renderer verifiers passed for both SDKs. Final binaries retain
+  `platformPatchFileTable` and the readiness probe; the ignored MGB64 checkout
+  remained clean.
+- Sequential runtime logged `MGB64 file table ready` on iPhone at 1206x2622.
+  Its app/container was removed and simulator shut down before iPad repeated at
+  1668x2420 and was likewise removed/shut down.
+- The next gate is the smallest scheduler/platform closure around `bossEntry`,
+  not more ROM handling.
+- Rebuilt ordinary core-free Simulator/device apps. The foundation IPA
+  reproduced twice at SHA-256
+  `fb866882eca3ae019b145eed9dd0ab8efd3b0ddb20594433eb45fa40ad608dae`;
+  its eight-member audit passed and sorted app content matched
+  `102337b9cb2a07b4471f7e015c7c06459643de98f6d68c62bdae630308e827cd`.
+
 ## 2026-08-03 — hand validated retail bytes to volatile core memory
 
 - Split ROM ownership from the renderer bridge. Core builds now accept bytes

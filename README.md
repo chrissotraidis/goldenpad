@@ -19,8 +19,8 @@ exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
 sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
 yet, but the first production-core gate now passes: all 135 MGB64 game
-translation units plus
-26 native system/asset glue units compile into 161-object ARM64 archives for
+translation units plus 28 native system/asset glue units compile into
+163-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
 game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
@@ -33,6 +33,8 @@ proved backend initialization and first-frame encoding at full drawable size.
 After the existing SHA-1 gate, linked-core builds can now hand the normalized
 retail data to MGB64 as a volatile in-memory copy; sequential phone/tablet proof
 confirmed the handoff, followed by complete app-container removal.
+The native file/resource table is now patched to exact offsets inside that
+owned buffer, including the Dam background resource.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
