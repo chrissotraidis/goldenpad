@@ -76,8 +76,10 @@ calls after startup; before startup, `MTKView` presents an empty frame and offer
 the scheduler a retrace. Host-owned ROM
 globals remain null/zero until a validated private import succeeds. The minimap
 queue is an explicit lifecycle-only no-op until the real game overlay is wired.
-The native title animation and demo-stage setup now render through this path on
-both simulator classes; interactive menu navigation is the next boundary.
+The native title animation, authentic front end and Dam stage now render through
+this path on both simulator classes. A diagnostics-only Start script reaches
+the mission through the normal controller boundary; gameplay acceptance remains
+separate.
 
 ## Scheduler and mobile OS surface
 
@@ -193,8 +195,10 @@ modern and southpaw presets, four deterministic controller slots,
 extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
 Simulator-only synthetic MFi controllers are excluded from auto-hide without
 changing physical-device behavior. The selected core now consumes these frames
-through its real `osCont*` calls, renders its title/demo path, and emits decoded
-game audio through the native PCM chain. Real-controller auto-hide, physical
+through its real `osCont*` calls, renders its title/front-end/Dam path, and emits
+decoded game audio through the native PCM chain. Diagnostics observe menu/stage
+state only through atomics published alongside the game-thread controller read;
+they do not mutate game state directly. Real-controller auto-hide, physical
 gyro and interactive gameplay semantics remain acceptance gates.
 
 ## Targets

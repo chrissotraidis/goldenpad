@@ -76,6 +76,7 @@ do
         _goldenpad_mgb64_audio_output_probe \
         _goldenpad_mgb64_eeprom_load \
         _goldenpad_mgb64_eeprom_snapshot \
+        _goldenpad_mgb64_runtime_state \
         _alBnkfNew \
         _portAudioPlaySfxDetailed
     do

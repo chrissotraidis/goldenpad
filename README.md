@@ -21,8 +21,8 @@ implementations, ROM data, or extracted media.
 After exact SHA-1 validation, the app keeps the supported retail ROM only in a
 private core-owned memory buffer, patches MGB64's native resource table, starts
 `bossEntry` once on a background thread, and lets the UIKit-owned `MTKView`
-drive the cooperative scheduler. The GoldenEye title sequence and demo-stage
-display lists now render natively through Metal. Strict sequential proof passed
+drive the cooperative scheduler. The GoldenEye title sequence, front-end menus,
+and Dam mission now render natively through Metal. Strict sequential proof passed
 on iPhone 16 Pro at 2622×1206 and iPad Pro 11-inch (M4) at 2420×1668; each app
 was terminated, uninstalled, and its simulator shut down before the next run.
 
@@ -33,8 +33,11 @@ right-stick aim, and `B|Z` in the C host. MGB64's clean-room sequence/SFX
 synthesizer decodes the retail banks, pumps on game retraces, and feeds a bounded
 22.05 kHz stereo PCM ring consumed by `AVAudioEngine`; both device classes
 produced non-zero PCM in runtime proof. The 2 KiB game EEPROM now restores from
-and flushes atomically to Application Support across relaunch. Interactive menu/mission completion,
-physical-device controls, multiplayer, and final packaging remain open.
+and flushes atomically to Application Support across relaunch. A diagnostic
+Start script traversed the real controller boundary and authentic front end,
+selected Agent/Dam, and reached live gameplay on both simulator classes.
+Mission completion, physical-device controls, multiplayer, and final packaging
+remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

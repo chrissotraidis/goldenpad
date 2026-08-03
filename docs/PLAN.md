@@ -62,7 +62,7 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 - [x] G1: compile MGB64's audited game core for Apple ARM64 simulator/device.
 - [x] G2: parameterize RT64 Metal shaders/surfaces for iOS.
-- [ ] G3: title, menus and mission load render correctly.
+- [x] G3: title, menus and mission load render correctly.
 - [ ] G4: complete one mission with correct audio and persisted save.
 - [ ] G5: background/foreground and audio route/interruption recovery.
 
@@ -118,10 +118,12 @@ leaving 70. Native settings, trace/decor/texture/audio services then close the
 remaining boundary without importing the excluded desktop/SDK owners. The real
 title sequence and demo-stage setup now render through Fast3D/Metal sequentially
 on iPhone and iPad, the MGB64 synth feeds a bounded native PCM ring, and Swift
-input reaches `osContGetReadData`. G3 remains open only for interactive menu
-navigation and a controlled mission load. The game EEPROM now restores from and
-flushes atomically to Application Support; exact 2 KiB relaunch probes passed
-sequentially on iPhone and iPad before full cleanup.
+input reaches `osContGetReadData`. G3 is complete: a diagnostic script emitted
+real one-frame Start input through that same boundary, traversed menus
+0/1/2/3/4/5/6/7/8/10, selected Agent/Dam, reached run-stage menu 11 and observed
+active stage 33. Live Dam gameplay rendered sequentially on iPhone and iPad
+before full cleanup. The game EEPROM also restores from and flushes atomically
+to Application Support; exact 2 KiB relaunch probes passed on both classes.
 
 ### I — Input and touch
 

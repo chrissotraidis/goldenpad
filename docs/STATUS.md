@@ -140,6 +140,13 @@ longer blocks MGB64 integration.
   then 2420x1668 on iPad Pro 11-inch (M4). Both runs decoded 261/261 SFX,
   parsed 75 music instruments, initialized the native sequence synthesizer,
   reported non-zero PCM, and were fully removed/shut down in sequence.
+- The diagnostic `--menu-probe` path publishes one-frame Start presses through
+  the normal Swift-to-N64 controller bridge; it does not call menu or stage
+  functions. Strict iPhone-then-iPad runs traversed the authentic front end,
+  selected Agent/Dam, reached menu 11 and observed the game thread change from
+  title stage 90 to active Dam stage 33. Private visual inspection confirmed
+  live Dam gameplay and native touch overlays at 2622x1206 and 2420x1668. Both
+  installs and temporary ROM copies were removed before simulator shutdown.
 - The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
   restored from Application Support at bootstrap, and atomically flushed with
   file protection on scene deactivation/backgrounding. Strict sequential
@@ -230,13 +237,10 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The EEPROM-compatible game surface is currently process-memory only. Existing
-  host save files are persistent, but game EEPROM must still be bridged to an
-  atomic Application Support file before save acceptance.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Interactive menu navigation and mission completion, persistent game saves,
+- Mission completion and post-mission progression persistence,
   physical-controller/gyro acceptance, touch-only mission completion,
   multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
@@ -245,7 +249,6 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Bridge the live 16 Kbit game EEPROM to atomic Application Support storage, then
-use the connected touch input to navigate the front end and begin/complete the
-first mission. Do not import matching-target SDK implementation sources or
-Xbox/XBLA material.
+Exercise real gameplay actions through the connected touch path, then complete
+Dam on Agent and verify the resulting EEPROM progression survives relaunch.
+Do not import matching-target SDK implementation sources or Xbox/XBLA material.

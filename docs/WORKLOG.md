@@ -1,5 +1,21 @@
 # Worklog
 
+## 2026-08-03 — traverse the authentic front end and load Dam
+
+- Added a diagnostics-only atomic snapshot of menu, stage, selection, file-slot
+  hover and cursor state, published from the game thread's real controller-read
+  boundary.
+- Added `--menu-probe`, which sends one-frame Start presses through the normal
+  Swift snapshot and libultra-compatible N64 mapping. It does not call menu or
+  stage functions.
+- Strict sequential runs traversed menus 0/1/2/3/4/5/6/7/8/10, selected
+  Agent/Dam, reached run-stage menu 11 and reported active Dam stage 33 on
+  iPhone 16 Pro, then iPad Pro 11-inch (M4).
+- Private visual inspection confirmed live Dam gameplay with the native touch
+  overlay at 2622x1206 and 2420x1668. Each installed app and temporary ROM copy
+  was removed and each simulator was shut down before proceeding. G3 is now
+  complete; mission completion is the next production gate.
+
 ## 2026-08-03 — persist the real game EEPROM
 
 - Added a mutex-protected import/snapshot boundary around the exact 2 KiB MGB64

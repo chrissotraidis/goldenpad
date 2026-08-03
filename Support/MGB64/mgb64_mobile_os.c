@@ -30,6 +30,13 @@ static u32 goldenpad_retrace_count;
 static pthread_mutex_t goldenpad_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static _Atomic int goldenpad_external_retrace_configured;
 static _Atomic int goldenpad_external_retrace_active;
+static _Atomic int goldenpad_runtime_menu = -1;
+static _Atomic int goldenpad_runtime_stage = -1;
+static _Atomic int goldenpad_runtime_pending_stage = -1;
+static _Atomic int goldenpad_runtime_selected_stage = -1;
+static _Atomic int goldenpad_runtime_hover_folder = -1;
+static _Atomic int goldenpad_runtime_cursor_x;
+static _Atomic int goldenpad_runtime_cursor_y;
 
 #define GOLDENPAD_MAX_TIMERS 16
 #define GOLDENPAD_EEPROM_SIZE 2048
@@ -412,8 +419,41 @@ s32 osContGetQuery(OSContStatus *status) {
 }
 
 s32 osContGetReadData(OSContPad *pads) {
+    extern s32 current_menu;
+    extern s32 g_StageNum;
+    extern s32 g_MainStageNum;
+    extern s32 selected_stage;
+    extern s32 port_front_hover_folder;
+    extern f32 cursor_h_pos;
+    extern f32 cursor_v_pos;
+
     goldenpad_mgb64_read_controller_pads(pads);
+    atomic_store(&goldenpad_runtime_menu, current_menu);
+    atomic_store(&goldenpad_runtime_stage, g_StageNum);
+    atomic_store(&goldenpad_runtime_pending_stage, g_MainStageNum);
+    atomic_store(&goldenpad_runtime_selected_stage, selected_stage);
+    atomic_store(&goldenpad_runtime_hover_folder, port_front_hover_folder);
+    atomic_store(&goldenpad_runtime_cursor_x, (int)(cursor_h_pos * 100.0f));
+    atomic_store(&goldenpad_runtime_cursor_y, (int)(cursor_v_pos * 100.0f));
     return 0;
+}
+
+void goldenpad_mgb64_runtime_state(
+    int *menu, int *stage, int *pending_stage, int *selected_stage,
+    int *hover_folder, int *cursor_x, int *cursor_y) {
+    if (menu != NULL) *menu = atomic_load(&goldenpad_runtime_menu);
+    if (stage != NULL) *stage = atomic_load(&goldenpad_runtime_stage);
+    if (pending_stage != NULL) {
+        *pending_stage = atomic_load(&goldenpad_runtime_pending_stage);
+    }
+    if (selected_stage != NULL) {
+        *selected_stage = atomic_load(&goldenpad_runtime_selected_stage);
+    }
+    if (hover_folder != NULL) {
+        *hover_folder = atomic_load(&goldenpad_runtime_hover_folder);
+    }
+    if (cursor_x != NULL) *cursor_x = atomic_load(&goldenpad_runtime_cursor_x);
+    if (cursor_y != NULL) *cursor_y = atomic_load(&goldenpad_runtime_cursor_y);
 }
 
 s32 osPfsInit(OSMesgQueue *mq, OSPfs *pfs, s32 channel) {

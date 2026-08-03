@@ -16,6 +16,17 @@ private func goldenPadMGB64SetControllerState(
 @_silgen_name("goldenpad_mgb64_controller_input_probe")
 private func goldenPadMGB64ControllerInputProbe() -> Int32
 
+@_silgen_name("goldenpad_mgb64_runtime_state")
+private func goldenPadMGB64RuntimeState(
+    _ menu: UnsafeMutablePointer<Int32>?,
+    _ stage: UnsafeMutablePointer<Int32>?,
+    _ pendingStage: UnsafeMutablePointer<Int32>?,
+    _ selectedStage: UnsafeMutablePointer<Int32>?,
+    _ hoverFolder: UnsafeMutablePointer<Int32>?,
+    _ cursorX: UnsafeMutablePointer<Int32>?,
+    _ cursorY: UnsafeMutablePointer<Int32>?
+)
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -177,6 +188,11 @@ final class InputCoordinator: ObservableObject {
     private let motionManager = CMMotionManager()
     private var motionLook = SIMD2<Float>.zero
     private var didReportCoreInputProbe = false
+    private var menuProbeLastMenu: Int32 = .min
+    private var menuProbeLastStage: Int32 = .min
+    private var menuProbeLastPendingStage: Int32 = .min
+    private var menuProbeFramesInMenu = 0
+    private var didReportMenuProbeMissionLoad = false
 
     init() {
         assignInitialControllers()
@@ -280,6 +296,7 @@ final class InputCoordinator: ObservableObject {
     }
 
     func publishToCore() {
+        runMenuProbeIfRequested()
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
             touch = InputSnapshot(
@@ -309,6 +326,63 @@ final class InputCoordinator: ObservableObject {
             didReportCoreInputProbe = true
             let result = goldenPadMGB64ControllerInputProbe()
             print("[GoldenPad] Mobile core input probe: \(result == 1 ? "PASS" : "FAIL")")
+        }
+    }
+
+    private func runMenuProbeIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("--menu-probe") else { return }
+        var menu: Int32 = -1
+        var stage: Int32 = -1
+        var pendingStage: Int32 = -1
+        var selectedStage: Int32 = -1
+        var hoverFolder: Int32 = -1
+        var cursorX: Int32 = 0
+        var cursorY: Int32 = 0
+        goldenPadMGB64RuntimeState(
+            &menu, &stage, &pendingStage, &selectedStage,
+            &hoverFolder, &cursorX, &cursorY
+        )
+
+        if menu != menuProbeLastMenu {
+            menuProbeLastMenu = menu
+            menuProbeFramesInMenu = 0
+            print(
+                "[GoldenPad] Menu probe state: menu=\(menu) stage=\(stage) " +
+                "pending=\(pendingStage) selected=\(selectedStage) " +
+                "hover=\(hoverFolder) cursor=\(cursorX),\(cursorY)"
+            )
+        } else {
+            menuProbeFramesInMenu += 1
+        }
+
+        if stage != menuProbeLastStage || pendingStage != menuProbeLastPendingStage {
+            menuProbeLastStage = stage
+            menuProbeLastPendingStage = pendingStage
+            print(
+                "[GoldenPad] Menu probe stage: active=\(stage) pending=\(pendingStage) " +
+                "selected=\(selectedStage)"
+            )
+        }
+        if !didReportMenuProbeMissionLoad, stage == 33 {
+            didReportMenuProbeMissionLoad = true
+            print("[GoldenPad] Menu probe controlled Dam load: PASS")
+        }
+
+        touch = .neutral
+        let isActionableMenu = (0...10).contains(menu) && menu != 5 ||
+            (menu == 5 && hoverFolder >= 0)
+        if isActionableMenu,
+           menuProbeFramesInMenu >= 30,
+           (menuProbeFramesInMenu - 30).isMultiple(of: 120) {
+            touch.buttons = [.pause]
+            print("[GoldenPad] Menu probe Start pulse: menu=\(menu)")
+        } else if menu == 5,
+                  menuProbeFramesInMenu > 0,
+                  menuProbeFramesInMenu.isMultiple(of: 120) {
+            print(
+                "[GoldenPad] Menu probe waiting for folder: hover=\(hoverFolder) " +
+                "cursor=\(cursorX),\(cursorY)"
+            )
         }
     }
 

@@ -294,6 +294,32 @@ ROM data remained ignored local evidence. Simulator output proves nonzero native
 PCM delivery; a real-speaker and route/interruption pass remains a physical-device
 gate.
 
+### Controlled menu and mission-load gate
+
+Use the combined Simulator build with a private ignored supported V64 and the
+diagnostic argument below. The source file must live outside tracked/build
+outputs; copying it into the installed app's temporary container is acceptable
+only when the app is uninstalled after the run.
+
+```sh
+xcrun simctl launch --console-pty DEVICE_ID \
+  com.chrissotraidis.goldenpad \
+  --validate-rom /private/path/to/retail-game.v64 --menu-probe
+```
+
+`--menu-probe` reads an atomic snapshot published by the game thread and emits
+one-frame Start presses through the ordinary touch snapshot and N64 controller
+mapping. It must never invoke a front-end or stage-selection function directly.
+Require authentic transitions through menus 0, 1, 2, 3, 4, 5, 6, 7, 8 and 10,
+then menu 11, `active=33`, and `Menu probe controlled Dam load: PASS`.
+
+The 2026-08-03 run passed first at 2622x1206 on iPhone 16 Pro. The app was
+terminated and uninstalled and the phone was shut down before the identical app
+passed at 2420x1668 on iPad Pro 11-inch (M4). Private `/tmp` screenshots were
+inspected to confirm rendered Dam gameplay and the native touch overlay; no ROM
+or game-derived image entered the repository. The iPad received the same full
+cleanup. This completes G3, not mission-completion or touch-gameplay acceptance.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under
