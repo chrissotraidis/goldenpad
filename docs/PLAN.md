@@ -68,9 +68,9 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
-G1 passes: all 135 MGB64 game translation units, 56 explicit upstream native
-system/portable leaf units and three project-owned mobile adapters compile into
-194-object ARM64 archives for both mobile SDKs. Release app binaries link real
+G1 passes: all 135 MGB64 game translation units, 61 explicit upstream native
+system/portable units and four project-owned mobile adapters compile into
+200-object ARM64 archives for both mobile SDKs. Release app binaries link real
 upstream random-core and GU math code, and the same
 deterministic probe ran sequentially on iPhone and iPad without ROM data.
 
@@ -109,6 +109,8 @@ to 246 unresolved symbols with no GU blocker remaining. The next 28-unit
 SDL-free leaf slice closes another 61 with no new unresolved dependency, leaving
 185. Mobile-owned settings/startup defaults then close all 68 `g_pc*` names from
 the SDL platform owner without importing it, leaving 117.
+Real model/stage/radial/setup/weapon service modules plus native legacy data then
+close 20 more without a new dependency, leaving 97.
 
 ### I — Input and touch
 

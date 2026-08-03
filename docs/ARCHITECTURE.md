@@ -110,6 +110,12 @@ Game-side configuration and direct-start globals are owned by
 by the decompiled game code; UIKit settings can update them through a narrow
 bridge later. The SDL platform file remains excluded.
 
+Portable model conversion, level-name lookup, analog radial mapping, setup-name
+resolution and weapon-cue tables use MGB64's real separated upstream modules.
+Small game constants and the `unknown2` ROM offset live in
+`mgb64_mobile_legacy_data.c`, away from the desktop compatibility owner and
+without embedding the referenced ROM bytes.
+
 ## ROM and resources
 
 ```text

@@ -84,14 +84,25 @@ set(goldenpad_mgb64_portable_leaf_sources
     src/platform/weapon_bullet_type.c
     src/platform/weapon_cycle_queue.c
 )
+
+set(goldenpad_mgb64_portable_service_sources
+    src/app/cli_stage_tables.c
+    src/platform/model_convert.c
+    src/platform/radial_deadzone.c
+    src/platform/setup_pnames.c
+    src/platform/weapon_action_sfx.c
+)
 list(TRANSFORM goldenpad_mgb64_system_sources
     PREPEND "${GOLDENPAD_MGB64_SOURCE_DIR}/")
 list(TRANSFORM goldenpad_mgb64_portable_leaf_sources
     PREPEND "${GOLDENPAD_MGB64_SOURCE_DIR}/")
+list(TRANSFORM goldenpad_mgb64_portable_service_sources
+    PREPEND "${GOLDENPAD_MGB64_SOURCE_DIR}/")
 
 foreach(goldenpad_mgb64_source IN LISTS
         goldenpad_mgb64_game_sources goldenpad_mgb64_system_sources
-        goldenpad_mgb64_portable_leaf_sources)
+        goldenpad_mgb64_portable_leaf_sources
+        goldenpad_mgb64_portable_service_sources)
     if(goldenpad_mgb64_source MATCHES "/src/libultra(re)?/")
         message(FATAL_ERROR
             "SDK-lineage implementation source entered MGB64 core: ${goldenpad_mgb64_source}")
@@ -157,8 +168,10 @@ add_library(goldenpad_mgb64_core STATIC
     ${goldenpad_mgb64_game_sources}
     ${goldenpad_mgb64_system_sources}
     ${goldenpad_mgb64_portable_leaf_sources}
+    ${goldenpad_mgb64_portable_service_sources}
     Support/MGB64/mgb64_mobile_config.c
     Support/MGB64/mgb64_mobile_gu.c
+    Support/MGB64/mgb64_mobile_legacy_data.c
     Support/MGB64/mgb64_mobile_os.c
 )
 goldenpad_configure_mgb64_target(goldenpad_mgb64_core)

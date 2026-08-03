@@ -89,8 +89,8 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
-- compiled all 135 game C files, 56 explicit upstream native system/portable
-  leaf files and three project-owned mobile adapters into 194-object ARM64 archives
+- compiled all 135 game C files, 61 explicit upstream native system/portable
+  files and four project-owned mobile adapters into 200-object ARM64 archives
   for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
@@ -126,6 +126,10 @@ On this Apple M1 host, commit `cd9b58f`:
   project-owned mobile configuration unit rather than SDL; representative
   defaults executed on both device classes and the startup map fell from 185 to
   117 with no new unresolved name.
+- linked real model conversion, stage lookup, radial input, setup-name and
+  weapon-cue services plus a mobile legacy-data unit; representative paths ran
+  on both device classes and the startup map fell from 117 to 97 with no new
+  unresolved symbol.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.

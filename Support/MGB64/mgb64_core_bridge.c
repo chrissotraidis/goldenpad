@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef GOLDENPAD_MGB64_CORE
 void randomSetSeed(uint64_t seed);
@@ -10,6 +11,12 @@ int aimBoneArg0Proceeds(int arg0, int legacy);
 float watchInvPerspAspect(int legacy);
 extern uint32_t _rarewarelogoSegmentRomStart;
 int goldenpad_mgb64_mobile_config_probe(void);
+int goldenpad_mgb64_mobile_legacy_data_probe(void);
+void modelConvertFreeAll(void);
+void platformApplyRadialDeadzone(float *x, float *y, float deadzone, int radial);
+uint32_t setupPnamesTableOffset(const uint8_t *base, int index, int legacy);
+uint16_t portWeaponEquipCue(int weapon_id);
+const char *pcStageSlugForLevelId(int32_t level_id);
 
 #ifndef GOLDENPAD_MGB64_COMMIT
 #define GOLDENPAD_MGB64_COMMIT "unknown"
@@ -36,7 +43,17 @@ uint32_t goldenpad_mgb64_core_probe(void) {
         aimBoneArg0Proceeds(0, 0) != 1 ||
         watchInvPerspAspect(0) != 4.0f / 3.0f ||
         _rarewarelogoSegmentRomStart != UINT32_C(0x0029e560) ||
-        !goldenpad_mgb64_mobile_config_probe()) {
+        !goldenpad_mgb64_mobile_config_probe() ||
+        !goldenpad_mgb64_mobile_legacy_data_probe()) {
+        return 0;
+    }
+    x = 0.0f;
+    y = 0.0f;
+    platformApplyRadialDeadzone(&x, &y, 0.15f, 1);
+    modelConvertFreeAll();
+    if (x != 0.0f || y != 0.0f ||
+        setupPnamesTableOffset(NULL, 0, 0) != 0 ||
+        portWeaponEquipCue(4) != 232 || pcStageSlugForLevelId(-1) != NULL) {
         return 0;
     }
     randomSetSeed(UINT64_C(0x47504d47423634));

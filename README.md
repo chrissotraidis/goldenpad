@@ -19,8 +19,8 @@ exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
 sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
 yet, but the first production-core gate now passes: all 135 MGB64 game
-translation units plus 56 explicit upstream native system/portable leaf units
-and three GoldenPad mobile adapters compile into 194-object ARM64 archives for
+translation units plus 61 explicit upstream native system/portable units and
+four GoldenPad mobile adapters compile into 200-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
 game-code probe plus real GU vector math on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
@@ -47,6 +47,10 @@ helpers. It closes another 61 startup symbols without introducing any, leaving
 185. A mobile-owned configuration unit then replaces the 68 game settings and
 startup globals otherwise owned by SDL; its defaults execute in the live probe
 and leave 117 startup symbols.
+Five more real upstream services—model conversion, stage lookup, radial input,
+setup-name resolution and weapon cues—plus native legacy constants now execute
+in the probe and reduce the startup boundary from 117 to 97 without introducing
+dependencies.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

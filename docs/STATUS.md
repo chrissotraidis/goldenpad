@@ -22,9 +22,9 @@ longer blocks MGB64 integration.
   target compiles no `src/libultra/**` or `src/libultrare/**` implementation
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
-- GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 56
-  explicit upstream native system/portable leaf units and three project-owned
-  mobile adapters into 194-object, non-fat ARM64 archives for both
+- GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 61
+  explicit upstream native system/portable units and four project-owned mobile
+  adapters into 200-object, non-fat ARM64 archives for both
   `iphonesimulator` and `iphoneos` at the iOS 17 deployment target. Release app
   executables link for both SDKs.
 - Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
@@ -93,6 +93,12 @@ longer blocks MGB64 integration.
   window ownership. The deterministic probe executes representative defaults and
   remains `0x80c24316` sequentially on phone/tablet. The startup map closes all
   68 names with no new symbol and now leaves 117.
+- Five additional real upstream services now supply model conversion, stage
+  lookup, radial input, setup-name resolution and weapon cue tables. A mobile
+  data unit supplies ten native game constants and one ROM offset previously in
+  the monolithic compatibility file. Representative paths execute in the
+  unchanged phone/tablet probe; the startup map closes 20, introduces none and
+  leaves 97.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.

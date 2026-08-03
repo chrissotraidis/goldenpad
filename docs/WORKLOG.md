@@ -1,5 +1,20 @@
 # Worklog
 
+## 2026-08-03 — link real portable services and legacy data
+
+- Added MGB64's real model conversion, CLI stage lookup, radial deadzone,
+  setup-name resolution and weapon-cue modules to the audited mobile core.
+- Added one project-owned data unit for ten native gameplay constants and one
+  ROM offset otherwise defined only in the monolithic desktop compatibility
+  file. It contains no media or matching-target implementation code.
+- The audited core is now 200 ARM64 objects. Both SDK core and combined
+  Fast3D/Metal gates pass, with complete model/setup symbols retained.
+- Representative service/data paths execute inside the deterministic probe,
+  which visibly remained `0x80c24316` sequentially on iPhone then iPad with
+  complete app removal and shutdown between them.
+- A temporary `bossEntry` map fell from 117 to 97: 20 closed, zero introduced.
+  The probe was removed before the clean combined-renderer pass.
+
 ## 2026-08-03 — move game configuration ownership off SDL
 
 - Added one project-owned mobile configuration unit for the 68 game-side

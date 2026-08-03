@@ -60,9 +60,9 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
 
-The verifier compiles all 135 `src/game/*.c` translation units, 56 explicit
-upstream native system/portable leaf units and the project-owned SDL-free mobile
-OS, GU and configuration adapters into 194-object ARM64 archives. It rejects a
+The verifier compiles all 135 `src/game/*.c` translation units, 61 explicit
+upstream native system/portable units and four project-owned SDL-free mobile
+adapters into 200-object ARM64 archives. It rejects a
 mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
 `src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
 Simulator and device, and requires the final executables to retain the exact
@@ -86,6 +86,10 @@ random check. It also verifies conservative mobile-owned settings/startup
 defaults. The current mobile OS adapter initializes MGB64's real cooperative
 scheduler and graphics-client queues after a validated ROM/file-table handoff;
 audio, game input, task dispatch and the title/main loop are not complete.
+
+The core also includes the real upstream model converter, CLI stage table,
+radial deadzone, setup-name and weapon-cue services. A small native data unit
+owns constants/offsets that otherwise live in the desktop compatibility file.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,
