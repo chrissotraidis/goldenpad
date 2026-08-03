@@ -1,5 +1,31 @@
 # Worklog
 
+## 2026-08-03 — link and run the MGB64 Fast3D/Metal lifecycle
+
+- Added a narrow mobile selector patch that chooses MGB64's Metal backend
+  directly instead of retaining its desktop OpenGL fallback. Both MGB64 patches
+  remain exact-pin, temporary, and are reversed after every verifier run.
+- Linked the audited 161-object core, two-object Fast3D frontend and four-object
+  Metal backend into opt-in Release apps for ARM64 Simulator and `iphoneos`.
+  Final binaries retain the backend/layer/lifecycle symbols and no SDL,
+  OpenGL or AppKit dependency.
+- Added neutral mobile renderer defaults and a UIKit-timed lifecycle bridge.
+  ROM globals are explicitly null/zero; the temporary minimap closure is a
+  no-op, so this gate presents only ROM-free empty frames.
+- Launched strictly sequentially. iPhone 16 Pro initialized the real Metal
+  backend and encoded its first 1206x2622 frame; after removal and shutdown,
+  iPad Pro 11-inch (M4) did the same at 1668x2420. Neither observation window
+  logged GPU errors.
+- Added `verify-mgb64-ios-renderer.sh` and strengthened the standalone Fast3D
+  verifier. Both SDKs passed and the ignored MGB64 checkout returned clean.
+  The next production gate is validated private resource loading plus the
+  smallest title/menu main loop—not further legal review.
+- Rebuilt the ordinary core-free Simulator/device apps and packaged the
+  foundation twice. Both eight-member audits passed with identical IPA SHA-256
+  `2d28ed0e6944e60974d166450536ae0adb01b8a60fe5316198881a5710d39b03`;
+  sorted app content matched
+  `f67321b0f9c234e3b84895f373293c3782bcfa563f438c8608f996d366c8d2d1`.
+
 ## 2026-08-03 — compile Fast3D and hand off the UIKit Metal layer
 
 - Isolated MGB64's Fast3D display-list interpreter and room-normal helper into

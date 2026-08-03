@@ -43,6 +43,16 @@ longer blocks MGB64 integration.
   weak ARC bridge to the UIKit-owned layer. Sequential no-ROM launches logged
   the handoff at 1206x2622 on iPhone 16 Pro, then 1668x2420 on iPad Pro 11-inch
   (M4); each install was removed and each simulator shut down.
+- The Fast3D frontend and native Metal backend now link together in the opt-in
+  GoldenPad app. A temporary mobile selector patch chooses Metal directly, and
+  a small host bridge supplies conservative renderer settings plus explicitly
+  null ROM state. Final ARM64 Simulator and `iphoneos` binaries retain
+  `gfx_init`, `gfx_metal_api`, both lifecycle bridge calls and
+  `platformGetMetalLayer`, with no SDL/OpenGL/AppKit dependency.
+- Strict sequential runtime proof initialized MGB64's real Metal backend and
+  encoded/presented its first ROM-free empty frame at 1206x2622 on iPhone 16 Pro,
+  then 1668x2420 on iPad Pro 11-inch (M4). Both runs reported one-sample MSAA,
+  no GPU errors during the observation window, and were removed/shut down.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -75,7 +85,7 @@ longer blocks MGB64 integration.
   temporary container copies. The original ignored reference file remains.
 - A generic iOS device-SDK Release build succeeds as an unsigned ARM64 Mach-O.
 - The 2.7 MiB device `.app` contains six enumerated files: plist/package metadata,
-  the 918 KiB ARM64 executable, project-owned icon renditions and `Assets.car`.
+  the 920 KiB ARM64 executable, project-owned icon renditions and `Assets.car`.
   It contains no bundled retail data or generated game assets.
 - Current N64Recomp and its pinned dependencies compile as native ARM64 tools;
   its GoldenRecomp run still fails before generation because the required ELF
@@ -117,10 +127,10 @@ longer blocks MGB64 integration.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `bf101037f91d723b6819e2fedefaa100de4582d9f685190cd4d0ed7e9b343e75`.
+  `2d28ed0e6944e60974d166450536ae0adb01b8a60fe5316198881a5710d39b03`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `8945edcf01b1cb760c2651e17eeb8017334c4b09318174459e4193b214a42f87`.
+  `f67321b0f9c234e3b84895f373293c3782bcfa563f438c8608f996d366c8d2d1`.
 
 ## Failed or blocked
 
@@ -128,21 +138,22 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- MGB64's Fast3D and Metal archives are not yet linked together in the app;
-  renderer-support resolution, audio, input, resource-loading and main-loop
-  seams remain. The core probe does not start menus or gameplay.
+- The renderer lifecycle is intentionally data-free. Validated ROM-resource
+  loading, the game/platform main loop, real minimap overlay, audio and input
+  seams remain; the current empty frame does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- No shared game core, game audio/save integration, physical-controller/gyro
-  acceptance, touch-only mission completion, multiplayer, final game-bearing
+- No title/menu/mission rendering, game audio/save integration,
+  physical-controller/gyro acceptance, touch-only mission completion,
+  multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
   interaction gate.
 
 ## Next gate
 
-Link the proven MGB64 Fast3D and Metal archives with the minimum remaining
-renderer support, then start one UIKit-timed no-ROM-safe renderer lifecycle
-before attempting title/menu startup. Do not import matching-target SDK
+Connect the validated private ROM-resource loader to MGB64 without retaining
+retail bytes, then add the smallest UIKit-owned platform/main-loop adapter that
+submits the first title/menu display lists. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

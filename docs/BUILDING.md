@@ -1,8 +1,9 @@
 # Building
 
 GoldenPad has a native ROM-free iPhone/iPad foundation target. It validates a
-user-selected retail dump and can link the audited MGB64 game core, but it does
-not start the game until the remaining platform/renderer adapters are present.
+user-selected retail dump and can link the audited MGB64 game core and native
+renderer, but it does not start the game until the remaining resource and
+platform/main-loop adapters are present.
 
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
@@ -56,6 +57,7 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/verify-mgb64-ios-core.sh
 ./scripts/verify-mgb64-ios-metal.sh
 ./scripts/verify-mgb64-ios-fast3d.sh
+./scripts/verify-mgb64-ios-renderer.sh
 ```
 
 The verifier compiles all 135 `src/game/*.c` translation units plus 26 explicit
@@ -76,8 +78,8 @@ cmake -S . -B build-mgb64-core-simulator -G Xcode \
 
 The ordinary foundation configuration remains independent of `ref/`. The core
 configuration proves compilation and a small deterministic game-code execution
-seam; it does not yet provide MGB64's renderer, audio, input, ROM-resource or
-main-loop platform adapters.
+seam; it does not yet provide audio, input, ROM-resource or main-loop platform
+adapters.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,
@@ -87,12 +89,29 @@ SDKs, and reverses the patch on exit. The patch gates two macOS-only
 the iOS view/display lifecycle. This is a backend compilation gate, not yet a
 linked renderer or displayed game frame.
 
-The Fast3D verifier builds the display-list interpreter and room-normal helper
+The Fast3D verifier temporarily applies `patches/mgb64-ios-fast3d.patch`, which
+selects Metal directly for the mobile build and removes the retained desktop GL
+selector. It builds the display-list interpreter and room-normal helper
 as two-object ARM64 archives for both SDKs. It requires the public `gfx_init`,
 `gfx_run_dl`, and `gfx_end_frame` entry points and rejects unresolved SDL window,
 desktop OpenGL readback, or OpenGL swap symbols. GoldenPad's default app also
-contains the ARC layer bridge consumed by `gfx_metal.mm`; the static Fast3D and
-Metal archives are not yet force-linked into the app together.
+contains the ARC layer bridge consumed by `gfx_metal.mm`.
+
+The combined verifier applies both tracked patches to the exact clean ignored
+checkout, links the audited core plus Fast3D/Metal closure into Release apps for
+both SDKs, rejects desktop dependencies, and reverses both patches on exit. Its
+configuration is equivalent to:
+
+```sh
+cmake -S . -B build-mgb64-renderer-simulator -G Xcode \
+  -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DGOLDENPAD_MGB64_SOURCE_DIR="$PWD/ref/mgb64" \
+  -DGOLDENPAD_MGB64_RENDERER=ON
+```
+
+This starts and presents ROM-free empty frames through MGB64's real backend. It
+does not load retail resources or submit title/menu display lists.
 
 ## RT64 iOS static renderer
 

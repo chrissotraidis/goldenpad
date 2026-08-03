@@ -157,10 +157,12 @@ shut down before iPad Pro 11-inch (M4) launched and reported the same value.
 The iPad app was then removed and shut down. This passes compilation/linkage and
 a bounded game-code execution seam, not title/menu/gameplay acceptance.
 
-The first coupled-renderer subgate is:
+The coupled-renderer gates are:
 
 ```sh
 ./scripts/verify-mgb64-ios-metal.sh
+./scripts/verify-mgb64-ios-fast3d.sh
+./scripts/verify-mgb64-ios-renderer.sh
 ```
 
 The unpatched backend failed for exactly two references to macOS-only
@@ -168,8 +170,17 @@ The unpatched backend failed for exactly two references to macOS-only
 writes to macOS, after which the complete `gfx_metal.mm` backend and its
 combiner/backend/MSAA support compiled into four-object, non-fat ARM64 archives
 for both mobile SDKs. Both export `gfx_metal_api`, and the verifier restored the
-ignored MGB64 checkout to a clean tree. Full Fast3D frontend linkage and a live
-GoldenPad-owned `CAMetalLayer` frame remain open.
+ignored MGB64 checkout to a clean tree. The Fast3D verifier also builds its
+two-object ARM64 frontend for both SDKs while rejecting SDL/OpenGL residue.
+
+The combined verifier links the core, Fast3D and Metal targets into both final
+Release apps and requires `gfx_init`, `gfx_metal_api`, the renderer init/draw
+bridge and `platformGetMetalLayer`. It rejects SDL/OpenGL/AppKit linkage and
+leaves the upstream checkout clean. Runtime then proceeds strictly sequentially:
+iPhone 16 Pro first reported backend init, `MSAA=0`, and `first frame: scene
+1206x2622, geometry encoder open`; after removal/shutdown, iPad Pro 11-inch (M4)
+reported the same at 1668x2420. Five-second observation windows produced no GPU
+errors. This proves a real ROM-free MGB64 frame lifecycle, not title/menu output.
 
 ## RT64 mobile Metal and static-library gate
 

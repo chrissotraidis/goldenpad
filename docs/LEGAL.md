@@ -20,6 +20,16 @@ The repository `.gitignore` excludes local references, common ROM formats,
 ROM-derived output, saves, packages, signing material, and build products.
 Ignore rules are necessary but are not a substitute for a staged-file audit.
 
+## Practical decision
+
+Development may continue with MGB64 under the same disclosed community-decomp
+boundary used by comparable ports. Supplying a user's own ROM keeps retail data
+out of the repository and package, but it does not itself grant redistribution
+rights in decompiled game code. An upstream MIT license covers upstream-authored
+port work; it cannot license copyrights held by the game's rights holders. This
+is a release-risk disclosure, not a production stop. Paid access, store release,
+or claims of fully cleared redistribution remain behind qualified legal review.
+
 ## Source boundary
 
 - Matching decompilation and static recompilation carry the same unresolved
@@ -61,6 +71,9 @@ copied into this repository.
 Verification applies the patches only inside an ignored reference checkout and
 removes them on exit; generated Metal products and static archives remain
 untracked build artifacts.
+The renderer lifecycle bridge defines ROM state as null/zero and submits only
+empty frames; it cannot consume or reproduce game media before a validated
+private import path is explicitly connected.
 
 ## ROM validation
 

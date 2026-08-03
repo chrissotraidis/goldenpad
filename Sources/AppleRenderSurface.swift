@@ -16,6 +16,12 @@ private func goldenPadMGB64SetMetalLayer(_ layer: UnsafeMutableRawPointer?)
 @_silgen_name("goldenpad_mgb64_has_metal_layer")
 private func goldenPadMGB64HasMetalLayer() -> Int32
 
+@_silgen_name("goldenpad_mgb64_renderer_initialize")
+private func goldenPadMGB64RendererInitialize() -> Int32
+
+@_silgen_name("goldenpad_mgb64_renderer_draw_frame")
+private func goldenPadMGB64RendererDrawFrame(_ width: UInt32, _ height: UInt32) -> Int32
+
 struct RT64MetalWindowHandle {
     let window: UnsafeMutableRawPointer
     let view: UnsafeMutableRawPointer
@@ -36,6 +42,9 @@ final class AppleRenderSurface: ObservableObject {
         commandQueue = view.device?.makeCommandQueue()
         if let metalLayer = view.layer as? CAMetalLayer {
             goldenPadMGB64SetMetalLayer(Unmanaged.passUnretained(metalLayer).toOpaque())
+            if goldenPadMGB64RendererInitialize() == 1 {
+                print("[GoldenPad] MGB64 Fast3D/Metal renderer initialized")
+            }
         }
         view.isPaused = !isActive
         refreshStatus(for: view)
@@ -61,6 +70,19 @@ final class AppleRenderSurface: ObservableObject {
 
     func drawFoundationFrame(in view: MTKView) {
         refreshStatus(for: view)
+        var size = view.drawableSize
+        if size.width <= 0 || size.height <= 0 {
+            size = CGSize(
+                width: view.bounds.width * view.contentScaleFactor,
+                height: view.bounds.height * view.contentScaleFactor
+            )
+        }
+        if isActive,
+           size.width > 0,
+           size.height > 0,
+           goldenPadMGB64RendererDrawFrame(UInt32(size.width), UInt32(size.height)) == 1 {
+            return
+        }
         guard
             isActive,
             let descriptor = view.currentRenderPassDescriptor,

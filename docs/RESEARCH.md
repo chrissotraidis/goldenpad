@@ -99,7 +99,10 @@ On this Apple M1 host, commit `cd9b58f`:
 - compiled the Fast3D interpreter plus room-normal helper into two-object ARM64
   archives for both mobile SDKs without unresolved SDL or desktop OpenGL calls;
 - supplied `platformGetMetalLayer` from the UIKit host and observed it live at
-  1206x2622 on iPhone followed by 1668x2420 on iPad.
+  1206x2622 on iPhone followed by 1668x2420 on iPad;
+- linked the Fast3D/Metal closure into final ARM64 Simulator and device apps,
+  then encoded/presented real ROM-free MGB64 empty frames sequentially at those
+  same drawable sizes without SDL/OpenGL/AppKit dependencies or GPU errors.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
@@ -140,15 +143,15 @@ iPhone 16 Pro and 1668x2420 on iPad Pro 11-inch (M4). This completes the RT64
 mobile renderer/surface gate, not the game-rendering gate: the selected MGB64
 core now compiles, but its platform/render loop is not yet connected.
 
-MGB64's Fast3D/WebGPU path already proves GoldenEye display lists on Metal. The
-first mobile integration will preserve that coupled renderer/core path and
-compile only the audited native source set. RT64 remains a verified alternative,
-not a second simultaneous bring-up dependency.
+MGB64's coupled Fast3D/Metal path now initializes and presents empty frames on
+iOS. Only the audited native source set is compiled; UIKit owns the layer and
+cadence, while ROM state remains null before validated import. RT64 remains a
+verified alternative, not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. Which remaining MGB64 renderer support objects and host stubs are required to
-   link the proven Fast3D and Metal archives into the game-bearing app?
+1. What is the smallest validated private resource adapter that populates
+   MGB64's ROM view without retaining or packaging retail bytes?
 2. What is the smallest mobile main-loop adapter that starts title/menu display
    lists while UIKit owns lifecycle, timing and drawable acquisition?
 3. Which audio, input, filesystem and ROM-resource callbacks must be connected

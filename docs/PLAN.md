@@ -87,8 +87,10 @@ after two macOS-only display-sync assignments are guarded. The second subgate
 passes too: the Fast3D interpreter and room-normal helper compile into two-object
 ARM64 archives for both SDKs without SDL/OpenGL symbols, and sequential iPhone
 then iPad launches prove the exact `platformGetMetalLayer` handoff from UIKit.
-G3 remains open until the Fast3D and Metal closures link together and render
-title/menu display lists.
+The third subgate now passes: both closures link in final ARM64 apps and the real
+MGB64 backend encodes/presents UIKit-timed ROM-free empty frames on both device
+classes. G3 remains open until validated retail resources enter the private
+loader and the mobile main loop submits title/menu display lists.
 
 ### I — Input and touch
 

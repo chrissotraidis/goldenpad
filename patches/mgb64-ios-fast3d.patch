@@ -1,0 +1,17 @@
+diff --git a/src/platform/fast3d/gfx_pc.c b/src/platform/fast3d/gfx_pc.c
+index ae43b27..28edc6c 100644
+--- a/src/platform/fast3d/gfx_pc.c
++++ b/src/platform/fast3d/gfx_pc.c
+@@ -25292,2 +25292,8 @@ static void gfx_sp_reset(void) {
+ void gfx_init(void) {
++#ifdef MGB64_APPLE_MOBILE
++    /* UIKit owns a CAMetalLayer and iOS has no desktop OpenGL fallback. Keep
++     * that ownership explicit so the mobile binary does not retain GL solely
++     * because of the desktop selector branch below. */
++    gfx_rapi = &gfx_metal_api;
++#else
+ #ifdef MGB64_WEBGPU_BACKEND
+@@ -25302,2 +25308,3 @@ void gfx_init(void) {
+     }
++#endif
+     gfx_rapi->init();

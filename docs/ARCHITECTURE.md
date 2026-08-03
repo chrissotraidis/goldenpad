@@ -67,9 +67,13 @@ for mobile because `MTKView`/UIKit owns cadence. The Fast3D interpreter and room
 normal helper also compile as a separate two-object mobile archive. Target-local
 trap shims make accidental SDL/OpenGL ownership fail closed and leave no desktop
 window or GL readback/swap symbols in that archive. A small ARC Objective-C++
-bridge now implements MGB64's existing `platformGetMetalLayer` contract using
-the weakly observed UIKit-owned layer. The next boundary links these archives
-with the remaining renderer support closure and starts the display-list loop.
+bridge implements MGB64's existing `platformGetMetalLayer` contract using the
+weakly observed UIKit-owned layer. The opt-in renderer target now links both
+archives, selects Metal directly, supplies neutral mobile renderer settings and
+lets `MTKView` drive real backend `start_frame`/`end_frame` calls. Host-owned ROM
+globals remain null/zero until a validated private import succeeds. The minimap
+queue is an explicit lifecycle-only no-op until the real game overlay is wired.
+The next boundary starts the title/menu display-list loop.
 
 ## ROM and resources
 

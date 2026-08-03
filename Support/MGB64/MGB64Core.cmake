@@ -151,3 +151,20 @@ target_compile_definitions(GoldenPad PRIVATE
     GOLDENPAD_MGB64_COMMIT="${GOLDENPAD_MGB64_COMMIT}"
 )
 target_link_libraries(GoldenPad PRIVATE goldenpad_mgb64_core)
+
+if(GOLDENPAD_MGB64_RENDERER)
+    set_source_files_properties(
+        Support/MGB64/mgb64_renderer_bridge.c
+        PROPERTIES INCLUDE_DIRECTORIES
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/include;${GOLDENPAD_MGB64_SOURCE_DIR}/include/PR")
+    target_sources(GoldenPad PRIVATE
+        Support/MGB64/mgb64_renderer_defaults.c
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/port_env.c")
+    target_include_directories(GoldenPad PRIVATE
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d")
+    target_compile_definitions(GoldenPad PRIVATE GOLDENPAD_MGB64_RENDERER)
+    target_link_libraries(GoldenPad PRIVATE
+        goldenpad_mgb64_fast3d
+        goldenpad_mgb64_metal)
+endif()

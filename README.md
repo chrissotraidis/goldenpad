@@ -17,23 +17,27 @@ and N64 retail dumps without retaining them. Atomic settings/save persistence
 and common touch/Game Controller snapshots are also live. The host includes
 exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
-sensitivity, dead-zone and gyro settings. It does not run the game yet, but the
-first production-core gate now passes: all 135 MGB64 game translation units plus
+sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
+yet, but the first production-core gate now passes: all 135 MGB64 game
+translation units plus
 26 native system/asset glue units compile into 161-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
 game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
 Its Fast3D interpreter now compiles as a separate two-object ARM64 archive for
 both SDKs without SDL or desktop OpenGL symbols, and the UIKit host supplies
-MGB64's exact `platformGetMetalLayer` boundary. Sequential phone/tablet launches
-proved that handoff at full drawable size. The same host also exposes the exact
-`UIView`/`CAMetalLayer` pair RT64 expects. All 56
+MGB64's exact `platformGetMetalLayer` boundary. The complete Fast3D/Metal closure
+now links into opt-in ARM64 Simulator and device apps and presents real,
+ROM-free empty frames through MGB64's backend. Sequential phone/tablet launches
+proved backend initialization and first-frame encoding at full drawable size.
+The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
+All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into
 GoldenPad, and the real Metal device/command-queue/swapchain initializes on
 both iPhone and iPad simulators. MGB64 is the selected production-core
-candidate; linking the Fast3D/Metal closure and starting the game render loop is
-the next build gate.
+candidate; validated private ROM-resource loading and the mobile game main loop
+are the next build gates.
 GoldenRecomp remains a static-recomp reference because its public input pipeline
 is incomplete. See [`docs/STATUS.md`](docs/STATUS.md).
 
