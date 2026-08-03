@@ -124,6 +124,12 @@ real one-frame Start input through that same boundary, traversed menus
 active stage 33. Live Dam gameplay rendered sequentially on iPhone and iPad
 before full cleanup. The game EEPROM also restores from and flushes atomically
 to Application Support; exact 2 KiB relaunch probes passed on both classes.
+An intermediate diagnostics-only gate now mirrors MGB64's scripted success
+contract after live Dam starts, then leaves the authentic game path to write the
+save and render mission-status/statistics menus 12/13. Normal A/B input traversed
+those reports, and `completed=1 time=1023` survived lifecycle flush plus relaunch
+on iPhone and iPad. This isolates the remaining G4 work to organic objectives and
+mission completion; the scripted gate does not complete G4.
 
 ### I — Input and touch
 
@@ -145,7 +151,8 @@ Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
 still need device acceptance. I5 now has strict sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. Crouch, a context-sensitive world interaction, objectives flow and
-mission completion remain open.
+organic mission completion remain open. The downstream report and persisted-save
+path is independently proven through an explicitly scripted diagnostic trigger.
 
 ### M — Multiplayer
 

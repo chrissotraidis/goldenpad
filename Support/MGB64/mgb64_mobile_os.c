@@ -7,7 +7,15 @@
 #include <string.h>
 #include <time.h>
 
+#include "boss.h"
+#include "game/file2.h"
+#include "game/mp_music.h"
 #include "game/player.h"
+
+extern bool fileGetSaveStageCompletedForDifficulty(
+    save_data *save, LEVEL_SOLO_SEQUENCE levelid, DIFFICULTY difficulty);
+extern s32 fileGetSaveStageDifficultyTime(
+    save_data *save, LEVEL_SOLO_SEQUENCE levelid, DIFFICULTY difficulty);
 
 /*
  * MGB64's native scheduler is cooperative: its desktop host leaves the N64
@@ -52,6 +60,14 @@ static _Atomic int goldenpad_gameplay_trigger_timer;
 static _Atomic int goldenpad_gameplay_watch_state;
 static _Atomic int goldenpad_gameplay_outside_watch = 1;
 static _Atomic int goldenpad_gameplay_pausing;
+static _Atomic int goldenpad_scripted_mission_success_requested;
+static _Atomic int goldenpad_scripted_mission_success_applied;
+static _Atomic int goldenpad_progression_ready;
+static _Atomic int goldenpad_progression_dam_agent_completed;
+static _Atomic int goldenpad_progression_dam_agent_time;
+static _Atomic int goldenpad_progression_mission_state;
+static int goldenpad_scripted_mission_saved_debug_flag;
+static int goldenpad_scripted_mission_restore_debug_flag;
 
 #define GOLDENPAD_MAX_TIMERS 16
 #define GOLDENPAD_EEPROM_SIZE 2048
@@ -435,14 +451,46 @@ s32 osContGetQuery(OSContStatus *status) {
 
 s32 osContGetReadData(OSContPad *pads) {
     extern s32 current_menu;
+    extern s32 debug_all_obj_complete_flag;
     extern s32 g_StageNum;
     extern s32 g_MainStageNum;
+    extern s32 g_isBondKIA;
+    extern s32 mission_failed_or_aborted;
     extern s32 selected_stage;
     extern s32 port_front_hover_folder;
     extern f32 cursor_h_pos;
     extern f32 cursor_v_pos;
+    save_data *dam_save;
 
     goldenpad_mgb64_read_controller_pads(pads);
+
+    /*
+     * Diagnostics-only mission seam. This deliberately mirrors MGB64's
+     * GE007_AUTO_MISSION_END_RESULT=success path: it marks objectives complete
+     * only long enough to enter bossReturnTitleStage. That engine function owns
+     * the real mission-report handoff and end_of_mission_briefing save write.
+     * It is not organic objective completion and is never enabled by a retail
+     * input or app state; Swift must make an explicit launch-argument-gated
+     * request after live Dam gameplay has started.
+     */
+    if (goldenpad_scripted_mission_restore_debug_flag &&
+        g_StageNum == LEVELID_TITLE && current_menu == MENU_MISSION_SELECT) {
+        debug_all_obj_complete_flag = goldenpad_scripted_mission_saved_debug_flag;
+        goldenpad_scripted_mission_restore_debug_flag = 0;
+    }
+    if (g_StageNum == LEVELID_DAM &&
+        atomic_load(&goldenpad_scripted_mission_success_requested) != 0 &&
+        atomic_load(&goldenpad_scripted_mission_success_applied) == 0) {
+        atomic_store(&goldenpad_scripted_mission_success_requested, 0);
+        goldenpad_scripted_mission_saved_debug_flag = debug_all_obj_complete_flag;
+        goldenpad_scripted_mission_restore_debug_flag = 1;
+        debug_all_obj_complete_flag = 1;
+        mission_failed_or_aborted = FALSE;
+        g_isBondKIA = FALSE;
+        bossReturnTitleStage();
+        atomic_store(&goldenpad_scripted_mission_success_applied, 1);
+    }
+
     atomic_store(&goldenpad_runtime_menu, current_menu);
     atomic_store(&goldenpad_runtime_stage, g_StageNum);
     atomic_store(&goldenpad_runtime_pending_stage, g_MainStageNum);
@@ -485,6 +533,24 @@ s32 osContGetReadData(OSContPad *pads) {
         atomic_store(&goldenpad_gameplay_pausing, g_CurrentPlayer->pausing_flag);
     } else {
         atomic_store(&goldenpad_gameplay_ready, 0);
+    }
+
+    atomic_store(&goldenpad_progression_mission_state, get_mission_state());
+    dam_save = fileGetSaveForFoldernum(FOLDER1);
+    if (dam_save != NULL) {
+        atomic_store(&goldenpad_progression_ready, 1);
+        atomic_store(
+            &goldenpad_progression_dam_agent_completed,
+            fileGetSaveStageCompletedForDifficulty(
+                dam_save, SP_LEVEL_DAM, DIFFICULTY_AGENT));
+        atomic_store(
+            &goldenpad_progression_dam_agent_time,
+            fileGetSaveStageDifficultyTime(
+                dam_save, SP_LEVEL_DAM, DIFFICULTY_AGENT));
+    } else {
+        atomic_store(&goldenpad_progression_ready, 0);
+        atomic_store(&goldenpad_progression_dam_agent_completed, 0);
+        atomic_store(&goldenpad_progression_dam_agent_time, 0);
     }
     return 0;
 }
@@ -532,6 +598,30 @@ void goldenpad_mgb64_gameplay_state(
         *outside_watch = atomic_load(&goldenpad_gameplay_outside_watch);
     }
     if (pausing != NULL) *pausing = atomic_load(&goldenpad_gameplay_pausing);
+}
+
+void goldenpad_mgb64_request_scripted_mission_success(void) {
+    atomic_store(&goldenpad_scripted_mission_success_requested, 1);
+}
+
+void goldenpad_mgb64_progression_state(
+    int *ready, int *dam_agent_completed, int *dam_agent_time,
+    int *mission_state, int *scripted_success_applied) {
+    if (ready != NULL) *ready = atomic_load(&goldenpad_progression_ready);
+    if (dam_agent_completed != NULL) {
+        *dam_agent_completed =
+            atomic_load(&goldenpad_progression_dam_agent_completed);
+    }
+    if (dam_agent_time != NULL) {
+        *dam_agent_time = atomic_load(&goldenpad_progression_dam_agent_time);
+    }
+    if (mission_state != NULL) {
+        *mission_state = atomic_load(&goldenpad_progression_mission_state);
+    }
+    if (scripted_success_applied != NULL) {
+        *scripted_success_applied =
+            atomic_load(&goldenpad_scripted_mission_success_applied);
+    }
 }
 
 s32 osPfsInit(OSMesgQueue *mq, OSPfs *pfs, s32 channel) {

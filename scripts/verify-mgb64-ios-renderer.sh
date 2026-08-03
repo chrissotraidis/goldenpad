@@ -78,6 +78,8 @@ do
         _goldenpad_mgb64_eeprom_snapshot \
         _goldenpad_mgb64_runtime_state \
         _goldenpad_mgb64_gameplay_state \
+        _goldenpad_mgb64_request_scripted_mission_success \
+        _goldenpad_mgb64_progression_state \
         _alBnkfNew \
         _portAudioPlaySfxDetailed
     do

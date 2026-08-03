@@ -86,6 +86,8 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_eeprom_snapshot'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_runtime_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_gameplay_state'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_request_scripted_mission_success'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_progression_state'
     nm -gU "$binary" | grep -q '_platformOverlayWantsInput'
     nm -gU "$binary" | grep -q '_modelConvertFreeAll'
     nm -gU "$binary" | grep -q '_platformApplyRadialDeadzone'

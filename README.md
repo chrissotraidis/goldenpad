@@ -37,9 +37,11 @@ and flushes atomically to Application Support across relaunch. A diagnostic
 Start script traversed the real controller boundary and authentic front end,
 selected Agent/Dam, and reached live gameplay on both simulator classes.
 A second game-state probe proved movement, dual-stick aim, fire, B reload/action,
-A weapon cycle, and Start pause/watch semantics on both classes. Mission
-completion, physical-device controls, multiplayer, and final packaging remain
-open.
+A weapon cycle, and Start pause/watch semantics on both classes. An explicitly
+scripted diagnostic also reached the real mission-status/statistics reports and
+proved the resulting Dam/Agent EEPROM progression survives relaunch on both
+classes. Organic mission completion, physical-device controls, multiplayer, and
+final packaging remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

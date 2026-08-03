@@ -29,6 +29,8 @@ rights in decompiled game code. An upstream MIT license covers upstream-authored
 port work; it cannot license copyrights held by the game's rights holders. This
 is a release-risk disclosure, not a production stop. Paid access, store release,
 or claims of fully cleared redistribution remain behind qualified legal review.
+Using MGB64's ROM-free diagnostic contracts for private validation does not cure
+or expand those redistribution rights; it only supplies engineering evidence.
 
 ## Source boundary
 

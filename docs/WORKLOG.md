@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-08-03 — prove the real mission-report and progression seam
+
+- Added an explicitly diagnostics-only atomic request that mirrors MGB64's
+  existing scripted mission-success contract. After live Dam gameplay starts,
+  it temporarily marks objectives complete and enters `bossReturnTitleStage()`;
+  the engine still owns `end_of_mission_briefing()`, the EEPROM write, stage
+  transition and both report screens. This is not organic objective completion.
+- Added a read-only game-thread snapshot of folder-one Dam/Agent completion and
+  best time. The relaunch probe waits until GoldenEye's legal-screen initializer
+  has validated EEPROM before declaring a result.
+- Strict iPhone-then-iPad runs traversed the authentic front end to Dam, reached
+  menu 12 with a game-written completion time of `1023`, pressed A through the
+  normal controller bridge to menu 13, then pressed B back to mission select.
+- On each device class, launching Settings backgrounded GoldenPad and triggered
+  the existing atomic EEPROM flush. The same installed app then restored the
+  image and reported `Dam/Agent completed=1 time=1023` after relaunch. Each app,
+  private temporary ROM copy and container was removed before simulator
+  shutdown. Organic objectives, world interaction and Dam completion remain
+  open and G4 is not complete.
+
 ## 2026-08-03 — prove real Dam gameplay input semantics
 
 - Added a diagnostics-only atomic snapshot of game-owned player position, view

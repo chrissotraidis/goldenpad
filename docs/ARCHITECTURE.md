@@ -197,11 +197,14 @@ Simulator-only synthetic MFi controllers are excluded from auto-hide without
 changing physical-device behavior. The selected core now consumes these frames
 through its real `osCont*` calls, renders its title/front-end/Dam path, and emits
 decoded game audio through the native PCM chain. Diagnostics observe menu/stage
-state only through atomics published alongside the game-thread controller read;
-they do not mutate game state directly. The same diagnostic boundary can publish
-player position, view angles, aim, weapon/ammo and watch state for mapped-input
+state through atomics published alongside the game-thread controller read. Menu
+and gameplay-input probes are read-only. One separately named mission-flow probe
+may request MGB64's existing scripted-success behavior after live Dam starts;
+the game still owns report construction and EEPROM writes, and the result is
+never accepted as organic completion. The same diagnostic boundary can publish
+player position, view angles, aim, weapon/ammo, watch and progression state for
 acceptance. Real-controller auto-hide, physical gyro, context interaction and
-mission-completion semantics remain acceptance gates.
+organic mission-completion semantics remain acceptance gates.
 
 ## Targets
 

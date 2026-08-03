@@ -154,6 +154,15 @@ longer blocks MGB64 integration.
   (6 to 7), A weapon cycling (item 5 to 1), and Start watch/pause entry. Private
   inspection confirmed the moved Dam viewpoint and open watch; both runs received
   full uninstall/shutdown cleanup.
+- The explicitly scripted `--mission-flow-probe` now proves the game-owned
+  mission-report and save seam without claiming organic completion. After normal
+  menu traversal and live Dam start, a game-thread request mirrors MGB64's
+  existing diagnostic success contract and enters `bossReturnTitleStage()`.
+  GoldenEye then writes folder-one Dam/Agent time `1023`, shows mission status
+  menu 12, accepts normal A input to statistics menu 13, and accepts normal B
+  input back to mission select. After lifecycle background flush, the same
+  install restored `completed=1 time=1023` on relaunch. This passed strictly on
+  iPhone then iPad with full uninstall/shutdown cleanup.
 - The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
   restored from Application Support at bootstrap, and atomically flushed with
   file protection on scene deactivation/backgrounding. Strict sequential
@@ -247,16 +256,17 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Mission completion and post-mission progression persistence, context-sensitive
-  world interaction, crouch/objectives flow, physical-controller/gyro acceptance,
-  touch-only mission completion,
-  multiplayer, final game-bearing
+- Organic mission completion, context-sensitive world interaction,
+  crouch/objectives flow, physical-controller/gyro acceptance, touch-only
+  mission completion, multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
   interaction gate.
 
 ## Next gate
 
-Exercise real gameplay actions through the connected touch path, then complete
-Dam on Agent and verify the resulting EEPROM progression survives relaunch.
+Prove a context-sensitive Dam world interaction, then replace the diagnostic
+success trigger with organic objectives and mission completion through input.
+The real report, EEPROM write, lifecycle flush and relaunch progression path no
+longer need to be rediscovered.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

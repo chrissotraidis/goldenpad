@@ -343,6 +343,34 @@ removed and each simulator was shut down in strict sequence. This proves mapped
 semantics, not physical touch/controller hardware, a context-sensitive door or
 terminal interaction, crouch/objectives flow, or mission completion.
 
+### Scripted mission-report and progression gate
+
+Launch a clean install with `--mission-flow-probe`. This implies the menu probe
+and waits for live Dam gameplay. It then makes one explicitly diagnostic request
+that mirrors MGB64's existing scripted-success contract; it does not place or
+complete objectives through play and must never be reported as organic mission
+completion.
+
+Require all of these lines without a `FAIL`:
+
+- `Mission flow probe live Dam: PASS`.
+- `Mission flow probe real status/save: PASS menu=12` with `completed=1` and a
+  nonzero time.
+- `Mission flow probe real statistics report: PASS menu=13` after normal A input.
+- `Mission flow probe report navigation: PASS menu=7` after normal B input.
+
+Next, background GoldenPad by launching another app and require
+`Game EEPROM persisted atomically`. Terminate but do not uninstall. Relaunch the
+same app and private temporary ROM with `--progression-probe`; require
+`Game EEPROM restored from Application Support` followed by
+`Progression relaunch probe: PASS Dam/Agent completed=1` with the same time.
+
+On 2026-08-03 this passed first at 2622x1206 on iPhone 16 Pro, which was then
+uninstalled and shut down. iPad Pro 11-inch (M4) repeated it at 2420x1668. Both
+reported time `1023`, and the iPad received the same cleanup. This proves the
+real report/save/relaunch seam only. Context interaction, organic objectives and
+mission completion remain open.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

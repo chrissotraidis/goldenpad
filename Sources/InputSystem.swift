@@ -44,6 +44,18 @@ private func goldenPadMGB64GameplayState(
     _ pausing: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_request_scripted_mission_success")
+private func goldenPadMGB64RequestScriptedMissionSuccess()
+
+@_silgen_name("goldenpad_mgb64_progression_state")
+private func goldenPadMGB64ProgressionState(
+    _ ready: UnsafeMutablePointer<Int32>?,
+    _ damAgentCompleted: UnsafeMutablePointer<Int32>?,
+    _ damAgentTime: UnsafeMutablePointer<Int32>?,
+    _ missionState: UnsafeMutablePointer<Int32>?,
+    _ scriptedSuccessApplied: UnsafeMutablePointer<Int32>?
+)
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -196,6 +208,12 @@ private enum GameplayProbePhase {
     case pausePulse, pauseWait, complete
 }
 
+private enum MissionFlowProbePhase {
+    case waitingForDam, settle, waitingForStatus
+    case statusSettle, advanceStatus, waitingForReport
+    case reportSettle, dismissReport, waitingForMissionSelect, complete
+}
+
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
@@ -227,6 +245,9 @@ final class InputCoordinator: ObservableObject {
     private var gameplayProbePostFireAmmo: Int32 = -1
     private var gameplayProbeSawAim = false
     private var gameplayProbeSawPause = false
+    private var missionFlowProbePhase = MissionFlowProbePhase.waitingForDam
+    private var missionFlowProbeFrames = 0
+    private var didReportProgressionProbe = false
 
     init() {
         assignInitialControllers()
@@ -332,6 +353,8 @@ final class InputCoordinator: ObservableObject {
     func publishToCore() {
         runMenuProbeIfRequested()
         runGameplayProbeIfRequested()
+        runMissionFlowProbeIfRequested()
+        runProgressionProbeIfRequested()
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
             touch = InputSnapshot(
@@ -367,7 +390,14 @@ final class InputCoordinator: ObservableObject {
     private func runMenuProbeIfRequested() {
         let arguments = ProcessInfo.processInfo.arguments
         guard arguments.contains("--menu-probe") ||
-                arguments.contains("--gameplay-probe") else { return }
+                arguments.contains("--gameplay-probe") ||
+                arguments.contains("--mission-flow-probe") else { return }
+        if arguments.contains("--mission-flow-probe") {
+            if case .complete = missionFlowProbePhase {
+                touch = .neutral
+                return
+            }
+        }
         var menu: Int32 = -1
         var stage: Int32 = -1
         var pendingStage: Int32 = -1
@@ -579,6 +609,139 @@ final class InputCoordinator: ObservableObject {
         case .complete:
             break
         }
+    }
+
+    private func runMissionFlowProbeIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("--mission-flow-probe") else {
+            return
+        }
+
+        var menu: Int32 = -1
+        var stage: Int32 = -1
+        var pendingStage: Int32 = -1
+        var ready: Int32 = 0
+        var viewMode: Int32 = -1
+        var progressionReady: Int32 = 0
+        var completed: Int32 = 0
+        var bestTime: Int32 = 0
+        var missionState: Int32 = -1
+        var scriptedSuccessApplied: Int32 = 0
+        goldenPadMGB64RuntimeState(
+            &menu, &stage, &pendingStage, nil, nil, nil, nil
+        )
+        goldenPadMGB64GameplayState(
+            &ready, &viewMode, nil, nil, nil, nil, nil, nil, nil,
+            nil, nil, nil, nil
+        )
+        goldenPadMGB64ProgressionState(
+            &progressionReady, &completed, &bestTime, &missionState,
+            &scriptedSuccessApplied
+        )
+
+        missionFlowProbeFrames += 1
+
+        switch missionFlowProbePhase {
+        case .waitingForDam:
+            guard stage == 33, ready == 1, viewMode == 0 else { return }
+            missionFlowProbePhase = .settle
+            missionFlowProbeFrames = 0
+            print("[GoldenPad] Mission flow probe live Dam: PASS")
+
+        case .settle:
+            guard missionFlowProbeFrames >= 90 else { return }
+            goldenPadMGB64RequestScriptedMissionSuccess()
+            missionFlowProbePhase = .waitingForStatus
+            missionFlowProbeFrames = 0
+            print("[GoldenPad] Mission flow probe scripted success requested")
+
+        case .waitingForStatus:
+            guard menu == 12, stage == 90, progressionReady == 1,
+                  completed == 1, bestTime > 0,
+                  scriptedSuccessApplied == 1 else { return }
+            missionFlowProbePhase = .statusSettle
+            missionFlowProbeFrames = 0
+            print(
+                "[GoldenPad] Mission flow probe real status/save: PASS " +
+                "menu=\(menu) stage=\(stage) completed=\(completed) " +
+                "time=\(bestTime) scripted=\(scriptedSuccessApplied)"
+            )
+
+        case .statusSettle:
+            guard missionFlowProbeFrames >= 60 else { return }
+            missionFlowProbePhase = .advanceStatus
+            missionFlowProbeFrames = 0
+
+        case .advanceStatus:
+            touch.buttons = [.confirm]
+            if missionFlowProbeFrames >= 6 {
+                missionFlowProbePhase = .waitingForReport
+                missionFlowProbeFrames = 0
+            }
+
+        case .waitingForReport:
+            guard menu == 13, completed == 1, bestTime > 0 else { return }
+            missionFlowProbePhase = .reportSettle
+            missionFlowProbeFrames = 0
+            print(
+                "[GoldenPad] Mission flow probe real statistics report: PASS " +
+                "menu=\(menu) stage=\(stage) completed=\(completed) " +
+                "time=\(bestTime) scripted=\(scriptedSuccessApplied)"
+            )
+
+        case .reportSettle:
+            guard missionFlowProbeFrames >= 60 else { return }
+            missionFlowProbePhase = .dismissReport
+            missionFlowProbeFrames = 0
+
+        case .dismissReport:
+            touch.buttons = [.cancel]
+            if missionFlowProbeFrames >= 6 {
+                missionFlowProbePhase = .waitingForMissionSelect
+                missionFlowProbeFrames = 0
+            }
+
+        case .waitingForMissionSelect:
+            guard menu == 7, completed == 1, bestTime > 0 else { return }
+            missionFlowProbePhase = .complete
+            missionFlowProbeFrames = 0
+            print(
+                "[GoldenPad] Mission flow probe report navigation: PASS " +
+                "menu=\(menu) completed=\(completed) time=\(bestTime) " +
+                "mission=\(missionState)"
+            )
+
+        case .complete:
+            break
+        }
+    }
+
+    private func runProgressionProbeIfRequested() {
+        guard !didReportProgressionProbe,
+              ProcessInfo.processInfo.arguments.contains("--progression-probe") else {
+            return
+        }
+        var ready: Int32 = 0
+        var completed: Int32 = 0
+        var bestTime: Int32 = 0
+        var missionState: Int32 = -1
+        var menu: Int32 = -1
+        goldenPadMGB64RuntimeState(
+            &menu, nil, nil, nil, nil, nil, nil
+        )
+        goldenPadMGB64ProgressionState(
+            &ready, &completed, &bestTime, &missionState, nil
+        )
+        // GoldenEye loads and validates EEPROM in the legal-screen initializer.
+        // An earlier game-thread sample sees the static blank save array, so do
+        // not declare a relaunch result until that authentic initializer ran.
+        guard menu == 0, ready == 1 else { return }
+        didReportProgressionProbe = true
+        print(
+            "[GoldenPad] Progression relaunch probe: " +
+            "\(completed == 1 && bestTime > 0 ? "PASS" : "FAIL") " +
+            "Dam/Agent completed=\(completed) time=\(bestTime) " +
+            "mission=\(missionState)"
+        )
     }
 
     private func assignInitialControllers() {
