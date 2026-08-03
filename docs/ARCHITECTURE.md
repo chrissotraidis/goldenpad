@@ -85,11 +85,14 @@ also owns SDL keyboard, mouse, controller and audio behavior. The project-owned
 `mgb64_mobile_os.c` implements only the required message, timing, VI, task,
 neutral-controller and scheduler bootstrap surface.
 
-The current adapter proves scheduler construction and retains a timed retrace
-fallback. The production loop will replace that fallback with signals from the
-UIKit-owned `MTKView`. Neutral controller, rumble, task and sequence-audio seams
-are explicitly provisional; normalized Swift input, Game Controller haptics,
-Fast3D dispatch and AVAudio must own them before gameplay acceptance.
+The UIKit-owned `MTKView` now offers a retrace after each presented empty frame,
+but only when the scheduler is initialized and its graphics queue is empty.
+This naturally leaves exactly one pending message before `bossEntry` supplies a
+consumer. A timed fallback remains inside blocking `osRecvMesg` for bring-up and
+will be removed once lifecycle-aware producer/consumer synchronization is live.
+Neutral controller, rumble, task and sequence-audio seams are explicitly
+provisional; normalized Swift input, Game Controller haptics, Fast3D dispatch
+and AVAudio must own them before gameplay acceptance.
 
 ## ROM and resources
 

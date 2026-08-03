@@ -117,7 +117,9 @@ also enables the existing validator to install a supported normalized ROM into
 volatile MGB64-owned memory after the exact SHA-1 passes. The generated native
 offset unit patches the complete file table and verifies known background/Dam
 entries. It also initializes the upstream scheduler through the SDL-free mobile
-OS adapter. It does not yet submit title/menu display lists.
+OS adapter, and the UIKit draw callback delivers a bounded cooperative retrace
+when the graphics queue is empty. It does not yet submit title/menu display
+lists.
 
 ## RT64 iOS static renderer
 

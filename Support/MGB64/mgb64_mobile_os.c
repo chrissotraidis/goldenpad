@@ -1,6 +1,7 @@
 #include <ultra64.h>
 #include <sched.h>
 
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -21,6 +22,8 @@ u32 osTvType = OS_TV_NTSC;
 OSViMode osViModeTable[64] = {{0}};
 
 static void *goldenpad_vi_framebuffer;
+static int goldenpad_scheduler_initialized;
+static u32 goldenpad_retrace_count;
 
 void osCreateMesgQueue(OSMesgQueue *mq, OSMesg *messages, s32 count) {
     if (mq == NULL) {
@@ -55,13 +58,22 @@ static s32 goldenpad_mgb64_take_message(OSMesgQueue *mq, OSMesg *message) {
     return 0;
 }
 
-void goldenpad_mgb64_deliver_retrace(void) {
+int goldenpad_mgb64_deliver_retrace(void) {
     OSScClient *client;
+    if (!goldenpad_scheduler_initialized || gfxFrameMsgQ.validCount != 0) {
+        return 0;
+    }
     os_scheduler.frameCount++;
     for (client = os_scheduler.clientList; client != NULL; client = client->next) {
-        osSendMesg(client->msgQ, (OSMesg)&os_scheduler.retraceMsg,
-                   OS_MESG_NOBLOCK);
+        if (osSendMesg(client->msgQ, (OSMesg)&os_scheduler.retraceMsg,
+                       OS_MESG_NOBLOCK) == 0) {
+            goldenpad_retrace_count++;
+        }
     }
+    if (goldenpad_retrace_count == 1) {
+        printf("[GoldenPad] MGB64 cooperative retrace delivered\n");
+    }
+    return 1;
 }
 
 s32 osRecvMesg(OSMesgQueue *mq, OSMesg *message, s32 flags) {
@@ -75,7 +87,7 @@ s32 osRecvMesg(OSMesgQueue *mq, OSMesg *message, s32 flags) {
     /* Temporary cadence fallback until MTKView drives this callback directly. */
     struct timespec period = {0, 16666667L};
     nanosleep(&period, NULL);
-    goldenpad_mgb64_deliver_retrace();
+    (void)goldenpad_mgb64_deliver_retrace();
     return goldenpad_mgb64_take_message(mq, message);
 }
 
@@ -221,18 +233,17 @@ void alCSPSetVol(ALCSPlayer *player, s16 volume) {
 }
 
 int goldenpad_mgb64_scheduler_initialize(void) {
-    static int initialized;
-    if (initialized) {
+    if (goldenpad_scheduler_initialized) {
         return 1;
     }
     osCreateMesgQueue(&gfxFrameMsgQ, gfxFrameMsgBuf, 32);
     osCreateScheduler(&os_scheduler, &shedThread, OS_VI_NTSC_LAN1, 1);
     osScAddClient(&os_scheduler, &gfxClient[0], &gfxFrameMsgQ, NULL);
     sched_cmdQ = osScGetCmdQ(&os_scheduler);
-    initialized = sched_cmdQ != NULL &&
-                  os_scheduler.clientList == &gfxClient[0] &&
-                  gfxFrameMsgQ.msg == gfxFrameMsgBuf &&
-                  gfxFrameMsgQ.msgCount == 32 &&
-                  os_scheduler.retraceMsg.type == OS_SC_RETRACE_MSG;
-    return initialized;
+    goldenpad_scheduler_initialized = sched_cmdQ != NULL &&
+                                      os_scheduler.clientList == &gfxClient[0] &&
+                                      gfxFrameMsgQ.msg == gfxFrameMsgBuf &&
+                                      gfxFrameMsgQ.msgCount == 32 &&
+                                      os_scheduler.retraceMsg.type == OS_SC_RETRACE_MSG;
+    return goldenpad_scheduler_initialized;
 }

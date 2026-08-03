@@ -209,6 +209,14 @@ and shut down the phone, then repeated at 1668x2420 on iPad before identical
 cleanup. This proves scheduler/queue construction, not frame delivery or title
 startup.
 
+The next frame-delivery subgate requires `MGB64 cooperative retrace delivered`
+after the scheduler-ready line. The producer must enqueue only when the graphics
+queue is empty, so a build with no `bossEntry` consumer retains one message
+rather than filling all 32 slots. Attached-console runs observed the line at
+1206x2622 on iPhone, removed/shut down the phone, then repeated at 1668x2420 on
+iPad before identical cleanup. This proves UIKit-to-scheduler cadence ownership,
+not simulation or title rendering.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

@@ -36,15 +36,16 @@ confirmed the handoff, followed by complete app-container removal.
 The native file/resource table is now patched to exact offsets inside that
 owned buffer, including the Dam background resource. The real MGB64 scheduler
 and its graphics-client queues now initialize without SDL on both mobile SDKs;
-sequential phone/tablet validation reached that state at full drawable size.
+MTKView now delivers a bounded cooperative retrace after that state is ready,
+with sequential phone/tablet proof at full drawable size.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into
 GoldenPad, and the real Metal device/command-queue/swapchain initializes on
 both iPhone and iPad simulators. MGB64 is the selected production-core
-candidate; cooperative UIKit frame delivery and title/menu startup are the next
-build gates.
+candidate; the remaining portable platform closure and title/menu startup are
+the next build gates.
 GoldenRecomp remains a static-recomp reference because its public input pipeline
 is incomplete. See [`docs/STATUS.md`](docs/STATUS.md).
 

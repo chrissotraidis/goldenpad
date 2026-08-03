@@ -6,6 +6,7 @@
 #include "gfx_rendering_api.h"
 
 extern struct GfxRenderingAPI gfx_metal_api;
+extern int goldenpad_mgb64_deliver_retrace(void);
 
 int goldenpad_mgb64_renderer_initialize(void) {
     static int initialized = 0;
@@ -26,6 +27,7 @@ int goldenpad_mgb64_renderer_draw_frame(uint32_t width, uint32_t height) {
     gfx_current_dimensions.aspect_ratio = (float)width / (float)height;
     gfx_metal_api.start_frame();
     gfx_metal_api.end_frame();
+    (void)goldenpad_mgb64_deliver_retrace();
     return 1;
 }
 #else

@@ -64,6 +64,7 @@ do
         _gfx_metal_api \
         _goldenpad_mgb64_renderer_initialize \
         _goldenpad_mgb64_renderer_draw_frame \
+        _goldenpad_mgb64_deliver_retrace \
         _platformGetMetalLayer
     do
         nm -gU "$binary" | grep -q "$symbol"

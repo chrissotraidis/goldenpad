@@ -100,7 +100,10 @@ the owned buffer, and sequential phone/tablet runtime logs confirm readiness.
 The scheduler bootstrap subgate now passes too: the real upstream scheduler,
 message queues and graphics client initialize through an SDL-free mobile OS
 adapter in both final SDK binaries, with sequential phone/tablet runtime proof.
-MTKView-driven cooperative frame delivery and title startup remain open.
+MTKView-driven cooperative frame delivery now passes as well: it queues one
+retrace only when the graphics queue is empty, and sequential phone/tablet logs
+prove delivery without queue growth. Portable `bossEntry` closure and title
+startup remain open.
 
 ### I — Input and touch
 

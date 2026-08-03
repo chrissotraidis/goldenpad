@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-03 — deliver the first UIKit-owned scheduler retrace
+
+- Connected the existing MTKView draw callback to the cooperative scheduler
+  after each real MGB64 Metal frame. Delivery is gated on scheduler readiness
+  and an empty graphics queue, so no-consumer bring-up holds one pending message
+  instead of filling all 32 slots.
+- Both final SDK apps retain the retrace bridge and remain free of SDL, AppKit
+  and desktop OpenGL dependencies. Core and combined renderer verifiers pass and
+  the ignored upstream checkout returns clean.
+- iPhone attached-console runtime reported `MGB64 cooperative retrace delivered`
+  after scheduler readiness and its 1206x2622 first Metal frame. The entire app
+  container was removed and the phone shut down before iPad repeated after its
+  1668x2420 frame and received the same cleanup.
+- A non-executing `bossEntry` force-link probe then exposed 261 remaining title
+  startup symbols. Most map to public portable MGB64 platform modules; the
+  desktop SDL/audio/window owners remain intentionally excluded. The probe was
+  removed after recording the next closure boundary.
+
 ## 2026-08-03 — initialize the native scheduler without SDL
 
 - Rejected upstream `platform/stubs.c` as an iOS build unit because it combines

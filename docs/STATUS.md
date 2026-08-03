@@ -70,6 +70,11 @@ longer blocks MGB64 integration.
   client for final Simulator and device binaries. Sequential private-ROM runs
   reported `MGB64 scheduler ready` at 1206x2622 on iPhone, then 1668x2420 on
   iPad; each app/container was removed and each simulator shut down.
+- The UIKit-owned draw callback now offers a cooperative retrace only after the
+  scheduler is ready and only while its graphics queue is empty. Before a game
+  consumer exists this caps the queue at one message. Attached-console runs
+  reported `MGB64 cooperative retrace delivered` at 1206x2622 on iPhone, then
+  1668x2420 on iPad, with strict uninstall/shutdown cleanup between them.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -155,8 +160,8 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The renderer lifecycle remains visually empty. Cooperative UIKit frame
-  delivery, game startup closure, real minimap overlay, game audio and input seams
+- The renderer lifecycle remains visually empty. Game startup closure, real
+  minimap overlay, game audio and input seams
   remain; the volatile ROM handoff alone does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
@@ -170,7 +175,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Connect MTKView cadence to the cooperative MGB64 graphics queue, then close the
-remaining `bossEntry` startup surface and submit the first title/menu display
+Close the remaining `bossEntry` portable-platform surface, then start its
+consumer loop off the UI thread and submit the first title/menu display
 lists. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.
