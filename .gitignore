@@ -1,0 +1,50 @@
+# macOS and Xcode local state
+.DS_Store
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+
+# Build and packaging output
+build/
+build-*/
+.build/
+dist/
+*.ipa
+*.xcarchive
+
+# Local references are deliberately never published. Provenance is recorded in
+# docs/RESEARCH.md; ref/README.md is the only tracked file in this directory.
+ref/*
+!ref/README.md
+
+# Retail ROMs and ROM-derived copyrighted data must never enter Git or packages.
+*.z64
+*.Z64
+*.n64
+*.N64
+*.v64
+*.V64
+*.rom
+*.ROM
+*.wad
+*.WAD
+roms/
+ROMs/
+generated-assets/
+rom-assets/
+runtime-assets/
+ge007.ini
+*.eep
+*.sra
+*.fla
+
+# Local credentials, signing material, and provisioning data
+.env
+.env.*
+*.mobileprovision
+*.p12
+*.cer
+*.key
+*.pem
