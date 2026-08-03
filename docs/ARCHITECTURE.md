@@ -3,7 +3,7 @@
 ## Shape
 
 ```text
-GoldenPadApp (UIKit lifecycle, document picker, status and settings)
+GoldenPadApp (SwiftUI lifecycle, UIKit document picker/Metal view, status)
     |
 ApplePlatform (paths, audio session, controllers, touch, lifecycle, Metal view)
     |
@@ -17,8 +17,9 @@ Metal / CAMetalLayer
 ```
 
 The simulation, recomp runtime and renderer are portable static libraries. The
-iPhone/iPad target is a thin Objective-C++/UIKit host. Platform callbacks do not
-leak into game simulation code.
+iPhone/iPad target is a thin SwiftUI/UIKit host. An Objective-C++ bridge will be
+added only where the C++ runtime requires it. Platform callbacks do not leak
+into game simulation code.
 
 ## Core and undecompiled code
 

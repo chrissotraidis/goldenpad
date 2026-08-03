@@ -28,8 +28,25 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - The app was uninstalled from both simulators after validation, removing the
   temporary container copies. The original ignored reference file remains.
 - A generic iOS device-SDK Release build succeeds as an unsigned ARM64 Mach-O.
-- The device `.app` contains only `Info.plist`, `PkgInfo`, and the 256 KiB-class
-  executable; it contains no bundled retail data or generated game assets.
+- The 2.1 MiB device `.app` contains six enumerated files: plist/package metadata,
+  the 324 KiB ARM64 executable, project-owned icon renditions and `Assets.car`.
+  It contains no bundled retail data or generated game assets.
+- Current N64Recomp and its pinned dependencies compile as native ARM64 tools;
+  its GoldenRecomp run still fails before generation because the required ELF
+  is not public. Public forks and current alternative repositories were audited.
+- The host now creates sandbox-safe Application Support, save and derived-cache
+  directories; derived cache is excluded from backup.
+- Real `AVAudioSession` activation/deactivation plus interruption and route-change
+  observers are connected to SwiftUI scene lifecycle. Both simulator classes
+  visibly reported sandbox and audio-session readiness in a sequential rerun.
+- Original project-owned app art is compiled into phone/tablet icon renditions
+  and was visually accepted on both simulator launchers. Provenance is recorded
+  in `ART.md`.
+- The unsigned foundation IPA was created twice with identical SHA-256
+  `d5c94ba3cfc476df417dd608ea5bc340b9d0a79d13e43c3e79f59f547d8071a9`.
+  Its eight-member payload passed extension, ROM-header, known-hash, signing,
+  private-path and ARM64 checks. Its sorted app-content SHA-256 is
+  `888944a784ac89cb9c34979f7bd11ccd69d17b0c7a551f205548ab5f2a644ac1`.
 
 ## Failed or blocked
 
@@ -41,12 +58,13 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - Files-picker interaction itself has not yet been driven; current runtime
   validation evidence uses the same validator through an explicit automation
   launch argument.
-- No shared game core, audio/lifecycle/save integration, touch controls,
-  controller validation, mission completion, multiplayer, original app icon,
-  final unsigned IPA, or final archive audit yet.
+- No shared game core, audio-engine/save persistence, touch controls,
+  controller validation, mission completion, multiplayer, final game-bearing
+  unsigned IPA, or final archive audit yet.
 
 ## Next gate
 
-Reconstruct GoldenRecomp generation from public inputs and connect only a
-provenance-clean generated core to the existing host. Do not import unlicensed
-game or SDK-lineage source to make progress appear faster.
+Obtain or upstream a licensed complete GoldenRecomp ELF/metadata input, then
+connect the generated core to the existing host. In parallel, finish picker,
+settings/save and lifecycle acceptance without importing unlicensed game,
+SDK-lineage, or Xbox/XBLA material.

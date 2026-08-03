@@ -70,3 +70,16 @@ For repository contamination checks:
 Every IPA test must unzip into a fresh temporary directory, enumerate members,
 run the contamination policy from `LEGAL.md`, and prove the app cannot play
 without user-selected retail data. Record hashes of project-owned artifacts only.
+
+The repository scripts implement the current foundation gate:
+
+```sh
+./scripts/package-foundation-ipa.sh
+./scripts/verify-unsigned-ipa.sh \
+  dist/GoldenPad-0.1.0-foundation-unsigned.ipa
+```
+
+The verifier rejects ROM/save/signing path names, all three N64 byte-order magic
+headers, the supported retail SHA-1, a signed app, non-ARM64 code, and private
+developer/reference strings. It also prints a sorted-content digest independent
+of ZIP metadata.

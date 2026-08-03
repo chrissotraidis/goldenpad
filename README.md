@@ -1,5 +1,9 @@
 # GoldenPad
 
+<p align="center">
+  <img src="Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png" width="128" alt="GoldenPad app icon">
+</p>
+
 GoldenPad is an early research project for a native iPhone and iPad port of the
 original retail Nintendo 64 game. It targets statically recompiled Apple ARM64
 game code and Metal rendering—not a general N64 emulator.
@@ -31,6 +35,7 @@ Rare, Microsoft, MGM, Danjaq, EON Productions, or any other rights holder.
 - [Building](docs/BUILDING.md)
 - [Testing](docs/TESTING.md)
 - [Legal and provenance policy](docs/LEGAL.md)
+- [Original art provenance](docs/ART.md)
 - [Worklog](docs/WORKLOG.md)
 
 Controls, controller, multiplayer, save, gameplay screenshots and final IPA

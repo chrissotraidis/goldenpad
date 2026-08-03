@@ -54,6 +54,11 @@ Valid V64 was proven on both; invalid-size rejection was proven on iPad. Actual
 Files-picker interaction, relaunch persistence, missing-file and wrong-hash
 cases remain before the gate is closed.
 
+A5/A6 foundation is now present: Application Support, derived-cache and save
+directories are created, cache backup is disabled, and active/inactive audio
+session plus interruption/route observers are wired. They remain open until
+real core settings/saves/audio survive relaunch and interruption tests.
+
 ### G — Game integration
 
 - [ ] G1: compile generated GoldenEye code for Apple ARM64 simulator/device.
@@ -85,7 +90,7 @@ Gate: four-player iPad match where core support allows it.
 
 ### P — Package and publish
 
-- [ ] P1: original neutral icon at every required size.
+- [x] P1: original neutral icon at every required size.
 - [ ] P2: reproducible unsigned IPA from clean checkout.
 - [ ] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
 - [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
@@ -94,6 +99,10 @@ Gate: four-player iPad match where core support allows it.
 
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
+
+The current foundation IPA reproduces byte-for-byte and passes the contamination
+auditor, but P2/P3 remain open until the clean production core is present and a
+fresh-checkout final package passes the same gates.
 
 ## Test rhythm
 

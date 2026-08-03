@@ -33,6 +33,31 @@ MIT grant.
 | n64decomp/007 | https://github.com/n64decomp/007 | `master` at `754a0a977efcbc99a46d079a73292e40780e3aab` | **No LICENSE file found**; includes decompiled game and libultra/Rare lineage | Symbol/decomp research only. Not incorporated. |
 | HarkinianPad | https://github.com/chrissotraidis/harkinianpad | `main` at `4db21e4be0f0be52948438de5d8c755d191897ae` | All rights reserved for its integration code, docs and art; upstream licenses separate | UX/architecture reference only. Clean-room reimplement touch ideas; do not copy code or art without permission. |
 
+## Blocker follow-up
+
+- Current N64Recomp and all five pinned submodules build successfully as native
+  Apple ARM64 command-line tools. This proves host-tool portability, not game
+  input availability.
+- Running that tool with GoldenRecomp's `us.toml` stops at `Elf file not found`.
+  The configuration still names `ge007.tlbfree.elf`; its alternative
+  `symbols_file_path = "dump.toml"` is commented and no dump is published.
+- Current N64Recomp can consume a ROM plus a complete symbol metadata file, but
+  it does not infer the full function/section/relocation map from a retail ROM.
+- All public GoldenRecomp forks inspected through 2026-08-03 retain the same
+  unavailable `kholdfuzion/goldeneye_src` URL and publish no generated function
+  tree or replacement metadata.
+- The only public repository found with the `goldeneye_src` name has no license,
+  no TLB-free branch, and is not the pinned history. It is unusable here.
+- `ysrdevs/goldeneye-metal` is a PowerPC/ReXGlue Xbox 360 recompilation that
+  imports `default.xex` or Xbox LIVE/STFS data. It is outside this project's
+  original-N64-ROM boundary and is explicitly excluded despite its Apple Metal
+  work. Other XBLA/XEX recompilation projects are excluded for the same reason.
+
+The clean static-recomp gate therefore needs one external upstream change: a
+licensed public TLB-free input repository/ELF recipe, or a licensed complete
+ROM symbol/section/relocation metadata file compatible with current N64Recomp.
+Neither exists in the inspected public ecosystem today.
+
 ## GoldenRecomp inspection
 
 - The public README describes a stable game and good audio but lists incomplete

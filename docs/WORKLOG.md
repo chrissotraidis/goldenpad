@@ -45,5 +45,32 @@
 - Added a repo-owned iOS plist with explicit device families, launch screen,
   Metal/ARM64 capabilities, and phone/tablet orientation declarations.
 - Built an unsigned Release bundle against the generic iOS device SDK; its
-  executable is ARM64 and its complete app payload is roughly 256 KiB with no
+  executable is ARM64 and its complete app payload is roughly 324 KiB with no
   ROM or generated game assets.
+
+## 2026-08-03 — core-blocker audit and platform services
+
+- Built current N64Recomp and RSPRecomp plus their pinned dependencies as native
+  Apple ARM64 tools. GoldenRecomp generation still stops at its missing modified
+  ELF; no complete public `dump.toml` alternative is present.
+- Searched current public GoldenRecomp forks, similarly named source repositories
+  and static-recomp projects. Forks retain the unavailable game-code URL and do
+  not publish generated functions or replacement metadata.
+- Rejected the newer GoldenEye Metal path because it consumes Xbox 360 XEX/STFS
+  data through a PowerPC/ReXGlue runtime, violating the original N64-only goal.
+- Added sandbox platform paths for derived cache, saves and settings. Created
+  directories were observed inside each simulator app container; the derived
+  cache is excluded from backup.
+- Added SwiftUI scene-phase handling backed by a real `AVAudioSession`, including
+  activation, deactivation, interruption and route-change transitions.
+- Rebuilt and visibly reran iPhone first, then iPad. Both reported `storage:
+  sandbox ready` and `audio: session ready`; each install was removed and each
+  simulator was shut down before moving on or concluding the pass.
+- Generated a fully original gold/teal directional `G` icon with OpenAI's
+  built-in image tool, resized the opaque RGB source to 1024×1024, recorded its
+  provenance, and compiled it through Xcode's asset catalog.
+- Visually accepted the real launcher icon on iPhone, removed/stopped that
+  simulator, then repeated on iPad and removed/stopped it.
+- Added deterministic unsigned-foundation-IPA packaging and a contamination
+  auditor. Two consecutive packages had identical SHA-256 `d5c94ba3cfc476df417dd608ea5bc340b9d0a79d13e43c3e79f59f547d8071a9`;
+  the eight-member payload and sorted-content digest passed all checks.

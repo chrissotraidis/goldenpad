@@ -3,14 +3,22 @@ import UniformTypeIdentifiers
 
 @main
 struct GoldenPadApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var platform = PlatformCoordinator()
+
     var body: some Scene {
         WindowGroup {
             FoundationView()
+                .environmentObject(platform)
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    platform.handle(scenePhase: phase)
+                }
         }
     }
 }
 
 private struct FoundationView: View {
+    @EnvironmentObject private var platform: PlatformCoordinator
     @State private var isImporterPresented = false
     @State private var validation: ROMValidationState = .notSelected
     @State private var performedAutomationValidation = false
@@ -57,6 +65,10 @@ private struct FoundationView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.66))
                         .labelStyle(.titleAndIcon)
+
+                        Text(platform.statusSummary)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
 
                         Spacer(minLength: max(24, geometry.safeAreaInsets.bottom))
                     }

@@ -34,6 +34,18 @@ file build-ios-device/Release-iphoneos/GoldenPad.app/GoldenPad
 The last command must report a `Mach-O 64-bit executable arm64`. Build trees are
 ignored. Never place a ROM in either build tree.
 
+Package and verify the explicitly incomplete foundation artifact:
+
+```sh
+./scripts/package-foundation-ipa.sh
+./scripts/verify-unsigned-ipa.sh \
+  dist/GoldenPad-0.1.0-foundation-unsigned.ipa
+```
+
+This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
+Its filename says `foundation` because it does not contain the game core and is
+not the final deliverable.
+
 ## Apple Silicon research oracle
 
 ```sh
@@ -59,4 +71,4 @@ The upstream `-DMGB64_WEBGPU_BACKEND=OFF` option currently fails to link at the
 pinned commit and is intentionally not the documented baseline.
 
 Production-core and final unsigned-IPA instructions remain gated on clean core
-integration and an original icon.
+integration.

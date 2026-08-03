@@ -7,8 +7,10 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 
 add_executable(GoldenPad MACOSX_BUNDLE
+    Assets.xcassets
     Sources/GoldenPadApp.swift
     Sources/MetalCanvas.swift
+    Sources/PlatformServices.swift
     Sources/ROMValidator.swift
 )
 
@@ -21,6 +23,7 @@ set_target_properties(GoldenPad PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/Info.plist.in"
     XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
     XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
+    XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     XCODE_ATTRIBUTE_GENERATE_INFOPLIST_FILE "NO"
     XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0"
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad"
@@ -30,10 +33,13 @@ set_target_properties(GoldenPad PROPERTIES
     XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
 )
 
+set_source_files_properties(Assets.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
 target_link_libraries(GoldenPad PRIVATE
     "-framework SwiftUI"
     "-framework Metal"
     "-framework MetalKit"
+    "-framework AVFAudio"
     "-framework UniformTypeIdentifiers"
     "-framework CryptoKit"
 )
