@@ -5,8 +5,8 @@
 </p>
 
 GoldenPad is an early research project for a native iPhone and iPad port of the
-original retail Nintendo 64 game. It targets statically recompiled Apple ARM64
-game code and Metal rendering—not a general N64 emulator.
+original retail Nintendo 64 game. It targets natively compiled Apple ARM64 game
+code and Metal rendering—not a general N64 emulator.
 
 ## Current status
 
@@ -40,8 +40,12 @@ A second game-state probe proved movement, dual-stick aim, fire, B reload/action
 A weapon cycle, and Start pause/watch semantics on both classes. An explicitly
 scripted diagnostic also reached the real mission-status/statistics reports and
 proved the resulting Dam/Agent EEPROM progression survives relaunch on both
-classes. Organic mission completion, physical-device controls, multiplayer, and
-final packaging remain open.
+classes. A controller-only Facility probe then advanced through the authentic
+next-mission briefing, waited for first-person control, approached the stock
+bathroom door cluster, and opened model object 159 fully with normal movement,
+look and B input on iPhone followed by iPad. That closes the simulator world-
+interaction subgate; organic objectives and mission completion, physical-device
+controls, multiplayer, and final packaging remain open.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

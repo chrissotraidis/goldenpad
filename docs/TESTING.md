@@ -368,8 +368,44 @@ same app and private temporary ROM with `--progression-probe`; require
 On 2026-08-03 this passed first at 2622x1206 on iPhone 16 Pro, which was then
 uninstalled and shut down. iPad Pro 11-inch (M4) repeated it at 2420x1668. Both
 reported time `1023`, and the iPad received the same cleanup. This proves the
-real report/save/relaunch seam only. Context interaction, organic objectives and
-mission completion remain open.
+real report/save/relaunch seam only. Organic objectives and mission completion
+remain open.
+
+### Facility controller-interaction gate
+
+First verify the pinned MGB64 desktop contract with a private ignored retail ROM:
+
+```sh
+python3 ref/mgb64/tools/campaign_route_smoke.py \
+  --binary ref/mgb64/build-goldenpad-webgpu/ge007 \
+  --rom /private/path/to/retail-game.v64 \
+  --out-dir /tmp/mgb64-facility-route \
+  --route facility_spawn_obj159_door_traversal_contract --timeout 90
+```
+
+The 2026-08-03 desktop run passed with 762 records, a 1291.83-unit horizontal
+delta, real object-159 allow/open/displace/finish events and no setup automation.
+Keep its logs private because they come from a retail-ROM-backed run.
+
+Launch a clean GoldenPad install with `--facility-door-probe`. This implies the
+authentic menu/Dam flow, uses the explicitly scripted Dam result only as a
+prerequisite, presses normal A through both report screens, reaches Facility's
+real briefing and presses Start. The controller route must not begin until the
+game reports `CAMERAMODE_FP`.
+
+Require `Facility door probe stock spawn: PASS` followed by
+`Facility door probe controller interaction: PASS`, with `open=90000`,
+`max=90000`, `sawOpening=1`, `finishedOpen=1`, and at least 680 world units of
+horizontal displacement. The route publishes only normalized movement, look and
+B frames; its game snapshot is read-only and it never forces a transform, door,
+objective or stage state.
+
+On 2026-08-03 the same built app passed first on iPhone 16 Pro and then on iPad
+Pro 11-inch (M4). Each reported a 702-unit displacement and a fully open door;
+each app and private temporary ROM was removed and each simulator shut down
+before proceeding. This closes the simulator context-interaction subgate. It
+does not claim the desktop route's later 1200-unit milestone, Facility objective
+completion, touch hardware, or organic mission completion.
 
 ## RT64 mobile Metal and static-library gate
 

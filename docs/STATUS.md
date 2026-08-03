@@ -163,6 +163,19 @@ longer blocks MGB64 integration.
   input back to mission select. After lifecycle background flush, the same
   install restored `completed=1 time=1023` on relaunch. This passed strictly on
   iPhone then iPad with full uninstall/shutdown cleanup.
+- The input-only MGB64 desktop route
+  `facility_spawn_obj159_door_traversal_contract` independently passed at the
+  pinned commit with a 1291.83-unit displacement, real door-allow/transition/
+  displacement/finish-open events, and no direct state automation. GoldenPad's
+  `--facility-door-probe` uses the same input windows after authentic front-end
+  traversal and a scripted Dam-success prerequisite, but waits for Facility's
+  real `CAMERAMODE_FP` transition before starting. The stock door model object
+  159 reached `open=90000`, `max=90000`, with opening and finished-open states
+  observed; normal controller input moved Bond 702 world units. The exact same
+  app passed first on iPhone and then iPad, with uninstall and simulator shutdown
+  after each. The mobile gate deliberately requires the 680-unit post-door
+  milestone plus full door opening; it does not claim the desktop route's later
+  1200-unit reach, Facility objectives, or organic mission completion.
 - The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
   restored from Application Support at bootstrap, and atomically flushed with
   file protection on scene deactivation/backgrounding. Strict sequential
@@ -256,8 +269,8 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Organic mission completion, context-sensitive world interaction,
-  crouch/objectives flow, physical-controller/gyro acceptance, touch-only
+- Organic mission completion, deeper Facility progression, crouch/objectives
+  flow, physical-controller/gyro acceptance, touch-only
   mission completion, multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
@@ -265,8 +278,8 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Prove a context-sensitive Dam world interaction, then replace the diagnostic
-success trigger with organic objectives and mission completion through input.
-The real report, EEPROM write, lifecycle flush and relaunch progression path no
-longer need to be rediscovered.
+Extend normal-input Facility progression beyond the first bathroom-door cluster,
+then replace the diagnostic success prerequisite with organic objectives and
+mission completion through input. The world-interaction, report, EEPROM write,
+lifecycle flush and relaunch progression seams no longer need to be rediscovered.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

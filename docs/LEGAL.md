@@ -31,6 +31,8 @@ is a release-risk disclosure, not a production stop. Paid access, store release,
 or claims of fully cleared redistribution remain behind qualified legal review.
 Using MGB64's ROM-free diagnostic contracts for private validation does not cure
 or expand those redistribution rights; it only supplies engineering evidence.
+Reusing an upstream controller-input schedule as behavioral test evidence also
+does not change this boundary or transfer any game-content rights.
 
 ## Source boundary
 

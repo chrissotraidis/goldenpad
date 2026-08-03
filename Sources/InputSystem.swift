@@ -56,6 +56,18 @@ private func goldenPadMGB64ProgressionState(
     _ scriptedSuccessApplied: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_facility_door_state")
+private func goldenPadMGB64FacilityDoorState(
+    _ ready: UnsafeMutablePointer<Int32>?,
+    _ count: UnsafeMutablePointer<Int32>?,
+    _ state: UnsafeMutablePointer<Int32>?,
+    _ openPosition: UnsafeMutablePointer<Int32>?,
+    _ maxOpenPosition: UnsafeMutablePointer<Int32>?,
+    _ sawOpening: UnsafeMutablePointer<Int32>?,
+    _ finishedOpen: UnsafeMutablePointer<Int32>?,
+    _ cameraMode: UnsafeMutablePointer<Int32>?
+)
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -214,6 +226,14 @@ private enum MissionFlowProbePhase {
     case reportSettle, dismissReport, waitingForMissionSelect, complete
 }
 
+private enum FacilityDoorProbePhase {
+    case waitingForDam, damSettle, waitingForStatus
+    case statusSettle, advanceStatus, waitingForReport
+    case reportSettle, advanceReport, waitingForBriefing
+    case briefingSettle, startFacility, waitingForFacility
+    case route, complete
+}
+
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
@@ -247,6 +267,13 @@ final class InputCoordinator: ObservableObject {
     private var gameplayProbeSawPause = false
     private var missionFlowProbePhase = MissionFlowProbePhase.waitingForDam
     private var missionFlowProbeFrames = 0
+    private var facilityDoorProbePhase = FacilityDoorProbePhase.waitingForDam
+    private var facilityDoorProbeFrames = 0
+    private var facilityDoorRouteFrame = 0
+    private var facilityDoorRouteStartX: Int32 = 0
+    private var facilityDoorRouteStartZ: Int32 = 0
+    private var facilityDoorRouteStartYaw: Int32 = 0
+    private var facilityDoorRouteInput: GoldenEyeInputFrame?
     private var didReportProgressionProbe = false
 
     init() {
@@ -354,6 +381,7 @@ final class InputCoordinator: ObservableObject {
         runMenuProbeIfRequested()
         runGameplayProbeIfRequested()
         runMissionFlowProbeIfRequested()
+        runFacilityDoorProbeIfRequested()
         runProgressionProbeIfRequested()
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
@@ -365,7 +393,9 @@ final class InputCoordinator: ObservableObject {
             )
         }
         for player in 0..<controllerSlots.count {
-            let frame = mappedFrame(player: player)
+            let frame = player == 0
+                ? facilityDoorRouteInput ?? mappedFrame(player: player)
+                : mappedFrame(player: player)
             let primary = frame.primary
             let secondary = frame.secondary
             let connected = player == 0 || controllerSlots[player] != nil
@@ -391,7 +421,8 @@ final class InputCoordinator: ObservableObject {
         let arguments = ProcessInfo.processInfo.arguments
         guard arguments.contains("--menu-probe") ||
                 arguments.contains("--gameplay-probe") ||
-                arguments.contains("--mission-flow-probe") else { return }
+                arguments.contains("--mission-flow-probe") ||
+                arguments.contains("--facility-door-probe") else { return }
         if arguments.contains("--mission-flow-probe") {
             if case .complete = missionFlowProbePhase {
                 touch = .neutral
@@ -712,6 +743,192 @@ final class InputCoordinator: ObservableObject {
 
         case .complete:
             break
+        }
+    }
+
+    private func runFacilityDoorProbeIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("--facility-door-probe") else {
+            return
+        }
+
+        var menu: Int32 = -1
+        var stage: Int32 = -1
+        var selectedStage: Int32 = -1
+        var ready: Int32 = 0
+        var viewMode: Int32 = -1
+        var playerX: Int32 = 0
+        var playerZ: Int32 = 0
+        var playerYaw: Int32 = 0
+        var playerPitch: Int32 = 0
+        var doorReady: Int32 = 0
+        var doorCount: Int32 = 0
+        var doorState: Int32 = -1
+        var doorOpenPosition: Int32 = 0
+        var doorMaxOpenPosition: Int32 = 0
+        var doorSawOpening: Int32 = 0
+        var doorFinishedOpen: Int32 = 0
+        var cameraMode: Int32 = -1
+        goldenPadMGB64RuntimeState(
+            &menu, &stage, nil, &selectedStage, nil, nil, nil
+        )
+        goldenPadMGB64GameplayState(
+            &ready, &viewMode, &playerX, &playerZ, &playerYaw, &playerPitch,
+            nil, nil, nil,
+            nil, nil, nil, nil
+        )
+        goldenPadMGB64FacilityDoorState(
+            &doorReady, &doorCount, &doorState, &doorOpenPosition,
+            &doorMaxOpenPosition, &doorSawOpening, &doorFinishedOpen,
+            &cameraMode
+        )
+
+        facilityDoorRouteInput = nil
+        facilityDoorProbeFrames += 1
+
+        switch facilityDoorProbePhase {
+        case .waitingForDam:
+            guard stage == 33, ready == 1, viewMode == 0 else { return }
+            touch = .neutral
+            facilityDoorProbePhase = .damSettle
+            facilityDoorProbeFrames = 0
+            print("[GoldenPad] Facility door probe live Dam setup: PASS")
+
+        case .damSettle:
+            touch = .neutral
+            guard facilityDoorProbeFrames >= 90 else { return }
+            goldenPadMGB64RequestScriptedMissionSuccess()
+            facilityDoorProbePhase = .waitingForStatus
+            facilityDoorProbeFrames = 0
+            print("[GoldenPad] Facility door probe scripted Dam prerequisite requested")
+
+        case .waitingForStatus:
+            touch = .neutral
+            guard menu == 12, stage == 90 else { return }
+            facilityDoorProbePhase = .statusSettle
+            facilityDoorProbeFrames = 0
+
+        case .statusSettle:
+            touch = .neutral
+            guard facilityDoorProbeFrames >= 60 else { return }
+            facilityDoorProbePhase = .advanceStatus
+            facilityDoorProbeFrames = 0
+
+        case .advanceStatus:
+            touch = .neutral
+            touch.buttons = [.confirm]
+            if facilityDoorProbeFrames >= 6 {
+                facilityDoorProbePhase = .waitingForReport
+                facilityDoorProbeFrames = 0
+            }
+
+        case .waitingForReport:
+            touch = .neutral
+            guard menu == 13 else { return }
+            facilityDoorProbePhase = .reportSettle
+            facilityDoorProbeFrames = 0
+
+        case .reportSettle:
+            touch = .neutral
+            guard facilityDoorProbeFrames >= 60 else { return }
+            facilityDoorProbePhase = .advanceReport
+            facilityDoorProbeFrames = 0
+
+        case .advanceReport:
+            touch = .neutral
+            touch.buttons = [.confirm]
+            if facilityDoorProbeFrames >= 6 {
+                facilityDoorProbePhase = .waitingForBriefing
+                facilityDoorProbeFrames = 0
+            }
+
+        case .waitingForBriefing:
+            touch = .neutral
+            guard menu == 10, stage == 90, selectedStage == 34 else { return }
+            facilityDoorProbePhase = .briefingSettle
+            facilityDoorProbeFrames = 0
+            print("[GoldenPad] Facility door probe authentic next briefing: PASS")
+
+        case .briefingSettle:
+            touch = .neutral
+            guard facilityDoorProbeFrames >= 60 else { return }
+            facilityDoorProbePhase = .startFacility
+            facilityDoorProbeFrames = 0
+
+        case .startFacility:
+            touch = .neutral
+            touch.buttons = [.pause]
+            if facilityDoorProbeFrames >= 6 {
+                facilityDoorProbePhase = .waitingForFacility
+                facilityDoorProbeFrames = 0
+            }
+
+        case .waitingForFacility:
+            touch = .neutral
+            guard stage == 34, ready == 1, viewMode == 0, doorReady == 1,
+                  cameraMode == 4 else {
+                return
+            }
+            facilityDoorRouteStartX = playerX
+            facilityDoorRouteStartZ = playerZ
+            facilityDoorRouteStartYaw = playerYaw
+            facilityDoorRouteFrame = 0
+            facilityDoorProbePhase = .route
+            facilityDoorProbeFrames = 0
+            print(
+                "[GoldenPad] Facility door probe stock spawn: PASS " +
+                "doors=\(doorCount) pos=\(playerX),\(playerZ) " +
+                "yaw=\(playerYaw) pitch=\(playerPitch) camera=\(cameraMode)"
+            )
+
+        case .route:
+            touch = .neutral
+            var routeFrame = GoldenEyeInputFrame()
+            if (80..<700).contains(facilityDoorRouteFrame) {
+                routeFrame.primary.stick = SIMD2(-1, 1)
+            }
+            if (350..<610).contains(facilityDoorRouteFrame) {
+                routeFrame.secondary.stick = SIMD2(-1, 0)
+            }
+            if [400, 440, 480, 520, 560, 600].contains(where: {
+                ($0..<($0 + 4)).contains(facilityDoorRouteFrame)
+            }) {
+                routeFrame.primary.buttons.insert(.b)
+            }
+            facilityDoorRouteInput = routeFrame
+            facilityDoorRouteFrame += 1
+
+            if [100, 180, 360, 440, 600, 740].contains(facilityDoorRouteFrame) {
+                let deltaX = playerX - facilityDoorRouteStartX
+                let deltaZ = playerZ - facilityDoorRouteStartZ
+                print(
+                    "[GoldenPad] Facility door probe route frame " +
+                    "\(facilityDoorRouteFrame): pos=\(playerX),\(playerZ) " +
+                    "delta=\(deltaX),\(deltaZ) yaw=\(playerYaw) " +
+                    "yawDelta=\(playerYaw - facilityDoorRouteStartYaw)"
+                )
+            }
+
+            guard facilityDoorRouteFrame >= 760 else { return }
+            let deltaX = Double(playerX - facilityDoorRouteStartX)
+            let deltaZ = Double(playerZ - facilityDoorRouteStartZ)
+            let distance = Int(sqrt(deltaX * deltaX + deltaZ * deltaZ).rounded())
+            let passed = doorReady == 1 && doorSawOpening == 1 &&
+                doorFinishedOpen == 1 && doorMaxOpenPosition > 0 &&
+                distance >= 68_000
+            facilityDoorProbePhase = .complete
+            facilityDoorRouteInput = nil
+            touch = .neutral
+            print(
+                "[GoldenPad] Facility door probe controller interaction: " +
+                "\(passed ? "PASS" : "FAIL") doors=\(doorCount) " +
+                "state=\(doorState) open=\(doorOpenPosition) " +
+                "max=\(doorMaxOpenPosition) sawOpening=\(doorSawOpening) " +
+                "finishedOpen=\(doorFinishedOpen) distance=\(distance / 100) " +
+                "final=\(playerX),\(playerZ) yaw=\(playerYaw)"
+            )
+
+        case .complete:
+            touch = .neutral
         }
     }
 

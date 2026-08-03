@@ -203,8 +203,13 @@ may request MGB64's existing scripted-success behavior after live Dam starts;
 the game still owns report construction and EEPROM writes, and the result is
 never accepted as organic completion. The same diagnostic boundary can publish
 player position, view angles, aim, weapon/ammo, watch and progression state for
-acceptance. Real-controller auto-hide, physical gyro, context interaction and
-organic mission-completion semantics remain acceptance gates.
+acceptance. A second read-only snapshot samples Facility's real camera mode and
+door model object 159 state on the game thread. The Facility route waits for
+`CAMERAMODE_FP`, then publishes only ordinary normalized movement, look and B
+frames through the same controller setter used by touch and physical pads. It
+never forces a player transform or door state. Real-controller auto-hide,
+physical gyro, crouch/objectives flow and organic mission-completion semantics
+remain acceptance gates.
 
 ## Targets
 

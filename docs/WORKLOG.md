@@ -1,5 +1,28 @@
 # Worklog
 
+## 2026-08-03 — open a stock Facility door through normal input
+
+- Independently reran MGB64's pinned
+  `facility_spawn_obj159_door_traversal_contract` on the desktop oracle. It
+  passed with 762 records, a 1291.83-unit horizontal delta, real object-159
+  allow/open/displace/finish events and no direct state automation.
+- Added a read-only game-thread snapshot for Facility camera mode and door model
+  object 159. The mobile route waits for the real first-person camera transition
+  and sends only normalized movement, look and B frames through the existing
+  controller boundary; it never forces player or door state.
+- The authentic front end reached Dam. One explicitly labelled scripted success
+  supplied only the already-proven prerequisite to advance through real reports
+  and the Facility briefing; the debug objective flag was restored before
+  Facility began.
+- Strict iPhone-then-iPad runs each opened the stock door fully
+  (`open=90000`, `max=90000`, opening and finished-open observed) and moved Bond
+  702 world units. Each installed app, private temporary ROM and container was
+  removed before simulator shutdown.
+- This completes the simulator context-sensitive interaction subgate only. The
+  mobile proof intentionally accepts MGB64's 680-unit post-door milestone rather
+  than claiming its later 1200-unit reach. Facility objectives and organic
+  mission completion remain open.
+
 ## 2026-08-03 — prove the real mission-report and progression seam
 
 - Added an explicitly diagnostics-only atomic request that mirrors MGB64's

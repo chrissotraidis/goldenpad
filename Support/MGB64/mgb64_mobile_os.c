@@ -8,7 +8,10 @@
 #include <time.h>
 
 #include "boss.h"
+#include "game/bondview.h"
+#include "game/chrai.h"
 #include "game/file2.h"
+#include "game/loadobjectmodel.h"
 #include "game/mp_music.h"
 #include "game/player.h"
 
@@ -66,6 +69,14 @@ static _Atomic int goldenpad_progression_ready;
 static _Atomic int goldenpad_progression_dam_agent_completed;
 static _Atomic int goldenpad_progression_dam_agent_time;
 static _Atomic int goldenpad_progression_mission_state;
+static _Atomic int goldenpad_facility_door_ready;
+static _Atomic int goldenpad_facility_door_count;
+static _Atomic int goldenpad_facility_door_state = -1;
+static _Atomic int goldenpad_facility_door_open_position;
+static _Atomic int goldenpad_facility_door_max_open_position;
+static _Atomic int goldenpad_facility_door_saw_opening;
+static _Atomic int goldenpad_facility_door_finished_open;
+static _Atomic int goldenpad_facility_camera_mode = -1;
 static int goldenpad_scripted_mission_saved_debug_flag;
 static int goldenpad_scripted_mission_restore_debug_flag;
 
@@ -415,6 +426,49 @@ static void goldenpad_mgb64_neutral_controller_status(OSContStatus *status) {
 extern void goldenpad_mgb64_read_controller_pads(OSContPad *pads);
 extern void goldenpad_mgb64_read_controller_status(OSContStatus *status);
 
+static void goldenpad_mgb64_sample_facility_door(void) {
+    PropDefHeaderRecord *record;
+    int count = 0;
+    int state = -1;
+    int open_position = 0;
+
+    if (g_CurrentSetup.propDefs == NULL) {
+        atomic_store(&goldenpad_facility_door_ready, 0);
+        return;
+    }
+
+    record = g_CurrentSetup.propDefs;
+    while (record->type != PROPDEF_END) {
+        if (record->type == PROPDEF_DOOR) {
+            DoorRecord *door = (DoorRecord *)record;
+            if (door->obj == 159) {
+                int scaled_position = (int)(door->openPosition * 1000.0f);
+                count++;
+                if (scaled_position >= open_position) {
+                    open_position = scaled_position;
+                    state = door->openstate;
+                }
+                if (door->openstate == DOORSTATE_OPENING) {
+                    atomic_store(&goldenpad_facility_door_saw_opening, 1);
+                }
+                if (door->openstate == DOORSTATE_STATIONARY &&
+                    door->openPosition > 0.0f) {
+                    atomic_store(&goldenpad_facility_door_finished_open, 1);
+                }
+            }
+        }
+        record += sizepropdef(record);
+    }
+
+    atomic_store(&goldenpad_facility_door_count, count);
+    atomic_store(&goldenpad_facility_door_state, state);
+    atomic_store(&goldenpad_facility_door_open_position, open_position);
+    if (open_position > atomic_load(&goldenpad_facility_door_max_open_position)) {
+        atomic_store(&goldenpad_facility_door_max_open_position, open_position);
+    }
+    atomic_store(&goldenpad_facility_door_ready, count > 0);
+}
+
 s32 osContInit(OSMesgQueue *mq, u8 *bitpattern, OSContStatus *status) {
     int connected = 0;
     OSContStatus current[MAXCONTROLLERS];
@@ -474,7 +528,9 @@ s32 osContGetReadData(OSContPad *pads) {
      * request after live Dam gameplay has started.
      */
     if (goldenpad_scripted_mission_restore_debug_flag &&
-        g_StageNum == LEVELID_TITLE && current_menu == MENU_MISSION_SELECT) {
+        g_StageNum == LEVELID_TITLE &&
+        (current_menu == MENU_MISSION_SELECT ||
+         (current_menu == MENU_BRIEFING && selected_stage != LEVELID_DAM))) {
         debug_all_obj_complete_flag = goldenpad_scripted_mission_saved_debug_flag;
         goldenpad_scripted_mission_restore_debug_flag = 0;
     }
@@ -498,7 +554,8 @@ s32 osContGetReadData(OSContPad *pads) {
     atomic_store(&goldenpad_runtime_hover_folder, port_front_hover_folder);
     atomic_store(&goldenpad_runtime_cursor_x, (int)(cursor_h_pos * 100.0f));
     atomic_store(&goldenpad_runtime_cursor_y, (int)(cursor_v_pos * 100.0f));
-    if (g_StageNum == LEVELID_DAM && g_CurrentPlayer != NULL &&
+    if ((g_StageNum == LEVELID_DAM || g_StageNum == LEVELID_FACILITY) &&
+        g_CurrentPlayer != NULL &&
         g_CurrentPlayer->prop != NULL) {
         atomic_store(&goldenpad_gameplay_ready, 1);
         atomic_store(&goldenpad_gameplay_view_mode, g_CurrentPlayer->unknown);
@@ -533,6 +590,20 @@ s32 osContGetReadData(OSContPad *pads) {
         atomic_store(&goldenpad_gameplay_pausing, g_CurrentPlayer->pausing_flag);
     } else {
         atomic_store(&goldenpad_gameplay_ready, 0);
+    }
+
+    if (g_StageNum == LEVELID_FACILITY) {
+        atomic_store(&goldenpad_facility_camera_mode, g_CameraMode);
+        goldenpad_mgb64_sample_facility_door();
+    } else {
+        atomic_store(&goldenpad_facility_door_ready, 0);
+        atomic_store(&goldenpad_facility_door_count, 0);
+        atomic_store(&goldenpad_facility_door_state, -1);
+        atomic_store(&goldenpad_facility_door_open_position, 0);
+        atomic_store(&goldenpad_facility_door_max_open_position, 0);
+        atomic_store(&goldenpad_facility_door_saw_opening, 0);
+        atomic_store(&goldenpad_facility_door_finished_open, 0);
+        atomic_store(&goldenpad_facility_camera_mode, -1);
     }
 
     atomic_store(&goldenpad_progression_mission_state, get_mission_state());
@@ -621,6 +692,31 @@ void goldenpad_mgb64_progression_state(
     if (scripted_success_applied != NULL) {
         *scripted_success_applied =
             atomic_load(&goldenpad_scripted_mission_success_applied);
+    }
+}
+
+void goldenpad_mgb64_facility_door_state(
+    int *ready, int *count, int *state, int *open_position,
+    int *max_open_position, int *saw_opening, int *finished_open,
+    int *camera_mode) {
+    if (ready != NULL) *ready = atomic_load(&goldenpad_facility_door_ready);
+    if (count != NULL) *count = atomic_load(&goldenpad_facility_door_count);
+    if (state != NULL) *state = atomic_load(&goldenpad_facility_door_state);
+    if (open_position != NULL) {
+        *open_position = atomic_load(&goldenpad_facility_door_open_position);
+    }
+    if (max_open_position != NULL) {
+        *max_open_position =
+            atomic_load(&goldenpad_facility_door_max_open_position);
+    }
+    if (saw_opening != NULL) {
+        *saw_opening = atomic_load(&goldenpad_facility_door_saw_opening);
+    }
+    if (finished_open != NULL) {
+        *finished_open = atomic_load(&goldenpad_facility_door_finished_open);
+    }
+    if (camera_mode != NULL) {
+        *camera_mode = atomic_load(&goldenpad_facility_camera_mode);
     }
 }
 

@@ -130,6 +130,11 @@ save and render mission-status/statistics menus 12/13. Normal A/B input traverse
 those reports, and `completed=1 time=1023` survived lifecycle flush plus relaunch
 on iPhone and iPad. This isolates the remaining G4 work to organic objectives and
 mission completion; the scripted gate does not complete G4.
+The next controller-only acceptance slice used that scripted Dam result only to
+reach the authentic Facility briefing. After normal Start input and the real
+first-person camera transition, the route opened Facility door model object 159
+fully and moved 702 world units on iPhone followed by iPad. This proves a real
+world interaction, not Facility objectives or organic mission completion.
 
 ### I — Input and touch
 
@@ -150,7 +155,8 @@ persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
 still need device acceptance. I5 now has strict sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
-pause/watch. Crouch, a context-sensitive world interaction, objectives flow and
+pause/watch. It also has strict sequential proof that normal controller movement,
+look and B input opens a stock Facility door fully. Crouch, objectives flow and
 organic mission completion remain open. The downstream report and persisted-save
 path is independently proven through an explicitly scripted diagnostic trigger.
 
