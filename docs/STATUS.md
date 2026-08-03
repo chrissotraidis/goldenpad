@@ -147,6 +147,13 @@ longer blocks MGB64 integration.
   title stage 90 to active Dam stage 33. Private visual inspection confirmed
   live Dam gameplay and native touch overlays at 2622x1206 and 2420x1668. Both
   installs and temporary ROM copies were removed before simulator shutdown.
+- The diagnostics-only `--gameplay-probe` waits for Dam's frozen intro camera to
+  release, then drives the normal normalized touch/N64 path while reading an
+  atomic game-thread snapshot. On iPhone and then iPad it proved position change,
+  real aim mode plus view-angle change, PP7 fire (magazine 7 to 6), B reload/action
+  (6 to 7), A weapon cycling (item 5 to 1), and Start watch/pause entry. Private
+  inspection confirmed the moved Dam viewpoint and open watch; both runs received
+  full uninstall/shutdown cleanup.
 - The 16 Kbit game EEPROM is now mutex-protected across the game/host threads,
   restored from Application Support at bootstrap, and atomically flushed with
   file protection on scene deactivation/backgrounding. Strict sequential
@@ -240,8 +247,9 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Mission completion and post-mission progression persistence,
-  physical-controller/gyro acceptance, touch-only mission completion,
+- Mission completion and post-mission progression persistence, context-sensitive
+  world interaction, crouch/objectives flow, physical-controller/gyro acceptance,
+  touch-only mission completion,
   multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device

@@ -27,6 +27,23 @@ private func goldenPadMGB64RuntimeState(
     _ cursorY: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_gameplay_state")
+private func goldenPadMGB64GameplayState(
+    _ ready: UnsafeMutablePointer<Int32>?,
+    _ viewMode: UnsafeMutablePointer<Int32>?,
+    _ playerX: UnsafeMutablePointer<Int32>?,
+    _ playerZ: UnsafeMutablePointer<Int32>?,
+    _ yaw: UnsafeMutablePointer<Int32>?,
+    _ pitch: UnsafeMutablePointer<Int32>?,
+    _ aimMode: UnsafeMutablePointer<Int32>?,
+    _ weapon: UnsafeMutablePointer<Int32>?,
+    _ ammo: UnsafeMutablePointer<Int32>?,
+    _ triggerTimer: UnsafeMutablePointer<Int32>?,
+    _ watchState: UnsafeMutablePointer<Int32>?,
+    _ outsideWatch: UnsafeMutablePointer<Int32>?,
+    _ pausing: UnsafeMutablePointer<Int32>?
+)
+
 struct InputButtons: OptionSet, Equatable, Sendable {
     let rawValue: UInt32
 
@@ -173,6 +190,12 @@ private extension SIMD2 where Scalar == Float {
     }
 }
 
+private enum GameplayProbePhase {
+    case waiting, settle, movement, aim, fire
+    case reloadPulse, reloadWait, weaponPulse, weaponWait
+    case pausePulse, pauseWait, complete
+}
+
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
@@ -193,6 +216,17 @@ final class InputCoordinator: ObservableObject {
     private var menuProbeLastPendingStage: Int32 = .min
     private var menuProbeFramesInMenu = 0
     private var didReportMenuProbeMissionLoad = false
+    private var gameplayProbePhase = GameplayProbePhase.waiting
+    private var gameplayProbeFrames = 0
+    private var gameplayProbeStartX: Int32 = 0
+    private var gameplayProbeStartZ: Int32 = 0
+    private var gameplayProbeStartYaw: Int32 = 0
+    private var gameplayProbeStartPitch: Int32 = 0
+    private var gameplayProbeInitialWeapon: Int32 = -1
+    private var gameplayProbeFireAmmo: Int32 = -1
+    private var gameplayProbePostFireAmmo: Int32 = -1
+    private var gameplayProbeSawAim = false
+    private var gameplayProbeSawPause = false
 
     init() {
         assignInitialControllers()
@@ -297,6 +331,7 @@ final class InputCoordinator: ObservableObject {
 
     func publishToCore() {
         runMenuProbeIfRequested()
+        runGameplayProbeIfRequested()
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
             touch = InputSnapshot(
@@ -330,7 +365,9 @@ final class InputCoordinator: ObservableObject {
     }
 
     private func runMenuProbeIfRequested() {
-        guard ProcessInfo.processInfo.arguments.contains("--menu-probe") else { return }
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--menu-probe") ||
+                arguments.contains("--gameplay-probe") else { return }
         var menu: Int32 = -1
         var stage: Int32 = -1
         var pendingStage: Int32 = -1
@@ -383,6 +420,164 @@ final class InputCoordinator: ObservableObject {
                 "[GoldenPad] Menu probe waiting for folder: hover=\(hoverFolder) " +
                 "cursor=\(cursorX),\(cursorY)"
             )
+        }
+    }
+
+    private func runGameplayProbeIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("--gameplay-probe") else { return }
+        var ready: Int32 = 0
+        var viewMode: Int32 = -1
+        var playerX: Int32 = 0
+        var playerZ: Int32 = 0
+        var yaw: Int32 = 0
+        var pitch: Int32 = 0
+        var aimMode: Int32 = 0
+        var weapon: Int32 = -1
+        var ammo: Int32 = -1
+        var triggerTimer: Int32 = 0
+        var watchState: Int32 = 0
+        var outsideWatch: Int32 = 1
+        var pausing: Int32 = 0
+        goldenPadMGB64GameplayState(
+            &ready, &viewMode, &playerX, &playerZ, &yaw, &pitch,
+            &aimMode, &weapon, &ammo, &triggerTimer, &watchState,
+            &outsideWatch, &pausing
+        )
+
+        guard ready == 1, viewMode == 0 else { return }
+        if gameplayProbePhase == .waiting, ammo <= 0 { return }
+        touch = .neutral
+        gameplayProbeFrames += 1
+        gameplayProbeSawAim = gameplayProbeSawAim || aimMode != 0
+        gameplayProbeSawPause = gameplayProbeSawPause ||
+            watchState != 0 || outsideWatch == 0 || pausing != 0
+
+        switch gameplayProbePhase {
+        case .waiting:
+            gameplayProbeStartX = playerX
+            gameplayProbeStartZ = playerZ
+            gameplayProbeInitialWeapon = weapon
+            gameplayProbePhase = .settle
+            gameplayProbeFrames = 0
+            print(
+                "[GoldenPad] Gameplay probe ready: pos=\(playerX),\(playerZ) " +
+                "weapon=\(weapon) ammo=\(ammo)"
+            )
+
+        case .settle:
+            if gameplayProbeFrames >= 90 {
+                gameplayProbeStartX = playerX
+                gameplayProbeStartZ = playerZ
+                gameplayProbePhase = .movement
+                gameplayProbeFrames = 0
+                print("[GoldenPad] Gameplay probe movement: begin")
+            }
+
+        case .movement:
+            touch.movement = SIMD2(0, 0.8)
+            if gameplayProbeFrames >= 120 {
+                let deltaX = Double(playerX - gameplayProbeStartX)
+                let deltaZ = Double(playerZ - gameplayProbeStartZ)
+                let distance = Int(sqrt(deltaX * deltaX + deltaZ * deltaZ).rounded())
+                print(
+                    "[GoldenPad] Gameplay probe movement: " +
+                    "\(distance >= 500 ? "PASS" : "FAIL") delta=\(distance)"
+                )
+                gameplayProbeStartYaw = yaw
+                gameplayProbeStartPitch = pitch
+                gameplayProbePhase = .aim
+                gameplayProbeFrames = 0
+            }
+
+        case .aim:
+            touch.look = SIMD2(0.7, -0.35)
+            touch.leftTrigger = 1
+            touch.buttons = [.aim]
+            if gameplayProbeFrames >= 90 {
+                let angleDelta = max(
+                    abs(yaw - gameplayProbeStartYaw),
+                    abs(pitch - gameplayProbeStartPitch)
+                )
+                let passed = gameplayProbeSawAim && angleDelta >= 50
+                print(
+                    "[GoldenPad] Gameplay probe aim/look: " +
+                    "\(passed ? "PASS" : "FAIL") mode=\(aimMode) delta=\(angleDelta)"
+                )
+                gameplayProbeFireAmmo = ammo
+                gameplayProbePhase = .fire
+                gameplayProbeFrames = 0
+            }
+
+        case .fire:
+            touch.rightTrigger = 1
+            touch.buttons = [.fire]
+            if gameplayProbeFrames >= 30 {
+                gameplayProbePostFireAmmo = ammo
+                print(
+                    "[GoldenPad] Gameplay probe fire: " +
+                    "\(ammo < gameplayProbeFireAmmo ? "PASS" : "FAIL") " +
+                    "ammo=\(gameplayProbeFireAmmo)->\(ammo) trigger=\(triggerTimer)"
+                )
+                gameplayProbePhase = .reloadPulse
+                gameplayProbeFrames = 0
+            }
+
+        case .reloadPulse:
+            touch.buttons = [.reload]
+            if gameplayProbeFrames >= 6 {
+                gameplayProbePhase = .reloadWait
+                gameplayProbeFrames = 0
+            }
+
+        case .reloadWait:
+            if gameplayProbeFrames >= 180 {
+                print(
+                    "[GoldenPad] Gameplay probe reload/interact: " +
+                    "\(ammo > gameplayProbePostFireAmmo ? "PASS" : "FAIL") " +
+                    "ammo=\(gameplayProbePostFireAmmo)->\(ammo)"
+                )
+                gameplayProbePhase = .weaponPulse
+                gameplayProbeFrames = 0
+            }
+
+        case .weaponPulse:
+            touch.buttons = [.nextWeapon]
+            if gameplayProbeFrames >= 6 {
+                gameplayProbePhase = .weaponWait
+                gameplayProbeFrames = 0
+            }
+
+        case .weaponWait:
+            if gameplayProbeFrames >= 180 {
+                print(
+                    "[GoldenPad] Gameplay probe weapon: " +
+                    "\(weapon != gameplayProbeInitialWeapon ? "PASS" : "FAIL") " +
+                    "weapon=\(gameplayProbeInitialWeapon)->\(weapon)"
+                )
+                gameplayProbePhase = .pausePulse
+                gameplayProbeFrames = 0
+            }
+
+        case .pausePulse:
+            touch.buttons = [.pause]
+            if gameplayProbeFrames >= 6 {
+                gameplayProbePhase = .pauseWait
+                gameplayProbeFrames = 0
+            }
+
+        case .pauseWait:
+            if gameplayProbeFrames >= 180 || gameplayProbeSawPause {
+                print(
+                    "[GoldenPad] Gameplay probe pause: " +
+                    "\(gameplayProbeSawPause ? "PASS" : "FAIL") " +
+                    "watch=\(watchState) outside=\(outsideWatch) pausing=\(pausing)"
+                )
+                gameplayProbePhase = .complete
+                gameplayProbeFrames = 0
+            }
+
+        case .complete:
+            break
         }
     }
 

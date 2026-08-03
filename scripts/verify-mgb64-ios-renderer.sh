@@ -77,6 +77,7 @@ do
         _goldenpad_mgb64_eeprom_load \
         _goldenpad_mgb64_eeprom_snapshot \
         _goldenpad_mgb64_runtime_state \
+        _goldenpad_mgb64_gameplay_state \
         _alBnkfNew \
         _portAudioPlaySfxDetailed
     do

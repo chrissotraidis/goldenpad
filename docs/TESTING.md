@@ -320,6 +320,29 @@ inspected to confirm rendered Dam gameplay and the native touch overlay; no ROM
 or game-derived image entered the repository. The iPad received the same full
 cleanup. This completes G3, not mission-completion or touch-gameplay acceptance.
 
+### Controlled gameplay-input gate
+
+Launch the same private combined build with `--gameplay-probe`. This implies the
+menu probe, waits for active Dam stage 33 and gameplay view mode, and then drives
+only the normal normalized touch-to-N64 path. Its read-only game-state snapshot
+is published from the game thread alongside `osContGetReadData`.
+
+Require all of these lines without a `FAIL`:
+
+- `Gameplay probe movement: PASS` with a nontrivial position delta.
+- `Gameplay probe aim/look: PASS` with aim mode and angle delta.
+- `Gameplay probe fire: PASS` with magazine `7->6`.
+- `Gameplay probe reload/interact: PASS` with magazine `6->7`.
+- `Gameplay probe weapon: PASS` with weapon `5->1`.
+- `Gameplay probe pause: PASS` with nonzero watch/pause state.
+
+The 2026-08-03 gate passed first on iPhone 16 Pro, then on iPad Pro 11-inch
+(M4), using the exact same built app. Private visual inspection confirmed the
+moved Dam view and open watch. Each app/container and temporary ROM copy was
+removed and each simulator was shut down in strict sequence. This proves mapped
+semantics, not physical touch/controller hardware, a context-sensitive door or
+terminal interaction, crouch/objectives flow, or mission completion.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

@@ -7,6 +7,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "game/player.h"
+
 /*
  * MGB64's native scheduler is cooperative: its desktop host leaves the N64
  * scheduler thread dormant and delivers retrace messages from the frame loop.
@@ -37,6 +39,19 @@ static _Atomic int goldenpad_runtime_selected_stage = -1;
 static _Atomic int goldenpad_runtime_hover_folder = -1;
 static _Atomic int goldenpad_runtime_cursor_x;
 static _Atomic int goldenpad_runtime_cursor_y;
+static _Atomic int goldenpad_gameplay_ready;
+static _Atomic int goldenpad_gameplay_view_mode = -1;
+static _Atomic int goldenpad_gameplay_player_x;
+static _Atomic int goldenpad_gameplay_player_z;
+static _Atomic int goldenpad_gameplay_yaw;
+static _Atomic int goldenpad_gameplay_pitch;
+static _Atomic int goldenpad_gameplay_aim_mode;
+static _Atomic int goldenpad_gameplay_weapon = -1;
+static _Atomic int goldenpad_gameplay_ammo = -1;
+static _Atomic int goldenpad_gameplay_trigger_timer;
+static _Atomic int goldenpad_gameplay_watch_state;
+static _Atomic int goldenpad_gameplay_outside_watch = 1;
+static _Atomic int goldenpad_gameplay_pausing;
 
 #define GOLDENPAD_MAX_TIMERS 16
 #define GOLDENPAD_EEPROM_SIZE 2048
@@ -435,6 +450,42 @@ s32 osContGetReadData(OSContPad *pads) {
     atomic_store(&goldenpad_runtime_hover_folder, port_front_hover_folder);
     atomic_store(&goldenpad_runtime_cursor_x, (int)(cursor_h_pos * 100.0f));
     atomic_store(&goldenpad_runtime_cursor_y, (int)(cursor_v_pos * 100.0f));
+    if (g_StageNum == LEVELID_DAM && g_CurrentPlayer != NULL &&
+        g_CurrentPlayer->prop != NULL) {
+        atomic_store(&goldenpad_gameplay_ready, 1);
+        atomic_store(&goldenpad_gameplay_view_mode, g_CurrentPlayer->unknown);
+        atomic_store(
+            &goldenpad_gameplay_player_x,
+            (int)(g_CurrentPlayer->prop->pos.x * 100.0f));
+        atomic_store(
+            &goldenpad_gameplay_player_z,
+            (int)(g_CurrentPlayer->prop->pos.z * 100.0f));
+        atomic_store(
+            &goldenpad_gameplay_yaw,
+            (int)(g_CurrentPlayer->vv_theta * 100.0f));
+        atomic_store(
+            &goldenpad_gameplay_pitch,
+            (int)(g_CurrentPlayer->vv_verta * 100.0f));
+        atomic_store(&goldenpad_gameplay_aim_mode, g_CurrentPlayer->insightaimmode);
+        atomic_store(
+            &goldenpad_gameplay_weapon,
+            g_CurrentPlayer->hands[GUNRIGHT].weaponnum);
+        atomic_store(
+            &goldenpad_gameplay_ammo,
+            g_CurrentPlayer->hands[GUNRIGHT].weapon_ammo_in_magazine);
+        atomic_store(
+            &goldenpad_gameplay_trigger_timer,
+            g_CurrentPlayer->z_trigger_timer);
+        atomic_store(
+            &goldenpad_gameplay_watch_state,
+            g_CurrentPlayer->watch_animation_state);
+        atomic_store(
+            &goldenpad_gameplay_outside_watch,
+            g_CurrentPlayer->outside_watch_menu);
+        atomic_store(&goldenpad_gameplay_pausing, g_CurrentPlayer->pausing_flag);
+    } else {
+        atomic_store(&goldenpad_gameplay_ready, 0);
+    }
     return 0;
 }
 
@@ -454,6 +505,33 @@ void goldenpad_mgb64_runtime_state(
     }
     if (cursor_x != NULL) *cursor_x = atomic_load(&goldenpad_runtime_cursor_x);
     if (cursor_y != NULL) *cursor_y = atomic_load(&goldenpad_runtime_cursor_y);
+}
+
+void goldenpad_mgb64_gameplay_state(
+    int *ready, int *view_mode, int *player_x, int *player_z,
+    int *yaw, int *pitch, int *aim_mode, int *weapon, int *ammo,
+    int *trigger_timer, int *watch_state, int *outside_watch, int *pausing) {
+    if (ready != NULL) *ready = atomic_load(&goldenpad_gameplay_ready);
+    if (view_mode != NULL) {
+        *view_mode = atomic_load(&goldenpad_gameplay_view_mode);
+    }
+    if (player_x != NULL) *player_x = atomic_load(&goldenpad_gameplay_player_x);
+    if (player_z != NULL) *player_z = atomic_load(&goldenpad_gameplay_player_z);
+    if (yaw != NULL) *yaw = atomic_load(&goldenpad_gameplay_yaw);
+    if (pitch != NULL) *pitch = atomic_load(&goldenpad_gameplay_pitch);
+    if (aim_mode != NULL) *aim_mode = atomic_load(&goldenpad_gameplay_aim_mode);
+    if (weapon != NULL) *weapon = atomic_load(&goldenpad_gameplay_weapon);
+    if (ammo != NULL) *ammo = atomic_load(&goldenpad_gameplay_ammo);
+    if (trigger_timer != NULL) {
+        *trigger_timer = atomic_load(&goldenpad_gameplay_trigger_timer);
+    }
+    if (watch_state != NULL) {
+        *watch_state = atomic_load(&goldenpad_gameplay_watch_state);
+    }
+    if (outside_watch != NULL) {
+        *outside_watch = atomic_load(&goldenpad_gameplay_outside_watch);
+    }
+    if (pausing != NULL) *pausing = atomic_load(&goldenpad_gameplay_pausing);
 }
 
 s32 osPfsInit(OSMesgQueue *mq, OSPfs *pfs, s32 channel) {

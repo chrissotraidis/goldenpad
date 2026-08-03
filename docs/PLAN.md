@@ -142,7 +142,10 @@ phone/tablet layouts were exercised through the real mobile `osCont*` boundary
 on both simulators, including an exact deterministic probe. I4 has a compiled and
 persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
-still need device acceptance. Interactive gameplay mapping remains I5.
+still need device acceptance. I5 now has strict sequential game-state proof for
+movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
+pause/watch. Crouch, a context-sensitive world interaction, objectives flow and
+mission completion remain open.
 
 ### M — Multiplayer
 

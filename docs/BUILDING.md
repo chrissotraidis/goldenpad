@@ -91,7 +91,9 @@ boundary, starts the game once after all readiness gates, feeds Swift controller
 frames through `osCont*`, and renders MGB64 synth PCM through `AVAudioEngine`.
 Persistent game EEPROM now crosses the atomic Application Support bridge;
 the diagnostics-only menu probe traverses the real controller path and proves a
-controlled Dam load on both simulator classes. Mission completion remains open.
+controlled Dam load on both simulator classes. A second retained gameplay-state
+seam proves movement, aim/look, fire/reload, weapon and pause mappings without
+calling gameplay functions. Mission completion remains open.
 
 The core also includes the real upstream model converter, CLI stage table,
 radial deadzone, setup-name and weapon-cue services. A small native data unit

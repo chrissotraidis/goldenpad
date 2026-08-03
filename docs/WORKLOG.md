@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-08-03 — prove real Dam gameplay input semantics
+
+- Added a diagnostics-only atomic snapshot of game-owned player position, view
+  angles, aim mode, equipped weapon, magazine, trigger and watch/pause state.
+  It is sampled on the game thread beside the real controller read.
+- Added `--gameplay-probe`, which reaches Dam through authentic menus, waits for
+  the frozen intro camera to release, and drives normalized touch/N64 input only.
+- Strict iPhone-then-iPad runs proved movement, modern aim/look, PP7 fire
+  (`7->6`), B reload/action (`6->7`), A weapon cycle (`5->1`) and Start
+  pause/watch entry. Private screenshots confirmed the moved Dam view and watch.
+- Both installed apps and temporary ROM copies were removed before sequential
+  simulator shutdown. Context interaction, crouch/objectives and Dam completion
+  remain the next input/gameplay gates.
+
 ## 2026-08-03 — traverse the authentic front end and load Dam
 
 - Added a diagnostics-only atomic snapshot of menu, stage, selection, file-slot
