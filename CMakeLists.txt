@@ -14,6 +14,7 @@ add_executable(GoldenPad MACOSX_BUNDLE
     Sources/PlatformServices.swift
     Sources/ROMValidator.swift
     Sources/TouchControlsView.swift
+    Sources/TouchLayout.swift
 )
 
 set_target_properties(GoldenPad PROPERTIES
@@ -42,6 +43,7 @@ target_link_libraries(GoldenPad PRIVATE
     "-framework Metal"
     "-framework MetalKit"
     "-framework AVFAudio"
+    "-framework CoreMotion"
     "-framework GameController"
     "-framework UniformTypeIdentifiers"
     "-framework CryptoKit"

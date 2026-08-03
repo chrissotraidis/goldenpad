@@ -72,17 +72,20 @@ Gate: full mission completion after clean install and ROM import.
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.
-- [ ] I2: N64-equivalent controls plus modern dual-stick FPS mapping.
-- [ ] I3: movable/resizable/opacity-adjustable phone and tablet layouts.
+- [x] I2: N64-equivalent controls plus modern dual-stick FPS mapping.
+- [x] I3: movable/resizable/opacity-adjustable phone and tablet layouts.
 - [ ] I4: touch editor, persistence, safe areas, sensitivity/dead zones and gyro.
 - [ ] I5: validate menu, aim, fire, reload, interact, crouch, weapon, pause and
   objectives flows.
 
 Gate: a mission is completable with touch alone and with a physical controller.
 
-I1 is host-complete: four deterministic controller slots, extended-gamepad
-mapping, touch/controller merge and a responsive touch lab were exercised on
-both simulators. Gameplay mapping and physical-device acceptance remain open.
+I1-I3 are host-complete: exact libultra masks, modern/southpaw dual-stick input,
+four deterministic controller slots, touch/controller merge and independent
+phone/tablet layouts were exercised on both simulators. I4 has a compiled and
+persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
+Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
+still need device acceptance. Gameplay mapping against the core remains I5.
 
 ### M — Multiplayer
 
@@ -98,7 +101,7 @@ Gate: four-player iPad match where core support allows it.
 - [ ] P2: reproducible unsigned IPA from clean checkout.
 - [ ] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
 - [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
-- [ ] P5: README/docs match observed behavior.
+- [x] P5: README/docs match observed behavior.
 - [ ] P6: staged-file audit, coherent commits, push, and remote verification.
 
 Gate: all definition-of-done items are passed or a specific external hardware or

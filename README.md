@@ -14,9 +14,12 @@ Research, an Apple Silicon desktop feasibility baseline, and the first native
 iPhone/iPad foundation are complete. The SwiftUI shell renders through Metal,
 builds for ARM64 simulator and device SDKs, and privately validates Z64, V64,
 and N64 retail dumps without retaining them. Atomic settings/save persistence
-and common touch/Game Controller snapshots are also live. It does not run the
-game yet: the selected static-recomp core is blocked on a reproducible,
-provenance-clean public input pipeline; see [`docs/STATUS.md`](docs/STATUS.md).
+and common touch/Game Controller snapshots are also live. The host includes
+exact N64 button masks, modern and southpaw dual-stick presets, and separately
+persisted phone/tablet touch layouts with move, size, visibility, opacity,
+sensitivity, dead-zone and gyro settings. It does not run the game yet: the
+selected static-recomp core is blocked on a reproducible, provenance-clean
+public input pipeline; see [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Legal boundary
 
@@ -39,6 +42,6 @@ Rare, Microsoft, MGM, Danjaq, EON Productions, or any other rights holder.
 - [Original art provenance](docs/ART.md)
 - [Worklog](docs/WORKLOG.md)
 
-Controls, controller, multiplayer, save, gameplay screenshots and final IPA
-instructions will be added only as those gates are proven in GoldenPad itself.
-Contributions must preserve the provenance and no-ROM rules above.
+Gameplay, controller, multiplayer and final IPA instructions will be added only
+as those gates are proven in GoldenPad itself. Contributions must preserve the
+provenance and no-ROM rules above.

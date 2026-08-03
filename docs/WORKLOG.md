@@ -103,3 +103,30 @@
   `82c4ca4939fe1b590892ed4706965ca3339926fb7ae9c88a9cd3b550010e12f9`;
   the eight-member audit passed with content digest
   `0783c88170cade31ac901e0fbbc274bacb5edae961f3cc96e42283d608eb4a2f`.
+
+## 2026-08-03 — exact N64 mapping and customizable touch layouts
+
+- Read the clean GoldenEye decomp as a primary behavioral reference and mapped
+  the exact libultra A/B/Z/Start, D-pad, L/R and C-button masks without
+  incorporating upstream source.
+- Added classic N64, modern dual-stick and southpaw presets to one input frame.
+  Modern FIRE produced Z `0x2000`; direct classic A produced `0x8000` on both
+  tested simulator classes.
+- Added separate phone/tablet layout defaults and schema-2 delta persistence.
+  Per-control position, 70–150% size and visibility plus global opacity, scale,
+  sensitivity, dead zone, gyro and external-controller auto-hide are exposed.
+- Built a live editor with safe-area guides, tap selection, drag handling,
+  accessible directional nudges and Reset. A single iPhone MOVE nudge persisted
+  exactly one override; Reset returned the overrides dictionary to `{}`. The
+  tablet profile was modified, relaunched and reset independently.
+- Found that Simulator exposes an unattached synthetic MFi controller and
+  initially triggered auto-hide. Limited the exclusion to Simulator builds and
+  rechecked visible touch controls; physical-controller behavior is unchanged.
+- Rebuilt and visually inspected iPhone first, removed/stopped it, then iPad in
+  portrait and landscape. Both layouts stayed inside their safe areas. Direct
+  finger drag, physical gyro and real-controller auto-hide remain device gates.
+- Built the unsigned generic-device Release as ARM64. Two packages were
+  byte-identical at SHA-256
+  `582b1dbb832accc27bb0ffd3ae6c865b13c4d2fd7bcc72e81cb108bfc263ab9f`;
+  the eight-member audit passed with content digest
+  `35b91921a5a78500c2cd92d4cf1053233d91bd34a3dbd8d93ffa117f1294be2e`.

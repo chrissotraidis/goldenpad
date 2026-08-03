@@ -3,49 +3,527 @@ import simd
 
 struct TouchInputLab: View {
     @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+    @State private var isEditorPresented = false
+
+    private var deviceClass: TouchDeviceClass {
+        UIDevice.current.userInterfaceIdiom == .pad ? .tablet : .phone
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("TOUCH INPUT LAB")
+                    Text("CONTROL LAB")
                         .font(.caption2.weight(.bold))
                         .tracking(1.4)
-                    Text("Feeds the same normalized snapshot as a controller.")
+                    Text("N64 masks and modern dual-stick share one input frame.")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.58))
                 }
                 Spacer()
-                Image(systemName: "hand.draw")
-                    .foregroundStyle(.white.opacity(0.52))
+                Button("Customize") { isEditorPresented = true }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Customize controls")
             }
 
-            HStack(alignment: .center, spacing: 14) {
-                VirtualStick(title: "MOVE", systemImage: "figure.walk") {
-                    input.updateMovement($0)
+            Picker("Control preset", selection: presetBinding) {
+                ForEach(ControlPreset.allCases, id: \.self) { preset in
+                    Text(preset.title).tag(preset)
                 }
-
-                VirtualStick(title: "LOOK", systemImage: "eye") {
-                    input.updateLook($0)
-                }
-
-                VStack(spacing: 10) {
-                    MomentaryAction(title: "FIRE", systemImage: "bolt.fill", tint: .orange) {
-                        input.setTouchButton(.fire, pressed: $0)
-                    }
-                    MomentaryAction(title: "AIM", systemImage: "scope", tint: .mint) {
-                        input.setTouchButton(.aim, pressed: $0)
-                    }
-                }
-                .frame(maxWidth: .infinity)
             }
-            .frame(height: 112)
+            .pickerStyle(.segmented)
+
+            if input.shouldShowTouchControls {
+                TouchControlCanvas(
+                    placements: platform.touchLayout(deviceClass: deviceClass),
+                    opacity: platform.settings.touchOpacity,
+                    globalScale: platform.settings.touchScale,
+                    input: input
+                )
+                .frame(height: deviceClass == .tablet ? 250 : 220)
+            } else {
+                ContentUnavailableView(
+                    "External controller active",
+                    systemImage: "gamecontroller.fill",
+                    description: Text("Touch controls are auto-hidden. Customize to change this behavior.")
+                )
+                .frame(height: 180)
+            }
         }
         .padding(18)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(.white.opacity(0.1), lineWidth: 1)
+        }
+        .sheet(isPresented: $isEditorPresented) {
+            TouchLayoutEditor(deviceClass: deviceClass)
+                .environmentObject(input)
+                .environmentObject(platform)
+        }
+    }
+
+    private var presetBinding: Binding<ControlPreset> {
+        Binding(
+            get: { platform.settings.controlPreset },
+            set: { preset in platform.updateSettings { $0.controlPreset = preset } }
+        )
+    }
+}
+
+private struct TouchLayoutEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+
+    let deviceClass: TouchDeviceClass
+
+    @State private var placements: [TouchControlPlacement] = []
+    @State private var selectedID: TouchControlID?
+    @State private var hasPlacementChanges = false
+
+    private var selectedIndex: Int? {
+        placements.firstIndex { $0.id == selectedID }
+    }
+
+    private var editorCanvasHeight: CGFloat {
+        if verticalSizeClass == .compact {
+            return 220
+        }
+        return deviceClass == .tablet ? 390 : 300
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("INPUT PRESET")
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.3)
+                            .foregroundStyle(.secondary)
+                        Picker("Control preset", selection: presetBinding) {
+                            ForEach(ControlPreset.allCases, id: \.self) { preset in
+                                Text(preset.title).tag(preset)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    TouchControlCanvas(
+                        placements: placements,
+                        opacity: platform.settings.touchOpacity,
+                        globalScale: platform.settings.touchScale,
+                        input: input,
+                        editing: true,
+                        selectedID: selectedID,
+                        onSelect: { selectedID = $0 },
+                        onMove: updatePlacement
+                    )
+                    .frame(minHeight: editorCanvasHeight)
+
+                    if let index = selectedIndex {
+                        selectedControlPanel(index: index)
+                    } else {
+                        Text("Tap a control to select it, then drag to move.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    settingsPanel
+                }
+                .padding(20)
+                .frame(maxWidth: 900)
+                .frame(maxWidth: .infinity)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("\(deviceClass == .tablet ? "iPad" : "iPhone") touch layout")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") { resetLayout() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { saveAndDismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+            .onAppear {
+                input.releaseTouchInput()
+                reloadLayout()
+            }
+            .onDisappear { input.releaseTouchInput() }
+        }
+    }
+
+    private func selectedControlPanel(index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(placements[index].id.label)
+                    .font(.headline)
+                Spacer()
+                if placements[index].id.canHide {
+                    Button(placements[index].isHidden ? "Show" : "Hide") {
+                        placements[index].isHidden.toggle()
+                        hasPlacementChanges = true
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("\(placements[index].isHidden ? "Show" : "Hide") selected control")
+                }
+            }
+            LabeledSlider(
+                title: "Control size",
+                value: Binding(
+                    get: { placements[index].scale },
+                    set: {
+                        placements[index].scale = $0
+                        hasPlacementChanges = true
+                    }
+                ),
+                range: 0.70...1.50,
+                valueLabel: "\(Int((placements[index].scale * 100).rounded()))%"
+            )
+            HStack(spacing: 10) {
+                Text("Position")
+                    .font(.subheadline)
+                Spacer()
+                ForEach([
+                    ("arrow.left", -0.025, 0.0),
+                    ("arrow.up", 0.0, -0.025),
+                    ("arrow.down", 0.0, 0.025),
+                    ("arrow.right", 0.025, 0.0),
+                ], id: \.0) { item in
+                    Button {
+                        nudgeSelected(dx: item.1, dy: item.2)
+                    } label: {
+                        Image(systemName: item.0)
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Move selected \(item.0.replacingOccurrences(of: "arrow.", with: ""))")
+                }
+            }
+        }
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var settingsPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("FEEL & VISIBILITY")
+                .font(.caption2.weight(.bold))
+                .tracking(1.3)
+                .foregroundStyle(.secondary)
+
+            LabeledSlider(
+                title: "Opacity",
+                value: settingBinding(\.touchOpacity),
+                range: 0.25...1,
+                valueLabel: "\(Int((platform.settings.touchOpacity * 100).rounded()))%"
+            )
+            LabeledSlider(
+                title: "Global size",
+                value: settingBinding(\.touchScale),
+                range: 0.70...1.40,
+                valueLabel: "\(Int((platform.settings.touchScale * 100).rounded()))%"
+            )
+            LabeledSlider(
+                title: "Look sensitivity",
+                value: settingBinding(\.lookSensitivity),
+                range: 0.25...3,
+                valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
+            )
+            LabeledSlider(
+                title: "Stick dead zone",
+                value: settingBinding(\.stickDeadZone),
+                range: 0...0.40,
+                valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
+            )
+            Toggle("Gyroscope aiming", isOn: boolSettingBinding(\.gyroEnabled))
+            Toggle("Hide touch for external controllers", isOn: boolSettingBinding(\.touchControlsAutoHide))
+        }
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var presetBinding: Binding<ControlPreset> {
+        Binding(
+            get: { platform.settings.controlPreset },
+            set: { preset in
+                let previousPreset = platform.settings.controlPreset
+                if hasPlacementChanges {
+                    platform.saveTouchLayout(
+                        placements,
+                        deviceClass: deviceClass,
+                        preset: previousPreset
+                    )
+                }
+                platform.updateSettings { $0.controlPreset = preset }
+                reloadLayout()
+            }
+        )
+    }
+
+    private func settingBinding(_ keyPath: WritableKeyPath<HostSettings, Double>) -> Binding<Double> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in platform.updateSettings { $0[keyPath: keyPath] = value } }
+        )
+    }
+
+    private func boolSettingBinding(_ keyPath: WritableKeyPath<HostSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in platform.updateSettings { $0[keyPath: keyPath] = value } }
+        )
+    }
+
+    private func updatePlacement(_ placement: TouchControlPlacement) {
+        guard let index = placements.firstIndex(where: { $0.id == placement.id }) else { return }
+        placements[index] = placement.sanitized()
+        hasPlacementChanges = true
+    }
+
+    private func nudgeSelected(dx: Double, dy: Double) {
+        guard let index = selectedIndex else { return }
+        placements[index].x += dx
+        placements[index].y += dy
+        placements[index] = placements[index].sanitized()
+        hasPlacementChanges = true
+    }
+
+    private func reloadLayout() {
+        placements = platform.touchLayout(deviceClass: deviceClass)
+        selectedID = placements.first?.id
+        hasPlacementChanges = false
+    }
+
+    private func resetLayout() {
+        platform.resetTouchLayout(deviceClass: deviceClass)
+        reloadLayout()
+    }
+
+    private func saveAndDismiss() {
+        if hasPlacementChanges {
+            platform.saveTouchLayout(placements, deviceClass: deviceClass)
+        }
+        dismiss()
+    }
+}
+
+private struct LabeledSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let valueLabel: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(valueLabel)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            .font(.subheadline)
+            Slider(value: $value, in: range)
+                .accessibilityLabel(title)
+        }
+    }
+}
+
+private struct TouchControlCanvas: View {
+    let placements: [TouchControlPlacement]
+    let opacity: Double
+    let globalScale: Double
+    let input: InputCoordinator
+    var editing = false
+    var selectedID: TouchControlID?
+    var onSelect: ((TouchControlID) -> Void)?
+    var onMove: ((TouchControlPlacement) -> Void)?
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.black.opacity(0.86))
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(.white.opacity(0.12), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(.white.opacity(editing ? 0.15 : 0), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                    .padding(12)
+
+                ForEach(placements) { placement in
+                    if editing || !placement.isHidden {
+                        control(placement, in: geometry.size)
+                    }
+                }
+            }
+            .coordinateSpace(name: "touch-canvas")
+            .clipped()
+        }
+    }
+
+    @ViewBuilder
+    private func control(_ placement: TouchControlPlacement, in size: CGSize) -> some View {
+        let controlScale = CGFloat(placement.scale * globalScale) * canvasScale(for: size)
+        let baseSize = placement.id.isStick ? 96.0 : buttonBaseSize(placement.id)
+        let side = baseSize * controlScale
+        let control = TouchControlVisual(
+            id: placement.id,
+            input: input,
+            editing: editing,
+            selected: selectedID == placement.id
+        )
+        .frame(width: side, height: side)
+        .opacity(editing && placement.isHidden ? 0.28 : opacity)
+        .position(x: size.width * placement.x, y: size.height * placement.y)
+
+        if editing {
+            control
+                .onTapGesture { onSelect?(placement.id) }
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 2, coordinateSpace: .named("touch-canvas"))
+                .onChanged { value in
+                    onSelect?(placement.id)
+                    var moved = placement
+                    moved.x = value.location.x / max(size.width, 1)
+                    moved.y = value.location.y / max(size.height, 1)
+                    onMove?(moved.sanitized())
+                }
+                )
+                .accessibilityLabel(placement.id.label)
+                .accessibilityValue(placement.isHidden ? "Hidden" : "Visible")
+        } else {
+            control
+                .accessibilityLabel(placement.id.label)
+                .accessibilityValue("Visible")
+        }
+    }
+
+    private func canvasScale(for size: CGSize) -> CGFloat {
+        min(max(size.width / 720, 0.62), 1.18)
+    }
+
+    private func buttonBaseSize(_ id: TouchControlID) -> CGFloat {
+        switch id {
+        case .pause, .n64Start, .weapon, .crouch, .n64L, .n64R: 58
+        case .n64CUp, .n64CDown, .n64CLeft, .n64CRight,
+             .n64DUp, .n64DDown, .n64DLeft, .n64DRight: 48
+        default: 64
+        }
+    }
+}
+
+private struct TouchControlVisual: View {
+    let id: TouchControlID
+    let input: InputCoordinator
+    let editing: Bool
+    let selected: Bool
+
+    var body: some View {
+        Group {
+            if editing {
+                EditorControlFace(id: id, tint: tint)
+            } else if id.isStick {
+                VirtualStick(title: id.label, systemImage: id == .move ? "figure.walk" : "eye") {
+                    if id == .move { input.updateMovement($0) } else { input.updateLook($0) }
+                }
+            } else {
+                MomentaryAction(title: id.label, tint: tint) {
+                    guard let button = id.inputButton else { return }
+                    input.setTouchButton(button, pressed: $0)
+                }
+            }
+        }
+        .overlay {
+            if selected {
+                Circle().stroke(.yellow, lineWidth: 3).padding(-4)
+            }
+        }
+    }
+
+    private var tint: Color {
+        switch id {
+        case .fire, .n64Z: .orange
+        case .aim, .n64R: .mint
+        case .n64A: .blue
+        case .n64B: .green
+        case .pause, .n64Start: .red
+        case .n64CUp, .n64CDown, .n64CLeft, .n64CRight: .yellow
+        default: .cyan
+        }
+    }
+}
+
+private struct EditorControlFace: View {
+    let id: TouchControlID
+    let tint: Color
+
+    var body: some View {
+        ZStack {
+            Circle().fill(.black.opacity(0.58))
+            Circle().stroke(.white.opacity(0.42), lineWidth: 1)
+            if id.isStick {
+                Circle()
+                    .fill(.white.opacity(0.18))
+                    .frame(width: 38, height: 38)
+                Image(systemName: id == .move ? "figure.walk" : "eye")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.82))
+                Text(id.label)
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .offset(y: 34)
+            } else {
+                Text(id.label)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.65)
+                    .foregroundStyle(tint)
+                    .padding(4)
+            }
+        }
+    }
+}
+
+private extension TouchControlID {
+    var inputButton: InputButtons? {
+        switch self {
+        case .move, .look: nil
+        case .fire: .fire
+        case .aim: .aim
+        case .interact: .interact
+        case .reload: .reload
+        case .crouch: .crouch
+        case .weapon: .nextWeapon
+        case .pause: .pause
+        case .n64A: .n64A
+        case .n64B: .n64B
+        case .n64Z: .n64Z
+        case .n64L: .n64L
+        case .n64R: .n64R
+        case .n64Start: .n64Start
+        case .n64CUp: .n64CUp
+        case .n64CDown: .n64CDown
+        case .n64CLeft: .n64CLeft
+        case .n64CRight: .n64CRight
+        case .n64DUp: .dpadUp
+        case .n64DDown: .dpadDown
+        case .n64DLeft: .dpadLeft
+        case .n64DRight: .dpadRight
+        }
+    }
+}
+
+private extension ControlPreset {
+    var title: String {
+        switch self {
+        case .classic: "N64"
+        case .modern: "Modern"
+        case .southpaw: "Southpaw"
         }
     }
 }
@@ -63,27 +541,24 @@ private struct VirtualStick: View {
             let travel = diameter * 0.27
 
             ZStack {
+                Circle().fill(.black.opacity(0.42))
+                Circle().stroke(.white.opacity(0.34), lineWidth: 1)
                 Circle()
-                    .fill(.black.opacity(0.28))
-                Circle()
-                    .stroke(.white.opacity(0.12), lineWidth: 1)
-                Circle()
-                    .fill(.white.opacity(0.14))
+                    .fill(.white.opacity(0.18))
                     .frame(width: diameter * 0.46, height: diameter * 0.46)
                     .overlay {
                         Image(systemName: systemImage)
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.74))
+                            .foregroundStyle(.white.opacity(0.8))
                     }
                     .offset(
                         x: CGFloat(normalized.x) * travel,
                         y: CGFloat(-normalized.y) * travel
                     )
-
                 Text(title)
                     .font(.system(size: 8, weight: .bold, design: .rounded))
                     .tracking(1)
-                    .foregroundStyle(.white.opacity(0.48))
+                    .foregroundStyle(.white.opacity(0.6))
                     .offset(y: diameter * 0.38)
             }
             .frame(width: diameter, height: diameter)
@@ -99,9 +574,7 @@ private struct VirtualStick: View {
                             Float((center.y - value.location.y) / radius)
                         )
                         let magnitude = simd_length(vector)
-                        if magnitude > 1 {
-                            vector /= magnitude
-                        }
+                        if magnitude > 1 { vector /= magnitude }
                         normalized = vector
                         onChange(vector)
                     }
@@ -110,30 +583,29 @@ private struct VirtualStick: View {
                         onChange(.zero)
                     }
             )
-            .accessibilityLabel("\(title.lowercased()) touch stick")
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
 private struct MomentaryAction: View {
     let title: String
-    let systemImage: String
     let tint: Color
     let onChange: (Bool) -> Void
 
     @State private var pressed = false
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption2.weight(.bold))
-            .foregroundStyle(pressed ? .black : .white.opacity(0.82))
+        Text(title)
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .minimumScaleFactor(0.65)
+            .foregroundStyle(pressed ? .black : .white.opacity(0.88))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                pressed ? tint : .white.opacity(0.1),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                pressed ? tint : .black.opacity(0.46),
+                in: Circle()
             )
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay { Circle().stroke(.white.opacity(0.34), lineWidth: 1) }
+            .contentShape(Circle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in

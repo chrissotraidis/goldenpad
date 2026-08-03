@@ -33,6 +33,11 @@ Ignore rules are necessary but are not a substitute for a staged-file audit.
 - Every incorporated file must have an entry in `docs/RESEARCH.md` or a
   generated third-party manifest identifying its exact source and license.
 
+The current touch editor and input mapper are original Swift implementation.
+HarkinianPad was used only to identify product-level control requirements, and
+the clean GoldenEye decomp was used only to verify public N64 button constants;
+no reference source was copied into GoldenPad.
+
 ## ROM validation
 
 The first supported revision is the US retail ROM after normalization to

@@ -1,3 +1,4 @@
+import CoreMotion
 import Foundation
 import GameController
 
@@ -17,6 +18,16 @@ struct InputButtons: OptionSet, Equatable, Sendable {
     static let dpadDown = InputButtons(rawValue: 1 << 10)
     static let dpadLeft = InputButtons(rawValue: 1 << 11)
     static let dpadRight = InputButtons(rawValue: 1 << 12)
+    static let n64A = InputButtons(rawValue: 1 << 13)
+    static let n64B = InputButtons(rawValue: 1 << 14)
+    static let n64Z = InputButtons(rawValue: 1 << 15)
+    static let n64L = InputButtons(rawValue: 1 << 16)
+    static let n64R = InputButtons(rawValue: 1 << 17)
+    static let n64Start = InputButtons(rawValue: 1 << 18)
+    static let n64CUp = InputButtons(rawValue: 1 << 19)
+    static let n64CDown = InputButtons(rawValue: 1 << 20)
+    static let n64CLeft = InputButtons(rawValue: 1 << 21)
+    static let n64CRight = InputButtons(rawValue: 1 << 22)
 }
 
 struct InputSnapshot: Equatable, Sendable {
@@ -39,6 +50,95 @@ struct InputSnapshot: Equatable, Sendable {
     }
 }
 
+struct N64Buttons: OptionSet, Equatable, Sendable {
+    let rawValue: UInt16
+
+    static let a = N64Buttons(rawValue: 0x8000)
+    static let b = N64Buttons(rawValue: 0x4000)
+    static let z = N64Buttons(rawValue: 0x2000)
+    static let start = N64Buttons(rawValue: 0x1000)
+    static let dpadUp = N64Buttons(rawValue: 0x0800)
+    static let dpadDown = N64Buttons(rawValue: 0x0400)
+    static let dpadLeft = N64Buttons(rawValue: 0x0200)
+    static let dpadRight = N64Buttons(rawValue: 0x0100)
+    static let l = N64Buttons(rawValue: 0x0020)
+    static let r = N64Buttons(rawValue: 0x0010)
+    static let cUp = N64Buttons(rawValue: 0x0008)
+    static let cDown = N64Buttons(rawValue: 0x0004)
+    static let cLeft = N64Buttons(rawValue: 0x0002)
+    static let cRight = N64Buttons(rawValue: 0x0001)
+}
+
+struct N64ControllerState: Equatable, Sendable {
+    var stick = SIMD2<Float>.zero
+    var buttons: N64Buttons = []
+}
+
+struct GoldenEyeInputFrame: Equatable, Sendable {
+    var primary = N64ControllerState()
+    var secondary = N64ControllerState()
+}
+
+enum GoldenEyeInputMapper {
+    static func map(_ input: InputSnapshot, preset: ControlPreset) -> GoldenEyeInputFrame {
+        var buttons = mappedButtons(input)
+
+        if preset == .classic {
+            let threshold: Float = 0.42
+            if input.look.y > threshold { buttons.insert(.cUp) }
+            if input.look.y < -threshold { buttons.insert(.cDown) }
+            if input.look.x < -threshold { buttons.insert(.cLeft) }
+            if input.look.x > threshold { buttons.insert(.cRight) }
+        }
+
+        switch preset {
+        case .classic:
+            return GoldenEyeInputFrame(
+                primary: N64ControllerState(stick: input.movement, buttons: buttons)
+            )
+        case .modern:
+            return GoldenEyeInputFrame(
+                primary: N64ControllerState(stick: input.movement, buttons: buttons),
+                secondary: N64ControllerState(stick: input.look)
+            )
+        case .southpaw:
+            return GoldenEyeInputFrame(
+                primary: N64ControllerState(stick: input.look, buttons: buttons),
+                secondary: N64ControllerState(stick: input.movement)
+            )
+        }
+    }
+
+    private static func mappedButtons(_ input: InputSnapshot) -> N64Buttons {
+        var result: N64Buttons = []
+        let buttons = input.buttons
+
+        if buttons.contains(.fire) || buttons.contains(.n64Z) || input.rightTrigger > 0.25 {
+            result.insert(.z)
+        }
+        if buttons.contains(.aim) || buttons.contains(.n64R) || input.leftTrigger > 0.25 {
+            result.insert(.r)
+        }
+        if buttons.contains(.interact) || buttons.contains(.reload) || buttons.contains(.cancel) || buttons.contains(.n64B) {
+            result.insert(.b)
+        }
+        if buttons.contains(.nextWeapon) || buttons.contains(.confirm) || buttons.contains(.n64A) {
+            result.insert(.a)
+        }
+        if buttons.contains(.crouch) || buttons.contains(.n64CDown) { result.insert(.cDown) }
+        if buttons.contains(.pause) || buttons.contains(.n64Start) { result.insert(.start) }
+        if buttons.contains(.n64L) { result.insert(.l) }
+        if buttons.contains(.n64CUp) { result.insert(.cUp) }
+        if buttons.contains(.n64CLeft) { result.insert(.cLeft) }
+        if buttons.contains(.n64CRight) { result.insert(.cRight) }
+        if buttons.contains(.dpadUp) { result.insert(.dpadUp) }
+        if buttons.contains(.dpadDown) { result.insert(.dpadDown) }
+        if buttons.contains(.dpadLeft) { result.insert(.dpadLeft) }
+        if buttons.contains(.dpadRight) { result.insert(.dpadRight) }
+        return result
+    }
+}
+
 private extension SIMD2 where Scalar == Float {
     func mergingByMagnitude(_ other: SIMD2<Float>) -> SIMD2<Float> {
         SIMD2(
@@ -51,11 +151,17 @@ private extension SIMD2 where Scalar == Float {
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
+    @Published private(set) var connectedControllerCount = 0
+    @Published private(set) var externalControllerCount = 0
+    @Published private(set) var currentPreset = ControlPreset.modern
 
     private var touch = InputSnapshot.neutral
     private var controllerSlots: [GCController?] = Array(repeating: nil, count: 4)
     private var lastActivity: String?
     private var observers: [NSObjectProtocol] = []
+    private var settings = HostSettings()
+    private let motionManager = CMMotionManager()
+    private var motionLook = SIMD2<Float>.zero
 
     init() {
         assignInitialControllers()
@@ -87,9 +193,35 @@ final class InputCoordinator: ObservableObject {
     }
 
     deinit {
+        motionManager.stopDeviceMotionUpdates()
         for observer in observers {
             NotificationCenter.default.removeObserver(observer)
         }
+    }
+
+    var shouldShowTouchControls: Bool {
+        !settings.touchControlsAutoHide || externalControllerCount == 0
+    }
+
+    func configure(settings: HostSettings) {
+        let sanitized = settings.sanitized()
+        let gyroChanged = self.settings.gyroEnabled != sanitized.gyroEnabled
+        let presetChanged = self.settings.controlPreset != sanitized.controlPreset
+        self.settings = sanitized
+        currentPreset = sanitized.controlPreset
+        if presetChanged {
+            lastActivity = nil
+        }
+        if gyroChanged {
+            configureMotionUpdates()
+        }
+        refreshSummary()
+    }
+
+    func releaseTouchInput() {
+        touch = .neutral
+        motionLook = .zero
+        refreshSummary()
     }
 
     func updateMovement(_ value: SIMD2<Float>) {
@@ -114,7 +246,22 @@ final class InputCoordinator: ObservableObject {
     func snapshot(player: Int) -> InputSnapshot {
         guard controllerSlots.indices.contains(player) else { return .neutral }
         let controller = controllerSlots[player].map(controllerSnapshot) ?? .neutral
-        return player == 0 ? controller.merging(touch) : controller
+        guard player == 0 else { return controller }
+
+        var combined = controller.merging(touch)
+        combined.movement = combined.movement.applyingRadialDeadZone(
+            Float(settings.stickDeadZone)
+        )
+        let touchAndStickLook = combined.look.applyingRadialDeadZone(
+            Float(settings.stickDeadZone)
+        )
+        combined.look = ((touchAndStickLook + motionLook) * Float(settings.lookSensitivity))
+            .clampedUnitSquare()
+        return combined
+    }
+
+    func mappedFrame(player: Int) -> GoldenEyeInputFrame {
+        GoldenEyeInputMapper.map(snapshot(player: player), preset: currentPreset)
     }
 
     private func assignInitialControllers() {
@@ -131,12 +278,20 @@ final class InputCoordinator: ObservableObject {
         guard let slot = controllerSlots.firstIndex(where: { $0 == nil }) else { return }
         controllerSlots[slot] = controller
         controller.playerIndex = playerIndex(for: slot)
+        print(
+            "[GoldenPad] Controller slot \(slot + 1): " +
+            "\(controller.vendorName ?? "unknown") | \(controller.productCategory) | " +
+            "attached=\(controller.isAttachedToDevice)"
+        )
+        updateControllerCounts()
         refreshSummary()
     }
 
     private func remove(_ controller: GCController) {
         guard let slot = controllerSlots.firstIndex(where: { $0 === controller }) else { return }
+        controller.playerIndex = .indexUnset
         controllerSlots[slot] = nil
+        updateControllerCounts()
         refreshSummary()
     }
 
@@ -189,18 +344,53 @@ final class InputCoordinator: ObservableObject {
         )
     }
 
+    private func updateControllerCounts() {
+        let controllers = controllerSlots.compactMap { $0 }
+        connectedControllerCount = controllers.count
+        externalControllerCount = controllers.filter(isExternalController).count
+    }
+
+    private func isExternalController(_ controller: GCController) -> Bool {
+#if targetEnvironment(simulator)
+        if controller.vendorName == "Gamepad", controller.productCategory == "MFi" {
+            return false
+        }
+#endif
+        return true
+    }
+
+    private func configureMotionUpdates() {
+        motionManager.stopDeviceMotionUpdates()
+        motionLook = .zero
+        guard settings.gyroEnabled, motionManager.isDeviceMotionAvailable else { return }
+
+        motionManager.deviceMotionUpdateInterval = 1.0 / 60.0
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let motion else { return }
+            Task { @MainActor in
+                self?.motionLook = SIMD2(
+                    Float(motion.rotationRate.y) * 0.12,
+                    Float(-motion.rotationRate.x) * 0.12
+                ).clampedUnitSquare()
+                self?.refreshSummary()
+            }
+        }
+    }
+
     private func refreshSummary() {
         let current = snapshot(player: 0)
-        let controllerCount = controllerSlots.compactMap { $0 }.count
+        let mapped = GoldenEyeInputMapper.map(current, preset: currentPreset)
         let actions = current.buttons.isEmpty ? "none" : "0x\(String(current.buttons.rawValue, radix: 16))"
         let activity = String(
-            format: "input: move %.2f %.2f • look %.2f %.2f • actions %@ • controllers: %d",
+            format: "input: move %.2f %.2f • look %.2f %.2f • actions %@ • N64 0x%04x • %@ • controllers: %d",
             current.movement.x,
             current.movement.y,
             current.look.x,
             current.look.y,
             actions,
-            controllerCount
+            mapped.primary.buttons.rawValue,
+            currentPreset.rawValue,
+            connectedControllerCount
         )
 
         if current != .neutral {
@@ -220,5 +410,12 @@ private extension SIMD2 where Scalar == Float {
             Swift.min(Swift.max(x, -1), 1),
             Swift.min(Swift.max(y, -1), 1)
         )
+    }
+
+    func applyingRadialDeadZone(_ deadZone: Float) -> SIMD2<Float> {
+        let magnitude = sqrt(x * x + y * y)
+        guard magnitude > deadZone, magnitude > 0 else { return .zero }
+        let scaled = Swift.min((magnitude - deadZone) / Swift.max(1 - deadZone, 0.001), 1)
+        return self / magnitude * scaled
     }
 }

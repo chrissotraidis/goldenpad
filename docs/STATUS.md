@@ -55,14 +55,26 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
   `GCExtendedGamepad` state. The real iPhone lab produced movement `0.61,0.63`
   and FIRE bit `0x1`; the iPad produced `0.64,0.62` and the same action bit.
   The touch lab was corrected to equal responsive columns after tablet review.
+- The same input frame now carries exact libultra-compatible N64 masks. Direct
+  classic A input reported `0x8000` on iPhone and iPad; modern FIRE reported the
+  expected Z mask `0x2000`. Classic, modern and southpaw mappings are available.
+- A live editor provides per-control move, 70–150% size and hide/show controls,
+  with the movement stick protected from hiding. Phone and tablet defaults are
+  separate; schema-2 settings persist only changed placements. On iPhone, one
+  MOVE nudge saved exactly one placement delta and Reset returned overrides to
+  `{}`. The equivalent tablet profile and reset were exercised independently.
+- The current UI was rebuilt and inspected sequentially on iPhone 16 Pro and
+  iPad Pro 11-inch (M4) in portrait and landscape. The full editor remained
+  inside safe areas, settings relaunch persisted, and the Simulator's synthetic
+  MFi controller no longer falsely hides touch controls.
 - Original project-owned app art is compiled into phone/tablet icon renditions
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `82c4ca4939fe1b590892ed4706965ca3339926fb7ae9c88a9cd3b550010e12f9`.
+  `582b1dbb832accc27bb0ffd3ae6c865b13c4d2fd7bcc72e81cb108bfc263ab9f`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `0783c88170cade31ac901e0fbbc274bacb5edae961f3cc96e42283d608eb4a2f`.
+  `35b91921a5a78500c2cd92d4cf1053233d91bd34a3dbd8d93ffa117f1294be2e`.
 
 ## Failed or blocked
 
@@ -74,13 +86,15 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- No shared game core, game audio/save integration, full touch mapping/editor,
-  physical-controller validation, mission completion, multiplayer, final
-  game-bearing unsigned IPA, or final archive audit yet.
+- No shared game core, game audio/save integration, physical-controller/gyro
+  acceptance, touch-only mission completion, multiplayer, final game-bearing
+  unsigned IPA, or final archive audit yet. Simulator UI automation proved the
+  editor's accessible nudge path; direct finger drag remains a physical-device
+  interaction gate.
 
 ## Next gate
 
 Obtain or upstream a licensed complete GoldenRecomp ELF/metadata input, then
-connect the generated core to the existing host. In parallel, finish game-facing
-input presets without importing unlicensed game, SDK-lineage, or Xbox/XBLA
-material.
+connect the generated core to the existing host and validate the implemented
+presets against real menus and gameplay. Do not import unlicensed game,
+SDK-lineage, or Xbox/XBLA material.

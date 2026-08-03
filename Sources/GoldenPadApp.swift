@@ -14,6 +14,12 @@ struct GoldenPadApp: App {
                 .environmentObject(platform)
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     platform.handle(scenePhase: phase)
+                    if phase != .active {
+                        input.releaseTouchInput()
+                    }
+                }
+                .onChange(of: platform.settings, initial: true) { _, settings in
+                    input.configure(settings: settings)
                 }
         }
     }

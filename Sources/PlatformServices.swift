@@ -9,7 +9,7 @@ enum ControlPreset: String, Codable, Sendable, CaseIterable {
 }
 
 struct HostSettings: Codable, Equatable, Sendable {
-    static let currentSchema = 1
+    static let currentSchema = 2
 
     var schemaVersion = currentSchema
     var controlPreset: ControlPreset = .modern
@@ -18,6 +18,54 @@ struct HostSettings: Codable, Equatable, Sendable {
     var touchScale = 1.0
     var stickDeadZone = 0.12
     var gyroEnabled = false
+    var touchControlsAutoHide = true
+    var touchLayoutOverrides: [String: TouchLayoutOverrides] = [:]
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case controlPreset
+        case lookSensitivity
+        case touchOpacity
+        case touchScale
+        case stickDeadZone
+        case gyroEnabled
+        case touchControlsAutoHide
+        case touchLayoutOverrides
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try values.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        controlPreset = try values.decodeIfPresent(ControlPreset.self, forKey: .controlPreset) ?? .modern
+        lookSensitivity = try values.decodeIfPresent(Double.self, forKey: .lookSensitivity) ?? 1
+        touchOpacity = try values.decodeIfPresent(Double.self, forKey: .touchOpacity) ?? 0.72
+        touchScale = try values.decodeIfPresent(Double.self, forKey: .touchScale) ?? 1
+        stickDeadZone = try values.decodeIfPresent(Double.self, forKey: .stickDeadZone) ?? 0.12
+        gyroEnabled = try values.decodeIfPresent(Bool.self, forKey: .gyroEnabled) ?? false
+        touchControlsAutoHide = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .touchControlsAutoHide
+        ) ?? true
+        touchLayoutOverrides = try values.decodeIfPresent(
+            [String: TouchLayoutOverrides].self,
+            forKey: .touchLayoutOverrides
+        ) ?? [:]
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(schemaVersion, forKey: .schemaVersion)
+        try values.encode(controlPreset, forKey: .controlPreset)
+        try values.encode(lookSensitivity, forKey: .lookSensitivity)
+        try values.encode(touchOpacity, forKey: .touchOpacity)
+        try values.encode(touchScale, forKey: .touchScale)
+        try values.encode(stickDeadZone, forKey: .stickDeadZone)
+        try values.encode(gyroEnabled, forKey: .gyroEnabled)
+        try values.encode(touchControlsAutoHide, forKey: .touchControlsAutoHide)
+        try values.encode(touchLayoutOverrides, forKey: .touchLayoutOverrides)
+    }
 
     func sanitized() -> HostSettings {
         var copy = self
@@ -26,7 +74,17 @@ struct HostSettings: Codable, Equatable, Sendable {
         copy.touchOpacity = copy.touchOpacity.clamped(to: 0.25...1.0)
         copy.touchScale = copy.touchScale.clamped(to: 0.7...1.4)
         copy.stickDeadZone = copy.stickDeadZone.clamped(to: 0.0...0.4)
+        copy.touchLayoutOverrides = copy.touchLayoutOverrides.mapValues { overrides in
+            TouchLayoutOverrides(placements: overrides.placements.map { $0.sanitized() })
+        }
         return copy
+    }
+
+    static func layoutKey(
+        deviceClass: TouchDeviceClass,
+        preset: ControlPreset
+    ) -> String {
+        "\(deviceClass.rawValue).\(preset.rawValue)-v1"
     }
 }
 
@@ -96,7 +154,7 @@ struct PlatformStorage {
             HostSettings.self,
             from: Data(contentsOf: paths.settings)
         )
-        guard stored.schemaVersion == HostSettings.currentSchema else {
+        guard stored.schemaVersion > 0, stored.schemaVersion <= HostSettings.currentSchema else {
             throw PlatformStorageError.unsupportedSettingsSchema(stored.schemaVersion)
         }
         return stored.sanitized()
@@ -132,9 +190,9 @@ struct PlatformStorage {
 final class PlatformCoordinator: ObservableObject {
     @Published private(set) var storageState = "storage: starting"
     @Published private(set) var audioState = "audio: inactive"
+    @Published private(set) var settings = HostSettings()
 
     private(set) var paths: PlatformPaths?
-    private(set) var settings = HostSettings()
     private var storage: PlatformStorage?
     private var observers: [NSObjectProtocol] = []
 
@@ -196,6 +254,58 @@ final class PlatformCoordinator: ObservableObject {
         @unknown default:
             deactivateAudioSession()
         }
+    }
+
+    func updateSettings(_ update: (inout HostSettings) -> Void) {
+        update(&settings)
+        settings = settings.sanitized()
+        persistSettings()
+    }
+
+    func touchLayout(
+        deviceClass: TouchDeviceClass,
+        preset: ControlPreset? = nil
+    ) -> [TouchControlPlacement] {
+        let preset = preset ?? settings.controlPreset
+        let key = HostSettings.layoutKey(deviceClass: deviceClass, preset: preset)
+        return TouchLayoutDefaults.resolved(
+            preset: preset,
+            deviceClass: deviceClass,
+            overrides: settings.touchLayoutOverrides[key]
+        )
+    }
+
+    func saveTouchLayout(
+        _ placements: [TouchControlPlacement],
+        deviceClass: TouchDeviceClass,
+        preset: ControlPreset? = nil
+    ) {
+        let preset = preset ?? settings.controlPreset
+        let key = HostSettings.layoutKey(deviceClass: deviceClass, preset: preset)
+        let defaults = Dictionary(
+            uniqueKeysWithValues: TouchLayoutDefaults
+                .placements(preset: preset, deviceClass: deviceClass)
+                .map { ($0.id, $0.sanitized()) }
+        )
+        let changed = placements
+            .map { $0.sanitized() }
+            .filter { defaults[$0.id] != $0 }
+        updateSettings {
+            if changed.isEmpty {
+                $0.touchLayoutOverrides.removeValue(forKey: key)
+            } else {
+                $0.touchLayoutOverrides[key] = TouchLayoutOverrides(placements: changed)
+            }
+        }
+    }
+
+    func resetTouchLayout(
+        deviceClass: TouchDeviceClass,
+        preset: ControlPreset? = nil
+    ) {
+        let preset = preset ?? settings.controlPreset
+        let key = HostSettings.layoutKey(deviceClass: deviceClass, preset: preset)
+        updateSettings { $0.touchLayoutOverrides.removeValue(forKey: key) }
     }
 
     private func persistSettings() {

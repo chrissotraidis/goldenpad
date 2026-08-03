@@ -60,9 +60,16 @@ core version, schema, and locale, and can be regenerated. Caches must stay in
 - **Input:** touch and `GCController` devices feed one normalized snapshot per
   simulation tick. Players 1-4 are assigned deterministically. Touch is player 1
   only and auto-hides when an active physical controller is assigned.
-- **Touch:** left movement stick; right drag/look region; fire, aim, interact,
-  reload, crouch, weapon, pause/menu and optional C/D-pad surfaces. Layout,
-  scale, opacity, sensitivity and dead zones persist separately for phone/tablet.
+- **Input mapping:** one frame carries normalized movement/look/actions plus an
+  exact libultra-compatible N64 controller state. Classic exposes A/B/Z/Start,
+  D-pad, L/R and all four C buttons; modern and southpaw preserve independent
+  move/look axes while still deriving the corresponding N64 mask.
+- **Touch:** left movement stick; right look region; fire, aim, interact, reload,
+  crouch, weapon and pause/menu surfaces. Classic adds the complete N64 button
+  set. Each preset resolves from device-class defaults plus small persisted
+  deltas, so phone and tablet changes do not copy or overwrite each other.
+  Per-control position, 70–150% size and visibility plus global opacity, scale,
+  sensitivity, dead zone, gyro and controller auto-hide settings are supported.
 - **Audio:** an engine PCM callback feeds `AVAudioEngine`; `AVAudioSession`
   handles interruption, route changes and sample-rate changes.
 - **Saves:** EEPROM/SRAM/Flash callbacks write atomically under Application
@@ -74,10 +81,12 @@ core version, schema, and locale, and can be regenerated. Caches must stay in
 - **Lifecycle:** resign-active pauses input/audio; background flushes saves and
   releases transient GPU work; foreground recreates surfaces if needed.
 
-The current host implements the common snapshot, four deterministic controller
-slots, extended-gamepad mapping, and a touch input lab for move/look/fire/aim.
-Game-specific N64/modern presets and automatic touch hiding remain integration
-work rather than assumptions baked into the platform layer.
+The current host implements the common snapshot, exact N64 masks, classic,
+modern and southpaw presets, four deterministic controller slots,
+extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
+Simulator-only synthetic MFi controllers are excluded from auto-hide without
+changing physical-device behavior. Real-controller auto-hide, physical gyro and
+gameplay semantics remain acceptance gates once the production core is present.
 
 ## Targets
 
