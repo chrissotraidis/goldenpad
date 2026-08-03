@@ -57,7 +57,46 @@ The 2026-08-03 pass used iOS 18.5 simulators, in this strict order:
 The private test seam accepts `--validate-rom /absolute/path` or
 `GOLDENPAD_VALIDATE_ROM_PATH`. It invokes the same `ROMValidator` used by the
 Files picker and exists to make simulator validation reproducible. It does not
-copy or persist the file. The picker UI itself still needs an interaction pass.
+copy or persist the file.
+
+The picker UI interaction pass is now complete on both simulators: open native
+Files, inspect the visible picker, cancel, and confirm GoldenPad returns. A real
+selection still uses the private validator seam to avoid placing a retail dump
+in Files recents or published captures.
+
+Missing-file and wrong-hash acceptance also passes on both. Use a nonexistent
+path for the first case. For the second, create a temporary zero-filled 12 MiB
+file with only the four-byte Z64 header `80 37 12 40`; require the SHA-1 mismatch
+state, then delete the fixture. Never derive this fixture from a retail dump.
+
+Storage relaunch probes use no game data:
+
+```sh
+xcrun simctl launch DEVICE_ID com.chrissotraidis.goldenpad \
+  --storage-probe-write
+xcrun simctl terminate DEVICE_ID com.chrissotraidis.goldenpad
+xcrun simctl launch DEVICE_ID com.chrissotraidis.goldenpad \
+  --storage-probe-verify
+```
+
+The expected visible state is `storage: relaunch verified`. Inspect
+`settings.json` and `Saves/player-1.sav` inside the private app container, then
+uninstall the app so the probe is removed.
+
+Lifecycle acceptance must use the real Simulator UI with an attached console:
+
+1. Launch GoldenPad with `xcrun simctl launch --console-pty DEVICE_ID ...`.
+2. Press Simulator's Home control and require `Audio session inactive`.
+3. Open GoldenPad from the launcher and require `Audio session active at 48000.0 Hz`.
+4. Terminate, uninstall and shut down that simulator before testing the other.
+
+This gate passed sequentially on iPhone 16 Pro and iPad Pro 11-inch (M4).
+Real-core interruption and route-change acceptance remains a game-audio gate.
+
+The touch lab must be driven through the real UI on both form factors. Verify
+that movement/look axes clamp to `[-1, 1]`, momentary action bits clear after
+release, the last non-neutral event remains visible for evidence, and controller
+count/assignment do not destabilize the touch snapshot.
 
 For repository contamination checks:
 

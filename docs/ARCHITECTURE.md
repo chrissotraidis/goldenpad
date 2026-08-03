@@ -74,6 +74,11 @@ core version, schema, and locale, and can be regenerated. Caches must stay in
 - **Lifecycle:** resign-active pauses input/audio; background flushes saves and
   releases transient GPU work; foreground recreates surfaces if needed.
 
+The current host implements the common snapshot, four deterministic controller
+slots, extended-gamepad mapping, and a touch input lab for move/look/fire/aim.
+Game-specific N64/modern presets and automatic touch hiding remain integration
+work rather than assumptions baked into the platform layer.
+
 ## Targets
 
 One Xcode app target supports iPhone and iPad device families with an ARM64

@@ -13,9 +13,10 @@ game code and Metal rendering—not a general N64 emulator.
 Research, an Apple Silicon desktop feasibility baseline, and the first native
 iPhone/iPad foundation are complete. The SwiftUI shell renders through Metal,
 builds for ARM64 simulator and device SDKs, and privately validates Z64, V64,
-and N64 retail dumps without retaining them. It does not run the game yet: the
-selected static-recomp core is blocked on a reproducible, provenance-clean
-public input pipeline; see [`docs/STATUS.md`](docs/STATUS.md).
+and N64 retail dumps without retaining them. Atomic settings/save persistence
+and common touch/Game Controller snapshots are also live. It does not run the
+game yet: the selected static-recomp core is blocked on a reproducible,
+provenance-clean public input pipeline; see [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Legal boundary
 

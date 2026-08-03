@@ -2,6 +2,40 @@ import AVFAudio
 import Foundation
 import SwiftUI
 
+enum ControlPreset: String, Codable, Sendable, CaseIterable {
+    case classic
+    case modern
+    case southpaw
+}
+
+struct HostSettings: Codable, Equatable, Sendable {
+    static let currentSchema = 1
+
+    var schemaVersion = currentSchema
+    var controlPreset: ControlPreset = .modern
+    var lookSensitivity = 1.0
+    var touchOpacity = 0.72
+    var touchScale = 1.0
+    var stickDeadZone = 0.12
+    var gyroEnabled = false
+
+    func sanitized() -> HostSettings {
+        var copy = self
+        copy.schemaVersion = Self.currentSchema
+        copy.lookSensitivity = copy.lookSensitivity.clamped(to: 0.25...3.0)
+        copy.touchOpacity = copy.touchOpacity.clamped(to: 0.25...1.0)
+        copy.touchScale = copy.touchScale.clamped(to: 0.7...1.4)
+        copy.stickDeadZone = copy.stickDeadZone.clamped(to: 0.0...0.4)
+        return copy
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
+    }
+}
+
 struct PlatformPaths {
     let root: URL
     let derivedCache: URL
@@ -37,12 +71,71 @@ struct PlatformPaths {
     }
 }
 
+enum PlatformStorageError: Error {
+    case invalidSaveSlot(Int)
+    case unsupportedSettingsSchema(Int)
+}
+
+struct PlatformStorage {
+    private static let saveSlotRange = 0..<4
+
+    let paths: PlatformPaths
+    private let fileManager: FileManager
+
+    init(paths: PlatformPaths, fileManager: FileManager = .default) {
+        self.paths = paths
+        self.fileManager = fileManager
+    }
+
+    func loadSettings() throws -> HostSettings {
+        guard fileManager.fileExists(atPath: paths.settings.path) else {
+            return HostSettings()
+        }
+
+        let stored = try JSONDecoder().decode(
+            HostSettings.self,
+            from: Data(contentsOf: paths.settings)
+        )
+        guard stored.schemaVersion == HostSettings.currentSchema else {
+            throw PlatformStorageError.unsupportedSettingsSchema(stored.schemaVersion)
+        }
+        return stored.sanitized()
+    }
+
+    func saveSettings(_ settings: HostSettings) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        let data = try encoder.encode(settings.sanitized())
+        try data.write(to: paths.settings, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    func loadSave(slot: Int) throws -> Data? {
+        let url = try saveURL(slot: slot)
+        guard fileManager.fileExists(atPath: url.path) else { return nil }
+        return try Data(contentsOf: url, options: [.mappedIfSafe])
+    }
+
+    func saveGameData(_ data: Data, slot: Int) throws {
+        let url = try saveURL(slot: slot)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    private func saveURL(slot: Int) throws -> URL {
+        guard Self.saveSlotRange.contains(slot) else {
+            throw PlatformStorageError.invalidSaveSlot(slot)
+        }
+        return paths.saves.appendingPathComponent("player-\(slot + 1).sav")
+    }
+}
+
 @MainActor
 final class PlatformCoordinator: ObservableObject {
     @Published private(set) var storageState = "storage: starting"
     @Published private(set) var audioState = "audio: inactive"
 
     private(set) var paths: PlatformPaths?
+    private(set) var settings = HostSettings()
+    private var storage: PlatformStorage?
     private var observers: [NSObjectProtocol] = []
 
     var statusSummary: String {
@@ -51,8 +144,16 @@ final class PlatformCoordinator: ObservableObject {
 
     init() {
         do {
-            paths = try PlatformPaths.bootstrap()
+            let paths = try PlatformPaths.bootstrap()
+            let storage = PlatformStorage(paths: paths)
+            let settings = try storage.loadSettings()
+
+            self.paths = paths
+            self.storage = storage
+            self.settings = settings
+            try storage.saveSettings(settings)
             storageState = "storage: sandbox ready"
+            runStorageProbeIfRequested()
         } catch {
             storageState = "storage: unavailable"
             print("[GoldenPad] Sandbox bootstrap failed: \(error.localizedDescription)")
@@ -90,9 +191,48 @@ final class PlatformCoordinator: ObservableObject {
         case .active:
             activateAudioSession()
         case .inactive, .background:
+            persistSettings()
             deactivateAudioSession()
         @unknown default:
             deactivateAudioSession()
+        }
+    }
+
+    private func persistSettings() {
+        do {
+            try storage?.saveSettings(settings)
+        } catch {
+            storageState = "storage: settings write failed"
+            print("[GoldenPad] Settings persistence failed: \(error.localizedDescription)")
+        }
+    }
+
+    private func runStorageProbeIfRequested() {
+        let arguments = ProcessInfo.processInfo.arguments
+        let probeBytes = Data("GOLDENPAD_PLATFORM_SAVE_PROBE_V1".utf8)
+
+        do {
+            if arguments.contains("--storage-probe-write") {
+                settings.lookSensitivity = 1.37
+                settings.touchOpacity = 0.62
+                try storage?.saveSettings(settings)
+                try storage?.saveGameData(probeBytes, slot: 0)
+                storageState = "storage: probe written"
+            } else if arguments.contains("--storage-probe-verify") {
+                guard
+                    let storage,
+                    settings.lookSensitivity == 1.37,
+                    settings.touchOpacity == 0.62,
+                    try storage.loadSave(slot: 0) == probeBytes
+                else {
+                    storageState = "storage: relaunch failed"
+                    return
+                }
+                storageState = "storage: relaunch verified"
+            }
+        } catch {
+            storageState = "storage: probe failed"
+            print("[GoldenPad] Storage probe failed: \(error.localizedDescription)")
         }
     }
 
@@ -116,6 +256,7 @@ final class PlatformCoordinator: ObservableObject {
                 options: .notifyOthersOnDeactivation
             )
             audioState = "audio: inactive"
+            print("[GoldenPad] Audio session inactive")
         } catch {
             audioState = "audio: deactivate failed"
             print("[GoldenPad] Audio deactivation failed: \(error.localizedDescription)")

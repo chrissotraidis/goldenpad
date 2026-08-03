@@ -74,3 +74,32 @@
 - Added deterministic unsigned-foundation-IPA packaging and a contamination
   auditor. Two consecutive packages had identical SHA-256 `d5c94ba3cfc476df417dd608ea5bc340b9d0a79d13e43c3e79f59f547d8071a9`;
   the eight-member payload and sorted-content digest passed all checks.
+
+## 2026-08-03 — picker, persistence and normalized input
+
+- Used the real Simulator UI to open the native Files picker on iPhone, cancel
+  back to GoldenPad, remove/stop iPhone, then repeat on iPad. No retail file was
+  selected or exposed in tracked evidence.
+- Drove nonexistent-path and synthetic correct-size/wrong-hash validation on
+  iPhone, removed/stopped it, then repeated on iPad. Both displayed the expected
+  unreadable-file and SHA-1 mismatch states. Deleted the header-only fixture.
+- Added schema-versioned, range-clamped host settings with sorted JSON and atomic
+  data-protected writes. Added four bounded atomic opaque save slots.
+- Wrote a non-game settings/save probe, terminated and relaunched the app, and
+  visibly confirmed `storage: relaunch verified` on iPhone and then iPad. Both
+  32-byte save probes had the same expected SHA-256; both app installs were
+  removed after the pass.
+- Added a common normalized input snapshot, deterministic player slots,
+  `GCExtendedGamepad` mapping and touch/controller merge for player one.
+- Added a neutral responsive touch input lab. Direct iPhone interaction produced
+  movement `0.61,0.63` and FIRE `0x1`; iPad produced `0.64,0.62` and FIRE `0x1`.
+- Tablet review caught left-clustered controls. Changed the lab to three equal
+  responsive columns, rebuilt, and visually rechecked before accepting it.
+- Attached to the app console, pressed Simulator Home, and reopened GoldenPad
+  from the launcher. Audio deactivated in the background and reactivated at
+  48 kHz on iPhone, then passed the same sequential gate on iPad.
+- Generic device-SDK Release still builds as unsigned ARM64. Two fresh foundation
+  IPA runs were byte-identical at SHA-256
+  `82c4ca4939fe1b590892ed4706965ca3339926fb7ae9c88a9cd3b550010e12f9`;
+  the eight-member audit passed with content digest
+  `0783c88170cade31ac901e0fbbc274bacb5edae961f3cc96e42283d608eb4a2f`.

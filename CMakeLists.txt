@@ -9,9 +9,11 @@ endif()
 add_executable(GoldenPad MACOSX_BUNDLE
     Assets.xcassets
     Sources/GoldenPadApp.swift
+    Sources/InputSystem.swift
     Sources/MetalCanvas.swift
     Sources/PlatformServices.swift
     Sources/ROMValidator.swift
+    Sources/TouchControlsView.swift
 )
 
 set_target_properties(GoldenPad PROPERTIES
@@ -40,6 +42,7 @@ target_link_libraries(GoldenPad PRIVATE
     "-framework Metal"
     "-framework MetalKit"
     "-framework AVFAudio"
+    "-framework GameController"
     "-framework UniformTypeIdentifiers"
     "-framework CryptoKit"
 )

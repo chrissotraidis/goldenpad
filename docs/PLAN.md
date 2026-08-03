@@ -46,18 +46,18 @@ Gate: selected core, not just the oracle, completes a mission and multiplayer.
 - [x] A2: render an original Metal clear frame on iPhone simulator.
 - [x] A3: stop iPhone; render on iPad simulator; compare logs and layout.
 - [x] A4: implement Files picker, byte-order normalization and SHA-1 validation.
-- [ ] A5: persist cache/settings/saves under sandbox-safe paths.
-- [ ] A6: implement lifecycle and audio-session transitions.
+- [x] A5: persist cache/settings/saves under sandbox-safe paths.
+- [x] A6: implement lifecycle and audio-session transitions.
 
 Gate: both simulators handle valid, missing and invalid ROM flows and relaunch.
-Valid V64 was proven on both; invalid-size rejection was proven on iPad. Actual
-Files-picker interaction, relaunch persistence, missing-file and wrong-hash
-cases remain before the gate is closed.
+This gate passes: valid V64, native Files-picker open/cancel, settings/save
+relaunch, missing-file rejection and a synthetic 12 MiB wrong-hash rejection
+were driven sequentially on both; invalid-size rejection also passed on iPad.
 
-A5/A6 foundation is now present: Application Support, derived-cache and save
-directories are created, cache backup is disabled, and active/inactive audio
-session plus interruption/route observers are wired. They remain open until
-real core settings/saves/audio survive relaunch and interruption tests.
+A5 now passes with versioned/clamped settings, bounded atomic save slots, data
+protection and terminate/relaunch verification. A6 passes its host gate: Home
+backgrounding deactivated the audio session and foreground return reactivated it
+at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5.
 
 ### G — Game integration
 
@@ -71,7 +71,7 @@ Gate: full mission completion after clean install and ROM import.
 
 ### I — Input and touch
 
-- [ ] I1: common normalized input snapshots for touch and controllers.
+- [x] I1: common normalized input snapshots for touch and controllers.
 - [ ] I2: N64-equivalent controls plus modern dual-stick FPS mapping.
 - [ ] I3: movable/resizable/opacity-adjustable phone and tablet layouts.
 - [ ] I4: touch editor, persistence, safe areas, sensitivity/dead zones and gyro.
@@ -79,6 +79,10 @@ Gate: full mission completion after clean install and ROM import.
   objectives flows.
 
 Gate: a mission is completable with touch alone and with a physical controller.
+
+I1 is host-complete: four deterministic controller slots, extended-gamepad
+mapping, touch/controller merge and a responsive touch lab were exercised on
+both simulators. Gameplay mapping and physical-device acceptance remain open.
 
 ### M — Multiplayer
 

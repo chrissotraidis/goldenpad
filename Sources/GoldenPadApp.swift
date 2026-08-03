@@ -4,11 +4,13 @@ import UniformTypeIdentifiers
 @main
 struct GoldenPadApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var input = InputCoordinator()
     @StateObject private var platform = PlatformCoordinator()
 
     var body: some Scene {
         WindowGroup {
             FoundationView()
+                .environmentObject(input)
                 .environmentObject(platform)
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     platform.handle(scenePhase: phase)
@@ -18,6 +20,7 @@ struct GoldenPadApp: App {
 }
 
 private struct FoundationView: View {
+    @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
     @State private var isImporterPresented = false
     @State private var validation: ROMValidationState = .notSelected
@@ -67,6 +70,12 @@ private struct FoundationView: View {
                         .labelStyle(.titleAndIcon)
 
                         Text(platform.statusSummary)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
+
+                        TouchInputLab()
+
+                        Text(input.diagnosticSummary)
                             .font(.caption2.monospaced())
                             .foregroundStyle(.white.opacity(0.46))
 
