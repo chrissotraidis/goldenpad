@@ -89,8 +89,8 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
-- compiled all 135 game C files, 28 explicit upstream native system/asset glue
-  files and two project-owned mobile adapters into 165-object ARM64 archives
+- compiled all 135 game C files, 56 explicit upstream native system/portable
+  leaf files and two project-owned mobile adapters into 193-object ARM64 archives
   for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
@@ -118,6 +118,10 @@ On this Apple M1 host, commit `cd9b58f`:
   compatibility unit, executed `guNormalize` inside the mobile core probe on
   both device classes, and reduced the measured `bossEntry` link gap from 261
   to 246 unique symbols with no GU blocker remaining.
+- added 28 small SDL-free upstream leaf units for segment constants, trig/stdio
+  compatibility and isolated fidelity helpers; representative paths executed in
+  the unchanged phone/tablet probe, while the startup map closed 61 symbols,
+  introduced none and fell from 246 to 185.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.

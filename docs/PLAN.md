@@ -68,9 +68,9 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
-G1 passes: all 135 MGB64 game translation units, 28 explicit upstream native
-system/asset glue units and two project-owned mobile adapters compile into
-165-object ARM64 archives for both mobile SDKs. Release app binaries link real
+G1 passes: all 135 MGB64 game translation units, 56 explicit upstream native
+system/portable leaf units and two project-owned mobile adapters compile into
+193-object ARM64 archives for both mobile SDKs. Release app binaries link real
 upstream random-core and GU math code, and the same
 deterministic probe ran sequentially on iPhone and iPad without ROM data.
 
@@ -105,7 +105,9 @@ retrace only when the graphics queue is empty, and sequential phone/tablet logs
 prove delivery without queue growth. Portable `bossEntry` closure and title
 startup remain open. Its first closure slice isolates 15 real GU helpers from
 the desktop compatibility unit; the temporary force-link map dropped from 261
-to 246 unresolved symbols with no GU blocker remaining.
+to 246 unresolved symbols with no GU blocker remaining. The next 28-unit
+SDL-free leaf slice closes another 61 with no new unresolved dependency, leaving
+185.
 
 ### I — Input and touch
 

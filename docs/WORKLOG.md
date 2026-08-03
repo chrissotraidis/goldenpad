@@ -1,5 +1,21 @@
 # Worklog
 
+## 2026-08-03 — add the SDL-free portable leaf closure
+
+- Explicitly added 28 small upstream leaf units for native segment constants,
+  trig/stdio compatibility and isolated gameplay fidelity helpers. Together
+  they are under 1,000 source lines and import no SDL, audio or window owner.
+- The audited core is now 193 ARM64 objects. Core and combined Fast3D/Metal
+  verifiers pass for Simulator and device SDKs, required representative symbols
+  are retained, and the exact ignored MGB64 checkout returns clean.
+- Extended the runtime probe through native trig, aim-bone fidelity,
+  watch-aspect and Rareware-logo segment constants. It visibly remained
+  `0x80c24316` on iPhone and then iPad; both app containers were removed and both
+  simulators shut down in strict sequence.
+- A temporary non-executing `bossEntry` map fell from 246 to 185 unique
+  unresolved symbols: 61 closed and zero introduced. The probe was removed
+  before the clean combined-renderer pass.
+
 ## 2026-08-03 — isolate portable GU math from the desktop platform unit
 
 - Added one project-owned mobile GU source containing MGB64's real host-side

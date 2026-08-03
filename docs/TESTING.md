@@ -145,7 +145,7 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 165-object
+2026-08-03 gate passed the upstream native SDK guard and produced 193-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
 `goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, the real upstream
@@ -226,6 +226,15 @@ unique unresolved symbols and contained none of the 15 extracted GU names. The
 reference was removed, both clean verifiers passed, and the no-ROM core probe
 again reported `0x80c24316` sequentially on iPhone and iPad before uninstall and
 shutdown.
+
+The second startup-closure subgate adds 28 explicitly enumerated SDL-free leaf
+units: native segment constants, trig/stdio compatibility and isolated gameplay
+fidelity helpers. The final core probe must retain and execute `sins`, `coss`,
+`aimBoneArg0Proceeds`, `watchInvPerspAspect`, and
+`_rarewarelogoSegmentRomStart`. It reported the unchanged `0x80c24316` result
+sequentially on iPhone then iPad, with uninstall/shutdown cleanup. A temporary
+`bossEntry` map closed 61 symbols, introduced zero and left 185; the probe was
+removed before the normal combined-renderer pass.
 
 ## RT64 mobile Metal and static-library gate
 

@@ -99,6 +99,12 @@ Portable GU matrix/vector math is similarly isolated into
 matching-target SDK implementation sources, and do not pull the SDL-owned
 platform unit into the app. This is the first bounded `bossEntry` closure slice.
 
+The next closure layer directly enumerates small upstream portable leaf units:
+segment constants, clean-room trig, bounded stdio, and isolated gameplay
+fidelity decisions. Keeping them separate from audio, settings, input and
+window ownership lets the linker map prove progress without importing a desktop
+subsystem.
+
 ## ROM and resources
 
 ```text

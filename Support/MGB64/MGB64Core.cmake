@@ -53,11 +53,45 @@ set(goldenpad_mgb64_system_sources
     assets/font_dl.c
     assets/GlobalImageTable.c
 )
+
+set(goldenpad_mgb64_portable_leaf_sources
+    src/platform/aimbone_dispatch.c
+    src/platform/ammo_icon_anchor.c
+    src/platform/autoaim_score.c
+    src/platform/bg_impact_guard.c
+    src/platform/chrobj_detonate.c
+    src/platform/chrobj_impact_suppress.c
+    src/platform/fire_rate_authentic.c
+    src/platform/fp_weapon_perspnorm.c
+    src/platform/frame_clamp.c
+    src/platform/glass_shot_depth.c
+    src/platform/gu_trig.c
+    src/platform/hull_vertex_clamp.c
+    src/platform/mp_beam_rawcast.c
+    src/platform/mp_healthbar_gate.c
+    src/platform/mp_respawn_tail.c
+    src/platform/platform_stdio.c
+    src/platform/projectile_endpoint_clamp.c
+    src/platform/segment_stubs.c
+    src/platform/spectrum_settile.c
+    src/platform/stan_roomset.c
+    src/platform/watch_ammo_switchstate.c
+    src/platform/watch_inv_aspect.c
+    src/platform/watch_joypad_page.c
+    src/platform/watch_scene_render.c
+    src/platform/watch_scroll_gate.c
+    src/platform/watchmenu_hand_lifecycle.c
+    src/platform/weapon_bullet_type.c
+    src/platform/weapon_cycle_queue.c
+)
 list(TRANSFORM goldenpad_mgb64_system_sources
+    PREPEND "${GOLDENPAD_MGB64_SOURCE_DIR}/")
+list(TRANSFORM goldenpad_mgb64_portable_leaf_sources
     PREPEND "${GOLDENPAD_MGB64_SOURCE_DIR}/")
 
 foreach(goldenpad_mgb64_source IN LISTS
-        goldenpad_mgb64_game_sources goldenpad_mgb64_system_sources)
+        goldenpad_mgb64_game_sources goldenpad_mgb64_system_sources
+        goldenpad_mgb64_portable_leaf_sources)
     if(goldenpad_mgb64_source MATCHES "/src/libultra(re)?/")
         message(FATAL_ERROR
             "SDK-lineage implementation source entered MGB64 core: ${goldenpad_mgb64_source}")
@@ -122,6 +156,7 @@ endfunction()
 add_library(goldenpad_mgb64_core STATIC
     ${goldenpad_mgb64_game_sources}
     ${goldenpad_mgb64_system_sources}
+    ${goldenpad_mgb64_portable_leaf_sources}
     Support/MGB64/mgb64_mobile_gu.c
     Support/MGB64/mgb64_mobile_os.c
 )
