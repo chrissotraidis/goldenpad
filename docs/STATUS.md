@@ -22,10 +22,11 @@ longer blocks MGB64 integration.
   target compiles no `src/libultra/**` or `src/libultrare/**` implementation
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
-- GoldenPad's opt-in MGB64 target compiles all 135 game translation units plus
-  28 explicit native system/asset glue units into 163-object, non-fat ARM64
-  archives for both `iphonesimulator` and `iphoneos` at the iOS 17 deployment
-  target. Release app executables link for both SDKs.
+- GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 28
+  explicit upstream native system/asset glue units and one project-owned mobile
+  OS adapter into 164-object, non-fat ARM64 archives for both
+  `iphonesimulator` and `iphoneos` at the iOS 17 deployment target. Release app
+  executables link for both SDKs.
 - Final-binary inspection confirms the exact MGB64 commit, bridge identity/probe
   symbols and real upstream `randomSetSeed`/`randomGetNext` code. Sequential
   no-ROM launches reported deterministic probe `0x80c24316` on iPhone 16 Pro,
@@ -63,6 +64,12 @@ longer blocks MGB64 integration.
   complete file table and verifies the first background plus Dam entries point
   inside the owned buffer. Both final SDK binaries link the patch function;
   sequential iPhone/iPad runs reported `MGB64 file table ready` before cleanup.
+- A narrow mobile OS adapter now closes the real MGB64 scheduler's libultra host
+  surface without importing upstream's monolithic SDL input/audio layer. It
+  initializes upstream `os_scheduler`, both message queues and the graphics
+  client for final Simulator and device binaries. Sequential private-ROM runs
+  reported `MGB64 scheduler ready` at 1206x2622 on iPhone, then 1668x2420 on
+  iPad; each app/container was removed and each simulator shut down.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -148,8 +155,8 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- The renderer lifecycle remains visually empty. Scheduler/game-platform
-  closure, real minimap overlay, game audio and input seams
+- The renderer lifecycle remains visually empty. Cooperative UIKit frame
+  delivery, game startup closure, real minimap overlay, game audio and input seams
   remain; the volatile ROM handoff alone does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
@@ -163,7 +170,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Resolve the minimum native scheduler/platform closure around `bossEntry`, then
-add the UIKit-owned main-loop adapter that submits the first title/menu display
+Connect MTKView cadence to the cooperative MGB64 graphics queue, then close the
+remaining `bossEntry` startup surface and submit the first title/menu display
 lists. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

@@ -89,8 +89,9 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
-- compiled all 135 game C files plus 28 explicit native system/asset glue files
-  into 163-object ARM64 archives for both Apple mobile SDKs;
+- compiled all 135 game C files, 28 explicit upstream native system/asset glue
+  files and one project-owned mobile OS adapter into 164-object ARM64 archives
+  for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
 - compiled the complete native Metal backend and its combiner/backend/MSAA
@@ -106,6 +107,10 @@ On this Apple M1 host, commit `cd9b58f`:
 - normalized the supported private V64 through the existing exact SHA-1 gate,
   installed it into core-owned volatile memory on iPhone and then iPad, and
   removed each entire app container immediately after its sequential pass.
+- initialized the real upstream scheduler, message queues and graphics client
+  through the SDL-free mobile OS adapter in final Simulator/device binaries;
+  sequential phone/tablet runtime reached `MGB64 scheduler ready` before the
+  same app-container cleanup.
 - linked upstream native ROM-offset and zero-content asset-symbol units, patched
   the complete file table, and verified its first background and Dam entries
   inside the owned buffer on both mobile device classes.

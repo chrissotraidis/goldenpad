@@ -75,6 +75,22 @@ globals remain null/zero until a validated private import succeeds. The minimap
 queue is an explicit lifecycle-only no-op until the real game overlay is wired.
 The next boundary starts the title/menu display-list loop.
 
+## Scheduler and mobile OS surface
+
+MGB64's native port uses a cooperative scheduler: the original scheduler data
+structures and queues remain intact, while the host frame loop delivers retrace
+messages instead of starting an emulated N64 scheduler thread. GoldenPad keeps
+that upstream model but does not compile the desktop `platform/stubs.c`, which
+also owns SDL keyboard, mouse, controller and audio behavior. The project-owned
+`mgb64_mobile_os.c` implements only the required message, timing, VI, task,
+neutral-controller and scheduler bootstrap surface.
+
+The current adapter proves scheduler construction and retains a timed retrace
+fallback. The production loop will replace that fallback with signals from the
+UIKit-owned `MTKView`. Neutral controller, rumble, task and sequence-audio seams
+are explicitly provisional; normalized Swift input, Game Controller haptics,
+Fast3D dispatch and AVAudio must own them before gameplay acceptance.
+
 ## ROM and resources
 
 ```text

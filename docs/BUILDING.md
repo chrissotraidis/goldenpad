@@ -60,8 +60,9 @@ build the complete audited C core for both Apple mobile SDKs:
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
 
-The verifier compiles all 135 `src/game/*.c` translation units plus 28 explicit
-native system/asset glue units into 163-object ARM64 archives. It rejects a
+The verifier compiles all 135 `src/game/*.c` translation units, 28 explicit
+upstream native system/asset glue units and the project-owned SDL-free mobile OS
+adapter into 164-object ARM64 archives. It rejects a
 mismatched or dirty upstream checkout, never compiles `src/libultra/**` or
 `src/libultrare/**` implementation sources, builds the opt-in GoldenPad app for
 Simulator and device, and requires the final executables to retain the exact
@@ -78,8 +79,9 @@ cmake -S . -B build-mgb64-core-simulator -G Xcode \
 
 The ordinary foundation configuration remains independent of `ref/`. The core
 configuration proves compilation and a small deterministic game-code execution
-seam; it does not yet provide audio, input, ROM-resource or main-loop platform
-adapters.
+seam. The current mobile OS adapter initializes MGB64's real cooperative
+scheduler and graphics-client queues after a validated ROM/file-table handoff;
+audio, game input, task dispatch and the title/main loop are not complete.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,
@@ -114,7 +116,8 @@ This starts and presents ROM-free empty frames through MGB64's real backend. It
 also enables the existing validator to install a supported normalized ROM into
 volatile MGB64-owned memory after the exact SHA-1 passes. The generated native
 offset unit patches the complete file table and verifies known background/Dam
-entries. It does not yet submit title/menu display lists.
+entries. It also initializes the upstream scheduler through the SDL-free mobile
+OS adapter. It does not yet submit title/menu display lists.
 
 ## RT64 iOS static renderer
 

@@ -17,6 +17,7 @@ typedef struct fileentry {
 extern fileentry_t file_resource_table[];
 extern int32_t file_entry_max;
 void platformPatchFileTable(uint8_t *rom_data);
+int goldenpad_mgb64_scheduler_initialize(void);
 
 static void goldenpad_clear_file_table(void) {
     for (int32_t index = 1; index < file_entry_max; ++index) {
@@ -58,6 +59,25 @@ int goldenpad_mgb64_file_table_ready(void) {
         file_entry_max > 14 &&
         file_resource_table[1].hw_address == g_romData + 0x00438660u &&
         file_resource_table[14].hw_address == g_romData + 0x005ffc50u;
+#else
+    return 0;
+#endif
+}
+
+int goldenpad_mgb64_prepare_scheduler(void) {
+#ifdef GOLDENPAD_MGB64_CORE
+    static int scheduler_ready = 0;
+    if (scheduler_ready) {
+        return 1;
+    }
+    if (!goldenpad_mgb64_file_table_ready()) {
+        return 0;
+    }
+    if (!goldenpad_mgb64_scheduler_initialize()) {
+        return 0;
+    }
+    scheduler_ready = 1;
+    return 1;
 #else
     return 0;
 #endif

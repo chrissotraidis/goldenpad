@@ -10,6 +10,9 @@ private func goldenPadMGB64ClearROM()
 @_silgen_name("goldenpad_mgb64_file_table_ready")
 private func goldenPadMGB64FileTableReady() -> Int32
 
+@_silgen_name("goldenpad_mgb64_prepare_scheduler")
+private func goldenPadMGB64PrepareScheduler() -> Int32
+
 @_silgen_name("goldenpad_mgb64_install_validated_rom")
 private func goldenPadMGB64InstallValidatedROM(
     _ bytes: UnsafeRawPointer?,
@@ -67,11 +70,13 @@ enum ROMValidator {
                 let installed = normalized.withUnsafeBytes { bytes in
                     goldenPadMGB64InstallValidatedROM(bytes.baseAddress, UInt32(bytes.count))
                 }
-                guard installed == 1, goldenPadMGB64FileTableReady() == 1 else {
+                guard installed == 1,
+                      goldenPadMGB64FileTableReady() == 1,
+                      goldenPadMGB64PrepareScheduler() == 1 else {
                     return .invalid("The validated dump could not be installed in volatile core memory.")
                 }
                 coreLoaded = true
-                print("[GoldenPad] Validated ROM installed; MGB64 file table ready")
+                print("[GoldenPad] Validated ROM installed; MGB64 scheduler ready")
             }
 
             return .valid(byteOrder: byteOrder, coreLoaded: coreLoaded)

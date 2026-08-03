@@ -34,7 +34,7 @@ do
     test -f "$archive"
     xcrun lipo -info "$archive"
     objects=$(xcrun ar -t "$archive" | grep -c '\.o$')
-    if [ "$objects" -ne 163 ]; then
+    if [ "$objects" -ne 164 ]; then
         echo "Unexpected MGB64 core archive: $objects objects" >&2
         exit 1
     fi
@@ -56,10 +56,18 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_install_validated_rom'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_clear_rom'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_file_table_ready'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_prepare_scheduler'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_scheduler_initialize'
+    nm -gU "$binary" | grep -q '_osCreateScheduler'
+    nm -gU "$binary" | grep -q '_osScGetCmdQ'
     nm -gU "$binary" | grep -q '_platformPatchFileTable'
     nm -gU "$binary" | grep -q '_randomGetNext'
     nm -gU "$binary" | grep -q '_randomSetSeed'
     strings "$binary" | grep -q \
         'MGB64 game core cd9b58f5f91291579b8e551aa925aab000d311cf'
+    if otool -L "$binary" | grep -Ei 'SDL|AppKit|OpenGL' >/dev/null; then
+        echo "Desktop dependency entered $binary" >&2
+        exit 1
+    fi
     echo "Verified linked MGB64 probe in $binary"
 done

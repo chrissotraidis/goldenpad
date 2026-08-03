@@ -145,7 +145,7 @@ For repository contamination checks:
 ```
 
 At exact MGB64 `cd9b58f5f91291579b8e551aa925aab000d311cf`, the
-2026-08-03 gate passed the upstream native SDK guard and produced 163-object
+2026-08-03 gate passed the upstream native SDK guard and produced 164-object
 archives for both `iphonesimulator` and `iphoneos`. Both are non-fat ARM64. The
 Release app linked for both SDKs, and binary inspection found the exact commit,
 `goldenpad_mgb64_core_identity`, `goldenpad_mgb64_core_probe`, and the real
@@ -198,6 +198,16 @@ require `Validated ROM installed; MGB64 file table ready`. The 2026-08-03
 sequential run observed that line at 1206x2622 on iPhone, removed the app and
 shut down, then observed it at 1668x2420 on iPad before the same cleanup. The
 bridge verifies entry 1 and Dam entry 14 against exact owned-buffer offsets.
+
+The scheduler bootstrap gate adds the project-owned `mgb64_mobile_os.c` rather
+than upstream's combined SDL input/audio shim. Both final SDK binaries must
+retain `goldenpad_mgb64_prepare_scheduler`, `osCreateScheduler` and
+`osScGetCmdQ`. After a supported validation, require `Validated ROM installed;
+MGB64 scheduler ready`. The sequential run observed that line alongside the
+real Metal first frame at 1206x2622 on iPhone, removed its entire app container
+and shut down the phone, then repeated at 1668x2420 on iPad before identical
+cleanup. This proves scheduler/queue construction, not frame delivery or title
+startup.
 
 ## RT64 mobile Metal and static-library gate
 

@@ -19,8 +19,8 @@ exact N64 button masks, modern and southpaw dual-stick presets, and separately
 persisted phone/tablet touch layouts with move, size, visibility, opacity,
 sensitivity, dead-zone and gyro settings. It does not run the title or gameplay
 yet, but the first production-core gate now passes: all 135 MGB64 game
-translation units plus 28 native system/asset glue units compile into
-163-object ARM64 archives for
+translation units plus 28 upstream native system/asset glue units and one
+GoldenPad mobile OS adapter compile into 164-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
 game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
 also compiles for both SDKs after excluding two macOS-only display-sync writes.
@@ -34,15 +34,17 @@ After the existing SHA-1 gate, linked-core builds can now hand the normalized
 retail data to MGB64 as a volatile in-memory copy; sequential phone/tablet proof
 confirmed the handoff, followed by complete app-container removal.
 The native file/resource table is now patched to exact offsets inside that
-owned buffer, including the Dam background resource.
+owned buffer, including the Dam background resource. The real MGB64 scheduler
+and its graphics-client queues now initialize without SDL on both mobile SDKs;
+sequential phone/tablet validation reached that state at full drawable size.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into
 GoldenPad, and the real Metal device/command-queue/swapchain initializes on
 both iPhone and iPad simulators. MGB64 is the selected production-core
-candidate; validated private ROM-resource loading and the mobile game main loop
-are the next build gates.
+candidate; cooperative UIKit frame delivery and title/menu startup are the next
+build gates.
 GoldenRecomp remains a static-recomp reference because its public input pipeline
 is incomplete. See [`docs/STATUS.md`](docs/STATUS.md).
 

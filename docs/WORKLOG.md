@@ -1,5 +1,22 @@
 # Worklog
 
+## 2026-08-03 — initialize the native scheduler without SDL
+
+- Rejected upstream `platform/stubs.c` as an iOS build unit because it combines
+  required libultra host calls with desktop SDL input and audio. Added one
+  project-owned mobile OS adapter around the exact cooperative scheduler seam.
+- The adapter initializes upstream `os_scheduler`, interrupt/command queues and
+  the graphics client after the validated ROM and file table are ready. It
+  exposes a timed retrace fallback; MTKView signaling, Fast3D task dispatch,
+  normalized game input, rumble and AVAudio remain explicit next gates.
+- The complete audited core is now 164 ARM64 objects. Core and combined
+  Fast3D/Metal verifiers passed for both Simulator and device SDKs; the exact
+  ignored MGB64 checkout remained clean.
+- Attached-console runtime reported `MGB64 scheduler ready` and a real Metal
+  first frame at 1206x2622 on iPhone. Its app/container was removed and the
+  simulator shut down before iPad repeated at 1668x2420 and received the same
+  cleanup. Neither Simulator retains the temporary retail-data copy.
+
 ## 2026-08-03 — patch the native file table from validated ROM memory
 
 - Added upstream `rom_offsets.c` and `asset_stubs.c` to the audited native core.
