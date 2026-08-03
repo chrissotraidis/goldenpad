@@ -53,7 +53,7 @@ HarkinianPad was used only to identify product-level control requirements, and
 the clean GoldenEye decomp was used only to verify public N64 button constants;
 no reference source was copied into GoldenPad.
 
-The tracked RT64/Plume patches and GoldenPad RT64/MGB64 bridge/shim files are
+The tracked RT64/Plume/MGB64 patches and GoldenPad RT64/MGB64 bridge/shim files are
 narrow integration work against the exact commits in `RESEARCH.md`. They
 contain no ROM data, extracted media or generated shader output. The MGB64 core
 itself is compiled only from an ignored exact upstream checkout and is never

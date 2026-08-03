@@ -81,6 +81,12 @@ app created the real Plume Metal device, command queue and swapchain on iPhone
 and iPad simulators. G3 remains open until the MGB64 platform/render loop supplies
 GoldenEye display lists to a mobile renderer.
 
+The first G3 renderer subgate also passes: MGB64's full native Metal backend and
+three support units compile into four-object ARM64 archives for both mobile SDKs
+after two macOS-only display-sync assignments are guarded. G3 remains open until
+the Fast3D frontend and GoldenPad-owned layer are linked and render title/menu
+display lists.
+
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.

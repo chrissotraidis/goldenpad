@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(GoldenPad LANGUAGES Swift C CXX)
+project(GoldenPad LANGUAGES Swift C CXX OBJCXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(FATAL_ERROR "GoldenPad currently configures only for iOS/iPadOS. See docs/BUILDING.md.")

@@ -61,6 +61,12 @@ RT64 mobile closure remains available for a later renderer migration or a
 restored GoldenRecomp path; integrating one renderer first avoids carrying two
 game-rendering stacks through initial gameplay bring-up.
 
+The complete MGB64 Metal backend now compiles for both Apple mobile SDKs as a
+separate static target. Its two macOS-only display-sync assignments are removed
+for mobile because `MTKView`/UIKit owns cadence. The next boundary supplies the
+existing `CAMetalLayer` and drawable dimensions to the Fast3D frontend while
+excluding its SDL window and OpenGL fallback paths.
+
 ## ROM and resources
 
 ```text

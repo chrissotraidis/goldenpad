@@ -21,7 +21,9 @@ sensitivity, dead-zone and gyro settings. It does not run the game yet, but the
 first production-core gate now passes: all 135 MGB64 game translation units plus
 26 native system/asset glue units compile into 161-object ARM64 archives for
 both Apple mobile SDKs. GoldenPad links and executes a deterministic upstream
-game-code probe on iPhone and iPad. The UIKit host also exposes the exact
+game-code probe on iPhone and iPad. MGB64's complete native Metal backend now
+also compiles for both SDKs after excluding two macOS-only display-sync writes.
+The UIKit host exposes the exact
 `UIView`/`CAMetalLayer` pair RT64 expects. All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete
 210-object RT64 static library and its 246-object dependency closure link into

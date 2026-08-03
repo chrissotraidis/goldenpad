@@ -54,6 +54,7 @@ build the complete audited C core for both Apple mobile SDKs:
 ```sh
 ./scripts/fetch-mgb64.sh
 ./scripts/verify-mgb64-ios-core.sh
+./scripts/verify-mgb64-ios-metal.sh
 ```
 
 The verifier compiles all 135 `src/game/*.c` translation units plus 26 explicit
@@ -76,6 +77,14 @@ The ordinary foundation configuration remains independent of `ref/`. The core
 configuration proves compilation and a small deterministic game-code execution
 seam; it does not yet provide MGB64's renderer, audio, input, ROM-resource or
 main-loop platform adapters.
+
+The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
+ignored checkout, compiles the complete native Metal backend plus its combiner,
+backend selector and MSAA helper, verifies four-object ARM64 archives for both
+SDKs, and reverses the patch on exit. The patch gates two macOS-only
+`CAMetalLayer.displaySyncEnabled` writes; presentation cadence remains owned by
+the iOS view/display lifecycle. This is a backend compilation gate, not yet a
+linked renderer or displayed game frame.
 
 ## RT64 iOS static renderer
 

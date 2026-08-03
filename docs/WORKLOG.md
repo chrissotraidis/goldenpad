@@ -1,5 +1,22 @@
 # Worklog
 
+## 2026-08-03 — compile the MGB64 native Metal backend for iOS
+
+- Isolated MGB64's complete native Metal renderer backend from its larger SDL
+  platform target, along with only the color-combiner, backend-selector and MSAA
+  support units it needs to compile.
+- The first mobile build reached exactly two errors: macOS-only
+  `CAMetalLayer.displaySyncEnabled` assignments. Added one exact-source patch
+  that gates those writes to macOS; iOS presentation cadence remains with
+  GoldenPad's existing `MTKView` lifecycle.
+- Added an apply/build/reverse verifier that refuses dirty/mismatched upstream,
+  builds both mobile SDKs, requires four-object non-fat ARM64 archives and the
+  exported `gfx_metal_api`, then restores the upstream checkout.
+- Both `iphoneos` and `iphonesimulator` passed. The 161-object core and linked
+  app verifiers also passed again after the CMake build settings were shared
+  between the core and Metal targets. The next gate is the SDL-free Fast3D
+  frontend plus GoldenPad layer/drawable-size adapter.
+
 ## 2026-08-03 — select and compile the MGB64 production core
 
 - Reframed the community decomp/recomp issue as a disclosed source and release

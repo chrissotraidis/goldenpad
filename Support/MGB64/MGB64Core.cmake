@@ -62,64 +62,79 @@ foreach(goldenpad_mgb64_source IN LISTS
     endif()
 endforeach()
 
+function(goldenpad_configure_mgb64_target target)
+    target_compile_definitions(${target} PRIVATE
+        NONMATCHING
+        NATIVE_PORT
+        PORT_FIXME_STUBS
+        _LANGUAGE_C
+        VERSION_US
+        LANG_US
+        REFRESH_NTSC
+        LEFTOVERDEBUG
+        LEFTOVERSPECTRUM
+        BUGFIX_R0
+        BYTEMATCH
+    )
+
+    target_include_directories(${target} PRIVATE
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/include"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/include/PR"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/game"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/src/libultra/audio"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/assets"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/lib/stb"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}/lib/cgltf"
+        "${GOLDENPAD_MGB64_SOURCE_DIR}"
+    )
+
+    target_compile_options(${target} PRIVATE
+        -Wall
+        -Wno-unused-variable
+        -Wno-unused-function
+        -Wno-unused-but-set-variable
+        -Wno-missing-braces
+        -Wno-parentheses
+        -Wno-unknown-pragmas
+        -Wno-implicit-function-declaration
+        -Wno-missing-declarations
+        -Wno-int-conversion
+        -Wno-incompatible-pointer-types
+        -Wno-empty-body
+        -Wno-switch
+        -Wno-macro-redefined
+        -Wno-initializer-overrides
+        -Wno-flexible-array-extensions
+        -Wno-gnu-flexible-array-initializer
+        -Wno-invalid-token-paste
+        -Wno-microsoft-anon-tag
+        -fms-extensions
+        -fno-strict-aliasing
+        -ferror-limit=0
+    )
+endfunction()
+
 add_library(goldenpad_mgb64_core STATIC
     ${goldenpad_mgb64_game_sources}
     ${goldenpad_mgb64_system_sources}
 )
+goldenpad_configure_mgb64_target(goldenpad_mgb64_core)
+target_include_directories(goldenpad_mgb64_core BEFORE PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/Support/MGB64/CoreSDLShim")
 
-target_compile_definitions(goldenpad_mgb64_core PRIVATE
-    NONMATCHING
-    NATIVE_PORT
-    PORT_FIXME_STUBS
-    _LANGUAGE_C
-    VERSION_US
-    LANG_US
-    REFRESH_NTSC
-    LEFTOVERDEBUG
-    LEFTOVERSPECTRUM
-    BUGFIX_R0
-    BYTEMATCH
+add_library(goldenpad_mgb64_metal STATIC
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_metal.mm"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_cc.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_backend.c"
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_msaa_util.c"
 )
-
-target_include_directories(goldenpad_mgb64_core PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/Support/MGB64/CoreSDLShim"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/include"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/include/PR"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/src"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/game"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/libultra/audio"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/assets"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/lib/stb"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}/lib/cgltf"
-    "${GOLDENPAD_MGB64_SOURCE_DIR}"
-)
-
-target_compile_options(goldenpad_mgb64_core PRIVATE
-    -Wall
-    -Wno-unused-variable
-    -Wno-unused-function
-    -Wno-unused-but-set-variable
-    -Wno-missing-braces
-    -Wno-parentheses
-    -Wno-unknown-pragmas
-    -Wno-implicit-function-declaration
-    -Wno-missing-declarations
-    -Wno-int-conversion
-    -Wno-incompatible-pointer-types
-    -Wno-empty-body
-    -Wno-switch
-    -Wno-macro-redefined
-    -Wno-initializer-overrides
-    -Wno-flexible-array-extensions
-    -Wno-gnu-flexible-array-initializer
-    -Wno-invalid-token-paste
-    -Wno-microsoft-anon-tag
-    -fms-extensions
-    -fno-strict-aliasing
-    -ferror-limit=0
-)
+goldenpad_configure_mgb64_target(goldenpad_mgb64_metal)
+set_source_files_properties(
+    "${GOLDENPAD_MGB64_SOURCE_DIR}/src/platform/fast3d/gfx_metal.mm"
+    PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 
 target_compile_definitions(GoldenPad PRIVATE
     GOLDENPAD_MGB64_CORE

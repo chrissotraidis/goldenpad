@@ -147,6 +147,20 @@ shut down before iPad Pro 11-inch (M4) launched and reported the same value.
 The iPad app was then removed and shut down. This passes compilation/linkage and
 a bounded game-code execution seam, not title/menu/gameplay acceptance.
 
+The first coupled-renderer subgate is:
+
+```sh
+./scripts/verify-mgb64-ios-metal.sh
+```
+
+The unpatched backend failed for exactly two references to macOS-only
+`CAMetalLayer.displaySyncEnabled`. The tracked exact-source patch gates those
+writes to macOS, after which the complete `gfx_metal.mm` backend and its
+combiner/backend/MSAA support compiled into four-object, non-fat ARM64 archives
+for both mobile SDKs. Both export `gfx_metal_api`, and the verifier restored the
+ignored MGB64 checkout to a clean tree. Full Fast3D frontend linkage and a live
+GoldenPad-owned `CAMetalLayer` frame remain open.
+
 ## RT64 mobile Metal and static-library gate
 
 With the exact RT64 and Plume commits from `RESEARCH.md` initialized under

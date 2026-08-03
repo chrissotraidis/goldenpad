@@ -93,6 +93,9 @@ On this Apple M1 host, commit `cd9b58f`:
   into 161-object ARM64 archives for both Apple mobile SDKs;
 - linked the real upstream random-core code into GoldenPad and executed the same
   deterministic probe on iPhone and iPad simulators.
+- compiled the complete native Metal backend and its combiner/backend/MSAA
+  support for both Apple mobile SDKs after guarding two macOS-only
+  `CAMetalLayer.displaySyncEnabled` writes.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
@@ -142,7 +145,7 @@ not a second simultaneous bring-up dependency.
 
 1. Which minimum MGB64 platform/renderer sources must be replaced or patched for
    UIKit-owned lifecycle, input, audio, filesystem and `CAMetalLayer`?
-2. Can MGB64's direct Metal backend adopt GoldenPad's existing UIKit layer
-   without retaining SDL desktop window ownership?
+2. Can the Fast3D frontend use GoldenPad's existing UIKit layer/drawable size
+   without retaining SDL desktop window or OpenGL fallback ownership?
 3. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
    metadata eventually be restored for a comparative RT64 build?

@@ -1,0 +1,29 @@
+diff --git a/src/platform/fast3d/gfx_metal.mm b/src/platform/fast3d/gfx_metal.mm
+index 502daf1..218b814 100644
+--- a/src/platform/fast3d/gfx_metal.mm
++++ b/src/platform/fast3d/gfx_metal.mm
+@@ -40,4 +40,5 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <TargetConditionals.h>
+ #include <stdarg.h>
+@@ -970,6 +971,8 @@ static bool s_vsync_enabled = true;
+ extern "C" void gfx_metal_set_vsync(int enabled) {
+     s_vsync_enabled = (enabled != 0);
++#if TARGET_OS_OSX
+     if (s_layer != nil) {
+         s_layer.displaySyncEnabled = s_vsync_enabled ? YES : NO;
+     }
++#endif
+ }
+@@ -1599,7 +1602,9 @@ static void mtl_init(void) {
+          * end_frame; a framebufferOnly drawable can't be a blit destination. */
+         s_layer.framebufferOnly = NO;
+         /* Re-apply the vsync mode the platform recorded before the layer existed. */
++#if TARGET_OS_OSX
+         s_layer.displaySyncEnabled = s_vsync_enabled ? YES : NO;
++#endif
+     } else {
+         fprintf(stderr, "[metal] WARNING: no CAMetalLayer from platform — present will be skipped\n");
+     }

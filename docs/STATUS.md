@@ -30,6 +30,11 @@ longer blocks MGB64 integration.
   symbols and real upstream `randomSetSeed`/`randomGetNext` code. Sequential
   no-ROM launches reported deterministic probe `0x80c24316` on iPhone 16 Pro,
   then iPad Pro 11-inch (M4); both installs were removed and devices shut down.
+- MGB64's complete native Metal backend plus its combiner, backend selector and
+  MSAA helper compile into four-object non-fat ARM64 archives for both mobile
+  SDKs. The only source changes required were guards around two macOS-only
+  `CAMetalLayer.displaySyncEnabled` writes. The verifier applies and reverses
+  that exact-source patch, confirms `gfx_metal_api`, and leaves upstream clean.
 - WebGPU selects Apple M1/Metal, Dam renders visibly, audio banks initialize,
   and config persistence works in an ignored directory.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
@@ -115,9 +120,9 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- MGB64's desktop platform, Fast3D renderer, audio, input, resource-loading and
-  main-loop seams are not yet connected to GoldenPad. The linked probe exercises
-  one real game-core object; it does not start menus or gameplay.
+- MGB64's Fast3D frontend, desktop platform, audio, input, resource-loading and
+  main-loop seams are not yet connected to GoldenPad. The Metal backend compiles
+  but is not linked to the app; the core probe does not start menus or gameplay.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
@@ -129,7 +134,7 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Compile the minimum MGB64 native platform/Fast3D renderer surface for Apple
-mobile, replace SDL desktop ownership with narrow GoldenPad host adapters, and
-reach the title/menu without importing matching-target SDK implementation
-sources or Xbox/XBLA material.
+Compile the MGB64 Fast3D frontend without OpenGL/SDL window ownership, provide a
+GoldenPad `CAMetalLayer`/drawable-size host adapter, and link the resulting Metal
+path before attempting title/menu startup. Do not import matching-target SDK
+implementation sources or Xbox/XBLA material.
