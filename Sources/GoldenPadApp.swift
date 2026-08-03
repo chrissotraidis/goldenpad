@@ -6,14 +6,17 @@ struct GoldenPadApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var input = InputCoordinator()
     @StateObject private var platform = PlatformCoordinator()
+    @StateObject private var renderSurface = AppleRenderSurface()
 
     var body: some Scene {
         WindowGroup {
             FoundationView()
                 .environmentObject(input)
                 .environmentObject(platform)
+                .environmentObject(renderSurface)
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     platform.handle(scenePhase: phase)
+                    renderSurface.setActive(phase == .active)
                     if phase != .active {
                         input.releaseTouchInput()
                     }
@@ -28,13 +31,14 @@ struct GoldenPadApp: App {
 private struct FoundationView: View {
     @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
+    @EnvironmentObject private var renderSurface: AppleRenderSurface
     @State private var isImporterPresented = false
     @State private var validation: ROMValidationState = .notSelected
     @State private var performedAutomationValidation = false
 
     var body: some View {
         ZStack {
-            MetalCanvas()
+            MetalCanvas(surface: renderSurface)
                 .ignoresSafeArea()
 
             LinearGradient(
@@ -75,7 +79,7 @@ private struct FoundationView: View {
                         .foregroundStyle(.white.opacity(0.66))
                         .labelStyle(.titleAndIcon)
 
-                        Text(platform.statusSummary)
+                        Text("\(platform.statusSummary)  •  \(renderSurface.status)")
                             .font(.caption2.monospaced())
                             .foregroundStyle(.white.opacity(0.46))
 

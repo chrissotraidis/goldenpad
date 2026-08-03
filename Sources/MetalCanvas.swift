@@ -2,8 +2,10 @@ import MetalKit
 import SwiftUI
 
 struct MetalCanvas: UIViewRepresentable {
+    let surface: AppleRenderSurface
+
     func makeCoordinator() -> Renderer {
-        Renderer()
+        Renderer(surface: surface)
     }
 
     func makeUIView(context: Context) -> MTKView {
@@ -14,32 +16,30 @@ struct MetalCanvas: UIViewRepresentable {
         view.enableSetNeedsDisplay = false
         view.isPaused = false
         view.delegate = context.coordinator
-        context.coordinator.attach(to: view)
+        surface.attach(to: view)
         return view
     }
 
     func updateUIView(_ view: MTKView, context: Context) {}
 
-    final class Renderer: NSObject, MTKViewDelegate {
-        private var commandQueue: MTLCommandQueue?
+    static func dismantleUIView(_ view: MTKView, coordinator: Renderer) {
+        coordinator.surface.detach(from: view)
+    }
 
-        func attach(to view: MTKView) {
-            commandQueue = view.device?.makeCommandQueue()
+    @MainActor
+    final class Renderer: NSObject, MTKViewDelegate {
+        let surface: AppleRenderSurface
+
+        init(surface: AppleRenderSurface) {
+            self.surface = surface
         }
 
-        func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+        func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+            surface.drawableSizeDidChange(in: view)
+        }
 
         func draw(in view: MTKView) {
-            guard
-                let descriptor = view.currentRenderPassDescriptor,
-                let drawable = view.currentDrawable,
-                let buffer = commandQueue?.makeCommandBuffer(),
-                let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor)
-            else { return }
-
-            encoder.endEncoding()
-            buffer.present(drawable)
-            buffer.commit()
+            surface.drawFoundationFrame(in: view)
         }
     }
 }

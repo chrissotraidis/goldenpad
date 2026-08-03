@@ -28,7 +28,8 @@ MIT grant.
 | GoldenRecomp | https://github.com/kholdfuzion/GoldenRecomp | `main` at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 wrapper; generated game functions are local build output | Preferred static-recomp core reference. Remains ignored reference until its input pipeline is reproducible. |
 | N64Recomp | https://github.com/N64Recomp/N64Recomp | `main` at `ffb39cdad1da5de07eaaa48bd1db4a89a7986771` | MIT | Recompiler tooling reference; pin before incorporation. |
 | N64ModernRuntime | https://github.com/N64Recomp/N64ModernRuntime | `main` at `589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` | GPL-3.0 (`COPYING`) | Threads, controllers, audio, timing, PI/ROM and saves. Candidate dependency. |
-| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Preferred renderer. Code inspection confirms macOS Metal sources/shaders and SDL Metal surfaces. iOS remains unproven. |
+| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Preferred renderer. The pinned commit still matches current upstream. GoldenPad's SDK patch produces all 56 Metal shaders for iOS device and Simulator; full renderer integration remains open. |
+| Plume | RT64 submodule `src/contrib/plume` | `d890ac899e505fb30040e037a4037cdeca68f033` | MIT | RT64 rendering backend. GoldenPad's UIKit/Metal patch compiles its Apple objects into ARM64 archives for iOS device and Simulator without copying the dependency into the app. |
 | MGB64 | https://github.com/akratch/mgb64 | `main` at `cd9b58f5f91291579b8e551aa925aab000d311cf` | MIT only for first-party work; decompiled game and SDK-lineage exclusions are documented in `THIRD_PARTY.md` | Apple Silicon gameplay oracle and platform reference only. Do not copy game/SDK material. |
 | n64decomp/007 | https://github.com/n64decomp/007 | `master` at `754a0a977efcbc99a46d079a73292e40780e3aab` | **No LICENSE file found**; includes decompiled game and libultra/Rare lineage | Symbol/decomp research only. Not incorporated. |
 | HarkinianPad | https://github.com/chrissotraidis/harkinianpad | `main` at `4db21e4be0f0be52948438de5d8c755d191897ae` | All rights reserved for its integration code, docs and art; upstream licenses separate | UX/architecture reference only. Clean-room reimplement touch ideas; do not copy code or art without permission. |
@@ -97,10 +98,23 @@ This is a working desktop oracle, not a release-ready upstream.
 ## Renderer assessment
 
 RT64 currently advertises and contains D3D12, Vulkan and Metal backends. Its
-Apple path creates an SDL Metal view and compiles Metal shader libraries on
-macOS. The current CMake shader commands hard-code `-sdk macosx`; moving to iOS
-requires parameterizing the SDK (`iphoneos`/`iphonesimulator`), validating
-Metal feature use, and replacing desktop window/filesystem assumptions.
+Apple path creates an SDL Metal view and previously hard-coded `-sdk macosx` for
+shader compilation. At the pinned commit, the repo-owned SDK patch generated 56
+MSL files and compiled all 56 independently into `.metallib` files for both
+`iphoneos` and `iphonesimulator`. Consecutive runs produced stable aggregate
+digests `04c7eb0f7719dc27ea3f4ca4b2f95fc7bb5a59837c1c77af68ce421d081cc838`
+and `7b9a5a185799bd8bda7f7e2b25fe4bcb18223200cf14df781c442441f93f2212`,
+respectively.
+
+The Plume Metal core compiled into ARM64 static archives for both mobile SDKs
+after a narrow patch replaced AppKit helpers with UIKit, used the default Metal
+device when `MTL::CopyAllDevices()` is unavailable on iOS, and guarded macOS-only
+display-sync APIs. The patched desktop Plume target still builds on macOS.
+
+This is a shader/backend feasibility result, not a complete RT64 iOS build. A
+full unpatched iOS CMake configure currently stops at its desktop SDL2 package
+requirement, and `ApplicationWindow`, NFD and SDL desktop ownership still need
+to be split from the embeddable renderer. No RT64 library is linked into the app.
 
 MGB64's Fast3D/WebGPU path already proves the same GoldenEye display-list family
 on Metal, but its fast3d provenance has redistribution qualifications and its
@@ -113,8 +127,8 @@ fallback technical reference, not the first choice.
    obtained from a public, provenance-documented source?
 2. Can current N64Recomp generate GoldenEye code directly from ROM plus public
    symbols, eliminating the special decomp-built ELF?
-3. Does RT64's Metal backend compile and run on iOS without unsupported desktop
-   APIs or runtime shader compilation?
+3. Can RT64's desktop SDL/NFD/window layer be cleanly excluded so its now-proven
+   mobile Metal shaders and Plume backend can link as an embedded iOS renderer?
 4. Are the generated recompilation outputs suitable for public source/binary
    distribution? This needs explicit legal review; this document is not legal
    advice.

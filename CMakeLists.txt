@@ -8,6 +8,7 @@ endif()
 
 add_executable(GoldenPad MACOSX_BUNDLE
     Assets.xcassets
+    Sources/AppleRenderSurface.swift
     Sources/GoldenPadApp.swift
     Sources/InputSystem.swift
     Sources/MetalCanvas.swift
@@ -42,6 +43,7 @@ target_link_libraries(GoldenPad PRIVATE
     "-framework SwiftUI"
     "-framework Metal"
     "-framework MetalKit"
+    "-framework QuartzCore"
     "-framework AVFAudio"
     "-framework CoreMotion"
     "-framework GameController"

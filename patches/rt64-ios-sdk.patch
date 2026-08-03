@@ -1,0 +1,37 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 79dfc38..f77efb4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,7 +5,18 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
+ if (APPLE)
+     enable_language(OBJC OBJCXX)
+-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
++    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
++    endif()
++
++    set(RT64_METAL_SDK "macosx")
++    if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        if (CMAKE_OSX_SYSROOT MATCHES "[Ss]imulator")
++            set(RT64_METAL_SDK "iphonesimulator")
++        else()
++            set(RT64_METAL_SDK "iphoneos")
++        endif()
++    endif()
+ endif()
+
+ option(RT64_STATIC "Build RT64 as a static library" OFF)
+@@ -143,10 +154,10 @@ function(build_shader_msl_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+             COMMAND spirv_cross_msl ${OUTNAME}.spv ${OUTNAME}.metal
+             DEPENDS ${OUTNAME}.spv spirv_cross_msl)
+     add_custom_command(OUTPUT ${OUTNAME}.ir
+-            COMMAND xcrun -sdk macosx metal -o ${OUTNAME}.ir -c ${OUTNAME}.metal $<$<CONFIG:Debug>:-frecord-sources>
++            COMMAND xcrun -sdk ${RT64_METAL_SDK} metal -o ${OUTNAME}.ir -c ${OUTNAME}.metal $<$<CONFIG:Debug>:-frecord-sources>
+             DEPENDS ${OUTNAME}.metal)
+     add_custom_command(OUTPUT ${OUTNAME}.metallib
+-            COMMAND xcrun -sdk macosx metallib ${OUTNAME}.ir -o ${OUTNAME}.metallib
++            COMMAND xcrun -sdk ${RT64_METAL_SDK} metallib ${OUTNAME}.ir -o ${OUTNAME}.metallib
+             DEPENDS ${OUTNAME}.ir)
+     add_custom_command(OUTPUT ${OUTNAME}.metal.c
+             COMMAND file_to_c ${OUTNAME}.metallib ${TARGET_NAME}BlobMSL ${OUTNAME}.metal.c ${OUTNAME}.metal.h

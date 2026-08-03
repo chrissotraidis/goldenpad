@@ -46,6 +46,22 @@ This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
 Its filename says `foundation` because it does not contain the game core and is
 not the final deliverable.
 
+## RT64 iOS Metal feasibility probe
+
+Initialize the exact RT64 checkout and submodules recorded in `RESEARCH.md`
+under ignored `ref/rt64`, then run:
+
+```sh
+./scripts/verify-rt64-ios-metal.sh
+```
+
+This generates the pinned RT64 MSL, compiles all 56 shaders independently for
+both `iphoneos` and `iphonesimulator`, builds the patched Plume Apple/Metal
+objects for both ARM64 targets, and checks the macOS Plume build. The patches
+are temporary and automatically reversed. This is not the final RT64 build:
+the complete mobile library still needs its desktop SDL2/NFD/window layer split
+or replaced before it can be linked into GoldenPad.
+
 ## Apple Silicon research oracle
 
 ```sh

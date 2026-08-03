@@ -1,5 +1,29 @@
 # Worklog
 
+## 2026-08-03 — RT64 iOS Metal feasibility and surface boundary
+
+- Confirmed pinned RT64 `5473732a` still matches current upstream and pinned its
+  Plume submodule at `d890ac89` in the license inventory.
+- Added narrow, reviewable patches for SDK-aware RT64 Metal generation and an
+  iOS-safe Plume Apple backend. The probe applies only to exact clean references
+  and reverses both patches on exit.
+- Generated 56 RT64 MSL files and compiled all 56 independently for both
+  `iphoneos` and `iphonesimulator`. Two runs reproduced the per-SDK aggregate
+  digests in `RESEARCH.md`.
+- Built patched Plume Apple/Metal ARM64 archives for device and Simulator and
+  rebuilt the patched macOS Plume target. Full RT64 iOS configuration remains
+  open at the desktop SDL2/NFD/window boundary; no RT64 binary is shipped.
+- Added `AppleRenderSurface`, which owns the `MTKView` lifecycle and exposes the
+  exact `UIView`/`CAMetalLayer` pair expected by RT64 while retaining the neutral
+  foundation clear frame.
+- Rebuilt and visibly accepted iPhone first, stopped it, then iPad. The visible
+  status reported nonzero Metal drawable sizes on both; Home/reopen paused and
+  restored rendering alongside the audio lifecycle.
+- Rebuilt the unsigned generic-device ARM64 app. Two packages were byte-identical
+  at SHA-256 `35b37ffacc24803a1550030e4c2885e17b2afbddff4458431bbc7caa4a0091bd`;
+  the eight-member audit passed with content digest
+  `bf1483d8e2a58f94076cfe9bff62608b5d2a3ab08273807b91a4a8c29fd61065`.
+
 ## 2026-08-03 — research and desktop feasibility
 
 - Read the governing goal and repository instructions.

@@ -35,9 +35,17 @@ not contain bulk media. Their public-distribution status is a legal gate in
 ## Graphics
 
 RT64 consumes N64 display lists and emits Metal work. Its macOS Metal path is
-the starting point. Shader generation will be made SDK-aware so Metal libraries
-are produced for `macosx`, `iphoneos`, and `iphonesimulator` as appropriate.
-The UIKit host owns the `CAMetalLayer`; RT64 receives a narrow surface handle.
+the starting point. Tracked patches make shader generation SDK-aware and keep
+the Plume backend portable across AppKit and UIKit; they are applied only to the
+exact pinned references by `scripts/verify-rt64-ios-metal.sh` and reversed on
+exit. Generated shaders are build products and are never committed.
+
+`AppleRenderSurface` owns the live `MTKView` command queue and lifecycle. While
+the view is attached, it exposes non-retaining opaque pointers to that `UIView`
+and its `CAMetalLayer`, matching RT64's Apple `RenderWindow { window, view }`
+boundary. UIKit retains both objects. The surface pauses rendering outside the
+active scene, refreshes the drawable dimensions/refresh rate on layout and
+currently clears the foundation frame until the C++ renderer bridge is linked.
 
 MGB64's Metal/WebGPU renderer remains an oracle/fallback reference only.
 
@@ -81,7 +89,8 @@ core version, schema, and locale, and can be regenerated. Caches must stay in
 - **Lifecycle:** resign-active pauses input/audio; background flushes saves and
   releases transient GPU work; foreground recreates surfaces if needed.
 
-The current host implements the common snapshot, exact N64 masks, classic,
+The current host implements the Apple render-surface boundary, common snapshot,
+exact N64 masks, classic,
 modern and southpaw presets, four deterministic controller slots,
 extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
 Simulator-only synthetic MFi controllers are excluded from auto-hide without

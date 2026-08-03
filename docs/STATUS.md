@@ -20,6 +20,14 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - Useful upstreams are pinned under ignored `ref/` checkouts.
 - One SwiftUI/UIKit target builds for iPhone and iPad, backed by a live
   `MTKView` clear-frame renderer rather than a placeholder image.
+- The UIKit render owner exposes RT64's expected non-retaining `UIView` and
+  `CAMetalLayer` pointers, reports drawable size/refresh and pauses with the
+  scene lifecycle. Sequential UI passes reported 1206×2622 at 60 Hz on iPhone
+  16 Pro and 1668×2420 at 60 Hz on iPad Pro 11-inch (M4).
+- At exact RT64 `5473732a` and Plume `d890ac89`, all 56 generated Metal shaders
+  compile for both `iphoneos` and `iphonesimulator`. Patched Plume Apple/Metal
+  objects archive for both ARM64 targets, its macOS target still builds, and two
+  runs reproduced per-SDK aggregate digests recorded in `RESEARCH.md`.
 - Debug simulator builds succeeded and rendered responsively on an iPhone 16
   Pro and an iPad Pro 11-inch (M4), sequentially; both simulators were stopped.
 - The local V64 passed in-memory size, header, V64-to-Z64 normalization and
@@ -28,8 +36,8 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - The app was uninstalled from both simulators after validation, removing the
   temporary container copies. The original ignored reference file remains.
 - A generic iOS device-SDK Release build succeeds as an unsigned ARM64 Mach-O.
-- The 2.3 MiB device `.app` contains six enumerated files: plist/package metadata,
-  the 514 KiB ARM64 executable, project-owned icon renditions and `Assets.car`.
+- The 2.7 MiB device `.app` contains six enumerated files: plist/package metadata,
+  the 918 KiB ARM64 executable, project-owned icon renditions and `Assets.car`.
   It contains no bundled retail data or generated game assets.
 - Current N64Recomp and its pinned dependencies compile as native ARM64 tools;
   its GoldenRecomp run still fails before generation because the required ELF
@@ -71,10 +79,10 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
 - The current unsigned foundation IPA was created twice with identical SHA-256
-  `582b1dbb832accc27bb0ffd3ae6c865b13c4d2fd7bcc72e81cb108bfc263ab9f`.
+  `35b37ffacc24803a1550030e4c2885e17b2afbddff4458431bbc7caa4a0091bd`.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
-  `35b91921a5a78500c2cd92d4cf1053233d91bd34a3dbd8d93ffa117f1294be2e`.
+  `bf1483d8e2a58f94076cfe9bff62608b5d2a3ab08273807b91a4a8c29fd61065`.
 
 ## Failed or blocked
 
@@ -83,6 +91,10 @@ is blocked by the GoldenRecomp input-generation/provenance gate.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
 - Selected production core has not yet built or run on macOS/iOS.
+- RT64's complete iOS CMake configuration still stops at the desktop SDL2
+  package dependency; its NFD/SDL `ApplicationWindow` layer is not yet split
+  from the embeddable renderer. The shader/backend probe is not a linked RT64
+  library or rendered game frame.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.

@@ -38,6 +38,12 @@ HarkinianPad was used only to identify product-level control requirements, and
 the clean GoldenEye decomp was used only to verify public N64 button constants;
 no reference source was copied into GoldenPad.
 
+The tracked RT64 and Plume patch files are narrow integration diffs against the
+exact MIT-licensed commits in `RESEARCH.md`. They contain no game code, ROM data
+or generated shader output. The verification script applies them only inside an
+ignored reference checkout and removes them on exit; generated Metal products
+remain untracked build artifacts.
+
 ## ROM validation
 
 The first supported revision is the US retail ROM after normalization to

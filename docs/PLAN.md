@@ -69,6 +69,13 @@ at 48 kHz on both simulators. Real-core interruption/route acceptance remains G5
 
 Gate: full mission completion after clean install and ROM import.
 
+G2 is partially proven but remains open: all 56 RT64 Metal shaders and the
+patched Plume Apple backend compile for ARM64 `iphoneos` and
+`iphonesimulator`, and the UIKit host exposes RT64's expected surface pair. A
+complete RT64 static library still requires separating or supplying its desktop
+SDL2, NFD and `ApplicationWindow` layer. A1b remains open because neither RT64
+nor the blocked production game core is linked into GoldenPad.
+
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.

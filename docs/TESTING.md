@@ -93,6 +93,13 @@ Lifecycle acceptance must use the real Simulator UI with an attached console:
 This gate passed sequentially on iPhone 16 Pro and iPad Pro 11-inch (M4).
 Real-core interruption and route-change acceptance remains a game-audio gate.
 
+Render-surface acceptance uses the same attached-console lifecycle pass. Before
+backgrounding, require a nonzero `renderer: Metal WIDTH×HEIGHT @ HZ` value in
+the visible status and matching `RT64 surface ready` console line. After Home
+and launcher return, require the original full drawable size again. The current
+sequential pass observed 1206×2622 at 60 Hz on iPhone 16 Pro and 1668×2420 at
+60 Hz on iPad Pro 11-inch (M4).
+
 The touch lab must be driven through the real UI on both form factors. Verify
 that movement/look axes clamp to `[-1, 1]`, momentary action bits clear after
 release, the last non-neutral event remains visible for evidence, and controller
@@ -120,6 +127,25 @@ For repository contamination checks:
 ```sh
 ./scripts/check-no-rom-data.sh
 ```
+
+## RT64 mobile Metal feasibility
+
+With the exact RT64 and Plume commits from `RESEARCH.md` initialized under
+ignored `ref/rt64`, run:
+
+```sh
+./scripts/verify-rt64-ios-metal.sh
+```
+
+The script refuses dirty or mismatched target sources, temporarily applies the
+two tracked patches, and reverses them on exit. It must produce 56 metallibs for
+each mobile SDK, patched ARM64 Plume archives for each, and a successful macOS
+Plume regression build. Expected stable aggregate digests are:
+
+- `iphoneos`: `04c7eb0f7719dc27ea3f4ca4b2f95fc7bb5a59837c1c77af68ce421d081cc838`
+- `iphonesimulator`: `7b9a5a185799bd8bda7f7e2b25fe4bcb18223200cf14df781c442441f93f2212`
+
+This does not satisfy G2 until the complete RT64 library is linked and renders.
 
 ## Package gate
 
