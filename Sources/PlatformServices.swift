@@ -25,8 +25,13 @@ enum ControlPreset: String, Codable, Sendable, CaseIterable {
     case southpaw
 }
 
+enum TouchAimBehavior: String, Codable, Sendable, CaseIterable {
+    case toggle
+    case hold
+}
+
 struct HostSettings: Codable, Equatable, Sendable {
-    static let currentSchema = 2
+    static let currentSchema = 3
 
     var schemaVersion = currentSchema
     var controlPreset: ControlPreset = .modern
@@ -35,6 +40,7 @@ struct HostSettings: Codable, Equatable, Sendable {
     var touchScale = 1.0
     var stickDeadZone = 0.12
     var gyroEnabled = false
+    var touchAimBehavior: TouchAimBehavior = .toggle
     var touchControlsAutoHide = true
     var touchLayoutOverrides: [String: TouchLayoutOverrides] = [:]
 
@@ -46,6 +52,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         case touchScale
         case stickDeadZone
         case gyroEnabled
+        case touchAimBehavior
         case touchControlsAutoHide
         case touchLayoutOverrides
     }
@@ -61,6 +68,10 @@ struct HostSettings: Codable, Equatable, Sendable {
         touchScale = try values.decodeIfPresent(Double.self, forKey: .touchScale) ?? 1
         stickDeadZone = try values.decodeIfPresent(Double.self, forKey: .stickDeadZone) ?? 0.12
         gyroEnabled = try values.decodeIfPresent(Bool.self, forKey: .gyroEnabled) ?? false
+        touchAimBehavior = try values.decodeIfPresent(
+            TouchAimBehavior.self,
+            forKey: .touchAimBehavior
+        ) ?? .toggle
         touchControlsAutoHide = try values.decodeIfPresent(
             Bool.self,
             forKey: .touchControlsAutoHide
@@ -80,6 +91,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         try values.encode(touchScale, forKey: .touchScale)
         try values.encode(stickDeadZone, forKey: .stickDeadZone)
         try values.encode(gyroEnabled, forKey: .gyroEnabled)
+        try values.encode(touchAimBehavior, forKey: .touchAimBehavior)
         try values.encode(touchControlsAutoHide, forKey: .touchControlsAutoHide)
         try values.encode(touchLayoutOverrides, forKey: .touchLayoutOverrides)
     }
@@ -426,6 +438,7 @@ final class PlatformCoordinator: ObservableObject {
             } else if arguments.contains("--storage-probe-write") {
                 settings.lookSensitivity = 1.37
                 settings.touchOpacity = 0.62
+                settings.touchAimBehavior = .hold
                 try storage?.saveSettings(settings)
                 try storage?.saveGameData(probeBytes, slot: 0)
                 storageState = "storage: probe written"
@@ -434,6 +447,7 @@ final class PlatformCoordinator: ObservableObject {
                     let storage,
                     settings.lookSensitivity == 1.37,
                     settings.touchOpacity == 0.62,
+                    settings.touchAimBehavior == .hold,
                     try storage.loadSave(slot: 0) == probeBytes
                 else {
                     storageState = "storage: relaunch failed"

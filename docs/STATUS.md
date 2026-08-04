@@ -1,6 +1,6 @@
 # Status
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 ## Summary
 
@@ -317,6 +317,18 @@ longer blocks MGB64 integration.
   (`e1f2c1a2e17658fe8b44fad84221cf712a9c9b065d856739ca924492843038f9`)
   was exercised phone-first and then unchanged on iPad; the phone form scrolls
   in landscape and the iPad form sheet exposes all three sections.
+- Modern touch AIM now defaults to Toggle, allowing the same right thumb to tap
+  AIM and return to the relative-drag LOOK surface. Hold remains selectable in
+  Game Settings. Switching modes clears a latched aim state, schema 3 persists
+  the preference, and older settings decode to Toggle. The layout editor now
+  owns only placement/size/visibility; the setup lab and in-game gear share the
+  native settings hub.
+- The linked Simulator/device verifier passed. Exact Simulator binary
+  `9cf79b52bd44b13208271ba9b1fc9ff049b564e10787d1f27cbe4eb08a2a5266`
+  reached live rendering with the phone controls, then unchanged with the iPad
+  controls. Phone terminate/relaunch retained an explicit Hold value, while a
+  clean iPad container encoded schema 3 with the Toggle default. This proves
+  build, runtime layout and persistence, not real-finger aim feel.
 - Original project-owned app art is compiled into phone/tablet icon renditions
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
@@ -348,8 +360,8 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Hands-on playtest the v2 controls on iPhone, tune look response and action
-placement, then repeat unchanged on iPad. Extend the now-established native
+Hands-on playtest the v2 controls on iPhone, including Toggle-versus-Hold aim,
+tune look response and action placement, then repeat unchanged on iPad. Extend the now-established native
 settings schema only when real ROM management, save or display controls exist;
 do not add placeholder menus. Keep diagnostic routes as bounded smoke coverage
 only; do not extend bot navigation as a product gate. Organic objectives and

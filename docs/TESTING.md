@@ -132,15 +132,19 @@ release, the last non-neutral event remains visible for evidence, and controller
 count/assignment do not destabilize the touch snapshot. Classic A must report
 N64 mask `0x8000`; modern FIRE must report Z mask `0x2000`.
 
-For each phone and tablet profile, open **Customize controls** and verify:
+For each phone and tablet profile, open **Game Settings**, then **Edit touch
+layout**, and verify:
 
 1. N64, Modern and Southpaw switch the visible live layout.
 2. Selecting a control, nudging it and pressing Done persists one placement
    delta after terminate/relaunch; Reset removes that delta.
 3. Size clamps to 70–150%; hide/show works; MOVE cannot be hidden.
-4. Opacity, global size, look sensitivity, dead zone, gyro and external-control
-   auto-hide settings persist.
-5. Portrait and both landscape handed orientations stay within the safe guide.
+4. The layout editor contains placement, size and visibility only; feel and
+   behavior settings remain in Game Settings.
+5. Opacity, global size, look sensitivity, Toggle/Hold aim, dead zone, gyro and
+   external-control auto-hide settings persist. Switching aim behavior must
+   release any latched AIM input.
+6. Portrait and both landscape handed orientations stay within the safe guide.
 
 The 2026-08-03 Simulator pass covered the accessible nudge path, persistence,
 reset, hide/show, size/opacity controls and safe-area layout. Simulator presents

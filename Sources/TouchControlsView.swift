@@ -70,6 +70,13 @@ private struct GameplaySettingsView: View {
                         )
                     )
 
+                    Picker("Aim button", selection: aimBehaviorBinding) {
+                        ForEach(TouchAimBehavior.allCases, id: \.self) { behavior in
+                            Text(behavior.title).tag(behavior)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
                     Toggle(
                         "Gyroscope aiming",
                         isOn: boolSettingBinding(\.gyroEnabled)
@@ -144,6 +151,15 @@ private struct GameplaySettingsView: View {
         )
     }
 
+    private var aimBehaviorBinding: Binding<TouchAimBehavior> {
+        Binding(
+            get: { platform.settings.touchAimBehavior },
+            set: { behavior in
+                platform.updateSettings { $0.touchAimBehavior = behavior }
+            }
+        )
+    }
+
     private func settingBinding(
         _ keyPath: WritableKeyPath<HostSettings, Double>
     ) -> Binding<Double> {
@@ -170,7 +186,7 @@ private struct GameplaySettingsView: View {
 struct TouchInputLab: View {
     @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
-    @State private var isEditorPresented = false
+    @State private var isSettingsPresented = false
 
     private var deviceClass: TouchDeviceClass {
         UIDevice.current.userInterfaceIdiom == .pad ? .tablet : .phone
@@ -188,10 +204,10 @@ struct TouchInputLab: View {
                         .foregroundStyle(.white.opacity(0.58))
                 }
                 Spacer()
-                Button("Customize") { isEditorPresented = true }
+                Button("Settings") { isSettingsPresented = true }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.bordered)
-                    .accessibilityLabel("Customize controls")
+                    .accessibilityLabel("Open game settings")
             }
 
             Picker("Control preset", selection: presetBinding) {
@@ -224,8 +240,8 @@ struct TouchInputLab: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(.white.opacity(0.1), lineWidth: 1)
         }
-        .sheet(isPresented: $isEditorPresented) {
-            TouchLayoutEditor(deviceClass: deviceClass)
+        .sheet(isPresented: $isSettingsPresented) {
+            GameplaySettingsView(deviceClass: deviceClass)
                 .environmentObject(input)
                 .environmentObject(platform)
         }
@@ -299,7 +315,6 @@ private struct TouchLayoutEditor: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    settingsPanel
                 }
                 .padding(20)
                 .frame(maxWidth: 900)
@@ -377,44 +392,6 @@ private struct TouchLayoutEditor: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private var settingsPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("FEEL & VISIBILITY")
-                .font(.caption2.weight(.bold))
-                .tracking(1.3)
-                .foregroundStyle(.secondary)
-
-            LabeledSlider(
-                title: "Opacity",
-                value: settingBinding(\.touchOpacity),
-                range: 0.25...1,
-                valueLabel: "\(Int((platform.settings.touchOpacity * 100).rounded()))%"
-            )
-            LabeledSlider(
-                title: "Global size",
-                value: settingBinding(\.touchScale),
-                range: 0.70...1.40,
-                valueLabel: "\(Int((platform.settings.touchScale * 100).rounded()))%"
-            )
-            LabeledSlider(
-                title: "Look sensitivity",
-                value: settingBinding(\.lookSensitivity),
-                range: 0.25...3,
-                valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
-            )
-            LabeledSlider(
-                title: "Controller dead zone",
-                value: settingBinding(\.stickDeadZone),
-                range: 0...0.40,
-                valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
-            )
-            Toggle("Gyroscope aiming", isOn: boolSettingBinding(\.gyroEnabled))
-            Toggle("Hide touch for external controllers", isOn: boolSettingBinding(\.touchControlsAutoHide))
-        }
-        .padding(16)
-        .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
     private var presetBinding: Binding<ControlPreset> {
         Binding(
             get: { platform.settings.controlPreset },
@@ -430,20 +407,6 @@ private struct TouchLayoutEditor: View {
                 platform.updateSettings { $0.controlPreset = preset }
                 reloadLayout()
             }
-        )
-    }
-
-    private func settingBinding(_ keyPath: WritableKeyPath<HostSettings, Double>) -> Binding<Double> {
-        Binding(
-            get: { platform.settings[keyPath: keyPath] },
-            set: { value in platform.updateSettings { $0[keyPath: keyPath] = value } }
-        )
-    }
-
-    private func boolSettingBinding(_ keyPath: WritableKeyPath<HostSettings, Bool>) -> Binding<Bool> {
-        Binding(
-            get: { platform.settings[keyPath: keyPath] },
-            set: { value in platform.updateSettings { $0[keyPath: keyPath] = value } }
         )
     }
 
@@ -596,7 +559,7 @@ private struct TouchControlCanvas: View {
 
 private struct TouchControlVisual: View {
     let id: TouchControlID
-    let input: InputCoordinator
+    @ObservedObject var input: InputCoordinator
     let editing: Bool
     let selected: Bool
 
@@ -610,6 +573,14 @@ private struct TouchControlVisual: View {
                 }
             } else if id == .look {
                 LookSurface { input.updateLook($0) }
+            } else if id == .aim, input.touchAimBehavior == .toggle {
+                ToggleAction(
+                    title: id.label,
+                    tint: tint,
+                    isOn: input.isTouchButtonPressed(.aim)
+                ) {
+                    input.toggleTouchButton(.aim)
+                }
             } else {
                 MomentaryAction(title: id.label, tint: tint) {
                     guard let button = id.inputButton else { return }
@@ -780,6 +751,15 @@ private extension ControlPreset {
     }
 }
 
+private extension TouchAimBehavior {
+    var title: String {
+        switch self {
+        case .toggle: "Toggle"
+        case .hold: "Hold"
+        }
+    }
+}
+
 private struct VirtualStick: View {
     let title: String
     let systemImage: String
@@ -871,5 +851,27 @@ private struct MomentaryAction: View {
                     }
             )
             .accessibilityAddTraits(.isButton)
+    }
+}
+
+private struct ToggleAction: View {
+    let title: String
+    let tint: Color
+    let isOn: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.65)
+                .foregroundStyle(isOn ? .black : .white.opacity(0.88))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(isOn ? tint : .black.opacity(0.46), in: Circle())
+                .overlay { Circle().stroke(.white.opacity(0.34), lineWidth: 1) }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .accessibilityValue(isOn ? "On" : "Off")
     }
 }

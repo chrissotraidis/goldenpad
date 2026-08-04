@@ -194,7 +194,11 @@ duplicate B-based Use/Reload buttons into one contextual Action control. The
 same binary was inspected and exercised on phone and tablet simulators. The
 in-game gear now opens a native settings hub with Controls, Touch Overlay and
 Physical Controllers sections; the device-specific layout editor sits beneath
-that hub instead of being the entire settings experience. I5 now has strict
+that hub instead of being the entire settings experience. Modern touch AIM now
+defaults to a persistent toggle so the look thumb does not have to hold one
+button while dragging elsewhere; Hold remains available in Game Settings. The
+layout editor is placement-only, avoiding a second copy of behavior settings.
+I5 now has strict
 sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. It also has strict sequential proof that normal controller movement,

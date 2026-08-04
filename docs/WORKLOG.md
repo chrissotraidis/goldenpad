@@ -22,6 +22,21 @@
   `e1f2c1a2e17658fe8b44fad84221cf712a9c9b065d856739ca924492843038f9`
   was exercised first as a scrollable iPhone landscape form and then unchanged
   as an iPad form sheet.
+- Made the modern touch AIM control latch by default so the right thumb can
+  return immediately to the broad LOOK surface. Game Settings exposes Toggle
+  and Hold as implemented choices, and changing modes releases any latched aim
+  state. Schema 3 persists this preference while decoding older settings as
+  Toggle.
+- Removed feel/visibility controls from the layout editor; it now owns placement,
+  size and visibility only, while the native Game Settings hub owns behavior.
+  The setup lab routes to that same hub instead of presenting a second settings
+  surface.
+- The maintained linked Simulator/device verifier passed. Simulator binary
+  `9cf79b52bd44b13208271ba9b1fc9ff049b564e10787d1f27cbe4eb08a2a5266`
+  reached live rendering with the phone overlay, then unchanged with the tablet
+  overlay. A phone terminate/relaunch probe retained the explicit Hold value;
+  a fresh iPad container encoded schema 3 with the Toggle default. Real-finger
+  aim feel remains the acceptance gate.
 
 ## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
 

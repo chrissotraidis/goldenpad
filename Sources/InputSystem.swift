@@ -446,10 +446,16 @@ final class InputCoordinator: ObservableObject {
         !settings.touchControlsAutoHide || externalControllerCount == 0
     }
 
+    var touchAimBehavior: TouchAimBehavior {
+        settings.touchAimBehavior
+    }
+
     func configure(settings: HostSettings) {
         let sanitized = settings.sanitized()
         let gyroChanged = self.settings.gyroEnabled != sanitized.gyroEnabled
         let presetChanged = self.settings.controlPreset != sanitized.controlPreset
+        let aimBehaviorChanged =
+            self.settings.touchAimBehavior != sanitized.touchAimBehavior
         self.settings = sanitized
         currentPreset = sanitized.controlPreset
         if presetChanged {
@@ -457,6 +463,9 @@ final class InputCoordinator: ObservableObject {
         }
         if gyroChanged {
             configureMotionUpdates()
+        }
+        if aimBehaviorChanged {
+            touch.buttons.remove(.aim)
         }
         refreshSummary()
     }
@@ -484,6 +493,14 @@ final class InputCoordinator: ObservableObject {
             touch.buttons.remove(button)
         }
         refreshSummary()
+    }
+
+    func toggleTouchButton(_ button: InputButtons) {
+        setTouchButton(button, pressed: !touch.buttons.contains(button))
+    }
+
+    func isTouchButtonPressed(_ button: InputButtons) -> Bool {
+        touch.buttons.contains(button)
     }
 
     func snapshot(player: Int) -> InputSnapshot {
