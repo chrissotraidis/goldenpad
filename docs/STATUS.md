@@ -310,6 +310,13 @@ longer blocks MGB64 integration.
   was visually inspected first on iPhone 16 Pro and then unchanged on iPad Pro
   11-inch (M4); the look drag and editor were exercised during the same v2
   iteration.
+- The in-game gear now opens a native Game Settings hub instead of jumping
+  directly into layout editing. It groups only implemented settings into
+  Controls, Touch Overlay and Physical Controllers, then presents the correct
+  iPhone or iPad layout editor one level deeper. The exact Simulator binary
+  (`e1f2c1a2e17658fe8b44fad84221cf712a9c9b065d856739ca924492843038f9`)
+  was exercised phone-first and then unchanged on iPad; the phone form scrolls
+  in landscape and the iPad form sheet exposes all three sections.
 - Original project-owned app art is compiled into phone/tablet icon renditions
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
@@ -342,9 +349,9 @@ longer blocks MGB64 integration.
 ## Next gate
 
 Hands-on playtest the v2 controls on iPhone, tune look response and action
-placement, then repeat unchanged on iPad. Next, make the native Apple settings
-and menu surface the clear home for controls, ROM management, saves and display
-options. Keep diagnostic routes as bounded smoke coverage only; do not extend
-bot navigation as a product gate. Organic objectives and mission completion
-remain later human-play acceptance.
+placement, then repeat unchanged on iPad. Extend the now-established native
+settings schema only when real ROM management, save or display controls exist;
+do not add placeholder menus. Keep diagnostic routes as bounded smoke coverage
+only; do not extend bot navigation as a product gate. Organic objectives and
+mission completion remain later human-play acceptance.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

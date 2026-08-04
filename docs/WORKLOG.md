@@ -15,6 +15,13 @@
   was inspected on iPhone 16 Pro and then unchanged on iPad Pro 11-inch (M4);
   the drag/editor flow was exercised during the same v2 iteration. Real-finger
   feel remains open.
+- Added a native Game Settings hub organized around the controls that actually
+  exist: preset/look/gyro, touch overlay visibility/size and physical-controller
+  dead zone/status. The device-specific layout editor is one level deeper. The
+  exact Simulator binary
+  `e1f2c1a2e17658fe8b44fad84221cf712a9c9b065d856739ca924492843038f9`
+  was exercised first as a scrollable iPhone landscape form and then unchanged
+  as an iPad form sheet.
 
 ## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
 

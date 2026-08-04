@@ -4,7 +4,7 @@ import simd
 struct GameplayTouchControls: View {
     @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
-    @State private var isEditorPresented = false
+    @State private var isSettingsPresented = false
 
     private var deviceClass: TouchDeviceClass {
         UIDevice.current.userInterfaceIdiom == .pad ? .tablet : .phone
@@ -23,7 +23,7 @@ struct GameplayTouchControls: View {
                 .ignoresSafeArea()
             }
 
-            Button { isEditorPresented = true } label: {
+            Button { isSettingsPresented = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .bold))
                     .frame(width: 42, height: 42)
@@ -31,13 +31,139 @@ struct GameplayTouchControls: View {
             }
             .foregroundStyle(.white)
             .padding(14)
-            .accessibilityLabel("Customize controls")
+            .accessibilityLabel("Open game settings")
         }
-        .sheet(isPresented: $isEditorPresented) {
-            TouchLayoutEditor(deviceClass: deviceClass)
+        .sheet(isPresented: $isSettingsPresented) {
+            GameplaySettingsView(deviceClass: deviceClass)
                 .environmentObject(input)
                 .environmentObject(platform)
         }
+    }
+}
+
+private struct GameplaySettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+
+    let deviceClass: TouchDeviceClass
+
+    @State private var isEditorPresented = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Controls") {
+                    Picker("Preset", selection: presetBinding) {
+                        ForEach(ControlPreset.allCases, id: \.self) { preset in
+                            Text(preset.title).tag(preset)
+                        }
+                    }
+
+                    LabeledSlider(
+                        title: "Look sensitivity",
+                        value: settingBinding(\.lookSensitivity),
+                        range: 0.25...3,
+                        valueLabel: String(
+                            format: "%.2fx",
+                            platform.settings.lookSensitivity
+                        )
+                    )
+
+                    Toggle(
+                        "Gyroscope aiming",
+                        isOn: boolSettingBinding(\.gyroEnabled)
+                    )
+
+                    Button { isEditorPresented = true } label: {
+                        HStack {
+                            Label("Edit touch layout", systemImage: "hand.draw")
+                            Spacer()
+                            Text(deviceClass == .tablet ? "iPad" : "iPhone")
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                }
+
+                Section("Touch Overlay") {
+                    LabeledSlider(
+                        title: "Opacity",
+                        value: settingBinding(\.touchOpacity),
+                        range: 0.25...1,
+                        valueLabel: "\(Int((platform.settings.touchOpacity * 100).rounded()))%"
+                    )
+                    LabeledSlider(
+                        title: "Control size",
+                        value: settingBinding(\.touchScale),
+                        range: 0.70...1.40,
+                        valueLabel: "\(Int((platform.settings.touchScale * 100).rounded()))%"
+                    )
+                    Toggle(
+                        "Hide when a controller connects",
+                        isOn: boolSettingBinding(\.touchControlsAutoHide)
+                    )
+                }
+
+                Section("Physical Controllers") {
+                    LabeledSlider(
+                        title: "Dead zone",
+                        value: settingBinding(\.stickDeadZone),
+                        range: 0...0.40,
+                        valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
+                    )
+                    LabeledContent(
+                        "Connected",
+                        value: "\(input.externalControllerCount)"
+                    )
+                }
+            }
+            .navigationTitle("Game Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+            .sheet(isPresented: $isEditorPresented) {
+                TouchLayoutEditor(deviceClass: deviceClass)
+                    .environmentObject(input)
+                    .environmentObject(platform)
+            }
+        }
+    }
+
+    private var presetBinding: Binding<ControlPreset> {
+        Binding(
+            get: { platform.settings.controlPreset },
+            set: { preset in platform.updateSettings { $0.controlPreset = preset } }
+        )
+    }
+
+    private func settingBinding(
+        _ keyPath: WritableKeyPath<HostSettings, Double>
+    ) -> Binding<Double> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in
+                platform.updateSettings { $0[keyPath: keyPath] = value }
+            }
+        )
+    }
+
+    private func boolSettingBinding(
+        _ keyPath: WritableKeyPath<HostSettings, Bool>
+    ) -> Binding<Bool> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in
+                platform.updateSettings { $0[keyPath: keyPath] = value }
+            }
+        )
     }
 }
 

@@ -191,8 +191,11 @@ Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
 still need device acceptance. The v2 modern defaults replace the small fixed
 look stick with a broad relative-drag surface, enlarge movement and collapse
 duplicate B-based Use/Reload buttons into one contextual Action control. The
-same binary was inspected and exercised on phone and tablet simulators. I5 now
-has strict sequential game-state proof for
+same binary was inspected and exercised on phone and tablet simulators. The
+in-game gear now opens a native settings hub with Controls, Touch Overlay and
+Physical Controllers sections; the device-specific layout editor sits beneath
+that hub instead of being the entire settings experience. I5 now has strict
+sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. It also has strict sequential proof that normal controller movement,
 look and B input opens two chained stock Facility door models. Crouch, objectives
