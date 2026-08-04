@@ -198,7 +198,9 @@ that hub instead of being the entire settings experience. Modern touch AIM now
 defaults to a persistent toggle so the look thumb does not have to hold one
 button while dragging elsewhere; Hold remains available in Game Settings. The
 layout editor is placement-only, avoiding a second copy of behavior settings.
-I5 now has strict
+Opening the native settings sheet now neutralizes touch input and suspends the
+UIKit presentation/retrace clock until dismissal; scene inactivity remains an
+independent pause reason. I5 now has strict
 sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. It also has strict sequential proof that normal controller movement,

@@ -329,6 +329,18 @@ longer blocks MGB64 integration.
   controls. Phone terminate/relaunch retained an explicit Hold value, while a
   clean iPad container encoded schema 3 with the Toggle default. This proves
   build, runtime layout and persistence, not real-finger aim feel.
+- The native settings modal now owns a real game boundary: presenting it
+  neutralizes touch input, pauses MTKView presentation, external retrace and FPS
+  sampling, while scene activity remains independently tracked. Dismissal
+  resumes only when the scene is active. Control-preset changes also clear all
+  latched touch state.
+- Exact Simulator binary
+  `3a787f8a1d612b701b54862bc8a2dcd782c9a2e1e0bb2d3eff24ed4403646d28`
+  was driven phone-first and then unchanged on iPad. On both, AIM reported
+  Off -> On, Game Settings exposed the visible `Aim button` label and accessible
+  `Aim button behavior` group, presentation logged
+  `paused scene=1 overlay=1`, Done logged `resumed scene=1 overlay=0`, and AIM
+  returned Off. This is Simulator interaction proof, not physical-touch feel.
 - Original project-owned app art is compiled into phone/tablet icon renditions
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
@@ -349,7 +361,9 @@ longer blocks MGB64 integration.
   automation launch argument after the picker UI itself was proven.
 - Hands-on control feel is not yet accepted: v2 fixes the small-look-region and
   duplicate-action design defects, but sensitivity and button placement still
-  need real finger playtesting and tuning.
+  need real finger playtesting and tuning. `xcrun devicectl list devices`
+  currently reports `No devices found` on this Mac, so this pass could not run
+  signed physical-touch acceptance.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only

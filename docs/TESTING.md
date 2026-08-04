@@ -152,6 +152,26 @@ a synthetic unattached MFi controller; GoldenPad ignores it for auto-hide only
 when compiled for Simulator. Direct finger dragging, physical Core Motion and
 real-controller auto-hide remain device gates.
 
+### Native settings modal gate
+
+Run with an attached console and real gameplay visible. On each form factor:
+
+1. Tap AIM and require its accessibility value to change from `Off` to `On`.
+2. Open Game Settings and require visible `Aim button` text plus an accessible
+   `Aim button behavior` segmented group.
+3. Require `[GoldenPad] Game presentation paused scene=1 overlay=1`. No display
+   callbacks should advance while the sheet remains open.
+4. Tap Done and require
+   `[GoldenPad] Game presentation resumed scene=1 overlay=0`.
+5. Require AIM to read `Off`; native UI and preset changes must not retain a
+   latched touch action.
+
+The 2026-08-04 pass used exact Simulator binary
+`3a787f8a1d612b701b54862bc8a2dcd782c9a2e1e0bb2d3eff24ed4403646d28`
+on iPhone 16 Pro, removed and shut down that phone, then repeated unchanged on
+iPad Pro 11-inch (M4). Both Simulator installs were removed afterward. This
+proves modal clock ownership and accessible state, not physical touch comfort.
+
 ### Presentation-cadence and touch-response gate
 
 The in-game FPS HUD must be sourced from `MTKView` display callbacks, not the

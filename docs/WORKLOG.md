@@ -37,6 +37,23 @@
   overlay. A phone terminate/relaunch probe retained the explicit Hold value;
   a fresh iPad container encoded schema 3 with the Toggle default. Real-finger
   aim feel remains the acceptance gate.
+- Audited the broad LOOK surface against button hit-testing. LOOK is deliberately
+  earlier in the Z-stack and the later circular action controls retain their own
+  hit regions, so no overlap fix was needed. The review instead found that
+  native Game Settings allowed the game clock to run behind its sheet.
+- Added independent scene and native-overlay presentation state. Opening Game
+  Settings now neutralizes touch, pauses MTKView/external retrace/FPS sampling,
+  and Done resumes only in an active scene. Preset changes also neutralize touch.
+- The UI pass found and fixed two accessibility/schema defects: the canvas no
+  longer overwrites AIM's `On`/`Off` value with `Visible`, and the Toggle/Hold
+  selector now has visible `Aim button` text plus an accessible behavior label.
+  The Computer Use review directly drove both corrections.
+- Linked Simulator/device builds passed. Exact Simulator binary
+  `3a787f8a1d612b701b54862bc8a2dcd782c9a2e1e0bb2d3eff24ed4403646d28`
+  produced the complete Off -> On -> settings/pause -> Done/resume -> Off flow
+  on iPhone 16 Pro, then unchanged on iPad Pro 11-inch (M4). Both apps were
+  removed and both simulators shut down. `xcrun devicectl list devices` returned
+  `No devices found`, so real-finger feel remains open.
 
 ## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
 

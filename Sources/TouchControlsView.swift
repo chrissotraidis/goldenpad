@@ -4,6 +4,7 @@ import simd
 struct GameplayTouchControls: View {
     @EnvironmentObject private var input: InputCoordinator
     @EnvironmentObject private var platform: PlatformCoordinator
+    @EnvironmentObject private var renderSurface: AppleRenderSurface
     @State private var isSettingsPresented = false
 
     private var deviceClass: TouchDeviceClass {
@@ -38,6 +39,14 @@ struct GameplayTouchControls: View {
                 .environmentObject(input)
                 .environmentObject(platform)
         }
+        .onChange(of: isSettingsPresented) { _, presented in
+            input.releaseTouchInput()
+            renderSurface.setSystemOverlayPresented(presented)
+        }
+        .onDisappear {
+            input.releaseTouchInput()
+            renderSurface.setSystemOverlayPresented(false)
+        }
     }
 }
 
@@ -70,12 +79,18 @@ private struct GameplaySettingsView: View {
                         )
                     )
 
-                    Picker("Aim button", selection: aimBehaviorBinding) {
-                        ForEach(TouchAimBehavior.allCases, id: \.self) { behavior in
-                            Text(behavior.title).tag(behavior)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Aim button")
+                            .font(.subheadline)
+                        Picker("Aim button", selection: aimBehaviorBinding) {
+                            ForEach(TouchAimBehavior.allCases, id: \.self) { behavior in
+                                Text(behavior.title).tag(behavior)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .accessibilityLabel("Aim button behavior")
                     }
-                    .pickerStyle(.segmented)
 
                     Toggle(
                         "Gyroscope aiming",
@@ -535,7 +550,6 @@ private struct TouchControlCanvas: View {
         } else {
             control
                 .accessibilityLabel(placement.id.label)
-                .accessibilityValue("Visible")
         }
     }
 

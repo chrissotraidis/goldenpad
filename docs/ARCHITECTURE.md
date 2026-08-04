@@ -48,7 +48,11 @@ reversed on exit. Generated shaders and archives are never committed.
 the view is attached, it exposes non-retaining opaque pointers to that `UIView`
 and its `CAMetalLayer`, matching RT64's Apple `RenderWindow { window, view }`
 boundary. UIKit retains both objects. The surface pauses rendering outside the
-active scene and refreshes the drawable dimensions/refresh rate on layout. The
+active scene and while the native Game Settings overlay is presented, then
+resumes only when both conditions permit frames. The same state boundary stops
+external retrace delivery and resets frame telemetry, so the game cannot keep
+running or accumulate false FPS samples behind a modal sheet. The surface
+refreshes the drawable dimensions/refresh rate on layout. The
 default ROM-free build clears the foundation frame. When verified RT64 archives
 are supplied explicitly, `rt64_metal_bridge.cpp` force-links the full renderer
 closure and retains a Plume Metal interface, device, direct command queue and
@@ -172,7 +176,9 @@ table pointers, then zeroes and frees the old allocation.
   set. Each preset resolves from device-class defaults plus small persisted
   deltas, so phone and tablet changes do not copy or overwrite each other.
   Per-control position, 70–150% size and visibility plus global opacity, scale,
-  sensitivity, dead zone, gyro and controller auto-hide settings are supported.
+  sensitivity, Toggle/Hold aim, dead zone, gyro and controller auto-hide settings
+  are supported. Entering native settings and switching control presets both
+  neutralize touch state so a latched action cannot leak across UI modes.
 - **Audio:** MGB64's native synth produces 22.05 kHz stereo PCM into a bounded
   lock-protected ring. An `AVAudioSourceNode` pulls it into `AVAudioEngine`,
   which resamples to the current device rate; `AVAudioSession` handles

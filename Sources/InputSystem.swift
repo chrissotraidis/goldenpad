@@ -459,6 +459,8 @@ final class InputCoordinator: ObservableObject {
         self.settings = sanitized
         currentPreset = sanitized.controlPreset
         if presetChanged {
+            touch = .neutral
+            motionLook = .zero
             lastActivity = nil
         }
         if gyroChanged {

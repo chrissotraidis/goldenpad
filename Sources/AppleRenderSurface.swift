@@ -39,9 +39,15 @@ final class AppleRenderSurface: ObservableObject {
 
     private weak var metalView: MTKView?
     private var commandQueue: MTLCommandQueue?
-    private var isActive = true
+    private var sceneIsActive = true
+    private var isSystemOverlayPresented = false
+    private var lastAppliedPresentationState: Bool?
     private var lastReportedSize = CGSize.zero
     private var lastReportedRefreshRate = 0
+
+    private var shouldPresentFrames: Bool {
+        sceneIsActive && !isSystemOverlayPresented
+    }
 
     func attach(to view: MTKView) {
         metalView = view
@@ -49,12 +55,11 @@ final class AppleRenderSurface: ObservableObject {
         if let metalLayer = view.layer as? CAMetalLayer {
             goldenPadMGB64SetMetalLayer(Unmanaged.passUnretained(metalLayer).toOpaque())
             if goldenPadMGB64RendererInitialize() == 1 {
-                goldenPadMGB64SetExternalRetraceActive(isActive ? 1 : 0)
-                goldenPadMGB64FrameStatsSetActive(isActive ? 1 : 0)
+                applyPresentationState()
                 print("[GoldenPad] MGB64 Fast3D/Metal renderer initialized")
             }
         }
-        view.isPaused = !isActive
+        view.isPaused = !shouldPresentFrames
         refreshStatus(for: view)
     }
 
@@ -70,12 +75,13 @@ final class AppleRenderSurface: ObservableObject {
     }
 
     func setActive(_ active: Bool) {
-        isActive = active
-        if metalView != nil {
-            goldenPadMGB64SetExternalRetraceActive(active ? 1 : 0)
-            goldenPadMGB64FrameStatsSetActive(active ? 1 : 0)
-        }
-        metalView?.isPaused = !active
+        sceneIsActive = active
+        applyPresentationState()
+    }
+
+    func setSystemOverlayPresented(_ presented: Bool) {
+        isSystemOverlayPresented = presented
+        applyPresentationState()
     }
 
     func drawableSizeDidChange(in view: MTKView) {
@@ -91,14 +97,14 @@ final class AppleRenderSurface: ObservableObject {
                 height: view.bounds.height * view.contentScaleFactor
             )
         }
-        if isActive,
+        if shouldPresentFrames,
            size.width > 0,
            size.height > 0,
            goldenPadMGB64RendererDrawFrame(UInt32(size.width), UInt32(size.height)) == 1 {
             return
         }
         guard
-            isActive,
+            shouldPresentFrames,
             let descriptor = view.currentRenderPassDescriptor,
             let drawable = view.currentDrawable,
             let buffer = commandQueue?.makeCommandBuffer(),
@@ -108,6 +114,22 @@ final class AppleRenderSurface: ObservableObject {
         encoder.endEncoding()
         buffer.present(drawable)
         buffer.commit()
+    }
+
+    private func applyPresentationState() {
+        let active = shouldPresentFrames
+        if metalView != nil {
+            goldenPadMGB64SetExternalRetraceActive(active ? 1 : 0)
+            goldenPadMGB64FrameStatsSetActive(active ? 1 : 0)
+            if lastAppliedPresentationState != active {
+                print(
+                    "[GoldenPad] Game presentation \(active ? "resumed" : "paused") " +
+                    "scene=\(sceneIsActive ? 1 : 0) overlay=\(isSystemOverlayPresented ? 1 : 0)"
+                )
+                lastAppliedPresentationState = active
+            }
+        }
+        metalView?.isPaused = !active
     }
 
     func rt64WindowHandle() -> RT64MetalWindowHandle? {
