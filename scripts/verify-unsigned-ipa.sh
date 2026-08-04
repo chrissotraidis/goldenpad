@@ -76,7 +76,8 @@ if [ "$require_game_core" -eq 1 ]; then
   done
 fi
 
-if strings "$executable" | grep -Eq '/Users/|GoldenEye 007 \(U\)|ref/(mgb64|goldenrecomp|goldeneye_decomp)'; then
+if strings "$executable" |
+  awk '/\/Users\/|\/tmp\/goldenpad-clean\.|GoldenEye 007 \(U\)|ref\/(mgb64|goldenrecomp|goldeneye_decomp)/ { found = 1 } END { exit !found }'; then
   echo "Executable contains a private build/reference path." >&2
   exit 1
 fi

@@ -148,6 +148,8 @@ function(goldenpad_configure_mgb64_target target)
     )
 
     target_compile_options(${target} PRIVATE
+        "-ffile-prefix-map=${CMAKE_SOURCE_DIR}=."
+        "-ffile-prefix-map=${GOLDENPAD_MGB64_SOURCE_DIR}=mgb64"
         -Wall
         -Wno-unused-variable
         -Wno-unused-function
@@ -217,6 +219,10 @@ target_include_directories(goldenpad_mgb64_fast3d BEFORE PRIVATE
 target_compile_definitions(GoldenPad PRIVATE
     GOLDENPAD_MGB64_CORE
     GOLDENPAD_MGB64_COMMIT="${GOLDENPAD_MGB64_COMMIT}"
+)
+target_compile_options(GoldenPad PRIVATE
+    "$<$<COMPILE_LANGUAGE:C,CXX,OBJCXX>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>"
+    "$<$<COMPILE_LANGUAGE:C,CXX,OBJCXX>:-ffile-prefix-map=${GOLDENPAD_MGB64_SOURCE_DIR}=mgb64>"
 )
 target_link_libraries(GoldenPad PRIVATE goldenpad_mgb64_core)
 target_sources(GoldenPad PRIVATE
