@@ -41,6 +41,7 @@ final class AppleRenderSurface: ObservableObject {
     private var commandQueue: MTLCommandQueue?
     private var sceneIsActive = true
     private var isSystemOverlayPresented = false
+    private var resolution: RenderResolution = .x1
     private var lastAppliedPresentationState: Bool?
     private var lastReportedSize = CGSize.zero
     private var lastReportedRefreshRate = 0
@@ -51,6 +52,7 @@ final class AppleRenderSurface: ObservableObject {
 
     func attach(to view: MTKView) {
         metalView = view
+        applyDrawableScale(to: view)
         commandQueue = view.device?.makeCommandQueue()
         if let metalLayer = view.layer as? CAMetalLayer {
             goldenPadMGB64SetMetalLayer(Unmanaged.passUnretained(metalLayer).toOpaque())
@@ -84,11 +86,21 @@ final class AppleRenderSurface: ObservableObject {
         applyPresentationState()
     }
 
+    func configure(resolution: RenderResolution) {
+        guard self.resolution != resolution else { return }
+        self.resolution = resolution
+        if let metalView {
+            applyDrawableScale(to: metalView)
+        }
+        print("[GoldenPad] Render resolution: \(resolution.rawValue)")
+    }
+
     func drawableSizeDidChange(in view: MTKView) {
         refreshStatus(for: view)
     }
 
     func drawFoundationFrame(in view: MTKView) {
+        applyDrawableScale(to: view)
         refreshStatus(for: view)
         var size = view.drawableSize
         if size.width <= 0 || size.height <= 0 {
@@ -172,5 +184,27 @@ final class AppleRenderSurface: ObservableObject {
         }
         print("[GoldenPad] MGB64 Metal surface ready")
         print("[GoldenPad] RT64 surface ready: \(Int(size.width))x\(Int(size.height)) @ \(refreshRate) Hz")
+    }
+
+    private func applyDrawableScale(to view: MTKView) {
+        let targetScale: CGFloat = switch resolution {
+        case .x1: 1
+        case .x2: 2
+        case .x3: 3
+        case .x4: 4
+        }
+        if abs(view.contentScaleFactor - targetScale) > 0.001 {
+            view.contentScaleFactor = targetScale
+        }
+
+        let targetSize = CGSize(
+            width: view.bounds.width * targetScale,
+            height: view.bounds.height * targetScale
+        )
+        guard targetSize.width > 0, targetSize.height > 0 else { return }
+        if abs(view.drawableSize.width - targetSize.width) > 0.5 ||
+            abs(view.drawableSize.height - targetSize.height) > 0.5 {
+            view.drawableSize = targetSize
+        }
     }
 }

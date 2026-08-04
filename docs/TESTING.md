@@ -182,6 +182,27 @@ on iPhone 16 Pro, removed and shut down that phone, then repeated unchanged on
 iPad Pro 11-inch (M4). Both Simulator installs were removed afterward. This
 proves modal clock ownership and accessible state, not physical touch comfort.
 
+### Scene-resolution gate
+
+Open **Game Settings** > **Display** during live gameplay. Exercise 1×, 2×, 3×
+and 4× in order, dismiss the sheet at 4× so the renderer allocates and presents
+that target, then return to 1×. Require the game to resume after each change and
+the native controls to remain at UIKit resolution. Expected landscape targets
+for the current Simulator profiles are:
+
+| Level | iPhone 16 Pro | iPad Pro 11-inch (M4) |
+| --- | --- | --- |
+| 1× | 874×402 | 1210×834 |
+| 2× | 1748×804 | 2420×1668 |
+| 3× | 2622×1206 | 3630×2502 |
+| 4× | 3496×1608 | 4840×3336 |
+
+The exact 2026-08-04 Simulator binary was
+`c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`.
+All eight device/level combinations reached the expected target. This verifies
+menu persistence and drawable wiring, not acceptable frame rate; profile real
+missions separately and repeat on physical hardware.
+
 ### Game-frame cadence and touch-response gate
 
 The Performance HUD defaults off. Enable it under **Game Settings** >
@@ -606,15 +627,16 @@ Every IPA test must unzip into a fresh temporary directory, enumerate members,
 run the contamination policy from `LEGAL.md`, and prove the app cannot play
 without user-selected retail data. Record hashes of project-owned artifacts only.
 
-The repository scripts implement the current foundation gate:
+The current game-bearing package gate is:
 
 ```sh
-./scripts/package-foundation-ipa.sh
-./scripts/verify-unsigned-ipa.sh \
-  dist/GoldenPad-0.1.0-foundation-unsigned.ipa
+./scripts/package-unsigned-ipa.sh
+./scripts/verify-unsigned-ipa.sh --game-core \
+  dist/GoldenPad-0.1.0-unsigned.ipa
 ```
 
 The verifier rejects ROM/save/signing path names, all three N64 byte-order magic
 headers, the supported retail SHA-1, a signed app, non-ARM64 code, and private
-developer/reference strings. It also prints a sorted-content digest independent
-of ZIP metadata.
+developer/reference strings. Game-core mode additionally requires MGB64's game
+entry point and the native Fast3D/Metal renderer entry points. It also prints a
+sorted-content digest independent of ZIP metadata.

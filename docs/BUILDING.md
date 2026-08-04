@@ -1,9 +1,8 @@
 # Building
 
-GoldenPad has a native ROM-free iPhone/iPad foundation target. It validates a
-user-selected retail dump and can link the audited MGB64 game core and native
-renderer, but it does not start the game until the remaining resource and
-platform/main-loop adapters are present.
+GoldenPad has a native ROM-free iPhone/iPad target. It validates a user-selected
+retail dump, derives runtime assets inside the app container, and links the
+audited MGB64 game core and native Metal renderer.
 
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
@@ -45,7 +44,8 @@ Package and verify the explicitly incomplete foundation artifact:
 
 This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
 Its filename says `foundation` because it does not contain the game core and is
-not the final deliverable.
+not the final deliverable. Use the game-bearing package gate below for current
+production validation.
 
 ## MGB64 iOS game core
 
@@ -98,6 +98,19 @@ calling gameplay functions. Mission completion remains open.
 The core also includes the real upstream model converter, CLI stage table,
 radial deadzone, setup-name and weapon-cue services. A small native data unit
 owns constants/offsets that otherwise live in the desktop compatibility file.
+
+Package the complete unsigned device app after the combined verifier passes:
+
+```sh
+./scripts/verify-mgb64-ios-renderer.sh
+./scripts/package-unsigned-ipa.sh
+./scripts/verify-unsigned-ipa.sh --game-core \
+  dist/GoldenPad-0.1.0-unsigned.ipa
+```
+
+Game-core mode requires MGB64's game entry point and the native Fast3D/Metal
+renderer entry points in addition to the normal ARM64, unsigned and ROM-free
+archive checks.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,

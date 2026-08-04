@@ -183,7 +183,9 @@ table pointers, then zeroes and frees the old allocation.
   neutralize touch state so a latched action cannot leak across UI modes.
 - **Native settings:** Game Settings is a hub. Touch Controls owns aiming,
   overlay and layout; Controllers owns physical-stick response and connection
-  status; Display owns the opt-in Performance HUD. The HUD reads produced
+  status; Display owns 1×–4× scene resolution and the opt-in Performance HUD.
+  Resolution scales the `MTKView`/`CAMetalLayer` drawable relative to UIKit
+  points while the SwiftUI controls remain at native UI resolution. The HUD reads produced
   game-frame cadence from MGB64's `rspGfxTaskStart` boundary, while UIKit refresh
   remains a separate render-host concern. It never treats simulation ticks as
   cadence and defaults off; its visibility does not control cadence sampling.

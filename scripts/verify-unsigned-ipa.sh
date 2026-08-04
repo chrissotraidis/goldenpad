@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+require_game_core=0
+if [ "${1:-}" = "--game-core" ]; then
+  require_game_core=1
+  shift
+fi
+
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 /absolute/path/to/GoldenPad.ipa" >&2
+  echo "Usage: $0 [--game-core] /absolute/path/to/GoldenPad.ipa" >&2
   exit 2
 fi
 
@@ -60,6 +66,16 @@ if codesign -dv "$app_path" >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ "$require_game_core" -eq 1 ]; then
+  for symbol in _bossEntry _gfx_init _gfx_run_dl; do
+    if ! nm -gU "$executable" |
+      awk -v required="$symbol" '$3 == required { found = 1 } END { exit !found }'; then
+      echo "IPA is missing required game symbol: $symbol" >&2
+      exit 1
+    fi
+  done
+fi
+
 if strings "$executable" | grep -Eq '/Users/|GoldenEye 007 \(U\)|ref/(mgb64|goldenrecomp|goldeneye_decomp)'; then
   echo "Executable contains a private build/reference path." >&2
   exit 1
@@ -77,4 +93,7 @@ content_digest=$(
 )
 
 echo "IPA audit passed: $(unzip -Z1 "$ipa_path" | wc -l | tr -d ' ') members"
+if [ "$require_game_core" -eq 1 ]; then
+  echo "Game-core symbol audit passed: bossEntry + Metal Fast3D entry points"
+fi
 echo "Unsigned ARM64 app content SHA-256: $content_digest"

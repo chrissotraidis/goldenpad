@@ -88,6 +88,16 @@ private struct GameplaySettingsView: View {
                 }
 
                 Section("Display") {
+                    Picker("Rendering", selection: resolutionBinding) {
+                        ForEach(RenderResolution.allCases, id: \.self) { resolution in
+                            Text(resolution.title).tag(resolution)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text("Scene resolution relative to screen points. Higher levels are sharper but increase GPU cost; 4× draws 16 times as many pixels as 1×.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Toggle(
                         "Performance HUD",
                         isOn: boolSettingBinding(\.performanceHUDEnabled)
@@ -115,6 +125,15 @@ private struct GameplaySettingsView: View {
         )
     }
 
+    private var resolutionBinding: Binding<RenderResolution> {
+        Binding(
+            get: { platform.settings.renderResolution },
+            set: { resolution in
+                platform.updateSettings { $0.renderResolution = resolution }
+            }
+        )
+    }
+
     private func boolSettingBinding(
         _ keyPath: WritableKeyPath<HostSettings, Bool>
     ) -> Binding<Bool> {
@@ -124,6 +143,17 @@ private struct GameplaySettingsView: View {
                 platform.updateSettings { $0[keyPath: keyPath] = value }
             }
         )
+    }
+}
+
+private extension RenderResolution {
+    var title: String {
+        switch self {
+        case .x1: "1×"
+        case .x2: "2×"
+        case .x3: "3×"
+        case .x4: "4×"
+        }
     }
 }
 

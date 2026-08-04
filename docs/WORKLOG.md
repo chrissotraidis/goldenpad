@@ -1,5 +1,35 @@
 # Worklog
 
+## 2026-08-04 — add explicit 1×–4× native resolution controls
+
+- Added a persisted four-level Display control instead of a vague
+  Performance/Native switch. The scene drawable now scales 1×, 2×, 3× or 4×
+  relative to UIKit points; the touch overlay remains native SwiftUI. 1× is the
+  performance-first default and 4× is optional supersampling at 16 times the
+  1× pixel count.
+- A first live implementation recursively changed `MTKView.drawableSize` from
+  its own resize delegate and stack-overflowed. The crash report identified the
+  exact loop; the final implementation mutates size only from configuration or
+  the render pass while the resize callback is observation-only.
+- The maintained linked verifier passed for ARM64 Simulator and device SDKs.
+  Exact Simulator binary
+  `c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
+  then live-switched 1×/2×/3×/4× to 874×402/1748×804/2622×1206/3496×1608 on
+  iPhone, followed by 1210×834/2420×1668/3630×2502/4840×3336 on iPad. Both
+  private ROM app containers were uninstalled before sequential shutdown.
+- The final 1× startup windows reported 4.9 FPS on iPhone and 7.8 FPS on iPad,
+  materially below an earlier 1× trial and proving that resolution choice alone
+  does not close performance. The HUD remains truthful; sustained scene-specific
+  profiling and physical-device acceptance remain open.
+- Replaced the stale foundation-only production package path with a game-bearing
+  unsigned IPA gate. It requires `bossEntry`, `gfx_init` and `gfx_run_dl` in the
+  archived ARM64 executable, then applies the existing signing, ROM, private-path
+  and member audit. Two consecutive packages were byte-identical at SHA-256
+  `6fe7bbc17e4271e03bfc1be202e3debe0dc5fb5e5864da2c9d788fe615c062c7`;
+  their sorted app-content SHA-256 was
+  `1708463a1665974cded140570edf70db07cfd1f6695c9ca8455156107c323769`.
+  Fresh-checkout reproduction remains the next package gate.
+
 ## 2026-08-04 — fix the real FPS source and make look input swipe-based
 
 - Corrected the opt-in Performance HUD at its source. Mobile no longer calls

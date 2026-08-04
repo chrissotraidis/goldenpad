@@ -199,8 +199,10 @@ rail while Weapon/Duck use a lower utility row. The maintained binary was
 swiped and inspected sequentially on phone and tablet simulators. The in-game
 gear now opens a native settings hub with Touch Controls, Controllers and Display detail
 pages; the device-specific layout editor sits beneath Touch Controls instead of
-being the entire settings experience. The Performance HUD is off by default and
-opt-in from Display. Modern touch AIM now
+being the entire settings experience. Display persists explicit 1×, 2×, 3× and
+4× game-scene resolution while leaving native SwiftUI controls sharp; 1× is the
+performance-first default. The Performance HUD is off by default and opt-in
+from Display. Modern touch AIM now
 defaults to a persistent toggle so the look thumb does not have to hold one
 button while dragging elsewhere; Hold remains available in Game Settings. The
 layout editor is placement-only, avoiding a second copy of behavior settings.
@@ -225,6 +227,13 @@ MGB64 dead zones, and the mobile look curve is linear. Mapping and telemetry
 are proven; final sensitivity and action-placement acceptance remains a
 hands-on real-play task.
 
+Exact Simulator binary
+`c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
+live-switched all four resolution levels on both device classes. Phone targets
+were 874×402, 1748×804, 2622×1206 and 3496×1608; iPad targets were 1210×834,
+2420×1668, 3630×2502 and 4840×3336. This closes the settings/wiring slice, not
+the performance gate: truthful produced-frame samples vary materially by scene.
+
 ### M — Multiplayer
 
 - [ ] M1: deterministic controller assignment and touch coexistence.
@@ -245,9 +254,9 @@ Gate: four-player iPad match where core support allows it.
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
 
-The current foundation IPA reproduces byte-for-byte and passes the contamination
-auditor, but P2/P3 remain open until the clean production core is present and a
-fresh-checkout final package passes the same gates.
+The current game-bearing IPA reproduces byte-for-byte locally and passes the
+contamination plus game-core symbol auditors. P2/P3 remain open until the same
+artifact is rebuilt and audited from a fresh checkout.
 
 ## Test rhythm
 

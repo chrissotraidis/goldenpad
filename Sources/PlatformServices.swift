@@ -33,8 +33,15 @@ enum TouchAimBehavior: String, Codable, Sendable, CaseIterable {
     case hold
 }
 
+enum RenderResolution: String, Codable, Sendable, CaseIterable {
+    case x1
+    case x2
+    case x3
+    case x4
+}
+
 struct HostSettings: Codable, Equatable, Sendable {
-    static let currentSchema = 4
+    static let currentSchema = 5
 
     var schemaVersion = currentSchema
     var controlPreset: ControlPreset = .modern
@@ -46,6 +53,7 @@ struct HostSettings: Codable, Equatable, Sendable {
     var touchAimBehavior: TouchAimBehavior = .toggle
     var touchControlsAutoHide = true
     var performanceHUDEnabled = false
+    var renderResolution: RenderResolution = .x1
     var touchLayoutOverrides: [String: TouchLayoutOverrides] = [:]
 
     private enum CodingKeys: String, CodingKey {
@@ -59,6 +67,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         case touchAimBehavior
         case touchControlsAutoHide
         case performanceHUDEnabled
+        case renderResolution
         case touchLayoutOverrides
     }
 
@@ -85,6 +94,10 @@ struct HostSettings: Codable, Equatable, Sendable {
             Bool.self,
             forKey: .performanceHUDEnabled
         ) ?? false
+        renderResolution = try values.decodeIfPresent(
+            RenderResolution.self,
+            forKey: .renderResolution
+        ) ?? .x1
         touchLayoutOverrides = try values.decodeIfPresent(
             [String: TouchLayoutOverrides].self,
             forKey: .touchLayoutOverrides
@@ -103,6 +116,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         try values.encode(touchAimBehavior, forKey: .touchAimBehavior)
         try values.encode(touchControlsAutoHide, forKey: .touchControlsAutoHide)
         try values.encode(performanceHUDEnabled, forKey: .performanceHUDEnabled)
+        try values.encode(renderResolution, forKey: .renderResolution)
         try values.encode(touchLayoutOverrides, forKey: .touchLayoutOverrides)
     }
 
@@ -456,6 +470,7 @@ final class PlatformCoordinator: ObservableObject {
                 settings.touchOpacity = 0.62
                 settings.touchAimBehavior = .hold
                 settings.performanceHUDEnabled = true
+                settings.renderResolution = .x4
                 try storage?.saveSettings(settings)
                 try storage?.saveGameData(probeBytes, slot: 0)
                 storageState = "storage: probe written"
@@ -466,6 +481,7 @@ final class PlatformCoordinator: ObservableObject {
                     settings.touchOpacity == 0.62,
                     settings.touchAimBehavior == .hold,
                     settings.performanceHUDEnabled,
+                    settings.renderResolution == .x4,
                     try storage.loadSave(slot: 0) == probeBytes
                 else {
                     storageState = "storage: relaunch failed"

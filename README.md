@@ -64,6 +64,14 @@ factors; physical-finger feel remains unaccepted. The opt-in FPS HUD now counts
 actual game display-list submissions instead of 60 Hz UIKit callbacks: the same
 binary measured 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad
 workload while both displays remained 60 Hz.
+The native Display menu now exposes persisted 1×, 2×, 3× and 4× scene
+resolution. Exact binary
+`c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
+live-switched all four levels on both form factors, from 874×402 through
+3496×1608 on iPhone and from 1210×834 through 4840×3336 on iPad. The SwiftUI
+controls remain at display resolution. Higher levels are optional
+supersampling, not a performance claim; scene-to-scene cadence is still highly
+variable and needs profiling plus physical-device acceptance.
 An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
 loaded retail AI command stream, routes across the live waypoint graph, opens
 the interlock and padlocked gate through controller input, and observed the
@@ -105,6 +113,8 @@ Rare, Microsoft, MGM, Danjaq, EON Productions, or any other rights holder.
 - [Original art provenance](docs/ART.md)
 - [Worklog](docs/WORKLOG.md)
 
-Gameplay, controller, multiplayer and final IPA instructions will be added only
-as those gates are proven in GoldenPad itself. Contributions must preserve the
-provenance and no-ROM rules above.
+The current game-bearing unsigned IPA is built with
+`./scripts/package-unsigned-ipa.sh` after the complete renderer verifier passes;
+it is a developer artifact that contains no ROM and still requires a user's
+supported retail dump. Multiplayer and final physical-device acceptance remain
+open. Contributions must preserve the provenance and no-ROM rules above.

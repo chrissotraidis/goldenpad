@@ -181,21 +181,21 @@ GoldenPad's opt-in bridge then created the real Plume Metal device, direct
 command queue and swapchain against its UIKit-owned `CAMetalLayer`. Sequential
 runtime passes visibly reported `Apple iOS simulator GPU` at 1206x2622 on
 iPhone 16 Pro and 1668x2420 on iPad Pro 11-inch (M4). This completes the RT64
-mobile renderer/surface gate, not the game-rendering gate: the selected MGB64
-core now compiles, but its platform/render loop is not yet connected.
+mobile renderer/surface reference gate. The selected MGB64 production path is
+now independently connected through its coupled Fast3D/Metal renderer.
 
-MGB64's coupled Fast3D/Metal path now initializes and presents empty frames on
+MGB64's coupled Fast3D/Metal path now runs the title, menus and live missions on
 iOS. Only the audited native source set is compiled; UIKit owns the layer and
 cadence, while ROM state remains null before validated import. RT64 remains a
 verified alternative, not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. What is the minimum scheduler/platform closure required before `bossEntry`
-   can drive title frames from UIKit without SDL ownership?
-2. What is the smallest mobile main-loop adapter that starts title/menu display
-   lists while UIKit owns lifecycle, timing and drawable acquisition?
-3. Which audio, input, filesystem and ROM-resource callbacks must be connected
-   before the first interactive mission frame?
+1. Which MGB64 game/render hotspots cause large scene-to-scene cadence drops on
+   Simulator and physical Apple hardware?
+2. Which remaining touch sensitivities and placements are comfortable during a
+   complete human-played mission on phone and tablet?
+3. Does local two-to-four-player split-screen retain correct controller
+   assignment, aspect layout, audio and save behavior on iPad?
 4. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
    metadata eventually be restored for a comparative RT64 build?

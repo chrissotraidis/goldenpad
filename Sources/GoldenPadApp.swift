@@ -47,6 +47,7 @@ struct GoldenPadApp: App {
                 }
                 .onChange(of: platform.settings, initial: true) { _, settings in
                     input.configure(settings: settings)
+                    renderSurface.configure(resolution: settings.renderResolution)
                 }
         }
     }

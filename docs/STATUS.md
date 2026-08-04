@@ -346,8 +346,16 @@ longer blocks MGB64 integration.
   in landscape and the iPad form sheet exposes all three sections.
 - Game Settings now uses a native hub-and-detail hierarchy: Touch Controls owns
   aim/overlay/layout, Controllers owns dead zone/status, and Display owns the
-  opt-in Performance HUD. Schema 4 persists the HUD preference; the mobile
-  default is off while cadence diagnostics continue to log independently.
+  1×–4× scene-resolution selector and opt-in Performance HUD. Schema 5 persists
+  both display preferences; resolution defaults to 1× and the HUD defaults off.
+  The game drawable changes while native SwiftUI controls remain sharp.
+- Exact Simulator binary
+  `c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
+  live-switched all four levels in the visible native menu on iPhone first and
+  then unchanged on iPad. Logged targets were 874×402, 1748×804, 2622×1206 and
+  3496×1608 on iPhone; iPad produced 1210×834, 2420×1668, 3630×2502 and
+  4840×3336. Both private app containers were removed and both simulators shut
+  down after the sequential pass.
 - Modern touch AIM now defaults to Toggle, allowing the same right thumb to tap
   AIM and return to the direct-swipe LOOK surface. Hold remains selectable in
   Game Settings. Switching modes clears a latched aim state, schema 4 persists
@@ -380,6 +388,14 @@ longer blocks MGB64 integration.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
   `102337b9cb2a07b4471f7e015c7c06459643de98f6d68c62bdae630308e827cd`.
+- The current game-bearing device app now packages through a distinct production
+  gate that also requires MGB64's `bossEntry` plus the Fast3D/Metal entry points.
+  Two consecutive local packages were byte-identical at SHA-256
+  `6fe7bbc17e4271e03bfc1be202e3debe0dc5fb5e5864da2c9d788fe615c062c7`.
+  The eight-member unsigned ARM64 payload passed the ROM, signing, private-path
+  and game-core symbol audits; its sorted app-content SHA-256 is
+  `1708463a1665974cded140570edf70db07cfd1f6695c9ca8455156107c323769`.
+  Clean-checkout reproduction remains open.
 
 ## Failed or blocked
 
@@ -393,21 +409,31 @@ longer blocks MGB64 integration.
   `xcrun devicectl list devices`
   currently reports `No devices found` on this Mac, so this pass could not run
   signed physical-touch acceptance.
+- Performance is not accepted. Resolution scaling proves that pixel workload is
+  controllable, but produced-game cadence remains scene- and host-load-sensitive;
+  the final 1× binary's early sample was only 4.9 FPS on iPhone and 7.8 FPS on
+  iPad during this Simulator pass. Do not infer physical-device performance or
+  sustained mission cadence from a single startup window.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only
-  mission completion, multiplayer, final game-bearing
-  unsigned IPA, or final archive audit yet. Simulator UI automation proved the
+  mission completion, multiplayer, clean-checkout game-bearing
+  unsigned IPA reproduction, or final archive gate yet. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
   interaction gate.
 
 ## Next gate
 
-Hands-on playtest the v4 controls on iPhone, including Toggle-versus-Hold aim,
-tune swipe sensitivity and action placement, then repeat unchanged on iPad.
-Extend the now-established native settings schema only when real ROM management,
-save or display controls exist;
-do not add placeholder menus. Keep diagnostic routes as bounded smoke coverage
-only; do not extend bot navigation as a product gate. Organic objectives and
-mission completion remain later human-play acceptance.
+The Apple shell, native game boot, renderer, audio, save path and menu schema are
+substantially integrated, but the complete port is not at definition of done.
+The remaining product gates are human touch/controller mission completion,
+scene-specific performance profiling, organic save progression, local
+multiplayer, physical lifecycle/audio/controller acceptance, the source-level
+license manifest and a clean-checkout game-bearing unsigned IPA audit.
+
+With no physical device attached, the next unblocked production slice is the
+source-license/package gate. When hardware is available, hands-on playtest v4 on
+iPhone, tune swipe sensitivity/action placement, then repeat the accepted layout
+unchanged on iPad. Keep diagnostics as bounded smoke coverage only; do not
+extend bot navigation as a product gate.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.
