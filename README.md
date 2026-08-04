@@ -45,7 +45,7 @@ copyrighted game image or extracted asset is included.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Builds for ARM64** | Configure signing with your Apple development team and install from Xcode. |
+| Local iPhone/iPad build | **Builds for ARM64** | Follow the opt-in signed-device workflow in [Building](docs/BUILDING.md#signed-physical-device-build). |
 | Unsigned `.ipa` | **Buildable locally** | Run `scripts/package-unsigned-ipa.sh`, then re-sign the result for your own device. |
 | GitHub release | **Not published** | No downloadable GoldenPad IPA is currently advertised. |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |

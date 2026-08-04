@@ -8,6 +8,10 @@ endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "17.0" CACHE STRING "Minimum iOS/iPadOS version")
 
+set(GOLDENPAD_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad" CACHE STRING
+    "Bundle identifier used by the iOS/iPadOS app")
+set(GOLDENPAD_DEVELOPMENT_TEAM "" CACHE STRING
+    "Apple development team ID; leave empty for reproducible unsigned builds")
 set(GOLDENPAD_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing the four RT64 mobile archives")
 set(GOLDENPAD_RT64_SOURCE_DIR "" CACHE PATH "Pinned RT64 source checkout used for Plume headers")
 set(GOLDENPAD_MGB64_SOURCE_DIR "" CACHE PATH "Pinned MGB64 checkout used for the native game core")
@@ -51,6 +55,13 @@ add_executable(GoldenPad MACOSX_BUNDLE
     ${goldenpad_rt64_bridge}
 )
 
+set(goldenpad_code_signing_allowed "NO")
+set(goldenpad_code_signing_required "NO")
+if(GOLDENPAD_DEVELOPMENT_TEAM)
+    set(goldenpad_code_signing_allowed "YES")
+    set(goldenpad_code_signing_required "YES")
+endif()
+
 set_source_files_properties(
     Support/MGB64/mgb64_metal_surface_bridge.mm
     PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
@@ -60,16 +71,18 @@ include(Support/MGB64/MGB64Core.cmake)
 set_target_properties(GoldenPad PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.chrissotraidis.goldenpad"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_BUNDLE_IDENTIFIER}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
     MACOSX_BUNDLE_BUNDLE_VERSION "1"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/Info.plist.in"
-    XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
-    XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
+    XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_code_signing_allowed}"
+    XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_code_signing_required}"
+    XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${GOLDENPAD_DEVELOPMENT_TEAM}"
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
     XCODE_ATTRIBUTE_GENERATE_INFOPLIST_FILE "NO"
     XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0"
-    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${GOLDENPAD_BUNDLE_IDENTIFIER}"
     XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "NO"
     XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"

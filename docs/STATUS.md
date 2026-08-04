@@ -478,6 +478,16 @@ longer blocks MGB64 integration.
   `xcrun devicectl list devices`
   currently reports `No devices found` on this Mac, so this pass could not run
   signed physical-touch acceptance.
+- The physical build path is now actionable without editing generated Xcode
+  files: `GOLDENPAD_DEVELOPMENT_TEAM` enables automatic signing and
+  `GOLDENPAD_BUNDLE_IDENTIFIER` supplies a caller-owned identifier inside the
+  maintained renderer verifier's patch window. Generated-project probes proved
+  the default stays `CODE_SIGNING_ALLOWED/REQUIRED=NO/NO`, while an opt-in probe
+  produced `YES/YES`, the requested team and the requested bundle ID. The full
+  unsigned closure then rebuilt to the unchanged Simulator/device executable
+  hashes `818f1733...91a0` and `43bfe1b5...f389`. This Mac currently has zero
+  valid signing identities and `devicectl` still reports `No devices found`, so
+  signature/provisioning/install acceptance remains external.
 - Performance is not accepted. Resolution scaling proves that pixel workload is
   controllable, but produced-game cadence remains scene- and host-load-sensitive.
   Profiling showed the reported 4.9 FPS phone and 7.8 FPS iPad startup windows

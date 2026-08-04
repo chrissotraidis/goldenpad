@@ -3,10 +3,17 @@ set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_dir="${GOLDENPAD_MGB64_SOURCE_DIR:-$repo_root/ref/mgb64}"
+bundle_identifier="${GOLDENPAD_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad}"
+development_team="${GOLDENPAD_DEVELOPMENT_TEAM:-}"
 metal_patch="$repo_root/patches/mgb64-ios-metal.patch"
 fast3d_patch="$repo_root/patches/mgb64-ios-fast3d.patch"
-sim_build="$repo_root/build-mgb64-renderer-simulator"
-device_build="$repo_root/build-mgb64-renderer-device"
+if [ -n "$development_team" ]; then
+    sim_build="$repo_root/build-mgb64-renderer-simulator-signed"
+    device_build="$repo_root/build-mgb64-renderer-device-signed"
+else
+    sim_build="$repo_root/build-mgb64-renderer-simulator"
+    device_build="$repo_root/build-mgb64-renderer-device"
+fi
 metal_applied=0
 fast3d_applied=0
 
@@ -43,11 +50,20 @@ build_app() {
         -DCMAKE_SYSTEM_NAME=iOS \
         -DCMAKE_OSX_SYSROOT="$sdk" \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DGOLDENPAD_BUNDLE_IDENTIFIER="$bundle_identifier" \
+        -DGOLDENPAD_DEVELOPMENT_TEAM="$development_team" \
         -DGOLDENPAD_MGB64_SOURCE_DIR="$source_dir" \
         -DGOLDENPAD_MGB64_RENDERER=ON
-    xcodebuild -quiet -jobs 4 -project "$build_dir/GoldenPad.xcodeproj" \
-        -target GoldenPad -configuration Release \
-        -sdk "$sdk" CODE_SIGNING_ALLOWED=NO build
+    if [ "$sdk" = "iphoneos" ] && [ -n "$development_team" ]; then
+        xcodebuild -quiet -jobs 4 -project "$build_dir/GoldenPad.xcodeproj" \
+            -target GoldenPad -configuration Release \
+            -sdk "$sdk" -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates build
+    else
+        xcodebuild -quiet -jobs 4 -project "$build_dir/GoldenPad.xcodeproj" \
+            -target GoldenPad -configuration Release \
+            -sdk "$sdk" CODE_SIGNING_ALLOWED=NO build
+    fi
 }
 
 build_app "$sim_build" iphonesimulator
@@ -118,5 +134,15 @@ do
     fi
     echo "Verified $binary (ARM64, linked MGB64 game/Metal/audio lifecycle)"
 done
+
+if [ -n "$development_team" ]; then
+    signed_app="$device_build/Release-iphoneos/GoldenPad.app"
+    codesign --verify --deep --strict "$signed_app"
+    test -f "$signed_app/embedded.mobileprovision"
+    actual_bundle_identifier=$(plutil -extract CFBundleIdentifier raw -o - \
+        "$signed_app/Info.plist")
+    test "$actual_bundle_identifier" = "$bundle_identifier"
+    echo "Verified signed device app ($bundle_identifier, team $development_team)."
+fi
 
 echo "MGB64 iOS linked game/renderer/audio lifecycle passed."

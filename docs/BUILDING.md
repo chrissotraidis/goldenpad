@@ -125,6 +125,46 @@ clean checkouts produced the same device executable and byte-identical IPA, so
 the current package is byte reproducible. Exact hashes are recorded in
 `TESTING.md`.
 
+## Signed physical-device build
+
+Unsigned reproducibility remains the default. To build the same complete
+game-bearing target for a device, first confirm that Xcode has an Apple
+Development identity:
+
+```sh
+security find-identity -v -p codesigning
+```
+
+Then provide your Apple team ID and a bundle identifier owned by that team:
+
+```sh
+GOLDENPAD_DEVELOPMENT_TEAM=YOURTEAMID \
+GOLDENPAD_BUNDLE_IDENTIFIER=com.yourname.goldenpad \
+  ./scripts/verify-mgb64-ios-renderer.sh
+```
+
+This keeps the maintained MGB64 patches applied for the entire compile/sign
+operation, asks Xcode to manage provisioning, verifies the resulting signature
+and embedded provisioning profile, and writes the signed app separately from
+the reproducible unsigned build:
+
+```text
+build-mgb64-renderer-device-signed/Release-iphoneos/GoldenPad.app
+```
+
+With a trusted iPhone or iPad connected, list it and install the app:
+
+```sh
+xcrun devicectl list devices
+xcrun devicectl device install app \
+  --device DEVICE_ID \
+  build-mgb64-renderer-device-signed/Release-iphoneos/GoldenPad.app
+```
+
+Do not package this signed app with `package-unsigned-ipa.sh`; that script
+deliberately accepts only the separate unsigned build. Signing and installation
+require the developer's own identity, team provisioning and connected hardware.
+
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,
 backend selector and MSAA helper, verifies four-object ARM64 archives for both
