@@ -1,6 +1,17 @@
 import MetalKit
 import SwiftUI
 
+@_silgen_name("platformFrameStatsTick")
+private func goldenPadFrameStatsTick()
+
+@_silgen_name("goldenpad_mgb64_frame_stats_snapshot")
+private func goldenPadFrameStatsSnapshot(
+    _ fps: UnsafeMutablePointer<Float>?,
+    _ frameMilliseconds: UnsafeMutablePointer<Float>?,
+    _ low1FPS: UnsafeMutablePointer<Float>?,
+    _ generation: UnsafeMutablePointer<UInt32>?
+) -> Int32
+
 struct MetalCanvas: UIViewRepresentable {
     let surface: AppleRenderSurface
     let input: InputCoordinator
@@ -31,6 +42,7 @@ struct MetalCanvas: UIViewRepresentable {
     final class Renderer: NSObject, MTKViewDelegate {
         let surface: AppleRenderSurface
         let input: InputCoordinator
+        private var didReportFrameStats = false
 
         init(surface: AppleRenderSurface, input: InputCoordinator) {
             self.surface = surface
@@ -42,8 +54,29 @@ struct MetalCanvas: UIViewRepresentable {
         }
 
         func draw(in view: MTKView) {
+            goldenPadFrameStatsTick()
+            reportFrameStatsWhenReady()
             input.publishToCore()
             surface.drawFoundationFrame(in: view)
+        }
+
+        private func reportFrameStatsWhenReady() {
+            guard !didReportFrameStats else { return }
+            var fps: Float = 0
+            var frameMilliseconds: Float = 0
+            var low1FPS: Float = 0
+            var generation: UInt32 = 0
+            guard goldenPadFrameStatsSnapshot(
+                &fps, &frameMilliseconds, &low1FPS, &generation
+            ) == 1, generation >= 16 else { return }
+            didReportFrameStats = true
+            print(
+                String(
+                    format: "[GoldenPad] Presentation cadence: PASS %.1f FPS " +
+                        "%.2f ms 1%% low %.1f generation=%u",
+                    fps, frameMilliseconds, low1FPS, generation
+                )
+            )
         }
     }
 }

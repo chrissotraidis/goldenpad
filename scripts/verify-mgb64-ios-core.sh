@@ -94,6 +94,8 @@ do
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_dam_nav_linked_door_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_dam_nav_guard_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_queue_controller_buttons'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_frame_stats_set_active'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_frame_stats_snapshot'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_dam_nav_padlock_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_dam_bungee_state'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_facility_door_state'

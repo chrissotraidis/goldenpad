@@ -488,17 +488,17 @@ final class InputCoordinator: ObservableObject {
 
     func snapshot(player: Int) -> InputSnapshot {
         guard controllerSlots.indices.contains(player) else { return .neutral }
-        let controller = controllerSlots[player].map(controllerSnapshot) ?? .neutral
+        var controller = controllerSlots[player].map(controllerSnapshot) ?? .neutral
+        controller.movement = controller.movement.applyingRadialDeadZone(
+            Float(settings.stickDeadZone)
+        )
+        controller.look = controller.look.applyingRadialDeadZone(
+            Float(settings.stickDeadZone)
+        )
         guard player == 0 else { return controller }
 
         var combined = controller.merging(touch)
-        combined.movement = combined.movement.applyingRadialDeadZone(
-            Float(settings.stickDeadZone)
-        )
-        let touchAndStickLook = combined.look.applyingRadialDeadZone(
-            Float(settings.stickDeadZone)
-        )
-        combined.look = ((touchAndStickLook + motionLook) * Float(settings.lookSensitivity))
+        combined.look = ((combined.look + motionLook) * Float(settings.lookSensitivity))
             .clampedUnitSquare()
         return combined
     }

@@ -56,9 +56,11 @@ waypoint and linked-door graphs, crosses the two-door Dam interlock through
 normal movement and B input, and reaches the upper graph's node 179 within 500
 world units. The same binary passed first on iPhone at 15917 units and then on
 iPad at 15879; both retained objectives `[0,0,0,0]` with `stateMutation=0`.
-This is not the lower bungee graph or organic Dam completion. Hands-on control
-feel and the visible FPS counter also remain unaccepted; neither is release
-evidence yet.
+This is not the lower bungee graph or organic Dam completion. Touch response
+now avoids the previous duplicate dead zone and uses a linear mobile look
+curve, but hands-on control feel remains unaccepted. The formerly zero FPS HUD
+is now sourced from real Metal presentation callbacks and passed sequentially
+at 60.0 FPS/16.67 ms on both iPhone and iPad.
 An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
 loaded retail AI command stream, routes across the live waypoint graph, opens
 the interlock and padlocked gate through controller input, and observed the

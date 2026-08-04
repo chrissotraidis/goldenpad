@@ -190,8 +190,12 @@ persisted-save path is independently proven through an explicitly scripted
 diagnostic trigger. A separate clean Dam probe now proves more than 4700 units
 of controller-only stock-spawn traversal on both simulator classes without
 changing any objective state.
-Hands-on feedback also leaves control feel and the visible FPS counter open:
-mapping correctness is proven, but tuning and counter accuracy are not.
+The FPS HUD is now backed by monotonic `MTKView` presentation cadence rather
+than the previous all-zero mobile stub. A strict same-binary run reported
+60.0 FPS/16.67 ms on both iPhone and iPad after startup aged
+out of the rolling window. Touch input no longer passes through both Swift and
+MGB64 dead zones, and the mobile look curve is linear. Mapping and telemetry
+are proven; hands-on control feel still requires real-play tuning.
 
 ### M — Multiplayer
 

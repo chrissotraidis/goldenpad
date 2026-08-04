@@ -148,6 +148,29 @@ a synthetic unattached MFi controller; GoldenPad ignores it for auto-hide only
 when compiled for Simulator. Direct finger dragging, physical Core Motion and
 real-controller auto-hide remain device gates.
 
+### Presentation-cadence and touch-response gate
+
+The in-game FPS HUD must be sourced from `MTKView` display callbacks, not the
+simulation clock. Wait for at least 16 published 250 ms windows so ROM/audio
+startup has aged out, then require a non-zero log in this form:
+
+```text
+[GoldenPad] Presentation cadence: PASS 60.0 FPS 16.67 ms 1% low 54.8 generation=16
+```
+
+Background/foreground the app and confirm the sampler resets instead of
+counting suspended time as a frame. Run phone first, cleanly
+terminate/uninstall/shut it down, then install the exact same app on iPad. The
+2026-08-03 pass reported the line above on iPhone and `60.0 FPS 16.67 ms 1% low
+54.7 generation=16` on iPad. Visual phone gameplay also showed `60 FPS 16.7ms`
+and `1% low 60` in the actual game HUD.
+
+For touch response, a small drift-free touch deflection must survive without a
+dead zone, while a physical controller still uses the configured Swift radial
+dead zone. Mobile MGB64 must keep its downstream dead zone at zero and look
+curve at one to avoid processing the merged axes twice. This proves the
+response path; it does not replace a hands-on mission playtest.
+
 For repository contamination checks:
 
 ```sh

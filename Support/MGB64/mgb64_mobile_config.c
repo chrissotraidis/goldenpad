@@ -36,9 +36,11 @@ int g_pcFontUpscale = 3;
 float g_pcFovY = 50.0f;
 int g_pcFpsOverlay = 1;
 
-float g_pcGamepadDeadzone = 0.15f;
+/* Swift applies the user-selected dead zone to physical controllers before
+ * merging them with drift-free touch input. Do not apply it a second time. */
+float g_pcGamepadDeadzone = 0.0f;
 int g_pcGamepadFpsScale = 1;
-float g_pcGamepadLookCurve = 1.5f;
+float g_pcGamepadLookCurve = 1.0f;
 float g_pcGamepadLookSpeed = 8.0f;
 int g_pcGamepadRadialDeadzone = 1;
 int g_pcHitMarkers = 1;
@@ -81,5 +83,6 @@ int g_pcWeaponCycleForward = 0;
 int goldenpad_mgb64_mobile_config_probe(void) {
     return g_pcAdsEnabled == 0 && g_pcFovY == 50.0f &&
            g_pcStartLevel == -1 && g_pcStartRamrom == NULL &&
-           g_pcFaithfulSim == 0 && g_pcTexturePack[0] == '\0';
+           g_pcFaithfulSim == 0 && g_pcTexturePack[0] == '\0' &&
+           g_pcGamepadDeadzone == 0.0f && g_pcGamepadLookCurve == 1.0f;
 }

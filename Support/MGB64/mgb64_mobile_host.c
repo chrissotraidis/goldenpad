@@ -3,8 +3,10 @@
 #include <sched.h>
 #include <setjmp.h>
 #include <pthread.h>
+#include <mach/mach_time.h>
 #include <stdio.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "frame_stats.h"
@@ -30,11 +32,26 @@ volatile int g_portWatchdogAiChrnum = -1;
 volatile int g_portWatchdogAiOpcode = -1;
 volatile int g_portWatchdogDynVtxUsed = 0;
 
-static PlatformFrameStats goldenpad_frame_stats;
 static int goldenpad_watchdog_loading;
 static int goldenpad_watchdog_paused;
 static u32 goldenpad_watchdog_frames;
 static pthread_mutex_t goldenpad_controller_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#define GOLDENPAD_FRAME_STATS_RING_CAP 1024
+#define GOLDENPAD_FRAME_STATS_PUBLISH_MS 250.0
+#define GOLDENPAD_FRAME_STATS_LOW_WINDOW_MS 2000.0
+
+static float goldenpad_frame_stats_ring_ms[GOLDENPAD_FRAME_STATS_RING_CAP];
+static u64 goldenpad_frame_stats_ring_time[GOLDENPAD_FRAME_STATS_RING_CAP];
+static int goldenpad_frame_stats_ring_head;
+static int goldenpad_frame_stats_ring_count;
+static u64 goldenpad_frame_stats_last_tick;
+static u64 goldenpad_frame_stats_window_start;
+static float goldenpad_frame_stats_accum_ms;
+static int goldenpad_frame_stats_accum_count;
+static PlatformFrameStats goldenpad_frame_stats;
+static PlatformFrameStats goldenpad_frame_stats_snapshot;
+static pthread_mutex_t goldenpad_frame_stats_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
     int connected;
@@ -354,9 +371,134 @@ void platformRumblePlayer(s32 player, f32 duration) {
     (void)duration;
 }
 
-void platformFrameStatsTick(void) {}
+static double goldenpad_frame_stats_milliseconds(u64 ticks) {
+    static mach_timebase_info_data_t timebase;
+    if (timebase.denom == 0) {
+        mach_timebase_info(&timebase);
+    }
+    return (double)ticks * (double)timebase.numer /
+        (double)timebase.denom / 1000000.0;
+}
+
+static int goldenpad_frame_stats_compare_descending(
+    const void *left, const void *right) {
+    float a = *(const float *)left;
+    float b = *(const float *)right;
+    return a < b ? 1 : (a > b ? -1 : 0);
+}
+
+static float goldenpad_frame_stats_low1(u64 now) {
+    float window[GOLDENPAD_FRAME_STATS_RING_CAP];
+    int window_count = 0;
+    double sum_ms = 0.0;
+
+    for (int i = 0; i < goldenpad_frame_stats_ring_count; ++i) {
+        int index = (goldenpad_frame_stats_ring_head - 1 - i +
+                     GOLDENPAD_FRAME_STATS_RING_CAP) %
+                    GOLDENPAD_FRAME_STATS_RING_CAP;
+        if (goldenpad_frame_stats_milliseconds(
+                now - goldenpad_frame_stats_ring_time[index]) >
+            GOLDENPAD_FRAME_STATS_LOW_WINDOW_MS) {
+            break;
+        }
+        window[window_count++] = goldenpad_frame_stats_ring_ms[index];
+    }
+    if (window_count == 0) {
+        return 0.0f;
+    }
+    qsort(window, (size_t)window_count, sizeof(window[0]),
+          goldenpad_frame_stats_compare_descending);
+    int slow_count = window_count / 100;
+    if (slow_count < 1) {
+        slow_count = 1;
+    }
+    for (int i = 0; i < slow_count; ++i) {
+        sum_ms += window[i];
+    }
+    double average_ms = sum_ms / (double)slow_count;
+    return average_ms > 0.0 ? (float)(1000.0 / average_ms) : 0.0f;
+}
+
+static void goldenpad_frame_stats_reset_locked(void) {
+    goldenpad_frame_stats_ring_head = 0;
+    goldenpad_frame_stats_ring_count = 0;
+    goldenpad_frame_stats_last_tick = 0;
+    goldenpad_frame_stats_window_start = 0;
+    goldenpad_frame_stats_accum_ms = 0.0f;
+    goldenpad_frame_stats_accum_count = 0;
+}
+
+void goldenpad_mgb64_frame_stats_set_active(int active) {
+    pthread_mutex_lock(&goldenpad_frame_stats_mutex);
+    goldenpad_frame_stats_reset_locked();
+    if (active) {
+        u64 now = mach_continuous_time();
+        goldenpad_frame_stats_last_tick = now;
+        goldenpad_frame_stats_window_start = now;
+    }
+    pthread_mutex_unlock(&goldenpad_frame_stats_mutex);
+}
+
+void platformFrameStatsTick(void) {
+    u64 now = mach_continuous_time();
+    pthread_mutex_lock(&goldenpad_frame_stats_mutex);
+    if (goldenpad_frame_stats_last_tick == 0) {
+        goldenpad_frame_stats_last_tick = now;
+        goldenpad_frame_stats_window_start = now;
+        pthread_mutex_unlock(&goldenpad_frame_stats_mutex);
+        return;
+    }
+
+    double delta_ms = goldenpad_frame_stats_milliseconds(
+        now - goldenpad_frame_stats_last_tick);
+    goldenpad_frame_stats_last_tick = now;
+    goldenpad_frame_stats_ring_ms[goldenpad_frame_stats_ring_head] =
+        (float)delta_ms;
+    goldenpad_frame_stats_ring_time[goldenpad_frame_stats_ring_head] = now;
+    goldenpad_frame_stats_ring_head =
+        (goldenpad_frame_stats_ring_head + 1) % GOLDENPAD_FRAME_STATS_RING_CAP;
+    if (goldenpad_frame_stats_ring_count < GOLDENPAD_FRAME_STATS_RING_CAP) {
+        goldenpad_frame_stats_ring_count++;
+    }
+    goldenpad_frame_stats_accum_ms += (float)delta_ms;
+    goldenpad_frame_stats_accum_count++;
+
+    if (goldenpad_frame_stats_milliseconds(
+            now - goldenpad_frame_stats_window_start) >=
+            GOLDENPAD_FRAME_STATS_PUBLISH_MS &&
+        goldenpad_frame_stats_accum_count > 0) {
+        float average_ms = goldenpad_frame_stats_accum_ms /
+            (float)goldenpad_frame_stats_accum_count;
+        goldenpad_frame_stats.frame_ms = average_ms;
+        goldenpad_frame_stats.fps =
+            average_ms > 0.0f ? 1000.0f / average_ms : 0.0f;
+        goldenpad_frame_stats.low1_fps = goldenpad_frame_stats_low1(now);
+        goldenpad_frame_stats.generation++;
+        goldenpad_frame_stats_accum_ms = 0.0f;
+        goldenpad_frame_stats_accum_count = 0;
+        goldenpad_frame_stats_window_start = now;
+    }
+    pthread_mutex_unlock(&goldenpad_frame_stats_mutex);
+}
+
 const PlatformFrameStats *platformFrameStatsGet(void) {
-    return &goldenpad_frame_stats;
+    pthread_mutex_lock(&goldenpad_frame_stats_mutex);
+    goldenpad_frame_stats_snapshot = goldenpad_frame_stats;
+    pthread_mutex_unlock(&goldenpad_frame_stats_mutex);
+    return &goldenpad_frame_stats_snapshot;
+}
+
+int goldenpad_mgb64_frame_stats_snapshot(
+    float *fps, float *frame_ms, float *low1_fps, u32 *generation) {
+    pthread_mutex_lock(&goldenpad_frame_stats_mutex);
+    PlatformFrameStats snapshot = goldenpad_frame_stats;
+    pthread_mutex_unlock(&goldenpad_frame_stats_mutex);
+    if (fps != NULL) *fps = snapshot.fps;
+    if (frame_ms != NULL) *frame_ms = snapshot.frame_ms;
+    if (low1_fps != NULL) *low1_fps = snapshot.low1_fps;
+    if (generation != NULL) *generation = snapshot.generation;
+    return snapshot.generation > 0 && snapshot.fps > 0.0f &&
+        snapshot.frame_ms > 0.0f;
 }
 
 void portWatchdogInit(void) {

@@ -1,5 +1,24 @@
 # Worklog
 
+## 2026-08-03 — replace zero FPS telemetry and remove duplicate touch shaping
+
+- Replaced the mobile host's permanently zero `PlatformFrameStats` stub with a
+  mutex-protected monotonic sampler driven by real `MTKView` presentation
+  callbacks. It publishes FPS/frame time every 250 ms, computes a two-second
+  1% low and resets its history across scene inactivity.
+- Delayed the one-shot runtime proof until generation 16 so startup ROM/audio
+  work has aged out. The exact same app reported `60.0 FPS 16.67 ms 1% low 54.8`
+  on iPhone, then `60.0 FPS 16.67 ms 1% low 54.7` on iPad. The phone HUD also
+  visibly showed `60 FPS 16.7ms` and `1% low 60` during live Dam gameplay.
+- Applied the user-selected radial dead zone only to physical-controller axes,
+  leaving drift-free touch input direct. Disabled MGB64's second mobile dead
+  zone and changed the mobile look curve from 1.5 to linear 1.0. Diagnostic
+  routes are unaffected because they use their explicit controller frames.
+- Simulator and device linked renderer builds pass, the new symbols are part of
+  both binary audits, and both Simulator installs were removed and shut down in
+  strict phone-then-tablet order. Touch feel remains open for real hands-on
+  acceptance even though the duplicate shaping defect is fixed.
+
 ## 2026-08-03 — derive the retail bungee trigger and expose a strict blocker
 
 - Added a structural scan for the loaded Dam AI sequence that tests Bond's
@@ -20,8 +39,9 @@
   down; iPad was not run because the phone-first gate failed.
 - The linked simulator and device verification matrix still passes. This is an
   exploratory retail-trigger proof plus a reproducible promotion blocker, not
-  organic Dam completion. Hands-on controls remain poor and the visible FPS
-  value remains untrusted; both are explicit next-production gates.
+  organic Dam completion. At this checkpoint, hands-on controls were poor and
+  the visible FPS value was untrusted; the later entry above addresses the
+  concrete duplicate-shaping and zero-counter defects.
 
 ## 2026-08-03 — cross Dam's live two-door interlock
 
@@ -39,8 +59,9 @@
   was terminated, uninstalled and its simulator shut down in sequence.
 - The endpoint is the reachable upper node 179/pad-140 area. The bungee trigger
   remains on a disconnected lower graph, so organic bungee activation and Dam
-  completion remain open. Hands-on controls are still poor and the visible FPS
-  counter is still untrusted; both remain explicit acceptance gaps.
+  completion remain open. At that checkpoint, hands-on controls were still poor
+  and the visible FPS counter was still untrusted; the later entry above records
+  the concrete response and telemetry fixes.
 
 ## 2026-08-03 — promote MGB64's clean Dam route to mobile
 

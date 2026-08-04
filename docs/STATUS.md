@@ -283,6 +283,16 @@ longer blocks MGB64 integration.
 - The same input frame now carries exact libultra-compatible N64 masks. Direct
   classic A input reported `0x8000` on iPhone and iPad; modern FIRE reported the
   expected Z mask `0x2000`. Classic, modern and southpaw mappings are available.
+- Touch axes are now kept separate from physical-controller noise filtering, so
+  drift-free touch input no longer receives the Swift dead zone plus MGB64's
+  second dead zone. Mobile right-stick shaping is linear; the existing
+  sensitivity setting remains available. This is a focused response fix, not
+  hands-on acceptance.
+- The FPS HUD now samples real `MTKView` presentation callbacks with a monotonic
+  250 ms rolling publish window and two-second 1% low, resetting across scene
+  inactivity. The exact same app reported `60.0 FPS`, `16.67 ms`, 1% low 54.8
+  on iPhone, then `60.0 FPS`, `16.67 ms`, 1% low 54.7 on iPad at generation 16.
+  Both runs were cleaned up in strict phone-then-tablet order.
 - A live editor provides per-control move, 70–150% size and hide/show controls,
   with the movement stick protected from hiding. Phone and tablet defaults are
   separate; schema-2 settings persist only changed placements. On iPhone, one
@@ -313,9 +323,6 @@ longer blocks MGB64 integration.
 - Hands-on control feel is not accepted: the current mapping functions, but it
   needs sensitivity/dead-zone/turn-rate tuning against real play rather than
   automation alone.
-- The visible FPS counter is not trusted yet. Validate it against actual Metal
-  presentation cadence and correct its sampling/label before using it as
-  performance evidence.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only
@@ -328,8 +335,8 @@ longer blocks MGB64 integration.
 
 Resolve the clean-phone Dam interlock collision stop, then repeat the proven
 lower bungee room/velocity trigger first on iPhone and with the exact same app
-on iPad. In parallel, tune poor hands-on touch controls and replace the
-untrusted visible FPS value with presentation-cadence measurement. Continue
+on iPad. In parallel, hands-on playtest and tune the corrected touch response.
+Continue
 Facility past the two-door corridor chain, then replace the diagnostic success
 prerequisite with organic objectives and mission completion through input. The
 traversal, chained-interaction, report, EEPROM write, lifecycle flush and
