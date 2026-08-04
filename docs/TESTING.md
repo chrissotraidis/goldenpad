@@ -24,6 +24,23 @@ directly import upstream's export-ignored private fidelity tools stay outside
 this public production gate. The ignored upstream checkout must be clean before
 the run and is restored clean afterward.
 
+For the private two-player startup gate, provide the supported retail ROM and
+run:
+
+```sh
+GOLDENPAD_ROM_PATH=/private/path/to/retail-game.v64 \
+  ./scripts/verify-mgb64-multiplayer-smoke.sh
+```
+
+The verifier temporarily applies
+`patches/mgb64-multiplayer-smoke.patch`, builds the pinned native core, starts a
+two-player Temple deathmatch, and requires clean assertions, healthy rendering,
+two measurably distinct split-screen viewports, and the two-second match timer
+to elapse. It deletes every ROM-derived screenshot, trace, log and save on exit
+and restores the ignored upstream checkout clean. This is startup/render smoke;
+it does not satisfy the human-completed D5/M2 match gate. Python Pillow is
+required for the local image comparison.
+
 For a private deterministic framebuffer proof, run from an ignored directory
 with a private ROM path and do not publish the output:
 
@@ -272,6 +289,16 @@ landscape phone, then repeat unchanged in the iPad sheet. Exact binary
 `d6249e072a279a07a31835147a30006510a512fcddf09955c55c47a5c95f10cb`
 passed the diagnostic and visible menu check. A connected hardware playtest is
 still required for stick, button and multiplayer feel.
+
+The same probe must report `Multiplayer touch ownership probe: PASS`. Open
+**Game Settings** > **Controllers** and require visible rows for Players 1–4.
+Player 1 must state `Touch` or `Touch + <controller>`; Players 2–4 must never
+claim touch. Use the Move menu to place a connected controller in Player 2 and
+confirm Player 1 remains `Touch`. Moving to an occupied slot must swap the two
+controllers. Exact Simulator binary
+`369dcbdf0cfbc0b3d6439305f7b5bc524bab5004077e6da60ad6dfc7776abd13`
+passed phone first and then unchanged on iPad with the synthetic MFi controller.
+Physical multi-controller assignment and gameplay feel remain hardware gates.
 
 For repository contamination checks:
 

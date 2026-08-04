@@ -212,6 +212,66 @@ struct InputSnapshot: Equatable, Sendable {
     }
 }
 
+struct ControllerAssignment: Identifiable, Equatable, Sendable {
+    let player: Int
+    let controllerName: String?
+
+    var id: Int { player }
+    var playerTitle: String { "Player \(player + 1)" }
+
+    var detail: String {
+        if player == 0 {
+            return controllerName.map { "Touch + \($0)" } ?? "Touch"
+        }
+        return controllerName ?? "Not connected"
+    }
+}
+
+private enum MultiplayerInputOwnership {
+    static func compose(
+        player: Int,
+        controller: InputSnapshot,
+        touch: InputSnapshot,
+        motionLook: SIMD2<Float>,
+        lookSensitivity: Float
+    ) -> InputSnapshot {
+        guard player == 0 else { return controller }
+        var combined = controller.merging(touch)
+        combined.look = ((combined.look + motionLook) * lookSensitivity)
+            .clampedUnitSquare()
+        return combined
+    }
+
+    static var isolationProbePasses: Bool {
+        let touch = InputSnapshot(
+            movement: SIMD2(0.75, 0.25),
+            buttons: [.fire]
+        )
+        let controller = InputSnapshot(
+            movement: SIMD2(-0.25, -0.50),
+            buttons: [.crouch]
+        )
+        let playerOne = compose(
+            player: 0,
+            controller: .neutral,
+            touch: touch,
+            motionLook: .zero,
+            lookSensitivity: 1
+        )
+        let playerTwo = compose(
+            player: 1,
+            controller: controller,
+            touch: touch,
+            motionLook: SIMD2(0.5, 0.5),
+            lookSensitivity: 2
+        )
+        return playerOne.movement == touch.movement &&
+            playerOne.buttons == touch.buttons &&
+            playerTwo == controller &&
+            !playerTwo.buttons.contains(.fire)
+    }
+}
+
 struct N64Buttons: OptionSet, Equatable, Sendable {
     let rawValue: UInt16
 
@@ -362,6 +422,7 @@ final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
     @Published private(set) var connectedControllerCount = 0
     @Published private(set) var externalControllerCount = 0
+    @Published private(set) var controllerAssignments: [ControllerAssignment] = []
     @Published private(set) var currentPreset = ControlPreset.modern
 
     private var touch = InputSnapshot.neutral
@@ -431,6 +492,7 @@ final class InputCoordinator: ObservableObject {
 
     init() {
         assignInitialControllers()
+        updateControllerCounts()
 
         let center = NotificationCenter.default
         observers.append(center.addObserver(
@@ -537,12 +599,29 @@ final class InputCoordinator: ObservableObject {
         controller.look = controller.look.applyingRadialDeadZone(
             Float(settings.stickDeadZone)
         )
-        guard player == 0 else { return controller }
+        return MultiplayerInputOwnership.compose(
+            player: player,
+            controller: controller,
+            touch: touch,
+            motionLook: motionLook,
+            lookSensitivity: Float(settings.lookSensitivity)
+        )
+    }
 
-        var combined = controller.merging(touch)
-        combined.look = ((combined.look + motionLook) * Float(settings.lookSensitivity))
-            .clampedUnitSquare()
-        return combined
+    func moveController(from sourcePlayer: Int, to destinationPlayer: Int) {
+        guard controllerSlots.indices.contains(sourcePlayer),
+              controllerSlots.indices.contains(destinationPlayer),
+              sourcePlayer != destinationPlayer,
+              controllerSlots[sourcePlayer] != nil else { return }
+        controllerSlots.swapAt(sourcePlayer, destinationPlayer)
+        controllerSlots[sourcePlayer]?.playerIndex = playerIndex(for: sourcePlayer)
+        controllerSlots[destinationPlayer]?.playerIndex = playerIndex(for: destinationPlayer)
+        print(
+            "[GoldenPad] Controller assignment moved: " +
+            "Player \(sourcePlayer + 1) <-> Player \(destinationPlayer + 1)"
+        )
+        updateControllerCounts()
+        refreshSummary()
     }
 
     func mappedFrame(player: Int) -> GoldenEyeInputFrame {
@@ -604,6 +683,10 @@ final class InputCoordinator: ObservableObject {
             print(
                 "[GoldenPad] Physical face-button isolation probe: " +
                 "\(PhysicalControllerFaceButtonMapper.isolationProbePasses ? "PASS" : "FAIL")"
+            )
+            print(
+                "[GoldenPad] Multiplayer touch ownership probe: " +
+                "\(MultiplayerInputOwnership.isolationProbePasses ? "PASS" : "FAIL")"
             )
         }
     }
@@ -2112,6 +2195,20 @@ final class InputCoordinator: ObservableObject {
         let controllers = controllerSlots.compactMap { $0 }
         connectedControllerCount = controllers.count
         externalControllerCount = controllers.filter(isExternalController).count
+        controllerAssignments = controllerSlots.enumerated().map { index, controller in
+            ControllerAssignment(
+                player: index,
+                controllerName: controller.map(controllerDisplayName)
+            )
+        }
+    }
+
+    private func controllerDisplayName(_ controller: GCController) -> String {
+        let vendor = controller.vendorName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let vendor, !vendor.isEmpty, vendor.caseInsensitiveCompare("unknown") != .orderedSame {
+            return vendor
+        }
+        return controller.productCategory
     }
 
     private func isExternalController(_ controller: GCController) -> Bool {

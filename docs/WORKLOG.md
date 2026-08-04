@@ -1,5 +1,29 @@
 # Worklog
 
+## 2026-08-04 — expose multiplayer ownership and prove split-screen startup
+
+- Replaced the Controllers page's total-count status with visible Player 1–4
+  assignments. Player 1 states its touch ownership, each connected controller
+  has a Move menu, and moving into an occupied slot swaps the two controllers.
+- Isolated touch composition behind one pure ownership function and added it to
+  the linked input probe. `Multiplayer touch ownership probe: PASS` requires
+  touch/gyro/sensitivity to affect Player 1 only while Players 2–4 remain exact
+  controller snapshots.
+- Exact Simulator binary
+  `369dcbdf0cfbc0b3d6439305f7b5bc524bab5004077e6da60ad6dfc7776abd13`
+  showed Player 1 `Touch + Gamepad` on iPhone, moved the synthetic controller to
+  Player 2 while Player 1 remained `Touch`, and repeated unchanged on iPad. The
+  full linked Simulator/device build passed, and both installs were removed and
+  simulators shut down sequentially.
+- Added a maintained macOS compatibility patch and verifier for upstream's
+  two-player smoke. The final private run booted a Temple deathmatch, produced
+  two distinct healthy viewports with 94.548% changed pixels, and reached the
+  two-second 120/120-tick limit. All ROM-derived output was removed and the
+  exact upstream checkout restored clean.
+- This closes neither M1 hardware acceptance nor D5/M2 human match completion.
+  It establishes a usable assignment UI and proves the native split-screen core
+  beneath the remaining hands-on product gate.
+
 ## 2026-08-04 — close the public MGB64 ROM-free test gate
 
 - Reproduced the stale internal result and classified all eight failures. They

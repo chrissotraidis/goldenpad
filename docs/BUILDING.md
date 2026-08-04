@@ -223,6 +223,18 @@ GE007_RENDERER=webgpu ref/mgb64/build-goldenpad-webgpu/ge007 \
   --savedir ref/mgb64/local-saves
 ```
 
+With that build and a private supported ROM available, the maintained
+two-player split-screen startup gate is:
+
+```sh
+GOLDENPAD_ROM_PATH=/private/path/to/retail-game.v64 \
+  ./scripts/verify-mgb64-multiplayer-smoke.sh
+```
+
+Its private ROM-derived artifacts are disposable and removed automatically.
+Passing it proves native split-screen startup and rendering, not completion of
+a local match.
+
 The upstream `-DMGB64_WEBGPU_BACKEND=OFF` option currently fails to link at the
 pinned commit and is intentionally not the documented baseline.
 

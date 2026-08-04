@@ -70,8 +70,12 @@ actual game display-list submissions instead of 60 Hz UIKit callbacks: the same
 binary measured 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad
 workload while both displays remained 60 Hz.
 Physical controller A no longer emits N64 A+B simultaneously. The controller
-page now documents the isolated A/Y and B/X mapping in a compact phone/iPad
-layout; real-gamepad feel and multiplayer remain device gates.
+page now documents the isolated A/Y and B/X mapping and exposes Players 1–4.
+Touch remains on Player 1 while a connected controller can be moved or swapped
+between slots; the same UI path passed on phone and iPad. The native desktop core
+also boots a two-player Temple deathmatch with distinct split-screen views.
+Real-gamepad feel, physical multi-controller assignment, and a human-completed
+match remain open gates.
 The native Display menu now exposes persisted 1×, 2×, 3× and 4× scene
 resolution. Exact binary
 `c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`

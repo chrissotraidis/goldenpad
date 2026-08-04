@@ -1,0 +1,35 @@
+diff --git a/tools/mp_smoke.sh b/tools/mp_smoke.sh
+index 59b84bc..9ecb730 100755
+--- a/tools/mp_smoke.sh
++++ b/tools/mp_smoke.sh
+@@ -149,12 +149,3 @@
+-TIMEOUT_CMD="$(validation_resolve_timeout_cmd)"
+-if [[ -n "$TIMEOUT_CMD" ]]; then
+-    TIMEOUT_BIN="$TIMEOUT_CMD"
+-    TIMEOUT_ARGS=(--kill-after=5 "$TIMEOUT_SECONDS")
+-else
+-    TIMEOUT_BIN="env"
+-    TIMEOUT_ARGS=()
+-fi
+-
+ LABEL="mp_smoke_${PLAYERS}p_$$"
+ TRACE="$OUT_DIR/mp.jsonl"
+ LOG="$OUT_DIR/mp.log"
+@@ -193,7 +184,8 @@ fi
+ # duplicated-camera bug -- fail the dissimilarity assertion below.
+ if ! (
+     cd "$OUT_DIR"
+-    env -u GE007_DEBUG \
++    validation_run_with_timeout "$TIMEOUT_SECONDS" \
++        env -u GE007_DEBUG \
+         SDL_AUDIODRIVER="${GE007_VALIDATION_SDL_AUDIODRIVER:-dummy}" \
+         GE007_MUTE=1 \
+         GE007_DETERMINISTIC_STABLE_COUNT=1 \
+@@ -204,7 +196,6 @@ if ! (
+         GE007_ASSERT_ON_FAIL=0 \
+         GE007_AUTO_FORWARD="$INPUT_WINDOW" \
+         GE007_AUTO_RIGHT="$INPUT_WINDOW" \
+-        "$TIMEOUT_BIN" "${TIMEOUT_ARGS[@]}" \
+         "$BINARY" \
+         --rom "$ROM" \
+         --savedir "$OUT_DIR" \

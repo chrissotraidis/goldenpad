@@ -272,6 +272,49 @@ private struct PhysicalControllerSettingsView: View {
 
     var body: some View {
         Form {
+            Section("Player Assignments") {
+                ForEach(input.controllerAssignments) { assignment in
+                    HStack(spacing: 12) {
+                        Image(systemName: assignment.player == 0 ? "hand.tap" : "gamecontroller")
+                            .foregroundStyle(
+                                assignment.controllerName == nil && assignment.player != 0
+                                    ? Color.secondary
+                                    : Color.accentColor
+                            )
+                            .frame(width: 22)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(assignment.playerTitle)
+                            Text(assignment.detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        if assignment.controllerName != nil {
+                            Menu {
+                                ForEach(0..<4, id: \.self) { destination in
+                                    Button("Player \(destination + 1)") {
+                                        input.moveController(
+                                            from: assignment.player,
+                                            to: destination
+                                        )
+                                    }
+                                    .disabled(destination == assignment.player)
+                                }
+                            } label: {
+                                Label("Move", systemImage: "arrow.left.arrow.right")
+                                    .labelStyle(.iconOnly)
+                            }
+                            .accessibilityLabel(
+                                "Move controller from \(assignment.playerTitle)"
+                            )
+                        }
+                    }
+                }
+                Text("Touch always controls Player 1. Moving into an occupied slot swaps the two controllers.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Stick Response") {
                 LabeledSlider(
                     title: "Dead zone",
@@ -280,13 +323,11 @@ private struct PhysicalControllerSettingsView: View {
                     valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
                 )
             }
-            Section("Mapping") {
-                Text("LT Aim  •  RT Fire")
-                Text("A Confirm / weapon  •  B or X Action / reload")
-                Text("LB Crouch  •  Y or RB Next weapon  •  Menu Pause / watch")
-            }
-            Section("Status") {
-                LabeledContent("Connected", value: "\(input.externalControllerCount)")
+            Section("Button Mapping") {
+                LabeledContent("Aim / Fire", value: "LT / RT")
+                LabeledContent("Confirm / Action", value: "A / B or X")
+                LabeledContent("Crouch / Weapon", value: "LB / Y or RB")
+                LabeledContent("Pause / Watch", value: "Menu")
             }
         }
         .navigationTitle("Controllers")

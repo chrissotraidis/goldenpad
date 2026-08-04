@@ -265,6 +265,16 @@ and physical-device acceptance keep the performance gate open.
 
 Gate: four-player iPad match where core support allows it.
 
+M1 now has a substantial Simulator subgate: the Controllers page shows the
+four player slots, keeps touch explicitly on Player 1, and lets a person move a
+connected controller to any slot with occupied destinations swapping. The same
+binary changed the Simulator MFi controller from Player 1 to Player 2 on iPhone
+and iPad, while a linked pure-input probe proved touch never enters Players
+2–4. Real multi-controller hardware acceptance remains open, so M1 stays open.
+The selected desktop core also passed a reproducible two-player Temple
+deathmatch startup smoke with distinct split-screen views and an elapsed match
+timer. That proves the core path beneath M2, not a human-completed match.
+
 ### P — Package and publish
 
 - [x] P1: original neutral icon at every required size.

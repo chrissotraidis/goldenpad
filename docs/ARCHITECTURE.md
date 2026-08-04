@@ -167,8 +167,10 @@ table pointers, then zeroes and frees the old allocation.
 ## Platform services
 
 - **Input:** touch and `GCController` devices feed one normalized snapshot per
-  simulation tick. Players 1-4 are assigned deterministically. Touch is player 1
-  only and auto-hides when an active physical controller is assigned.
+  simulation tick. Players 1-4 are assigned deterministically. Touch is Player 1
+  only and auto-hides when an active physical controller is assigned. The native
+  Controllers page mirrors all four slots and can swap a connected controller
+  into another slot without changing the gameplay mapping layer.
 - **Input mapping:** one frame carries normalized movement/look/actions plus an
   exact libultra-compatible N64 controller state. Classic exposes A/B/Z/Start,
   D-pad, L/R and all four C buttons; modern and southpaw preserve independent
@@ -182,8 +184,9 @@ table pointers, then zeroes and frees the old allocation.
   are supported. Entering native settings and switching control presets both
   neutralize touch state so a latched action cannot leak across UI modes.
 - **Native settings:** Game Settings is a hub. Touch Controls owns aiming,
-  overlay and layout; Controllers owns physical-stick response and connection
-  status; Display owns 1×–4× scene resolution and the opt-in Performance HUD.
+  overlay and layout; Controllers owns physical-stick response, per-player
+  assignment and connection status; Display owns 1×–4× scene resolution and the
+  opt-in Performance HUD.
   Resolution scales the `MTKView`/`CAMetalLayer` drawable relative to UIKit
   points while the SwiftUI controls remain at native UI resolution. The HUD reads produced
   game-frame cadence from MGB64's `rspGfxTaskStart` boundary, while UIKit refresh
@@ -243,5 +246,10 @@ one source target with device-class layouts, not forked game code.
 
 Single-player is completed first. Then controller assignment and viewport
 layout are validated for two players, followed by three/four players. Touch
-never generates inputs for unassigned players. Four-player iPad split screen is
-a final acceptance gate, not an initial architecture dependency.
+never generates inputs outside Player 1. The UI now exposes all four controller
+slots and swaps assignments explicitly; the common snapshot composer keeps
+Players 2–4 controller-only. The pinned desktop core has also rendered distinct
+two-player split-screen views through its private startup smoke. Human match
+completion and multi-controller hardware remain acceptance gates. Four-player
+iPad split screen is a final acceptance gate, not an initial architecture
+dependency.

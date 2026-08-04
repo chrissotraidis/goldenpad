@@ -314,6 +314,20 @@ longer blocks MGB64 integration.
   now maps A/Y to N64 A and B/X to N64 B, and its isolation probe passed. The
   compact Controllers reference was inspected phone-first and then unchanged on
   iPad. This proves mapping and menu presentation, not a real gamepad playtest.
+- The Controllers page now exposes Players 1–4 instead of only a total count.
+  Touch is visibly owned by Player 1, and each connected controller can move to
+  another player slot; an occupied destination swaps the two controllers. Exact
+  Simulator binary
+  `369dcbdf0cfbc0b3d6439305f7b5bc524bab5004077e6da60ad6dfc7776abd13`
+  moved the synthetic MFi controller from Player 1 to Player 2 on iPhone, then
+  repeated unchanged on iPad. Its linked input probe proved touch remains absent
+  from Players 2–4. Physical multi-controller acceptance remains open.
+- The selected native desktop core now passes a maintained private two-player
+  startup gate. It booted a Temple deathmatch, reported clean assertions and
+  render health, produced two distinct viewports with 94.548% changed pixels,
+  and reached the configured 120/120-tick timer. The verifier deletes its
+  ROM-derived artifacts and restores the exact upstream pin clean. This proves
+  M2's core split-screen path, not a person completing a match.
 - Touch axes are now kept separate from physical-controller noise filtering, so
   drift-free touch input no longer receives the Swift dead zone plus MGB64's
   second dead zone. Mobile right-stick shaping is linear; the existing
@@ -447,7 +461,7 @@ longer blocks MGB64 integration.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression,
   crouch/objectives flow, physical-controller/gyro acceptance, touch-only
-  mission completion and multiplayer remain open. Simulator UI automation proved the
+  mission completion and human-completed multiplayer remain open. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
   interaction gate.
 
@@ -457,7 +471,7 @@ The Apple shell, native game boot, renderer, audio, save path and menu schema ar
 substantially integrated, but the complete port is not at definition of done.
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
-multiplayer and physical lifecycle/audio/controller acceptance. The source-level
+multiplayer completion and physical lifecycle/audio/controller acceptance. The source-level
 license manifest and audited notice-bearing IPA are closed; exact Swift Mach-O
 byte reproducibility is still open and is not on the critical gameplay path.
 
