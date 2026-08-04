@@ -139,7 +139,7 @@ The current game-bearing unsigned IPA is built with
 `./scripts/package-unsigned-ipa.sh` after the complete renderer verifier passes;
 it is a developer artifact that contains no ROM and still requires a user's
 supported retail dump. Commit `2bc7920` reproduced the exact IPA from a fresh
-clone. At commit `651e4fe`, two independent clean checkouts produced
+clone. At commit `705b58a`, two independent clean checkouts produced
 byte-identical nine-member IPAs and passed the production contamination,
 notices, source-license, ARM64 and game-core audits. Multiplayer completion and
 final physical-device acceptance remain open. Contributions must preserve the

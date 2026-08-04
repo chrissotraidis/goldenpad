@@ -120,7 +120,7 @@ Game-core mode requires MGB64's game entry point and the native Fast3D/Metal
 renderer entry points in addition to the normal ARM64, unsigned and ROM-free
 archive checks. Native compiler source paths are prefix-mapped to stable relative
 identities so private checkout paths cannot enter the Mach-O. The IPA also
-carries the required third-party notices. At commit `651e4fe`, two independent
+carries the required third-party notices. At commit `705b58a`, two independent
 clean checkouts produced the same device executable and byte-identical IPA, so
 the current package is byte reproducible. Exact hashes are recorded in
 `TESTING.md`.

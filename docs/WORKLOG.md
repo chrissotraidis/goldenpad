@@ -17,6 +17,10 @@
 - The full linked Simulator/device build, source-license manifest, ROM scan and
   game-bearing IPA audit passed. This improves the human menu schema and proves
   authentic multiplayer availability; it does not claim match setup or play.
+- P2 was re-run after the source change, not inherited from the prior commit.
+  Two clean checkouts of `705b58a` produced identical device executables at
+  SHA-256 `8fa09749...43eb9`, byte-identical IPAs at `ca39138d...79312`, and
+  matching sorted app-content SHA-256 `9ddac5ff...9502e`.
 
 ## 2026-08-04 — close current unsigned-IPA reproducibility
 
