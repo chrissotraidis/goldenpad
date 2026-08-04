@@ -1,25 +1,119 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+private extension UTType {
+    static let goldenPadN64ROM = UTType(
+        importedAs: "com.chrissotraidis.goldenpad.n64-rom",
+        conformingTo: .data
+    )
+}
+
+@_silgen_name("goldenpad_mgb64_core_identity")
+private func goldenPadMGB64CoreIdentity() -> UnsafePointer<CChar>
+
+@_silgen_name("goldenpad_mgb64_core_probe")
+private func goldenPadMGB64CoreProbe() -> UInt32
+
+@_silgen_name("goldenpad_mgb64_audio_output_probe")
+private func goldenPadMGB64AudioOutputProbe() -> Int32
+
+private enum MGB64CoreInfo {
+    static let status: String = {
+        let identity = String(cString: goldenPadMGB64CoreIdentity())
+        let probe = goldenPadMGB64CoreProbe()
+        return "\(identity) • probe 0x\(String(probe, radix: 16))"
+    }()
+}
+
 @main
 struct GoldenPadApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var input = InputCoordinator()
+    @StateObject private var platform = PlatformCoordinator()
+    @StateObject private var renderSurface = AppleRenderSurface()
+
     var body: some Scene {
         WindowGroup {
             FoundationView()
+                .environmentObject(input)
+                .environmentObject(platform)
+                .environmentObject(renderSurface)
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    platform.handle(scenePhase: phase)
+                    renderSurface.setActive(phase == .active)
+                    if phase != .active {
+                        input.releaseTouchInput()
+                    }
+                }
+                .onChange(of: platform.settings, initial: true) { _, settings in
+                    input.configure(settings: settings)
+                    renderSurface.configure(resolution: settings.renderResolution)
+                }
         }
     }
 }
 
 private struct FoundationView: View {
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+    @EnvironmentObject private var renderSurface: AppleRenderSurface
     @State private var isImporterPresented = false
     @State private var validation: ROMValidationState = .notSelected
     @State private var performedAutomationValidation = false
 
     var body: some View {
         ZStack {
-            MetalCanvas()
+            MetalCanvas(surface: renderSurface, input: input)
                 .ignoresSafeArea()
 
+            if validation.gameStarted {
+                GameplayTouchControls()
+            } else {
+                setupShell
+            }
+        }
+        .preferredColorScheme(.dark)
+        .fileImporter(
+            isPresented: $isImporterPresented,
+            allowedContentTypes: [.goldenPadN64ROM],
+            allowsMultipleSelection: false
+        ) { result in
+            validateSelection(result)
+        }
+        .onOpenURL { url in
+            validateImportedURL(url)
+        }
+        .task {
+            await runAutomationValidationIfRequested()
+        }
+        .onChange(of: validation.gameStarted) { _, started in
+            guard started else { return }
+            Task {
+                await reportNativePCMWhenReady()
+            }
+        }
+    }
+
+    private func reportNativePCMWhenReady() async {
+        for elapsedSeconds in 1...30 {
+            do {
+                try await Task.sleep(for: .seconds(1))
+            } catch {
+                return
+            }
+            if goldenPadMGB64AudioOutputProbe() == 1 {
+                print(
+                    "[GoldenPad] Native PCM output probe: PASS " +
+                    "after \(elapsedSeconds)s"
+                )
+                return
+            }
+        }
+        print("[GoldenPad] Native PCM output probe: FAIL timeout=30s")
+    }
+
+    private var setupShell: some View {
+        ZStack {
             LinearGradient(
                 colors: [.black.opacity(0.18), .black.opacity(0.78)],
                 startPoint: .top,
@@ -58,6 +152,20 @@ private struct FoundationView: View {
                         .foregroundStyle(.white.opacity(0.66))
                         .labelStyle(.titleAndIcon)
 
+                        Text("\(platform.statusSummary)  •  \(renderSurface.status)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
+
+                        Text(MGB64CoreInfo.status)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
+
+                        TouchInputLab()
+
+                        Text(input.diagnosticSummary)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.white.opacity(0.46))
+
                         Spacer(minLength: max(24, geometry.safeAreaInsets.bottom))
                     }
                     .frame(maxWidth: 720, alignment: .leading)
@@ -65,17 +173,6 @@ private struct FoundationView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-        }
-        .preferredColorScheme(.dark)
-        .fileImporter(
-            isPresented: $isImporterPresented,
-            allowedContentTypes: [.data],
-            allowsMultipleSelection: false
-        ) { result in
-            validateSelection(result)
-        }
-        .task {
-            await runAutomationValidationIfRequested()
         }
     }
 
@@ -108,6 +205,7 @@ private struct FoundationView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color(red: 0.32, green: 0.76, blue: 0.64))
+            .accessibilityHint("Choose a Z64, V64, N64, or ROM file from Files")
         }
         .padding(20)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -124,11 +222,22 @@ private struct FoundationView: View {
     private func validateSelection(_ result: Result<[URL], Error>) {
         guard case let .success(urls) = result, let url = urls.first else {
             if case let .failure(error) = result {
+                let cocoaError = error as NSError
+                guard cocoaError.domain != NSCocoaErrorDomain ||
+                        cocoaError.code != NSUserCancelledError else { return }
                 validation = .invalid("The file picker failed: \(error.localizedDescription)")
             }
             return
         }
 
+        validateImportedURL(url)
+    }
+
+    private func validateImportedURL(_ url: URL) {
+        guard !validation.gameStarted else {
+            print("[GoldenPad] Ignored ROM import while the native game is already running")
+            return
+        }
         validation = .validating
 
         Task {
@@ -167,7 +276,7 @@ private struct FoundationView: View {
 enum ROMValidationState {
     case notSelected
     case validating
-    case valid(byteOrder: String)
+    case valid(byteOrder: String, coreLoaded: Bool, gameStarted: Bool)
     case invalid(String)
 
     var title: String {
@@ -179,14 +288,27 @@ enum ROMValidationState {
         }
     }
 
+    var gameStarted: Bool {
+        if case let .valid(_, _, started) = self {
+            return started
+        }
+        return false
+    }
+
     var detail: String {
         switch self {
         case .notSelected:
             "Choose your legally obtained original US retail dump. The file is read only for validation and is not bundled with the app."
         case .validating:
             "Normalizing byte order and checking the retail SHA-1 entirely on this device."
-        case let .valid(byteOrder):
-            "Validation passed (\(byteOrder)). Core integration is the next project gate; this foundation build does not start the game."
+        case let .valid(byteOrder, coreLoaded, gameStarted):
+            if gameStarted {
+                "Validation passed (\(byteOrder)). The native game loop is running from a private in-memory copy; no retail bytes were written to the app or repository."
+            } else if coreLoaded {
+                "Validation passed (\(byteOrder)). A private in-memory copy is available to the native core; no retail bytes were written to the app or repository."
+            } else {
+                "Validation passed (\(byteOrder)). This foundation build does not retain the selected file or start the game."
+            }
         case let .invalid(reason):
             reason
         }

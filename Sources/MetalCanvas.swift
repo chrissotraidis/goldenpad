@@ -1,9 +1,20 @@
 import MetalKit
 import SwiftUI
 
+@_silgen_name("goldenpad_mgb64_frame_stats_snapshot")
+private func goldenPadFrameStatsSnapshot(
+    _ fps: UnsafeMutablePointer<Float>?,
+    _ frameMilliseconds: UnsafeMutablePointer<Float>?,
+    _ low1FPS: UnsafeMutablePointer<Float>?,
+    _ generation: UnsafeMutablePointer<UInt32>?
+) -> Int32
+
 struct MetalCanvas: UIViewRepresentable {
+    let surface: AppleRenderSurface
+    let input: InputCoordinator
+
     func makeCoordinator() -> Renderer {
-        Renderer()
+        Renderer(surface: surface, input: input)
     }
 
     func makeUIView(context: Context) -> MTKView {
@@ -14,32 +25,54 @@ struct MetalCanvas: UIViewRepresentable {
         view.enableSetNeedsDisplay = false
         view.isPaused = false
         view.delegate = context.coordinator
-        context.coordinator.attach(to: view)
+        surface.attach(to: view)
         return view
     }
 
     func updateUIView(_ view: MTKView, context: Context) {}
 
-    final class Renderer: NSObject, MTKViewDelegate {
-        private var commandQueue: MTLCommandQueue?
+    static func dismantleUIView(_ view: MTKView, coordinator: Renderer) {
+        coordinator.surface.detach(from: view)
+    }
 
-        func attach(to view: MTKView) {
-            commandQueue = view.device?.makeCommandQueue()
+    @MainActor
+    final class Renderer: NSObject, MTKViewDelegate {
+        let surface: AppleRenderSurface
+        let input: InputCoordinator
+        private var didReportFrameStats = false
+
+        init(surface: AppleRenderSurface, input: InputCoordinator) {
+            self.surface = surface
+            self.input = input
         }
 
-        func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+        func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+            surface.drawableSizeDidChange(in: view)
+        }
 
         func draw(in view: MTKView) {
-            guard
-                let descriptor = view.currentRenderPassDescriptor,
-                let drawable = view.currentDrawable,
-                let buffer = commandQueue?.makeCommandBuffer(),
-                let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor)
-            else { return }
+            reportFrameStatsWhenReady()
+            input.publishToCore()
+            surface.drawFoundationFrame(in: view)
+        }
 
-            encoder.endEncoding()
-            buffer.present(drawable)
-            buffer.commit()
+        private func reportFrameStatsWhenReady() {
+            guard !didReportFrameStats else { return }
+            var fps: Float = 0
+            var frameMilliseconds: Float = 0
+            var low1FPS: Float = 0
+            var generation: UInt32 = 0
+            guard goldenPadFrameStatsSnapshot(
+                &fps, &frameMilliseconds, &low1FPS, &generation
+            ) == 1, generation >= 16 else { return }
+            didReportFrameStats = true
+            print(
+                String(
+                    format: "[GoldenPad] Game-frame cadence: PASS %.1f FPS " +
+                        "%.2f ms 1%% low %.1f generation=%u",
+                    fps, frameMilliseconds, low1FPS, generation
+                )
+            )
         }
     }
 }

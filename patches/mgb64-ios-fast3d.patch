@@ -1,0 +1,124 @@
+diff --git a/src/game/rsp.c b/src/game/rsp.c
+--- a/src/game/rsp.c
++++ b/src/game/rsp.c
+@@ -233,3 +233,9 @@ void rspGfxTaskStart(Gfx *firstGdl, Gfx *gdl, s32 arg2, OSMesg rspReplyMsg)
++#ifdef MGB64_APPLE_MOBILE
++    /* Count frames produced by the game, not UIKit presentation callbacks. */
++    extern void platformFrameStatsTick(void);
++    platformFrameStatsTick();
++#endif
++
+     {
+         size_t dl_size = (size_t)((u8 *)gdl - (u8 *)firstGdl);
+         if (dl_size > 512 * 1024) {
+diff --git a/src/platform/fast3d/gfx_pc.c b/src/platform/fast3d/gfx_pc.c
+index ae43b27..18fde7a 100644
+--- a/src/platform/fast3d/gfx_pc.c
++++ b/src/platform/fast3d/gfx_pc.c
+@@ -2867,8 +2867,12 @@ static struct GfxRenderingAPI *gfx_rapi;
+  * the faithful (pre-aniso) path. */
+ static bool gfx_backend_is_webgpu_active(void)
+ {
++#ifdef MGB64_APPLE_MOBILE
++    return false;
++#else
+     extern struct GfxRenderingAPI gfx_webgpu_api;
+     return gfx_rapi == &gfx_webgpu_api;
++#endif
+ }
+
+ #define TEXTURE_CACHE_MAX_SIZE 1024
+@@ -4863,6 +4867,10 @@ static int gfx_scaled_dimension(int value) {
+ }
+
+ static void gfx_sync_current_dimensions_from_window(void) {
++#ifdef MGB64_APPLE_MOBILE
++    /* AppleRenderSurface supplies drawable dimensions directly. */
++    return;
++#else
+     extern SDL_Window *g_sdlWindow;
+     int w = 0;
+     int h = 0;
+@@ -4990,6 +4998,7 @@ static void gfx_sync_current_dimensions_from_window(void) {
+     gfx_current_dimensions.aspect_ratio =
+         (float)gfx_current_dimensions.width /
+         (float)gfx_current_dimensions.height;
++#endif
+ }
+
+ static float buf_vbo[MAX_BUFFERED * (64 * 3)]; /* pos + diag attrs + texcoords + clamp/mask extents + fog + inputs */
+@@ -25290,6 +25299,12 @@ static void gfx_sp_reset(void) {
+ }
+
+ void gfx_init(void) {
++#ifdef MGB64_APPLE_MOBILE
++    /* UIKit owns a CAMetalLayer and iOS has no desktop OpenGL fallback. Keep
++     * that ownership explicit so the mobile binary does not retain GL solely
++     * because of the desktop selector branch below. */
++    gfx_rapi = &gfx_metal_api;
++#else
+ #ifdef MGB64_WEBGPU_BACKEND
+     if (gfx_backend_use_webgpu()) {
+         gfx_rapi = &gfx_webgpu_api;
+@@ -25302,6 +25317,7 @@ void gfx_init(void) {
+         gfx_rapi = &gfx_opengl_api;
+ #endif
+     }
++#endif
+     gfx_rapi->init();
+     /* g_depth_clamp_enabled is a cross-backend invariance coupling: the CPU
+      * clipper's GFX_CLIP_Z_SCALE (:219/:223) reads it, and OpenGL sets it inside
+@@ -25581,6 +25597,10 @@ void gfx_run_dl(Gfx *dl) {
+     }
+     /* Set clear color BEFORE start_frame, which does the clear */
+     {
++#ifdef MGB64_APPLE_MOBILE
++        extern void gfx_metal_set_clear_color(float r, float g, float b);
++        gfx_metal_set_clear_color(clear_r, clear_g, clear_b);
++#else
+ #ifdef MGB64_WEBGPU_BACKEND
+         if (gfx_backend_use_webgpu()) {
+             extern void gfx_webgpu_set_clear_color(float r, float g, float b);
+@@ -25597,6 +25617,7 @@ void gfx_run_dl(Gfx *dl) {
+             extern void gfx_opengl_set_clear_color(float r, float g, float b);
+             gfx_opengl_set_clear_color(clear_r, clear_g, clear_b);
+         }
++#endif
+     }
+     gfx_rapi->start_frame();
+
+@@ -25652,6 +25673,7 @@ void gfx_run_dl(Gfx *dl) {
+
+     gfx_rapi->end_frame();
+ #ifdef NATIVE_PORT
++#ifndef MGB64_APPLE_MOBILE
+     /* GL draws the minimap here. Metal draws the same queued overlay triangles in
+      * mtl_end_frame before the final present blit, so screenshots/readback include
+      * it without touching a GL context. WebGPU likewise has no GL context, so this
+@@ -25674,6 +25696,7 @@ void gfx_run_dl(Gfx *dl) {
+             gfx_opengl_draw_synth_frame((unsigned int)g_frame_count_diag);
+         }
+     }
++#endif
+ #endif
+     /* [AUDIT-0003] Capture AFTER end_frame() composition + the minimap draw, so
+      * the readback contains output post-FX and the minimap, not the raw pre-
+@@ -26408,6 +26431,10 @@ unsigned int gfx_get_segment_mask(void) {
+ }
+
+ void gfx_end_frame(void) {
++#ifdef MGB64_APPLE_MOBILE
++    /* Metal presents in mtl_end_frame; UIKit owns the window lifecycle. */
++    return;
++#else
+     extern SDL_Window *g_sdlWindow;
+     extern void platformOverlayRender(void);
+     /* Only the GL backend swaps here. Metal presents its drawable in
+@@ -26418,6 +26445,7 @@ void gfx_end_frame(void) {
+      * when no overlay hooks are registered, e.g. the automation path). */
+     platformOverlayRender();
+     SDL_GL_SwapWindow(g_sdlWindow);
++#endif
+ }
+
+ void gfx_register_n64_dl_region(void *addr, size_t size) {

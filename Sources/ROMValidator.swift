@@ -1,11 +1,35 @@
 import CryptoKit
 import Foundation
 
+@_silgen_name("goldenpad_mgb64_core_accepts_rom")
+private func goldenPadMGB64CoreAcceptsROM() -> Int32
+
+@_silgen_name("goldenpad_mgb64_clear_rom")
+private func goldenPadMGB64ClearROM()
+
+@_silgen_name("goldenpad_mgb64_file_table_ready")
+private func goldenPadMGB64FileTableReady() -> Int32
+
+@_silgen_name("goldenpad_mgb64_prepare_scheduler")
+private func goldenPadMGB64PrepareScheduler() -> Int32
+
+@_silgen_name("goldenpad_mgb64_install_validated_rom")
+private func goldenPadMGB64InstallValidatedROM(
+    _ bytes: UnsafeRawPointer?,
+    _ size: UInt32
+) -> Int32
+
+@_silgen_name("goldenpad_mgb64_start_game")
+private func goldenPadMGB64StartGame() -> Int32
+
 enum ROMValidator {
     private static let expectedSize = 12 * 1024 * 1024
     private static let expectedUSSHA1 = "abe01e4aeb033b6c0836819f549c791b26cfde83"
 
     static func validate(url: URL) -> ROMValidationState {
+        if goldenPadMGB64CoreAcceptsROM() == 1 {
+            goldenPadMGB64ClearROM()
+        }
         let hasScopedAccess = url.startAccessingSecurityScopedResource()
         defer {
             if hasScopedAccess {
@@ -44,7 +68,30 @@ enum ROMValidator {
                 return .invalid("The dump is not the supported original US retail revision (SHA-1 mismatch).")
             }
 
-            return .valid(byteOrder: byteOrder)
+            var coreLoaded = false
+            var gameStarted = false
+            if goldenPadMGB64CoreAcceptsROM() == 1 {
+                let installed = normalized.withUnsafeBytes { bytes in
+                    goldenPadMGB64InstallValidatedROM(bytes.baseAddress, UInt32(bytes.count))
+                }
+                guard installed == 1,
+                      goldenPadMGB64FileTableReady() == 1,
+                      goldenPadMGB64PrepareScheduler() == 1 else {
+                    return .invalid("The validated dump could not be installed in volatile core memory.")
+                }
+                coreLoaded = true
+                print("[GoldenPad] Validated ROM installed; MGB64 scheduler ready")
+                guard goldenPadMGB64StartGame() == 1 else {
+                    return .invalid("The native renderer was not ready to start the validated game.")
+                }
+                gameStarted = true
+            }
+
+            return .valid(
+                byteOrder: byteOrder,
+                coreLoaded: coreLoaded,
+                gameStarted: gameStarted
+            )
         } catch {
             return .invalid("The selected file could not be read: \(error.localizedDescription)")
         }

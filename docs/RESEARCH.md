@@ -1,37 +1,66 @@
 # Research
 
-Last verified: 2026-08-03. All checkouts below live under the ignored `ref/`
+Last verified: 2026-08-04. All checkouts below live under the ignored `ref/`
 directory and are references unless this document explicitly says otherwise.
 
 ## Decision
 
-GoldenPad's preferred production core is the original-retail-N64
-**GoldenRecomp + N64Recomp + N64ModernRuntime** path, rendered by **RT64 over
-Metal**. This path has a clearly licensed wrapper/runtime/tooling chain and does
-not require distributing the unlicensed `n64decomp/007` C tree.
+GoldenPad's production-core candidate is **MGB64 at `cd9b58f`**. It is the only
+inspected original-retail-N64 project that both builds from its public checkout
+and reaches visible Apple Silicon GoldenEye gameplay. Its native target compiles
+the reconstructed game logic plus first-party platform replacements, while
+leaving the historical libultra/libultrare implementation source sets empty.
+The upstream native SDK-surface guard passes at the exact pin.
 
-The decision is gated, not final: GoldenRecomp's pinned game-code submodule is
-currently unavailable, generated `RecompiledFuncs` are not tracked, and its
-documented TLB-free ROM/ELF recipe cannot be reproduced from the public checkout.
-No GoldenRecomp code will be incorporated until that gate is resolved and the
-resulting source/binary provenance is reviewed.
+This adopts the same disclosed community decomp/recomp boundary used by the
+other native N64 ports evaluated for GoldenPad: the ROM supplies bulk media,
+while reconstructed or translated game logic is native code. Lack of an
+original-rightsholder license is a commercial/official-distribution concern,
+not a GoldenEye-specific development blocker. See `LEGAL.md`.
 
-MGB64 is the strongest current Apple Silicon behavior and platform reference.
-It is not the production core because the underlying decompiled game tree has
-no license and the checkout inventories SDK-lineage material outside MGB64's
-MIT grant.
+GoldenRecomp + N64Recomp + N64ModernRuntime + RT64 remains the preferred static-
+recomp reference architecture, but not the active production path: its pinned
+game-code submodule is unavailable, generated `RecompiledFuncs` are absent, and
+its TLB-free ROM/ELF recipe cannot be reproduced from the public checkout.
 
 ## Verified inventory
 
 | Project | URL | Branch and commit | License/provenance | Purpose and disposition |
 | --- | --- | --- | --- | --- |
-| GoldenRecomp | https://github.com/kholdfuzion/GoldenRecomp | `main` at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 wrapper; generated game functions are local build output | Preferred static-recomp core reference. Remains ignored reference until its input pipeline is reproducible. |
+| GoldenRecomp | https://github.com/kholdfuzion/GoldenRecomp | `main` at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 wrapper; generated game functions are local build output | Static-recomp/RT64 reference. Not active until its input pipeline is reproducible. |
 | N64Recomp | https://github.com/N64Recomp/N64Recomp | `main` at `ffb39cdad1da5de07eaaa48bd1db4a89a7986771` | MIT | Recompiler tooling reference; pin before incorporation. |
 | N64ModernRuntime | https://github.com/N64Recomp/N64ModernRuntime | `main` at `589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` | GPL-3.0 (`COPYING`) | Threads, controllers, audio, timing, PI/ROM and saves. Candidate dependency. |
-| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Preferred renderer. Code inspection confirms macOS Metal sources/shaders and SDL Metal surfaces. iOS remains unproven. |
-| MGB64 | https://github.com/akratch/mgb64 | `main` at `cd9b58f5f91291579b8e551aa925aab000d311cf` | MIT only for first-party work; decompiled game and SDK-lineage exclusions are documented in `THIRD_PARTY.md` | Apple Silicon gameplay oracle and platform reference only. Do not copy game/SDK material. |
+| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Preferred renderer. GoldenPad's tracked patches build the complete static library for iOS device and Simulator and link it through an opt-in host bridge. |
+| Plume | RT64 submodule `src/contrib/plume` | `d890ac899e505fb30040e037a4037cdeca68f033` | MIT | RT64 rendering backend. GoldenPad's UIKit/Metal patch compiles and runs its Apple backend on ARM64 device and Simulator targets without copying the dependency into the repository. |
+| MGB64 | https://github.com/akratch/mgb64 | `main` at `cd9b58f5f91291579b8e551aa925aab000d311cf` | MIT for first-party work; decompiled game rights and matching-target SDK lineage documented in `THIRD_PARTY.md` | Selected production-core candidate. Compile only the guarded native source surface; never matching-target SDK implementations or ROM media. |
 | n64decomp/007 | https://github.com/n64decomp/007 | `master` at `754a0a977efcbc99a46d079a73292e40780e3aab` | **No LICENSE file found**; includes decompiled game and libultra/Rare lineage | Symbol/decomp research only. Not incorporated. |
 | HarkinianPad | https://github.com/chrissotraidis/harkinianpad | `main` at `4db21e4be0f0be52948438de5d8c755d191897ae` | All rights reserved for its integration code, docs and art; upstream licenses separate | UX/architecture reference only. Clean-room reimplement touch ideas; do not copy code or art without permission. |
+
+## Blocker follow-up
+
+- Current N64Recomp and all five pinned submodules build successfully as native
+  Apple ARM64 command-line tools. This proves host-tool portability, not game
+  input availability.
+- Running that tool with GoldenRecomp's `us.toml` stops at `Elf file not found`.
+  The configuration still names `ge007.tlbfree.elf`; its alternative
+  `symbols_file_path = "dump.toml"` is commented and no dump is published.
+- Current N64Recomp can consume a ROM plus a complete symbol metadata file, but
+  it does not infer the full function/section/relocation map from a retail ROM.
+- All public GoldenRecomp forks inspected through 2026-08-03 retain the same
+  unavailable `kholdfuzion/goldeneye_src` URL and publish no generated function
+  tree or replacement metadata.
+- The only public repository found with the `goldeneye_src` name has no license,
+  no TLB-free branch, and is not the pinned history. It is unusable here.
+- `ysrdevs/goldeneye-metal` is a PowerPC/ReXGlue Xbox 360 recompilation that
+  imports `default.xex` or Xbox LIVE/STFS data. It is outside this project's
+  original-N64-ROM boundary and is explicitly excluded despite its Apple Metal
+  work. Other XBLA/XEX recompilation projects are excluded for the same reason.
+
+The static-recomp path therefore needs one external upstream change: a
+licensed public TLB-free input repository/ELF recipe, or a licensed complete
+ROM symbol/section/relocation metadata file compatible with current N64Recomp.
+Neither exists in the inspected public ecosystem today. This remains a
+GoldenRecomp limitation, not a blocker on the selected MGB64 production path.
 
 ## GoldenRecomp inspection
 
@@ -60,36 +89,117 @@ On this Apple M1 host, commit `cd9b58f`:
 - direct-booted Dam, decoded 261/261 SFX, parsed 75 music instruments, and saved
   a valid 640x480 gameplay framebuffer;
 - created and persisted a configuration in a dedicated ignored save directory.
+- compiled all 135 game C files, 70 explicit upstream native system/portable
+  files and five project-owned mobile adapters into 210-object ARM64 archives
+  for both Apple mobile SDKs;
+- linked the real upstream random-core code into GoldenPad and executed the same
+  deterministic probe on iPhone and iPad simulators.
+- compiled the complete native Metal backend and its combiner/backend/MSAA
+  support for both Apple mobile SDKs after guarding two macOS-only
+  `CAMetalLayer.displaySyncEnabled` writes;
+- compiled the Fast3D interpreter, room-normal helper, screenshot and texture
+  units into five-object ARM64
+  archives for both mobile SDKs without unresolved SDL or desktop OpenGL calls;
+- supplied `platformGetMetalLayer` from the UIKit host and observed it live at
+  1206x2622 on iPhone followed by 1668x2420 on iPad;
+- linked the Fast3D/Metal closure into final ARM64 Simulator and device apps,
+  then encoded/presented real ROM-free MGB64 empty frames sequentially at those
+  same drawable sizes without SDL/OpenGL/AppKit dependencies or GPU errors;
+- normalized the supported private V64 through the existing exact SHA-1 gate,
+  installed it into core-owned volatile memory on iPhone and then iPad, and
+  removed each entire app container immediately after its sequential pass.
+- initialized the real upstream scheduler, message queues and graphics client
+  through the SDL-free mobile OS adapter in final Simulator/device binaries;
+  sequential phone/tablet runtime reached `MGB64 scheduler ready` before the
+  same app-container cleanup.
+- linked upstream native ROM-offset and zero-content asset-symbol units, patched
+  the complete file table, and verified its first background and Dam entries
+  inside the owned buffer on both mobile device classes.
+- isolated the real host-side GU matrix/vector helpers from the desktop SDL
+  compatibility unit, executed `guNormalize` inside the mobile core probe on
+  both device classes, and reduced the measured `bossEntry` link gap from 261
+  to 246 unique symbols with no GU blocker remaining.
+- added 28 small SDL-free upstream leaf units for segment constants, trig/stdio
+  compatibility and isolated fidelity helpers; representative paths executed in
+  the unchanged phone/tablet probe, while the startup map closed 61 symbols,
+  introduced none and fell from 246 to 185.
+- moved the 68 game settings/startup globals needed by the title path into a
+  project-owned mobile configuration unit rather than SDL; representative
+  defaults executed on both device classes and the startup map fell from 185 to
+  117 with no new unresolved name.
+- linked real model conversion, stage lookup, radial input, setup-name and
+  weapon-cue services plus a mobile legacy-data unit; representative paths ran
+  on both device classes and the startup map fell from 117 to 97 with no new
+  unresolved symbol.
+- linked the real portable overlay dispatcher plus project-owned thread-safe
+  queues/timers, volatile EEPROM and neutral UIKit host services. Their delayed
+  timer, EEPROM and lifecycle probes ran on both device classes; the startup map
+  closed 27, introduced none and fell from 97 to 70.
+- closed the remaining portable `bossEntry` boundary with no unresolved symbol,
+  without importing SDL or matching-target SDK implementation sources, and
+  started it once on a dedicated game thread after all readiness gates.
+- rendered the real title animation and demo-stage setup through Fast3D/Metal
+  sequentially at 2622x1206 on iPhone and 2420x1668 on iPad.
+- connected Swift controller frames to the real mobile `osCont*` reads; the
+  deterministic input probe passed on both simulator classes.
+- decoded 261/261 SFX and parsed 75 music instruments/138 sounds on each class;
+  the 22.05 kHz synth fed a bounded PCM ring and the native output probe passed.
 
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
 
-CTest result: 106 tests discovered; 92% passed, 8 failed, and 10 skipped. Failures
-included malformed shell `case` syntax, Bash-3-incompatible associative arrays,
-missing Pillow, pre-push assumptions, and stale/missing fidelity evidence paths.
-This is a working desktop oracle, not a release-ready upstream.
+The original internal checkout run discovered 106 tests, with eight failures
+split across macOS Bash 3 incompatibilities, a missing Pillow dependency and
+stale private fidelity evidence. That result mixed the public release surface
+with upstream's export-ignored fidelity program. GoldenPad now verifies the
+actual public export at the exact pin with a maintained compatibility patch:
+the exported source builds and reports 100% passed across 103 CTest entries,
+with 10 explicit ROM/browser/optional-binary skips. No private fidelity test or
+evidence path is reclassified as a production release gate.
 
 ## Renderer assessment
 
 RT64 currently advertises and contains D3D12, Vulkan and Metal backends. Its
-Apple path creates an SDL Metal view and compiles Metal shader libraries on
-macOS. The current CMake shader commands hard-code `-sdk macosx`; moving to iOS
-requires parameterizing the SDK (`iphoneos`/`iphonesimulator`), validating
-Metal feature use, and replacing desktop window/filesystem assumptions.
+Apple path creates an SDL Metal view and previously hard-coded `-sdk macosx` for
+shader compilation. At the pinned commit, the repo-owned SDK patch generated 56
+MSL files and compiled all 56 independently into `.metallib` files for both
+`iphoneos` and `iphonesimulator`. Consecutive runs produced stable aggregate
+digests `04c7eb0f7719dc27ea3f4ca4b2f95fc7bb5a59837c1c77af68ce421d081cc838`
+and `7b9a5a185799bd8bda7f7e2b25fe4bcb18223200cf14df781c442441f93f2212`,
+respectively.
 
-MGB64's Fast3D/WebGPU path already proves the same GoldenEye display-list family
-on Metal, but its fast3d provenance has redistribution qualifications and its
-game integration cannot be cleanly separated without more audit. It remains a
-fallback technical reference, not the first choice.
+The Plume Metal core compiled into ARM64 static archives for both mobile SDKs
+after a narrow patch replaced AppKit helpers with UIKit, used the default Metal
+device when `MTL::CopyAllDevices()` is unavailable on iOS, and guarded macOS-only
+display-sync APIs. A Simulator-only guard avoids the unavailable Metal `location`
+selector while retaining the native device query on hardware.
+
+The embedded RT64 patch excludes the desktop SDL window/event adapter, NFD,
+inspector UI and cross-compiled host tools. Host-generated SPIR-V/preprocessed
+sources are reused while each mobile SDK receives its own 56 compiled Metal
+libraries. Exact clean-tree runs produce a 210-object RT64 archive for both SDKs;
+RT64, Plume, re-spirv and zstd total 246 archive members. Force-loading all four
+archives leaves no SDL, NFD, AppKit, IOKit, X11 or macOS Vulkan-surface symbols.
+
+GoldenPad's opt-in bridge then created the real Plume Metal device, direct
+command queue and swapchain against its UIKit-owned `CAMetalLayer`. Sequential
+runtime passes visibly reported `Apple iOS simulator GPU` at 1206x2622 on
+iPhone 16 Pro and 1668x2420 on iPad Pro 11-inch (M4). This completes the RT64
+mobile renderer/surface reference gate. The selected MGB64 production path is
+now independently connected through its coupled Fast3D/Metal renderer.
+
+MGB64's coupled Fast3D/Metal path now runs the title, menus and live missions on
+iOS. Only the audited native source set is compiled; UIKit owns the layer and
+cadence, while ROM state remains null before validated import. RT64 remains a
+verified alternative, not a second simultaneous bring-up dependency.
 
 ## Current unknowns
 
-1. Can GoldenRecomp's exact TLB-free input branch and pinned `lib/ge` commit be
-   obtained from a public, provenance-documented source?
-2. Can current N64Recomp generate GoldenEye code directly from ROM plus public
-   symbols, eliminating the special decomp-built ELF?
-3. Does RT64's Metal backend compile and run on iOS without unsupported desktop
-   APIs or runtime shader compilation?
-4. Are the generated recompilation outputs suitable for public source/binary
-   distribution? This needs explicit legal review; this document is not legal
-   advice.
+1. Which MGB64 game/render hotspots cause large scene-to-scene cadence drops on
+   Simulator and physical Apple hardware?
+2. Which remaining touch sensitivities and placements are comfortable during a
+   complete human-played mission on phone and tablet?
+3. Does local two-to-four-player split-screen retain correct controller
+   assignment, aspect layout, audio and save behavior on iPad?
+4. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
+   metadata eventually be restored for a comparative RT64 build?
