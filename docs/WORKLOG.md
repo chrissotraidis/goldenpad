@@ -28,6 +28,10 @@
   `43bfe1b5...1f389`, IPA `6eed064c...c738d` and sorted app content
   `aed6b272...08a6c`. Physical-finger and device-performance acceptance remain
   open and are stated that way publicly.
+- P2 was re-run from the exact public-release source commit `94242be`. Two clean
+  checkout paths independently reproduced device executable `43bfe1b5...1f389`,
+  byte-identical IPA `6eed064c...c738d` and sorted content `aed6b272...08a6c`,
+  with every linked build, source-license, notices and ROM audit passing.
 
 ## 2026-08-04 — remove touch swipe loss and phone edge conflicts
 

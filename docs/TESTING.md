@@ -753,14 +753,14 @@ and
 `7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
 `83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
 That historical mismatch reopened the packaging gate. A new current-state run
-at commit `705b58a` built the complete Simulator/device closure and packaged the
+at commit `94242be` built the complete Simulator/device closure and packaged the
 app independently under two different clean checkout paths. Both device
 executables matched SHA-256
-`8fa09749ab6a7b89d9411bf8f8d7627058a50f7e44bafcdd672d14f9df243eb9`.
+`43bfe1b5a0cfe46b16f48eeb33130ab3efd36bb1a1521adeba3db0277c91f389`.
 Both nine-member IPAs were byte-identical at SHA-256
-`ca39138d60ae267a450d4d89f52876bd9ef0c8f97619af86269a503639679312`,
+`6eed064c79ca7a9ebedb6a3cb2f4a5d97a8cd0ab426fa9503e94db535c3c738d`,
 with sorted app-content SHA-256
-`9ddac5ffcd3007561358edd228d86ffccc720818467cb02dbc1207f1a209502e`.
+`aed6b2725e2deac8cddb7c0901dca2d385f6966474125bdb5d5f1a628e408a6c`.
 Each checkout independently passed the source-manifest, ARM64, unsigned,
 game-core symbol, notices, private-path and ROM-contamination audits. This
 closes P2 for the current source state while retaining the older contrary result

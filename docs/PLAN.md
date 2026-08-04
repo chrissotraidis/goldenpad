@@ -306,12 +306,12 @@ the ROM byte-order helper. The observed clean IPA/content digest pairs were
 and
 `7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
 `83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
-P3 remained closed while P2 was reopened. At current source commit `705b58a`, two
+P3 remained closed while P2 was reopened. At current source commit `94242be`, two
 independent clean checkouts produced byte-identical device executables and
 byte-identical nine-member IPAs. Both archives matched SHA-256
-`ca39138d60ae267a450d4d89f52876bd9ef0c8f97619af86269a503639679312` and
+`6eed064c79ca7a9ebedb6a3cb2f4a5d97a8cd0ab426fa9503e94db535c3c738d` and
 sorted app-content SHA-256
-`9ddac5ffcd3007561358edd228d86ffccc720818467cb02dbc1207f1a209502e`.
+`aed6b2725e2deac8cddb7c0901dca2d385f6966474125bdb5d5f1a628e408a6c`.
 P2 is therefore closed again with current evidence; the older compiler-layout
 variation remains recorded rather than erased.
 

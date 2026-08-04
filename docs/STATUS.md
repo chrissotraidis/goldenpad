@@ -458,13 +458,13 @@ longer blocks MGB64 integration.
   and `7a225bd8...1624` / `83221d7b...671`. Every member except the executable
   matched; the optimized Swift ROM byte-order helper differed by one equivalent
   20-byte `__text` layout. That historical result reopened P2; P3 remained closed.
-- Current source commit `705b58a` keeps P2 closed with fresh evidence. Two independent
+- Current source commit `94242be` keeps P2 closed with fresh evidence. Two independent
   clean checkouts built identical device executables at SHA-256
-  `8fa09749ab6a7b89d9411bf8f8d7627058a50f7e44bafcdd672d14f9df243eb9`
+  `43bfe1b5a0cfe46b16f48eeb33130ab3efd36bb1a1521adeba3db0277c91f389`
   and byte-identical nine-member IPAs at SHA-256
-  `ca39138d60ae267a450d4d89f52876bd9ef0c8f97619af86269a503639679312`.
+  `6eed064c79ca7a9ebedb6a3cb2f4a5d97a8cd0ab426fa9503e94db535c3c738d`.
   Both reported sorted app-content SHA-256
-  `9ddac5ffcd3007561358edd228d86ffccc720818467cb02dbc1207f1a209502e`
+  `aed6b2725e2deac8cddb7c0901dca2d385f6966474125bdb5d5f1a628e408a6c`
   and independently passed every production package audit.
 
 ## Failed or blocked
