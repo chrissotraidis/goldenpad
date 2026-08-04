@@ -376,6 +376,15 @@ longer blocks MGB64 integration.
   Weapon/Duck sit on a lower utility row; Southpaw mirrors it. The accessible
   live surface accepted bidirectional swipes and AIM Off -> On on iPhone first,
   then the unchanged app on iPad. Physical-finger feel remains open.
+- The next human-control pass fixes two defects found in the live landscape phone
+  layout: Weapon/Duck no longer occupy the home-indicator strip, and the
+  Action/Fire/Aim rail is inset from the rounded edge. LOOK now accumulates all
+  gesture deltas received before the renderer's next input sample rather than
+  overwriting earlier movement. Exact Simulator binary
+  `818f1733fac43edec9a759c81874faf3b6b5bd0d1558c1fdecfb3f76520291a0`
+  passed `Touch look accumulation probe: PASS`, the full linked build, and a
+  clean-layout inspection on iPhone first and then unchanged on iPad. This
+  removes observable layout/event-loss defects; real-finger comfort remains open.
 - The in-game gear now opens a native Game Settings hub instead of jumping
   directly into layout editing. It groups only implemented settings into
   Controls, Touch Overlay and Physical Controllers, then presents the correct

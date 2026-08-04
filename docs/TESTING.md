@@ -280,6 +280,16 @@ Swift radial dead zone; mobile MGB64 keeps its downstream dead zone at zero and
 look curve at one. This proves the response path, not physical comfort or a
 hands-on mission playtest.
 
+Multiple LOOK gesture updates may arrive before the next renderer input sample.
+Run `--input-probe` and require `Touch look accumulation probe: PASS`; earlier
+deltas must add to the pending swipe instead of being replaced by the latest
+event. On landscape phone, require Weapon/Duck to sit above the home-indicator
+strip and Action/Fire/Aim to clear the rounded edge. Exact Simulator binary
+`818f1733fac43edec9a759c81874faf3b6b5bd0d1558c1fdecfb3f76520291a0`
+passed the probe and visible phone layout first, then the unchanged iPad layout.
+Both apps were removed and both simulators shut down. This remains Simulator
+interaction evidence, not signed physical-touch acceptance.
+
 For physical face buttons, run `--input-probe` and require
 `Physical face-button isolation probe: PASS`. The pure mapping gate requires A
 and Y to produce only N64 A (`0x8000`) and B and X to produce only N64 B

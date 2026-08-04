@@ -199,12 +199,14 @@ on both simulators, including an exact deterministic probe. I4 has a compiled an
 persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
 still need device acceptance. The v4 modern defaults use a broad direct-swipe
-look surface whose deltas are consumed once, larger movement/action targets and
+look surface whose deltas accumulate until they are consumed once, larger
+movement/action targets and
 one contextual Action control instead of duplicate B-based Use/Reload buttons.
 Southpaw mirrors the action
 rail away from its right-side movement stick. Action/Fire/Aim occupy the outside
-rail while Weapon/Duck use a lower utility row. The maintained binary was
-swiped and inspected sequentially on phone and tablet simulators. The in-game
+rail while Weapon/Duck use a lower utility row. Phone defaults now keep both
+groups clear of the rounded edge and home-indicator strip. The maintained binary
+was inspected sequentially on phone and tablet simulators. The in-game
 gear now opens a native settings hub with Touch Controls, Controllers and Display detail
 pages; the device-specific layout editor sits beneath Touch Controls instead of
 being the entire settings experience. Display persists explicit 1×, 2×, 3× and

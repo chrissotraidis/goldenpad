@@ -1,5 +1,27 @@
 # Worklog
 
+## 2026-08-04 — remove touch swipe loss and phone edge conflicts
+
+- Inspected the live current game overlay rather than extending gameplay
+  automation. On landscape iPhone, Weapon/Duck overlapped the home-indicator
+  strip and the outer action rail sat against the rounded edge; the iPad layout
+  did not share those conflicts.
+- Inset the phone Action/Fire/Aim rail and raised its Weapon/Duck utility row
+  while leaving the separate tablet defaults unchanged. Existing per-control
+  layout overrides remain authoritative.
+- Changed relative LOOK input to accumulate every gesture delta received before
+  the renderer samples it. The old setter silently kept only the latest event,
+  making fast swipes vulnerable to lost motion at variable frame cadence.
+- The linked Simulator/device build passed. Exact Simulator binary
+  `818f1733fac43edec9a759c81874faf3b6b5bd0d1558c1fdecfb3f76520291a0`
+  reported `Touch look accumulation probe: PASS` on iPhone and showed the clear
+  revised layout, then ran unchanged with the unaffected iPad layout. Both apps
+  were removed and both simulators shut down.
+- The ROM scan, source-license manifest and nine-member unsigned IPA audit pass.
+  Working-tree hashes are device executable `43bfe1b5...1f389`, IPA
+  `e27f9ef6...1335c5` and sorted app content `61cf3850...6acdc8`. Human physical
+  touch feel and touch-only mission completion remain open.
+
 ## 2026-08-04 — make touch + gamepad multiplayer discoverable
 
 - Drove the current iPad app through private ROM validation, the authentic file

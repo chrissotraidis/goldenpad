@@ -393,6 +393,17 @@ private extension SIMD2 where Scalar == Float {
     }
 }
 
+private enum TouchLookAccumulator {
+    static func appending(_ delta: SIMD2<Float>, to pending: SIMD2<Float>) -> SIMD2<Float> {
+        (pending + delta).clampedUnitSquare()
+    }
+
+    static var probePasses: Bool {
+        let pending = appending(SIMD2(0.25, 0.50), to: .zero)
+        return appending(SIMD2(0.50, -0.25), to: pending) == SIMD2(0.75, 0.25)
+    }
+}
+
 private enum GameplayProbePhase {
     case waiting, settle, movement, aim, fire
     case reloadPulse, reloadWait, weaponPulse, weaponWait
@@ -569,7 +580,10 @@ final class InputCoordinator: ObservableObject {
     }
 
     func updateLook(_ value: SIMD2<Float>) {
-        touch.look = value.clampedUnitSquare()
+        // SwiftUI may deliver several drag deltas before the renderer samples
+        // input. Preserve the full swipe instead of keeping only the last event.
+        guard value != .zero else { return }
+        touch.look = TouchLookAccumulator.appending(value, to: touch.look)
         refreshSummary()
     }
 
@@ -687,6 +701,10 @@ final class InputCoordinator: ObservableObject {
             print(
                 "[GoldenPad] Multiplayer touch ownership probe: " +
                 "\(MultiplayerInputOwnership.isolationProbePasses ? "PASS" : "FAIL")"
+            )
+            print(
+                "[GoldenPad] Touch look accumulation probe: " +
+                "\(TouchLookAccumulator.probePasses ? "PASS" : "FAIL")"
             )
         }
     }

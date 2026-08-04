@@ -64,8 +64,11 @@ iPad at 15879; both retained objectives `[0,0,0,0]` with `stateMutation=0`.
 This is not the lower bungee graph or organic Dam completion. Touch response
 now avoids the previous duplicate dead zone and uses a linear mobile look
 curve. Modern touch look now uses one-shot swipe deltas instead of a sustained
-virtual stick, and its outer action rail was exercised on both Simulator form
-factors; physical-finger feel remains unaccepted. The opt-in FPS HUD now counts
+virtual stick. Pending swipe events now accumulate until the renderer samples
+them instead of silently replacing earlier movement. The phone action rail is
+inset from the rounded edge and Weapon/Duck clear the home indicator; the exact
+layout passed phone-first and then unchanged on iPad. Physical-finger feel
+remains unaccepted. The opt-in FPS HUD now counts
 actual game display-list submissions instead of 60 Hz UIKit callbacks: the same
 binary measured 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad
 workload while both displays remained 60 Hz.

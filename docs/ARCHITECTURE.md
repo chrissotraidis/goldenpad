@@ -181,6 +181,10 @@ table pointers, then zeroes and frees the old allocation.
   crouch, weapon and pause/menu surfaces. Classic adds the complete N64 button
   set. Each preset resolves from device-class defaults plus small persisted
   deltas, so phone and tablet changes do not copy or overwrite each other.
+  Relative look deltas accumulate between renderer input samples and are consumed
+  once, preventing event loss without reintroducing continuous virtual-stick
+  rotation. Phone defaults inset the action rail and bottom utility buttons from
+  the rounded edge and home-indicator strip; tablet defaults remain independent.
   Per-control position, 70–150% size and visibility plus global opacity, scale,
   sensitivity, Toggle/Hold aim, dead zone, gyro and controller auto-hide settings
   are supported. Entering native settings and switching control presets both
