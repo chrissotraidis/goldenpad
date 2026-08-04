@@ -1,5 +1,21 @@
 # Worklog
 
+## 2026-08-04 — pivot acceptance to human controls and ship v2 defaults
+
+- Shelved the unfinished Dam bungee-route experiment instead of extending bot
+  navigation. Diagnostic routes remain bounded smoke coverage; human touch and
+  controller play now own gameplay acceptance.
+- Replaced the small fixed look stick with a broad relative-drag surface,
+  enlarged movement and removed the duplicate B-based Reload button in favor
+  of one contextual Action control. New v2 phone/tablet layout keys prevent old
+  experimental overrides from hiding the defaults.
+- The maintained linked Simulator and device build matrix passed. The exact
+  Simulator binary, SHA-256
+  `b795af2cb266ffc6103c941937397b8cd855b823b8529db960b9c5c16b361ac8`,
+  was inspected on iPhone 16 Pro and then unchanged on iPad Pro 11-inch (M4);
+  the drag/editor flow was exercised during the same v2 iteration. Real-finger
+  feel remains open.
+
 ## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
 
 - Expanded the read-only linked-door guard search to the full local interlock

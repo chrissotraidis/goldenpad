@@ -38,7 +38,7 @@ enum TouchControlID: String, Codable, CaseIterable, Identifiable, Sendable {
         case .look: "LOOK"
         case .fire: "FIRE"
         case .aim: "AIM"
-        case .interact: "USE"
+        case .interact: "ACTION"
         case .reload: "LOAD"
         case .crouch: "DUCK"
         case .weapon: "WEAPON"
@@ -96,18 +96,17 @@ enum TouchLayoutDefaults {
         switch preset {
         case .modern, .southpaw:
             let southpaw = preset == .southpaw
-            let moveX = southpaw ? 0.72 : (tablet ? 0.16 : 0.18)
-            let lookX = southpaw ? (tablet ? 0.16 : 0.18) : 0.68
+            let moveX = southpaw ? (tablet ? 0.82 : 0.84) : (tablet ? 0.14 : 0.16)
+            let lookX = southpaw ? (tablet ? 0.30 : 0.34) : (tablet ? 0.70 : 0.62)
             return [
-                placement(.move, moveX, tablet ? 0.72 : 0.70, tablet ? 1.18 : 1),
-                placement(.look, lookX, tablet ? 0.72 : 0.70, tablet ? 1.18 : 1),
-                placement(.fire, 0.90, 0.58),
-                placement(.aim, 0.84, 0.76),
-                placement(.interact, 0.92, 0.38, 0.86),
-                placement(.reload, 0.78, 0.48, 0.86),
-                placement(.crouch, 0.76, 0.86, 0.82),
-                placement(.weapon, 0.61, 0.87, 0.82),
-                placement(.pause, 0.50, 0.16, 0.78),
+                placement(.move, moveX, tablet ? 0.73 : 0.72, tablet ? 1.18 : 1.10),
+                placement(.look, lookX, tablet ? 0.64 : 0.60),
+                placement(.fire, 0.91, 0.56, 1.08),
+                placement(.aim, 0.84, 0.72, 0.96),
+                placement(.interact, 0.91, 0.31, 0.90),
+                placement(.crouch, 0.76, 0.84, 0.80),
+                placement(.weapon, 0.64, 0.84, 0.80),
+                placement(.pause, 0.50, 0.11, 0.72),
             ]
         case .classic:
             return [

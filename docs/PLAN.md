@@ -165,6 +165,12 @@ live guard can still kill Bond during the second interlock before bounded
 obstruction recovery starts. Phone cleanup was performed; the exact same app
 was not advanced to iPad because the phone-first gate failed.
 
+Diagnostic routes stop here. They remain launch/input smoke coverage, not a
+product milestone and not a substitute for a person playing the game. The
+production loop now prioritizes human touch feel, the editable phone/tablet
+layouts and the native Apple settings/menu surface. Organic mission completion
+will be accepted through hands-on touch and controller play.
+
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.
@@ -182,7 +188,11 @@ phone/tablet layouts were exercised through the real mobile `osCont*` boundary
 on both simulators, including an exact deterministic probe. I4 has a compiled and
 persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
-still need device acceptance. I5 now has strict sequential game-state proof for
+still need device acceptance. The v2 modern defaults replace the small fixed
+look stick with a broad relative-drag surface, enlarge movement and collapse
+duplicate B-based Use/Reload buttons into one contextual Action control. The
+same binary was inspected and exercised on phone and tablet simulators. I5 now
+has strict sequential game-state proof for
 movement, modern look/aim, fire, B reload/action, A weapon cycle and Start
 pause/watch. It also has strict sequential proof that normal controller movement,
 look and B input opens two chained stock Facility door models. Crouch, objectives
@@ -196,7 +206,8 @@ than the previous all-zero mobile stub. A strict same-binary run reported
 60.0 FPS/16.67 ms on both iPhone and iPad after startup aged
 out of the rolling window. Touch input no longer passes through both Swift and
 MGB64 dead zones, and the mobile look curve is linear. Mapping and telemetry
-are proven; hands-on control feel still requires real-play tuning.
+are proven; final sensitivity and action-placement acceptance remains a
+hands-on real-play task.
 
 ### M — Multiplayer
 

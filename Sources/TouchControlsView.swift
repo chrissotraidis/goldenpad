@@ -277,7 +277,7 @@ private struct TouchLayoutEditor: View {
                 valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
             )
             LabeledSlider(
-                title: "Stick dead zone",
+                title: "Controller dead zone",
                 value: settingBinding(\.stickDeadZone),
                 range: 0...0.40,
                 valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
@@ -414,15 +414,17 @@ private struct TouchControlCanvas: View {
     @ViewBuilder
     private func control(_ placement: TouchControlPlacement, in size: CGSize) -> some View {
         let controlScale = CGFloat(placement.scale * globalScale) * canvasScale(for: size)
-        let baseSize = placement.id.isStick ? 96.0 : buttonBaseSize(placement.id)
-        let side = baseSize * controlScale
+        let baseSize = controlBaseSize(placement.id)
         let control = TouchControlVisual(
             id: placement.id,
             input: input,
             editing: editing,
             selected: selectedID == placement.id
         )
-        .frame(width: side, height: side)
+        .frame(
+            width: baseSize.width * controlScale,
+            height: baseSize.height * controlScale
+        )
         .opacity(editing && placement.isHidden ? 0.28 : opacity)
         .position(x: size.width * placement.x, y: size.height * placement.y)
 
@@ -452,12 +454,16 @@ private struct TouchControlCanvas: View {
         min(max(size.width / 720, 0.62), 1.18)
     }
 
-    private func buttonBaseSize(_ id: TouchControlID) -> CGFloat {
+    private func controlBaseSize(_ id: TouchControlID) -> CGSize {
         switch id {
-        case .pause, .n64Start, .weapon, .crouch, .n64L, .n64R: 58
+        case .move: CGSize(width: 112, height: 112)
+        case .look: CGSize(width: 252, height: 174)
+        case .pause, .n64Start, .weapon, .crouch, .n64L, .n64R:
+            CGSize(width: 58, height: 58)
         case .n64CUp, .n64CDown, .n64CLeft, .n64CRight,
-             .n64DUp, .n64DDown, .n64DLeft, .n64DRight: 48
-        default: 64
+             .n64DUp, .n64DDown, .n64DLeft, .n64DRight:
+            CGSize(width: 48, height: 48)
+        default: CGSize(width: 64, height: 64)
         }
     }
 }
@@ -472,10 +478,12 @@ private struct TouchControlVisual: View {
         Group {
             if editing {
                 EditorControlFace(id: id, tint: tint)
-            } else if id.isStick {
-                VirtualStick(title: id.label, systemImage: id == .move ? "figure.walk" : "eye") {
-                    if id == .move { input.updateMovement($0) } else { input.updateLook($0) }
+            } else if id == .move {
+                VirtualStick(title: id.label, systemImage: "figure.walk") {
+                    input.updateMovement($0)
                 }
+            } else if id == .look {
+                LookSurface { input.updateLook($0) }
             } else {
                 MomentaryAction(title: id.label, tint: tint) {
                     guard let button = id.inputButton else { return }
@@ -485,7 +493,13 @@ private struct TouchControlVisual: View {
         }
         .overlay {
             if selected {
-                Circle().stroke(.yellow, lineWidth: 3).padding(-4)
+                if id == .look {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(.yellow, lineWidth: 3)
+                        .padding(-4)
+                } else {
+                    Circle().stroke(.yellow, lineWidth: 3).padding(-4)
+                }
             }
         }
     }
@@ -509,9 +523,24 @@ private struct EditorControlFace: View {
 
     var body: some View {
         ZStack {
-            Circle().fill(.black.opacity(0.58))
-            Circle().stroke(.white.opacity(0.42), lineWidth: 1)
-            if id.isStick {
+            if id == .look {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.black.opacity(0.40))
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(.white.opacity(0.36), lineWidth: 1)
+                Image(systemName: "scope")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.60))
+                Text("DRAG TO LOOK")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .tracking(1)
+                    .foregroundStyle(.white.opacity(0.68))
+                    .offset(y: 30)
+            } else {
+                Circle().fill(.black.opacity(0.58))
+                Circle().stroke(.white.opacity(0.42), lineWidth: 1)
+            }
+            if id == .move {
                 Circle()
                     .fill(.white.opacity(0.18))
                     .frame(width: 38, height: 38)
@@ -529,6 +558,60 @@ private struct EditorControlFace: View {
                     .padding(4)
             }
         }
+    }
+}
+
+private struct LookSurface: View {
+    let onChange: (SIMD2<Float>) -> Void
+
+    @State private var normalized = SIMD2<Float>.zero
+    @State private var isTracking = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            let responseDistance = max(min(geometry.size.width, geometry.size.height) * 0.32, 42)
+
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.black.opacity(isTracking ? 0.16 : 0.08))
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(.white.opacity(isTracking ? 0.24 : 0.12), lineWidth: 1)
+                Image(systemName: "scope")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.white.opacity(isTracking ? 0.72 : 0.34))
+                    .offset(
+                        x: CGFloat(normalized.x) * 18,
+                        y: CGFloat(-normalized.y) * 18
+                    )
+                Text("LOOK")
+                    .font(.system(size: 8, weight: .bold, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(.white.opacity(0.36))
+                    .offset(y: 30)
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        isTracking = true
+                        var vector = SIMD2<Float>(
+                            Float(value.translation.width / responseDistance),
+                            Float(-value.translation.height / responseDistance)
+                        )
+                        let magnitude = simd_length(vector)
+                        if magnitude > 1 { vector /= magnitude }
+                        normalized = vector
+                        onChange(vector)
+                    }
+                    .onEnded { _ in
+                        isTracking = false
+                        normalized = .zero
+                        onChange(.zero)
+                    }
+            )
+        }
+        .accessibilityLabel("Look")
+        .accessibilityHint("Drag anywhere in this area to aim")
     }
 }
 

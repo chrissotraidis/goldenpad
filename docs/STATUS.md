@@ -302,6 +302,14 @@ longer blocks MGB64 integration.
   iPad Pro 11-inch (M4) in portrait and landscape. The full editor remained
   inside safe areas, settings relaunch persisted, and the Simulator's synthetic
   MFi controller no longer falsely hides touch controls.
+- Human-play v2 defaults now use a large relative-drag look surface instead of
+  the cramped fixed right stick, a larger movement stick and one contextual
+  Action control in place of duplicate Use/Reload buttons. Old experimental
+  placement overrides do not mask the v2 defaults. The exact Simulator binary
+  (`b795af2cb266ffc6103c941937397b8cd855b823b8529db960b9c5c16b361ac8`)
+  was visually inspected first on iPhone 16 Pro and then unchanged on iPad Pro
+  11-inch (M4); the look drag and editor were exercised during the same v2
+  iteration.
 - Original project-owned app art is compiled into phone/tablet icon renditions
   and was visually accepted on both simulator launchers. Provenance is recorded
   in `ART.md`.
@@ -320,9 +328,9 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Hands-on control feel is not accepted: the current mapping functions, but it
-  needs sensitivity/dead-zone/turn-rate tuning against real play rather than
-  automation alone.
+- Hands-on control feel is not yet accepted: v2 fixes the small-look-region and
+  duplicate-action design defects, but sensitivity and button placement still
+  need real finger playtesting and tuning.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only
@@ -333,15 +341,10 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Resolve the clean-phone Dam live-guard survival/recovery gate, then repeat the
-proven lower bungee room/velocity trigger first on iPhone and with the exact
-same app on iPad. The original linked-slab collision stop has been crossed, but
-the latest clean phone run was killed during the second interlock, so iPad
-promotion remains closed. In parallel, hands-on playtest and tune the corrected
-touch response.
-Continue
-Facility past the two-door corridor chain, then replace the diagnostic success
-prerequisite with organic objectives and mission completion through input. The
-traversal, chained-interaction, report, EEPROM write, lifecycle flush and
-relaunch seams no longer need to be rediscovered.
+Hands-on playtest the v2 controls on iPhone, tune look response and action
+placement, then repeat unchanged on iPad. Next, make the native Apple settings
+and menu surface the clear home for controls, ROM management, saves and display
+options. Keep diagnostic routes as bounded smoke coverage only; do not extend
+bot navigation as a product gate. Organic objectives and mission completion
+remain later human-play acceptance.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.
