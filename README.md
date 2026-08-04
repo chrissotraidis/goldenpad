@@ -30,15 +30,22 @@ audio, persistent EEPROM saves, modern and classic touch layouts, physical
 controller support, controller assignment for Players 1–4, and a reproducible
 ROM-free unsigned IPA build.
 
-## Native setup, without bundled game data
+## Current screenshots
 
-<p align="center">
-  <img src="docs/images/goldenpad-setup-iphone.png" width="59%" alt="GoldenPad retail-ROM setup on iPhone">
-  <img src="docs/images/goldenpad-setup-ipad.png" width="39%" alt="GoldenPad retail-ROM setup and control preview on iPad">
-</p>
+<table>
+  <tr>
+    <td width="60%"><img src="docs/images/goldenpad-setup-iphone.png" alt="GoldenPad retail-ROM setup on iPhone"></td>
+    <td width="40%"><img src="docs/images/goldenpad-setup-ipad.png" alt="GoldenPad retail-ROM setup and control preview on iPad"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Bring your own retail data</strong><br>The app validates a supported dump through Files.</td>
+    <td align="center"><strong>Built for both device classes</strong><br>Phone and tablet layouts are independent.</td>
+  </tr>
+</table>
 
-These are ROM-free Simulator captures of GoldenPad's own setup surface. No
-copyrighted game image or extracted asset is included.
+These ROM-free Simulator captures show only GoldenPad's project-owned setup and
+control-preview surfaces. No copyrighted game image or extracted asset is
+included.
 
 ## Install status
 
@@ -76,21 +83,38 @@ release.
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
 ledger and the remaining physical-device gates.
 
+## Supported game
+
+| Game | Retail revision | Status |
+|---|---|---|
+| **GoldenEye 007** | Original US Nintendo 64 release | Supported after exact validation |
+| Other regions or revisions | Any other dump | Rejected; not interchangeable with the supported build |
+| GoldenEye XBLA | Leaked/unreleased Xbox 360 build | Prohibited and never used |
+
+GoldenPad is a native integration of reconstructed N64 game code, not a general
+emulator. Another N64 game or GoldenEye revision cannot be substituted.
+
 ## Get started
 
 You need:
 
 - an Apple Silicon Mac with Xcode and its command-line tools;
-- CMake 3.28 or newer and Git;
+- [Homebrew](https://brew.sh), CMake 3.28 or newer, and Git;
 - an Apple development team for a signed physical-device build; and
 - your own legally acquired supported US retail GoldenEye 007 N64 dump.
 
-Clone and build the complete native game/Metal closure:
+Install CMake, then clone the repository:
 
 ```sh
+brew install cmake
 git clone https://github.com/chrissotraidis/goldenpad.git
 cd goldenpad
+```
 
+For Simulator development and the reproducible unsigned device app, build the
+complete native game/Metal closure:
+
+```sh
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
 
@@ -106,8 +130,26 @@ build-mgb64-renderer-simulator/Release-iphonesimulator/GoldenPad.app
 build-mgb64-renderer-device/Release-iphoneos/GoldenPad.app
 ```
 
-For signing, Simulator destinations, and the maintained RT64 reference path,
-see [Building](docs/BUILDING.md).
+For a physical iPad, add your Apple ID under **Xcode → Settings → Accounts**,
+connect and trust the iPad, then use your 10-character team ID and a bundle
+identifier owned by that team:
+
+```sh
+GOLDENPAD_DEVELOPMENT_TEAM=ABCDE12345 \
+GOLDENPAD_BUNDLE_IDENTIFIER=com.yourname.goldenpad \
+  ./scripts/verify-mgb64-ios-renderer.sh
+
+xcrun devicectl list devices
+xcrun devicectl device install app \
+  --device YOUR_DEVICE_ID \
+  build-mgb64-renderer-device-signed/Release-iphoneos/GoldenPad.app
+```
+
+The signed build stays separate from the reproducible unsigned app. If Xcode
+has not yet created an Apple Development certificate, use **Manage
+Certificates** in the Accounts panel first. See [Building](docs/BUILDING.md)
+for signing diagnostics, Simulator destinations, and the maintained RT64
+reference path.
 
 ## First launch
 
@@ -272,6 +314,17 @@ the separate rights questions around reconstructed game code. Read the
 [Legal and provenance policy](docs/LEGAL.md).
 </details>
 
+<details>
+<summary><strong>What is the licensing status?</strong></summary>
+
+GoldenPad is source-available, but this repository currently has no top-level
+outbound license grant. MGB64-authored port code and third-party libraries keep
+their respective licenses; reconstructed original-game code remains subject to
+the rights boundary described in [Source licenses](docs/SOURCE_LICENSES.md) and
+[Legal](docs/LEGAL.md). Do not infer commercial or redistribution rights from
+the repository being publicly readable.
+</details>
+
 ## Project map
 
 | Path | Purpose |
@@ -286,12 +339,22 @@ the separate rights questions around reconstructed game code. Read the
 | [`docs/RESEARCH.md`](docs/RESEARCH.md) | Pinned upstreams and production-core decision |
 | [`docs/BUILDING.md`](docs/BUILDING.md) | Full local build and signing workflow |
 | [`docs/TESTING.md`](docs/TESTING.md) | Reproducible verification procedures and hashes |
+| [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Clean-checkout, package, signing, and publication gates |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |
 | [`docs/ART.md`](docs/ART.md) | Original app-icon provenance |
 | [`docs/WORKLOG.md`](docs/WORKLOG.md) | Chronological production log |
 
 Generated source trees, build directories, ROMs, saves, signing material, and
 release artifacts are ignored and must never be committed.
+
+## Contributing and support
+
+Read [Contributing](CONTRIBUTING.md) before proposing a change and
+[Security](SECURITY.md) before reporting a vulnerability. Reproducible platform
+or gameplay defects can be filed through
+[GitHub Issues](https://github.com/chrissotraidis/goldenpad/issues). Never attach,
+request, or link to ROMs, extracted assets, leaked builds, saves containing
+private data, signing identities, or provisioning profiles.
 
 ## Legal and acknowledgements
 
