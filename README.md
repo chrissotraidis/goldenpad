@@ -30,6 +30,16 @@ audio, persistent EEPROM saves, modern and classic touch layouts, physical
 controller support, controller assignment for Players 1–4, and a reproducible
 ROM-free unsigned IPA build.
 
+## Native setup, without bundled game data
+
+<p align="center">
+  <img src="docs/images/goldenpad-setup-iphone.png" width="59%" alt="GoldenPad retail-ROM setup on iPhone">
+  <img src="docs/images/goldenpad-setup-ipad.png" width="39%" alt="GoldenPad retail-ROM setup and control preview on iPad">
+</p>
+
+These are ROM-free Simulator captures of GoldenPad's own setup surface. No
+copyrighted game image or extracted asset is included.
+
 ## Install status
 
 | Option | Status | What to do |

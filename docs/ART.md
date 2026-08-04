@@ -23,4 +23,13 @@ appearance for the refined source was visually verified sequentially on iPhone
 16 Pro and iPad Pro 11-inch (M4) simulators; each clean app container was removed
 before the next device pass.
 
-No generated game art, screenshots or copyrighted game assets are tracked.
+Two ROM-free Simulator screenshots are tracked for the public README:
+
+- `docs/images/goldenpad-setup-iphone.png`, captured from the clean iPhone setup
+  shell, SHA-256 `ca6aafbdf1f0661cba3f597de72ed2f0cbcfb3808b7a57767fa9bc2207f2531a`.
+- `docs/images/goldenpad-setup-ipad.png`, captured from the clean iPad setup and
+  control-lab shell, SHA-256
+  `b119b361884cdc1f9a1ce143b09f00c2e2ab67cdf93730171654118a9c459fab`.
+
+Neither capture loaded a ROM, generated game art or displayed copyrighted game
+imagery. No generated game art or copyrighted game assets are tracked.

@@ -1,5 +1,20 @@
 # Worklog
 
+## 2026-08-04 — close the Simulator publication ledger
+
+- Reconciled the plan with the completed release handoff: PR #1 merged as
+  `4ed057ecd926c4b9f66e53544411986b1b4e37e8`, local `main` matched
+  `origin/main`, package/provenance audits passed and the worktree was clean.
+- Captured a public-safe product view first on iPhone 16 Pro and then on iPad
+  Pro 11-inch (M4), with no ROM loaded. The two tracked PNGs show only
+  GoldenPad's project-owned setup/control-lab UI and hash to
+  `ca6aafbdf1f0661cba3f597de72ed2f0cbcfb3808b7a57767fa9bc2207f2531a`
+  and `b119b361884cdc1f9a1ce143b09f00c2e2ab67cdf93730171654118a9c459fab`.
+- Terminated, uninstalled and shut down the phone before starting the tablet,
+  then repeated cleanup on the tablet. P4 and P6 are now closed for their stated
+  Simulator/publication scope; human mission/match and physical-device
+  acceptance remain open.
+
 ## 2026-08-04 — prepare the public release surface and reaccept settings
 
 - Reworked the README from an engineering chronology into a HarkinianPad-style

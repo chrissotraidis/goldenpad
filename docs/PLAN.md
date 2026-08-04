@@ -288,9 +288,9 @@ completion remain open.
 - [x] P1: original neutral icon at every required size.
 - [x] P2: byte-reproducible unsigned IPA from independent clean checkouts.
 - [x] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
-- [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
+- [x] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
 - [x] P5: README/docs match observed behavior.
-- [ ] P6: staged-file audit, coherent commits, push, and remote verification.
+- [x] P6: staged-file audit, coherent commits, push, and remote verification.
 
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
@@ -314,6 +314,13 @@ sorted app-content SHA-256
 `aed6b2725e2deac8cddb7c0901dca2d385f6966474125bdb5d5f1a628e408a6c`.
 P2 is therefore closed again with current evidence; the older compiler-layout
 variation remains recorded rather than erased.
+
+P4 is closed for the Simulator scope: the maintained app was exercised in the
+required iPhone-first/iPad-second order, each session was terminated, uninstalled
+and shut down, and the physical-device gaps remain named below. P6 is closed at
+merge commit `4ed057ecd926c4b9f66e53544411986b1b4e37e8`; local `main` and
+`origin/main` matched after PR #1 merged, with the worktree clean. These package
+and publication gates do not close the human gameplay or physical-device gates.
 
 ## Test rhythm
 

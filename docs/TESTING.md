@@ -82,6 +82,14 @@ The private diagnostic seam accepts `--validate-rom /absolute/path` or
 Files picker and exists to make simulator validation reproducible. It does not
 copy or persist the file and is not the production user flow.
 
+The public README captures use the opposite, ROM-free path. On 2026-08-04 the
+maintained app launched first on iPhone 16 Pro and then on iPad Pro 11-inch
+(M4), with no validation argument, imported URL or ROM in either container.
+`docs/images/goldenpad-setup-iphone.png` and
+`docs/images/goldenpad-setup-ipad.png` show only the project-owned setup and
+control-lab surfaces. Each app was terminated and uninstalled before its
+simulator was shut down; both devices ended in `Shutdown` state.
+
 The picker UI interaction pass opened native Files and cancelled cleanly on both
 simulators. GoldenPad now declares one imported N64 ROM type for `.z64`, `.v64`,
 `.n64` and `.rom`; cancel must leave the setup state unchanged.
