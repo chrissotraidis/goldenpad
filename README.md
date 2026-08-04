@@ -51,6 +51,14 @@ A separate promoted Dam route now travels more than 4700 world units from the
 stock spawn on both simulator classes using only normal N64 controller frames.
 Its read-only objective vector remains unchanged, so this is deliberately
 reported as deep traversal rather than objective completion.
+A deeper `--dam-nav-probe` derives its route from the retail setup's live
+waypoint and linked-door graphs, crosses the two-door Dam interlock through
+normal movement and B input, and reaches the upper graph's node 179 within 500
+world units. The same binary passed first on iPhone at 15917 units and then on
+iPad at 15879; both retained objectives `[0,0,0,0]` with `stateMutation=0`.
+This is not the lower bungee graph or organic Dam completion. Hands-on control
+feel and the visible FPS counter also remain unaccepted; neither is release
+evidence yet.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

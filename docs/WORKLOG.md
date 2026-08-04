@@ -1,5 +1,24 @@
 # Worklog
 
+## 2026-08-03 — cross Dam's live two-door interlock
+
+- Added a read-only Dam waypoint snapshot and private breadth-first navigator.
+  Source, target and destination positions come from the loaded retail setup;
+  the host contains no copied ROM coordinates and does not write game state.
+- Added a read-only linked-switch oracle that chooses the nearest linked door
+  ahead on the active waypoint edge. Controller recovery aligns with the live
+  switch, sends normal B input, respects the paired gate's WAITING/OPENING
+  states and keeps walking until the first slab clears.
+- Strict same-binary acceptance passed first on iPhone at
+  `distance=15917 destinationDistance=493` and then on iPad at
+  `distance=15879 destinationDistance=499`. Both finished source 182 toward
+  destination 179 with objectives `4:[0,0,0,0]` and `stateMutation=0`; each app
+  was terminated, uninstalled and its simulator shut down in sequence.
+- The endpoint is the reachable upper node 179/pad-140 area. The bungee trigger
+  remains on a disconnected lower graph, so organic bungee activation and Dam
+  completion remain open. Hands-on controls are still poor and the visible FPS
+  counter is still untrusted; both remain explicit acceptance gaps.
+
 ## 2026-08-03 — promote MGB64's clean Dam route to mobile
 
 - Audited MGB64's Dam campaign contracts and separated its controller-only

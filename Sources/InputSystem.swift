@@ -66,6 +66,30 @@ private func goldenPadMGB64DamRouteState(
     _ objective3: UnsafeMutablePointer<Int32>?
 )
 
+@_silgen_name("goldenpad_mgb64_dam_nav_state")
+private func goldenPadMGB64DamNavState(
+    _ valid: UnsafeMutablePointer<Int32>?,
+    _ sourceNode: UnsafeMutablePointer<Int32>?,
+    _ targetNode: UnsafeMutablePointer<Int32>?,
+    _ destinationNode: UnsafeMutablePointer<Int32>?,
+    _ sourceX: UnsafeMutablePointer<Int32>?,
+    _ sourceZ: UnsafeMutablePointer<Int32>?,
+    _ targetX: UnsafeMutablePointer<Int32>?,
+    _ targetZ: UnsafeMutablePointer<Int32>?,
+    _ destinationX: UnsafeMutablePointer<Int32>?,
+    _ destinationZ: UnsafeMutablePointer<Int32>?,
+    _ targetRoom: UnsafeMutablePointer<Int32>?,
+    _ switchValid: UnsafeMutablePointer<Int32>?,
+    _ switchX: UnsafeMutablePointer<Int32>?,
+    _ switchZ: UnsafeMutablePointer<Int32>?,
+    _ switchDoorX: UnsafeMutablePointer<Int32>?,
+    _ switchDoorZ: UnsafeMutablePointer<Int32>?,
+    _ switchDoorState: UnsafeMutablePointer<Int32>?,
+    _ switchDoorOpenPosition: UnsafeMutablePointer<Int32>?,
+    _ switchDoorPerimPosition: UnsafeMutablePointer<Int32>?,
+    _ switchEligibility: UnsafeMutablePointer<Int32>?
+)
+
 @_silgen_name("goldenpad_mgb64_facility_door_state")
 private func goldenPadMGB64FacilityDoorState(
     _ ready: UnsafeMutablePointer<Int32>?,
@@ -304,6 +328,27 @@ final class InputCoordinator: ObservableObject {
     private var damRouteStartZ: Int32 = 0
     private var damRouteStartObjectives: [Int32] = []
     private var damRouteInput: GoldenEyeInputFrame?
+    private var damNavFrame = 0
+    private var damNavLastTargetNode: Int32 = -1
+    private var damNavBestTargetDistance = Int.max
+    private var damNavFramesWithoutTargetProgress = 0
+    private var damNavRecoveryReported = false
+    private var damNavSwitchPulseSent = false
+    private var damNavSwitchHoldFrames = 0
+    private var damNavSwitchSettleFrames = 0
+    private var damNavSwitchRetryFrames = 0
+    private var damNavSwitchAttempts = 0
+    private var damNavSwitchAligningWall = false
+    private var damNavSwitchWallAlignFrames = 0
+    private var damNavSwitchWallAligned = false
+    private var damNavSwitchCrossingFrames = 0
+    private var damNavSwitchCrossingStarted = false
+    private var damNavCrossingSourceX: Int32 = 0
+    private var damNavCrossingSourceZ: Int32 = 0
+    private var damNavCrossingTargetX: Int32 = 0
+    private var damNavCrossingTargetZ: Int32 = 0
+    private var damNavCrossingDoorX: Int32 = 0
+    private var damNavCrossingDoorZ: Int32 = 0
     private var didReportProgressionProbe = false
 
     init() {
@@ -454,6 +499,7 @@ final class InputCoordinator: ObservableObject {
                 arguments.contains("--gameplay-probe") ||
                 arguments.contains("--mission-flow-probe") ||
                 arguments.contains("--dam-route-probe") ||
+                arguments.contains("--dam-nav-probe") ||
                 arguments.contains("--facility-door-probe") ||
                 arguments.contains("--facility-door-chain-probe") else { return }
         if arguments.contains("--mission-flow-probe") {
@@ -518,7 +564,9 @@ final class InputCoordinator: ObservableObject {
     }
 
     private func runDamRouteProbeIfRequested() {
-        guard ProcessInfo.processInfo.arguments.contains("--dam-route-probe") else {
+        let arguments = ProcessInfo.processInfo.arguments
+        let isNavProbe = arguments.contains("--dam-nav-probe")
+        guard arguments.contains("--dam-route-probe") || isNavProbe else {
             return
         }
 
@@ -534,6 +582,26 @@ final class InputCoordinator: ObservableObject {
         var objective1: Int32 = -1
         var objective2: Int32 = -1
         var objective3: Int32 = -1
+        var navValid: Int32 = 0
+        var navSourceNode: Int32 = -1
+        var navTargetNode: Int32 = -1
+        var navDestinationNode: Int32 = -1
+        var navSourceX: Int32 = 0
+        var navSourceZ: Int32 = 0
+        var navTargetX: Int32 = 0
+        var navTargetZ: Int32 = 0
+        var navDestinationX: Int32 = 0
+        var navDestinationZ: Int32 = 0
+        var navTargetRoom: Int32 = -1
+        var navSwitchValid: Int32 = 0
+        var navSwitchX: Int32 = 0
+        var navSwitchZ: Int32 = 0
+        var navSwitchDoorX: Int32 = 0
+        var navSwitchDoorZ: Int32 = 0
+        var navSwitchDoorState: Int32 = -1
+        var navSwitchDoorOpenPosition: Int32 = 0
+        var navSwitchDoorPerimPosition: Int32 = 0
+        var navSwitchEligibility: Int32 = 0
         goldenPadMGB64RuntimeState(nil, &stage, nil, nil, nil, nil, nil)
         goldenPadMGB64GameplayState(
             &ready, &viewMode, &playerX, &playerZ, &yaw, nil,
@@ -542,6 +610,16 @@ final class InputCoordinator: ObservableObject {
         goldenPadMGB64DamRouteState(
             &cameraMode, &objectiveCount, &objective0, &objective1,
             &objective2, &objective3
+        )
+        goldenPadMGB64DamNavState(
+            &navValid, &navSourceNode, &navTargetNode,
+            &navDestinationNode, &navSourceX, &navSourceZ,
+            &navTargetX, &navTargetZ,
+            &navDestinationX, &navDestinationZ, &navTargetRoom,
+            &navSwitchValid, &navSwitchX, &navSwitchZ,
+            &navSwitchDoorX, &navSwitchDoorZ, &navSwitchDoorState,
+            &navSwitchDoorOpenPosition, &navSwitchDoorPerimPosition,
+            &navSwitchEligibility
         )
 
         damRouteInput = nil
@@ -556,6 +634,21 @@ final class InputCoordinator: ObservableObject {
                 objective0, objective1, objective2, objective3
             ]
             damRouteFrame = 0
+            damNavFrame = 0
+            damNavLastTargetNode = -1
+            damNavBestTargetDistance = .max
+            damNavFramesWithoutTargetProgress = 0
+            damNavRecoveryReported = false
+            damNavSwitchPulseSent = false
+            damNavSwitchHoldFrames = 0
+            damNavSwitchSettleFrames = 0
+            damNavSwitchRetryFrames = 0
+            damNavSwitchAttempts = 0
+            damNavSwitchAligningWall = false
+            damNavSwitchWallAlignFrames = 0
+            damNavSwitchWallAligned = false
+            damNavSwitchCrossingFrames = 0
+            damNavSwitchCrossingStarted = false
             damRouteProbePhase = .route
             print(
                 "[GoldenPad] Dam native route stock spawn: PASS " +
@@ -583,6 +676,302 @@ final class InputCoordinator: ObservableObject {
             if (260..<640).contains(damRouteFrame) {
                 routeFrame.primary.stick = SIMD2(-1, 1)
             }
+
+            if isNavProbe, damRouteFrame >= 640, navValid == 1 {
+                let deltaX = Double(navTargetX - playerX)
+                let deltaZ = Double(navTargetZ - playerZ)
+                let targetDistance = Int(sqrt(
+                    deltaX * deltaX + deltaZ * deltaZ
+                ).rounded())
+                var desiredYaw = atan2(-deltaX, deltaZ) * 180.0 / .pi
+                if desiredYaw < 0 { desiredYaw += 360.0 }
+                var yawError = desiredYaw - Double(yaw) / 100.0
+                while yawError > 180.0 { yawError -= 360.0 }
+                while yawError < -180.0 { yawError += 360.0 }
+
+                routeFrame.secondary.stick.x = Float(
+                    max(-1.0, min(1.0, yawError / 45.0))
+                )
+                let absoluteYawError = abs(yawError)
+                if absoluteYawError < 70.0 {
+                    routeFrame.primary.stick.y = absoluteYawError < 25.0 ? 1.0 : 0.6
+                }
+
+                damNavFrame += 1
+
+                if navTargetNode != damNavLastTargetNode {
+                    damNavLastTargetNode = navTargetNode
+                    damNavBestTargetDistance = targetDistance
+                    damNavFramesWithoutTargetProgress = 0
+                    damNavRecoveryReported = false
+                    if damNavSwitchCrossingFrames > 0 {
+                        damNavCrossingSourceX = navSourceX
+                        damNavCrossingSourceZ = navSourceZ
+                        damNavCrossingTargetX = navTargetX
+                        damNavCrossingTargetZ = navTargetZ
+                        damNavCrossingDoorX = navSwitchDoorX
+                        damNavCrossingDoorZ = navSwitchDoorZ
+                    } else {
+                        damNavSwitchPulseSent = false
+                        damNavSwitchHoldFrames = 0
+                        damNavSwitchSettleFrames = 0
+                        damNavSwitchRetryFrames = 0
+                        damNavSwitchAttempts = 0
+                        damNavSwitchAligningWall = false
+                        damNavSwitchWallAlignFrames = 0
+                        damNavSwitchWallAligned = false
+                        damNavSwitchCrossingStarted = false
+                    }
+                    print(
+                        "[GoldenPad] Dam nav target: source=\(navSourceNode) " +
+                        "target=\(navTargetNode) destination=\(navDestinationNode) " +
+                        "room=\(navTargetRoom) pos=\(navTargetX),\(navTargetZ)"
+                    )
+                } else if targetDistance <= damNavBestTargetDistance - 5_000 {
+                    damNavBestTargetDistance = targetDistance
+                    damNavFramesWithoutTargetProgress = 0
+                    damNavRecoveryReported = false
+                } else {
+                    damNavFramesWithoutTargetProgress += 1
+                }
+
+                if navSwitchValid == 1,
+                   !damNavSwitchCrossingStarted,
+                   damNavSwitchCrossingFrames == 0,
+                   navSwitchDoorPerimPosition > 0,
+                   (navSwitchDoorState == 1 ||
+                    navSwitchDoorOpenPosition + 60 >= navSwitchDoorPerimPosition) {
+                    damNavCrossingSourceX = navSourceX
+                    damNavCrossingSourceZ = navSourceZ
+                    damNavCrossingTargetX = navTargetX
+                    damNavCrossingTargetZ = navTargetZ
+                    damNavCrossingDoorX = navSwitchDoorX
+                    damNavCrossingDoorZ = navSwitchDoorZ
+                    damNavSwitchCrossingFrames = 600
+                    damNavSwitchCrossingStarted = true
+                    print(
+                        "[GoldenPad] Dam nav linked door crossing: " +
+                        "pos=\(navSwitchDoorX),\(navSwitchDoorZ) " +
+                        "state=\(navSwitchDoorState) " +
+                        "open=\(navSwitchDoorOpenPosition) " +
+                        "perim=\(navSwitchDoorPerimPosition)"
+                    )
+                }
+
+                if damNavSwitchCrossingFrames > 0 {
+                    let doorVectorX = Double(
+                        damNavCrossingTargetX - damNavCrossingSourceX
+                    )
+                    let doorVectorZ = Double(
+                        damNavCrossingTargetZ - damNavCrossingSourceZ
+                    )
+                    let doorVectorLength = max(
+                        1.0, sqrt(doorVectorX * doorVectorX + doorVectorZ * doorVectorZ)
+                    )
+                    let crossingTargetX = Double(damNavCrossingDoorX) +
+                        doorVectorX / doorVectorLength * 140_000.0
+                    let crossingTargetZ = Double(damNavCrossingDoorZ) +
+                        doorVectorZ / doorVectorLength * 140_000.0
+                    let crossingDeltaX = crossingTargetX - Double(playerX)
+                    let crossingDeltaZ = crossingTargetZ - Double(playerZ)
+                    var crossingYaw = atan2(
+                        -crossingDeltaX, crossingDeltaZ
+                    ) * 180.0 / .pi
+                    if crossingYaw < 0 { crossingYaw += 360.0 }
+                    var crossingYawError = crossingYaw - Double(yaw) / 100.0
+                    while crossingYawError > 180.0 { crossingYawError -= 360.0 }
+                    while crossingYawError < -180.0 { crossingYawError += 360.0 }
+                    routeFrame.secondary.stick.x = Float(
+                        max(-1.0, min(1.0, crossingYawError / 45.0))
+                    )
+                    routeFrame.primary.stick = .zero
+                    if abs(crossingYawError) < 70.0 {
+                        routeFrame.primary.stick.y = abs(crossingYawError) < 25.0
+                            ? 1.0 : 0.6
+                    }
+                    damNavSwitchCrossingFrames -= 1
+                    if damNavSwitchCrossingFrames == 0 {
+                        damNavSwitchCrossingStarted = false
+                        damNavSwitchPulseSent = false
+                        damNavSwitchHoldFrames = 0
+                        damNavSwitchSettleFrames = 0
+                        damNavSwitchRetryFrames = 0
+                        damNavSwitchAttempts = 0
+                        damNavSwitchAligningWall = false
+                        damNavSwitchWallAlignFrames = 0
+                        damNavSwitchWallAligned = false
+                    }
+                }
+
+                if damNavFramesWithoutTargetProgress >= 180,
+                   damNavSwitchCrossingFrames == 0,
+                   !damNavSwitchCrossingStarted {
+                    let recoveryFrame =
+                        (damNavFramesWithoutTargetProgress - 180) % 360
+                    if navSwitchValid == 1, !damNavSwitchPulseSent {
+                        let switchDeltaX = Double(navSwitchX - playerX)
+                        let switchDeltaZ = Double(navSwitchZ - playerZ)
+                        let switchDistance = Int(sqrt(
+                            switchDeltaX * switchDeltaX +
+                            switchDeltaZ * switchDeltaZ
+                        ).rounded())
+                        var switchYaw = atan2(
+                            -switchDeltaX, switchDeltaZ
+                        ) * 180.0 / .pi
+                        if switchYaw < 0 { switchYaw += 360.0 }
+                        var switchYawError = switchYaw - Double(yaw) / 100.0
+                        while switchYawError > 180.0 { switchYawError -= 360.0 }
+                        while switchYawError < -180.0 { switchYawError += 360.0 }
+                        routeFrame.secondary.stick.x = Float(
+                            max(-1.0, min(1.0, switchYawError / 45.0))
+                        )
+                        routeFrame.primary.stick = .zero
+                        if abs(switchYawError) < 65.0, switchDistance > 10_000 {
+                            routeFrame.primary.stick.y = switchDistance > 40_000
+                                ? 1.0 : 0.35
+                        }
+                        if (!damNavSwitchWallAligned || abs(switchDeltaZ) > 3_000),
+                           switchDistance < 60_000,
+                           abs(switchDeltaZ) > 1_000 {
+                            if !damNavSwitchAligningWall {
+                                damNavSwitchWallAlignFrames = 0
+                            }
+                            damNavSwitchAligningWall = true
+                            damNavSwitchWallAligned = false
+                        } else if damNavSwitchAligningWall,
+                                  abs(switchDeltaZ) <= 1_000 {
+                            damNavSwitchAligningWall = false
+                            damNavSwitchWallAligned = true
+                        }
+                        if damNavSwitchAligningWall {
+                            damNavSwitchWallAlignFrames += 1
+                            if damNavSwitchWallAlignFrames >= 600 {
+                                damNavSwitchAligningWall = false
+                                damNavSwitchWallAligned = true
+                            }
+                        }
+                        if damNavSwitchAligningWall {
+                            // Walk parallel to the blocking wall until the
+                            // live player/switch Z positions align, then face
+                            // the button again. This stays entirely inside the
+                            // retail controller path.
+                            let wallYaw = switchDeltaZ > 0 ? 0.0 : 180.0
+                            var wallYawError = wallYaw - Double(yaw) / 100.0
+                            while wallYawError > 180.0 { wallYawError -= 360.0 }
+                            while wallYawError < -180.0 { wallYawError += 360.0 }
+                            routeFrame.primary.stick = .zero
+                            routeFrame.secondary.stick.x = Float(
+                                max(-1.0, min(1.0, wallYawError / 45.0))
+                            )
+                            if abs(wallYawError) < 25.0 {
+                                routeFrame.primary.stick.y = 0.15
+                            }
+                        }
+                        if navSwitchDoorState == 1 {
+                            damNavSwitchPulseSent = true
+                            damNavCrossingSourceX = navSourceX
+                            damNavCrossingSourceZ = navSourceZ
+                            damNavCrossingTargetX = navTargetX
+                            damNavCrossingTargetZ = navTargetZ
+                            damNavCrossingDoorX = navSwitchDoorX
+                            damNavCrossingDoorZ = navSwitchDoorZ
+                            print(
+                                "[GoldenPad] Dam nav linked door already opening: " +
+                                "open=\(navSwitchDoorOpenPosition) " +
+                                "perim=\(navSwitchDoorPerimPosition)"
+                            )
+                        } else if navSwitchEligibility == 0x1ff,
+                                  abs(switchYawError) < 8.0,
+                                  !damNavSwitchAligningWall {
+                            // The eligibility snapshot and controller sample
+                            // cross threads. Stop turning long enough for the
+                            // game thread to observe a stationary candidate
+                            // before sending the single Use edge.
+                            routeFrame.primary.stick = .zero
+                            routeFrame.secondary.stick = .zero
+                            if damNavSwitchSettleFrames < 12 {
+                                damNavSwitchSettleFrames += 1
+                            } else {
+                                routeFrame.primary.buttons.insert(.b)
+                                damNavSwitchPulseSent = true
+                                damNavSwitchAttempts += 1
+                                damNavSwitchRetryFrames = 0
+                                // Keep one press visible across the independent
+                                // display/game cadences. The N64 still observes a
+                                // single edge followed by a held button.
+                                damNavSwitchHoldFrames = 8
+                                damNavCrossingSourceX = navSourceX
+                                damNavCrossingSourceZ = navSourceZ
+                                damNavCrossingTargetX = navTargetX
+                                damNavCrossingTargetZ = navTargetZ
+                                damNavCrossingDoorX = navSwitchDoorX
+                                damNavCrossingDoorZ = navSwitchDoorZ
+                                print(
+                                    "[GoldenPad] Dam nav linked-switch B edge: " +
+                                    "pos=\(navSwitchX),\(navSwitchZ) " +
+                                    "doorState=\(navSwitchDoorState) " +
+                                    "open=\(navSwitchDoorOpenPosition) " +
+                                    "perim=\(navSwitchDoorPerimPosition) eligibility=0x1ff"
+                                )
+                            }
+                        } else {
+                            damNavSwitchSettleFrames = 0
+                        }
+                    } else if navSwitchValid == 1, damNavSwitchPulseSent {
+                        // Hold position while the stock linked door opens.
+                        // Crossing begins only after its own collision-clear
+                        // threshold is observed above.
+                        routeFrame.primary.stick = .zero
+                        routeFrame.secondary.stick = .zero
+                        if navSwitchDoorState == 3 {
+                            // Dam's paired gate waits for the first slab to
+                            // close. Keep walking toward the second slab so
+                            // Bond vacates the first slab's collision zone.
+                            routeFrame.secondary.stick.x = Float(
+                                max(-1.0, min(1.0, yawError / 45.0))
+                            )
+                            if abs(yawError) < 70.0 {
+                                routeFrame.primary.stick.y = 1.0
+                            }
+                            damNavSwitchHoldFrames = 0
+                        } else if damNavSwitchHoldFrames > 0 {
+                            routeFrame.primary.buttons.insert(.b)
+                            damNavSwitchHoldFrames -= 1
+                        } else if navSwitchDoorState == 0,
+                                  navSwitchDoorOpenPosition == 0,
+                                  damNavSwitchAttempts < 4 {
+                            damNavSwitchRetryFrames += 1
+                            if damNavSwitchRetryFrames >= 90 {
+                                damNavSwitchPulseSent = false
+                                damNavSwitchSettleFrames = 0
+                                damNavSwitchRetryFrames = 0
+                                print(
+                                    "[GoldenPad] Dam nav linked-switch retry: " +
+                                    "attempt=\(damNavSwitchAttempts + 1) " +
+                                    "doorState=0 open=0"
+                                )
+                            }
+                        }
+                    } else if navSwitchValid == 0 {
+                        // Fall back to following a blocking surface in both
+                        // directions when the live setup has no nearby switch.
+                        routeFrame.primary.stick.x = recoveryFrame < 180 ? 1 : -1
+                        routeFrame.primary.stick.y = 0.35
+                        if recoveryFrame.isMultiple(of: 15) ||
+                            recoveryFrame % 15 == 1 {
+                            routeFrame.primary.buttons.insert(.b)
+                        }
+                    }
+                    if !damNavRecoveryReported {
+                        damNavRecoveryReported = true
+                        print(
+                            "[GoldenPad] Dam nav controller recovery: " +
+                            "target=\(navTargetNode) distance=\(targetDistance / 100) " +
+                            "switch=\(navSwitchValid):\(navSwitchX),\(navSwitchZ)"
+                        )
+                    }
+                }
+            }
             damRouteInput = routeFrame
             damRouteFrame += 1
 
@@ -595,6 +984,54 @@ final class InputCoordinator: ObservableObject {
                     "[GoldenPad] Dam native route frame \(damRouteFrame): " +
                     "pos=\(playerX),\(playerZ) delta=\(deltaX),\(deltaZ) yaw=\(yaw)"
                 )
+            }
+
+            if isNavProbe, damRouteFrame >= 640 {
+                let destinationDeltaX = Double(navDestinationX - playerX)
+                let destinationDeltaZ = Double(navDestinationZ - playerZ)
+                let destinationDistance = Int(sqrt(
+                    destinationDeltaX * destinationDeltaX +
+                    destinationDeltaZ * destinationDeltaZ
+                ).rounded())
+                if damNavFrame > 0, damNavFrame.isMultiple(of: 300) {
+                    print(
+                        "[GoldenPad] Dam nav frame \(damNavFrame): " +
+                        "pos=\(playerX),\(playerZ) yaw=\(yaw) " +
+                        "source=\(navSourceNode) target=\(navTargetNode) " +
+                        "destinationDistance=\(destinationDistance / 100) " +
+                        "door=\(navSwitchDoorState):" +
+                        "\(navSwitchDoorOpenPosition)/\(navSwitchDoorPerimPosition) " +
+                        "doorPos=\(navSwitchDoorX),\(navSwitchDoorZ) " +
+                        "switchEligibility=0x\(String(navSwitchEligibility, radix: 16))"
+                    )
+                }
+
+                let reachedDestination = navValid == 1 &&
+                    destinationDistance <= 50_000
+                let timedOut = damRouteFrame >= 12_500
+                guard reachedDestination || timedOut else { return }
+
+                let deltaX = Double(playerX - damRouteStartX)
+                let deltaZ = Double(playerZ - damRouteStartZ)
+                let distance = Int(sqrt(deltaX * deltaX + deltaZ * deltaZ).rounded())
+                let finalObjectives = [objective0, objective1, objective2, objective3]
+                let objectivesUnchanged = finalObjectives == damRouteStartObjectives
+                let passed = reachedDestination && distance >= 1_500_000 &&
+                    objectiveCount == 4 && objectivesUnchanged
+                damRouteProbePhase = .complete
+                damRouteInput = nil
+                touch = .neutral
+                print(
+                    "[GoldenPad] Dam read-only nav controller route: " +
+                    "\(passed ? "PASS" : "FAIL") distance=\(distance / 100) " +
+                    "destinationDistance=\(destinationDistance / 100) " +
+                    "source=\(navSourceNode) destination=\(navDestinationNode) " +
+                    "final=\(playerX),\(playerZ) " +
+                    "objectives=\(objectiveCount):" +
+                    "[\(objective0),\(objective1),\(objective2),\(objective3)] " +
+                    "stateMutation=\(objectivesUnchanged ? 0 : 1)"
+                )
+                return
             }
 
             guard damRouteFrame >= 900 else { return }

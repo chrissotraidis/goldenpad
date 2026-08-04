@@ -146,6 +146,13 @@ promoted input sequence with a bounded iPad-cadence tail, and preserves the
 upstream 4700-unit gate. iPhone reached 5038 units and iPad 4784 while the
 read-only four-objective vector remained `[0,0,0,0]`. This is a bridge toward
 organic objectives, not objective progress itself.
+The next read-only navigation slice now derives a breadth-first route and Dam's
+two linked gate controls from the live retail setup. Normal controller movement
+and B input crossed both interlock doors and reached upper-graph node 179 within
+500 world units: iPhone passed at 15917 units and iPad at 15879, with the same
+`[0,0,0,0]` objective vector and `stateMutation=0`. The destination is the
+upper pad-140 region, not the disconnected lower bungee graph; organic bungee
+activation remains the next Dam traversal gate.
 
 ### I — Input and touch
 

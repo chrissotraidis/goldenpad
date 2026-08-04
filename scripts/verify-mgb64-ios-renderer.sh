@@ -81,6 +81,7 @@ do
         _goldenpad_mgb64_request_scripted_mission_success \
         _goldenpad_mgb64_progression_state \
         _goldenpad_mgb64_dam_route_state \
+        _goldenpad_mgb64_dam_nav_state \
         _goldenpad_mgb64_facility_door_state \
         _goldenpad_mgb64_facility_door155_state \
         _alBnkfNew \

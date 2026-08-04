@@ -400,6 +400,23 @@ The final strict run passed first on iPhone at 5038 units and then on iPad at
 ROM and container was removed and each simulator shut down before proceeding.
 This is deep traversal evidence, not objective progress or mission completion.
 
+### Dam live-waypoint/interlock controller gate
+
+Launch a clean install with `--dam-nav-probe`. The probe implies the authentic
+menu path and stock-spawn route above, then reads the loaded retail setup's
+waypoint and switch-to-door graphs. A private breadth-first search publishes
+only the next live target; Swift supplies ordinary movement, look and B input.
+No transform, door, objective, stage or mission state may be written.
+
+Require `Dam read-only nav controller route: PASS`, `distance>=15000`,
+`destinationDistance<=500`, `objectives=4:[0,0,0,0]`, and
+`stateMutation=0`. Run phone first, terminate/uninstall/shut it down, then install
+the exact same app on iPad. The final strict run passed at
+`distance=15917 destinationDistance=493` on iPhone and
+`distance=15879 destinationDistance=499` on iPad. Both reported source 182 and
+destination 179. This endpoint is the upper pad-140 region; it is not proof of
+the disconnected lower bungee path or objective completion.
+
 ### Facility controller-interaction gate
 
 First verify the pinned MGB64 desktop contract with a private ignored retail ROM:

@@ -10,6 +10,7 @@
 #include "boss.h"
 #include "game/bondview.h"
 #include "game/chrai.h"
+#include "game/chrobjhandler.h"
 #include "game/file2.h"
 #include "game/loadobjectmodel.h"
 #include "game/mp_music.h"
@@ -73,6 +74,26 @@ static _Atomic int goldenpad_progression_mission_state;
 static _Atomic int goldenpad_dam_camera_mode = -1;
 static _Atomic int goldenpad_dam_objective_count;
 static _Atomic int goldenpad_dam_objective_statuses[4] = {-1, -1, -1, -1};
+static _Atomic int goldenpad_dam_nav_valid;
+static _Atomic int goldenpad_dam_nav_source_node = -1;
+static _Atomic int goldenpad_dam_nav_target_node = -1;
+static _Atomic int goldenpad_dam_nav_destination_node = -1;
+static _Atomic int goldenpad_dam_nav_target_x;
+static _Atomic int goldenpad_dam_nav_target_z;
+static _Atomic int goldenpad_dam_nav_source_x;
+static _Atomic int goldenpad_dam_nav_source_z;
+static _Atomic int goldenpad_dam_nav_destination_x;
+static _Atomic int goldenpad_dam_nav_destination_z;
+static _Atomic int goldenpad_dam_nav_target_room = -1;
+static _Atomic int goldenpad_dam_nav_switch_valid;
+static _Atomic int goldenpad_dam_nav_switch_x;
+static _Atomic int goldenpad_dam_nav_switch_z;
+static _Atomic int goldenpad_dam_nav_switch_door_x;
+static _Atomic int goldenpad_dam_nav_switch_door_z;
+static _Atomic int goldenpad_dam_nav_switch_door_state = -1;
+static _Atomic int goldenpad_dam_nav_switch_door_open_position;
+static _Atomic int goldenpad_dam_nav_switch_door_perim_position;
+static _Atomic int goldenpad_dam_nav_switch_eligibility;
 static _Atomic int goldenpad_facility_door_ready;
 static _Atomic int goldenpad_facility_door_count;
 static _Atomic int goldenpad_facility_door_state = -1;
@@ -92,6 +113,7 @@ static int goldenpad_scripted_mission_restore_debug_flag;
 
 #define GOLDENPAD_MAX_TIMERS 16
 #define GOLDENPAD_EEPROM_SIZE 2048
+#define GOLDENPAD_DAM_SWITCH_ORACLE_DISTANCE_SQUARED 16000000.0f
 
 typedef struct {
     int active;
@@ -107,6 +129,272 @@ static pthread_mutex_t goldenpad_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static u8 goldenpad_eeprom[GOLDENPAD_EEPROM_SIZE];
 static pthread_mutex_t goldenpad_eeprom_mutex = PTHREAD_MUTEX_INITIALIZER;
 static _Atomic u32 goldenpad_eeprom_generation;
+
+#define GOLDENPAD_DAM_NAV_MAX_WAYPOINTS 512
+
+static void goldenpad_mgb64_clear_dam_nav(void) {
+    atomic_store(&goldenpad_dam_nav_valid, 0);
+    atomic_store(&goldenpad_dam_nav_source_node, -1);
+    atomic_store(&goldenpad_dam_nav_target_node, -1);
+    atomic_store(&goldenpad_dam_nav_destination_node, -1);
+    atomic_store(&goldenpad_dam_nav_target_x, 0);
+    atomic_store(&goldenpad_dam_nav_target_z, 0);
+    atomic_store(&goldenpad_dam_nav_source_x, 0);
+    atomic_store(&goldenpad_dam_nav_source_z, 0);
+    atomic_store(&goldenpad_dam_nav_destination_x, 0);
+    atomic_store(&goldenpad_dam_nav_destination_z, 0);
+    atomic_store(&goldenpad_dam_nav_target_room, -1);
+    atomic_store(&goldenpad_dam_nav_switch_valid, 0);
+    atomic_store(&goldenpad_dam_nav_switch_x, 0);
+    atomic_store(&goldenpad_dam_nav_switch_z, 0);
+    atomic_store(&goldenpad_dam_nav_switch_door_x, 0);
+    atomic_store(&goldenpad_dam_nav_switch_door_z, 0);
+    atomic_store(&goldenpad_dam_nav_switch_door_state, -1);
+    atomic_store(&goldenpad_dam_nav_switch_door_open_position, 0);
+    atomic_store(&goldenpad_dam_nav_switch_door_perim_position, 0);
+    atomic_store(&goldenpad_dam_nav_switch_eligibility, 0);
+}
+
+/*
+ * Read-only navigation diagnostic. The destination is selected from the live
+ * setup as the reachable waypoint with the smallest world Z, then a private
+ * breadth-first search publishes only the next target. This neither invokes
+ * MGB64's mutating path-distance scratch fields nor embeds ROM coordinates in
+ * the host. Movement remains normal controller input from Swift.
+ */
+static void goldenpad_mgb64_sample_dam_nav(void) {
+    waypoint *waypoints = g_CurrentSetup.pathwaypoints;
+    PadRecord *pads = g_CurrentSetup.pads;
+    int parents[GOLDENPAD_DAM_NAV_MAX_WAYPOINTS];
+    int queue[GOLDENPAD_DAM_NAV_MAX_WAYPOINTS];
+    int count = 0;
+    int source = -1;
+    int destination = -1;
+    int target;
+    int head = 0;
+    int tail = 0;
+    float nearest_distance = 3.4e38f;
+    float destination_z = 3.4e38f;
+    float nearest_switch_distance = 3.4e38f;
+    float nearest_forward_door_progress = 3.4e38f;
+    PropRecord *nearest_switch = NULL;
+    PropRecord *nearest_switch_door = NULL;
+    LinkRecord *link;
+
+    if (g_CurrentPlayer == NULL || g_CurrentPlayer->prop == NULL ||
+        waypoints == NULL || pads == NULL) {
+        goldenpad_mgb64_clear_dam_nav();
+        return;
+    }
+
+    while (count < GOLDENPAD_DAM_NAV_MAX_WAYPOINTS &&
+           waypoints[count].padID >= 0) {
+        PadRecord *pad = &pads[waypoints[count].padID];
+        float dx = pad->pos.x - g_CurrentPlayer->prop->pos.x;
+        float dz = pad->pos.z - g_CurrentPlayer->prop->pos.z;
+        float distance = dx * dx + dz * dz;
+        parents[count] = -2;
+        if (distance < nearest_distance) {
+            nearest_distance = distance;
+            source = count;
+        }
+        count++;
+    }
+
+    if (source < 0 || count == GOLDENPAD_DAM_NAV_MAX_WAYPOINTS) {
+        goldenpad_mgb64_clear_dam_nav();
+        return;
+    }
+
+    parents[source] = -1;
+    queue[tail++] = source;
+    while (head < tail) {
+        int node = queue[head++];
+        int pad_id = waypoints[node].padID;
+        s32 *neighbour = waypoints[node].neighbours;
+
+        if (pads[pad_id].pos.z < destination_z) {
+            destination_z = pads[pad_id].pos.z;
+            destination = node;
+        }
+
+        while (neighbour != NULL && *neighbour >= 0) {
+            int next = *neighbour++;
+            if (next >= 0 && next < count && parents[next] == -2) {
+                parents[next] = node;
+                queue[tail++] = next;
+            }
+        }
+    }
+
+    if (destination < 0) {
+        goldenpad_mgb64_clear_dam_nav();
+        return;
+    }
+
+    target = destination;
+    while (parents[target] >= 0 && parents[target] != source) {
+        target = parents[target];
+    }
+    if (source == destination) {
+        target = destination;
+    }
+
+    /*
+     * Dam's gate is an interlock. Prefer the nearest linked door that is
+     * forward along the current live waypoint edge, then the closest switch
+     * for that door. Once Bond passes the first slab its center falls behind
+     * the edge and the second door becomes the selected gate automatically.
+     */
+    for (link = g_LevelLoadPropSwitch; link != NULL; link = link->next) {
+        PropRecord *candidate = link->first;
+        PropRecord *door = link->second;
+        float switch_dx;
+        float switch_dz;
+        float switch_distance;
+        float route_dx;
+        float route_dz;
+        float door_dx;
+        float door_dz;
+        float door_progress;
+
+        if (candidate == NULL || candidate->obj == NULL || door == NULL ||
+            door->door == NULL ||
+            (candidate->type != PROP_TYPE_OBJ &&
+             candidate->type != PROP_TYPE_WEAPON) ||
+            !(candidate->obj->runtime_bitflags & RUNTIMEBITFLAG_00000001) ||
+            candidate->obj->type == PROPDEF_DOOR) {
+            continue;
+        }
+
+        switch_dx = candidate->pos.x - g_CurrentPlayer->prop->pos.x;
+        switch_dz = candidate->pos.z - g_CurrentPlayer->prop->pos.z;
+        switch_distance = switch_dx * switch_dx + switch_dz * switch_dz;
+        route_dx = pads[waypoints[target].padID].pos.x -
+            g_CurrentPlayer->prop->pos.x;
+        route_dz = pads[waypoints[target].padID].pos.z -
+            g_CurrentPlayer->prop->pos.z;
+        door_dx = door->pos.x - g_CurrentPlayer->prop->pos.x;
+        door_dz = door->pos.z - g_CurrentPlayer->prop->pos.z;
+        door_progress = door_dx * route_dx + door_dz * route_dz;
+        if (door_progress >= 0.0f &&
+            (door_progress < nearest_forward_door_progress ||
+             (door_progress == nearest_forward_door_progress &&
+              switch_distance < nearest_switch_distance))) {
+            nearest_forward_door_progress = door_progress;
+            nearest_switch_distance = switch_distance;
+            nearest_switch = candidate;
+            nearest_switch_door = door;
+        }
+    }
+    atomic_store(&goldenpad_dam_nav_source_node, source);
+    atomic_store(&goldenpad_dam_nav_target_node, target);
+    atomic_store(&goldenpad_dam_nav_destination_node, destination);
+    atomic_store(
+        &goldenpad_dam_nav_target_x,
+        (int)(pads[waypoints[target].padID].pos.x * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_target_z,
+        (int)(pads[waypoints[target].padID].pos.z * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_source_x,
+        (int)(pads[waypoints[source].padID].pos.x * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_source_z,
+        (int)(pads[waypoints[source].padID].pos.z * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_destination_x,
+        (int)(pads[waypoints[destination].padID].pos.x * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_destination_z,
+        (int)(pads[waypoints[destination].padID].pos.z * 100.0f));
+    atomic_store(
+        &goldenpad_dam_nav_target_room,
+        pads[waypoints[target].padID].stan != NULL
+            ? pads[waypoints[target].padID].stan->room
+            : -1);
+    if (nearest_switch != NULL &&
+        nearest_switch_distance <= GOLDENPAD_DAM_SWITCH_ORACLE_DISTANCE_SQUARED) {
+        ObjectRecord *obj = nearest_switch->obj;
+        PropRecord *player = g_CurrentPlayer->prop;
+        int eligibility = 0;
+        float xdiff = obj->runtime_pos.x - player->pos.x;
+        float ydiff = obj->runtime_pos.y - player->pos.y;
+        float zdiff = obj->runtime_pos.z - player->pos.z;
+        float angle = atan2f(xdiff, zdiff);
+        float player_angle = get_curplay_horizontal_rotation_in_degrees();
+        float angle_diff = angle - player_angle;
+        StandTile *stan = player->stan;
+        PropRecord **onscreen;
+
+        if (angle < player_angle) angle_diff += M_TAU_F;
+        if (angle_diff > M_PI_F) angle_diff = M_TAU_F - angle_diff;
+
+        if (obj->type == PROP_TYPE_PLAYER ||
+            (obj->flags & PROPFLAG_00080000) ||
+            (obj->runtime_bitflags &
+             (RUNTIMEBITFLAG_00000001 | RUNTIMEBITFLAG_00000002 |
+              RUNTIMEBITFLAG_TAGGED))) {
+            eligibility |= 1 << 0;
+        }
+        if (nearest_switch->flags & PROPFLAG_ONSCREEN) eligibility |= 1 << 1;
+        if (objIsHealthy(obj)) eligibility |= 1 << 2;
+        if (!(obj->flags & PROPFLAG_CANNOT_ACTIVATE)) eligibility |= 1 << 3;
+        if (xdiff * xdiff + zdiff * zdiff < 40000.0f) eligibility |= 1 << 4;
+        if (ydiff < 200.0f && ydiff > -200.0f) eligibility |= 1 << 5;
+        if (angle_diff <= 0.3926991f) eligibility |= 1 << 6;
+        for (onscreen = g_OnScreenPropList; onscreen < g_LastOnScreenProp;
+             ++onscreen) {
+            if (*onscreen == nearest_switch) {
+                eligibility |= 1 << 7;
+                break;
+            }
+        }
+        if (!(obj->flags2 & PROPFLAG2_INTERACTCHECKLOS) ||
+            walkTilesBetweenPoints_NoCallback(
+                &stan, player->pos.x, player->pos.z,
+                nearest_switch->pos.x, nearest_switch->pos.z)) {
+            eligibility |= 1 << 8;
+        }
+
+        atomic_store(&goldenpad_dam_nav_switch_valid, 1);
+        atomic_store(
+            &goldenpad_dam_nav_switch_x,
+            (int)(obj->runtime_pos.x * 100.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_z,
+            (int)(obj->runtime_pos.z * 100.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_door_x,
+            (int)(nearest_switch_door->pos.x * 100.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_door_z,
+            (int)(nearest_switch_door->pos.z * 100.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_door_state,
+            nearest_switch_door->door->openstate);
+        atomic_store(
+            &goldenpad_dam_nav_switch_door_open_position,
+            (int)(nearest_switch_door->door->openPosition * 1000.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_door_perim_position,
+            (int)(nearest_switch_door->door->perimFrac * 1000.0f));
+        atomic_store(
+            &goldenpad_dam_nav_switch_eligibility,
+            eligibility);
+    } else {
+        atomic_store(&goldenpad_dam_nav_switch_valid, 0);
+        atomic_store(&goldenpad_dam_nav_switch_x, 0);
+        atomic_store(&goldenpad_dam_nav_switch_z, 0);
+        atomic_store(&goldenpad_dam_nav_switch_door_x, 0);
+        atomic_store(&goldenpad_dam_nav_switch_door_z, 0);
+        atomic_store(&goldenpad_dam_nav_switch_door_state, -1);
+        atomic_store(&goldenpad_dam_nav_switch_door_open_position, 0);
+        atomic_store(&goldenpad_dam_nav_switch_door_perim_position, 0);
+        atomic_store(&goldenpad_dam_nav_switch_eligibility, 0);
+    }
+    atomic_store(&goldenpad_dam_nav_valid, 1);
+}
 
 static u64 goldenpad_mgb64_monotonic_us(void) {
     struct timespec now;
@@ -658,12 +946,14 @@ s32 osContGetReadData(OSContPad *pads) {
                 &goldenpad_dam_objective_statuses[objective],
                 objective < count ? get_status_of_objective(objective) : -1);
         }
+        goldenpad_mgb64_sample_dam_nav();
     } else {
         atomic_store(&goldenpad_dam_camera_mode, -1);
         atomic_store(&goldenpad_dam_objective_count, 0);
         for (int objective = 0; objective < 4; ++objective) {
             atomic_store(&goldenpad_dam_objective_statuses[objective], -1);
         }
+        goldenpad_mgb64_clear_dam_nav();
     }
 
     atomic_store(&goldenpad_progression_mission_state, get_mission_state());
@@ -775,6 +1065,71 @@ void goldenpad_mgb64_dam_route_state(
     }
     if (objective3 != NULL) {
         *objective3 = atomic_load(&goldenpad_dam_objective_statuses[3]);
+    }
+}
+
+void goldenpad_mgb64_dam_nav_state(
+    int *valid, int *source_node, int *target_node, int *destination_node,
+    int *source_x, int *source_z, int *target_x, int *target_z,
+    int *destination_x, int *destination_z,
+    int *target_room, int *switch_valid, int *switch_x, int *switch_z,
+    int *switch_door_x, int *switch_door_z, int *switch_door_state,
+    int *switch_door_open_position, int *switch_door_perim_position,
+    int *switch_eligibility) {
+    if (valid != NULL) *valid = atomic_load(&goldenpad_dam_nav_valid);
+    if (source_node != NULL) {
+        *source_node = atomic_load(&goldenpad_dam_nav_source_node);
+    }
+    if (target_node != NULL) {
+        *target_node = atomic_load(&goldenpad_dam_nav_target_node);
+    }
+    if (source_x != NULL) *source_x = atomic_load(&goldenpad_dam_nav_source_x);
+    if (source_z != NULL) *source_z = atomic_load(&goldenpad_dam_nav_source_z);
+    if (destination_node != NULL) {
+        *destination_node =
+            atomic_load(&goldenpad_dam_nav_destination_node);
+    }
+    if (target_x != NULL) *target_x = atomic_load(&goldenpad_dam_nav_target_x);
+    if (target_z != NULL) *target_z = atomic_load(&goldenpad_dam_nav_target_z);
+    if (destination_x != NULL) {
+        *destination_x = atomic_load(&goldenpad_dam_nav_destination_x);
+    }
+    if (destination_z != NULL) {
+        *destination_z = atomic_load(&goldenpad_dam_nav_destination_z);
+    }
+    if (target_room != NULL) {
+        *target_room = atomic_load(&goldenpad_dam_nav_target_room);
+    }
+    if (switch_valid != NULL) {
+        *switch_valid = atomic_load(&goldenpad_dam_nav_switch_valid);
+    }
+    if (switch_x != NULL) {
+        *switch_x = atomic_load(&goldenpad_dam_nav_switch_x);
+    }
+    if (switch_z != NULL) {
+        *switch_z = atomic_load(&goldenpad_dam_nav_switch_z);
+    }
+    if (switch_door_x != NULL) {
+        *switch_door_x = atomic_load(&goldenpad_dam_nav_switch_door_x);
+    }
+    if (switch_door_z != NULL) {
+        *switch_door_z = atomic_load(&goldenpad_dam_nav_switch_door_z);
+    }
+    if (switch_door_state != NULL) {
+        *switch_door_state =
+            atomic_load(&goldenpad_dam_nav_switch_door_state);
+    }
+    if (switch_door_open_position != NULL) {
+        *switch_door_open_position =
+            atomic_load(&goldenpad_dam_nav_switch_door_open_position);
+    }
+    if (switch_door_perim_position != NULL) {
+        *switch_door_perim_position =
+            atomic_load(&goldenpad_dam_nav_switch_door_perim_position);
+    }
+    if (switch_eligibility != NULL) {
+        *switch_eligibility =
+            atomic_load(&goldenpad_dam_nav_switch_eligibility);
     }
 }
 

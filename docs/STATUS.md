@@ -172,6 +172,17 @@ longer blocks MGB64 integration.
   4700-unit gate. iPhone passed at 5038 and iPad at 4784; their read-only
   objective vectors stayed `[0,0,0,0]` with `stateMutation=0`. This proves
   deeper Dam traversal, not objective progress.
+- `--dam-nav-probe` now reads the loaded Dam waypoint graph, chooses the
+  reachable minimum-Z node with a private breadth-first search, and publishes
+  only its next target. Its linked-switch oracle reads the live setup and
+  selects the nearest linked door ahead on the active graph edge. Swift reaches
+  those targets with ordinary movement, look and B frames; it never writes a
+  transform, door, objective or mission state. The final strict same-binary run
+  passed first on iPhone (`distance=15917`, `destinationDistance=493`) and then
+  iPad (`distance=15879`, `destinationDistance=499`). Both ended at source 182
+  toward destination 179 with objectives `4:[0,0,0,0]` and `stateMutation=0`.
+  This proves the upper Dam graph and real two-door interlock, not the
+  disconnected lower bungee graph or organic objective completion.
 - The input-only MGB64 desktop route
   `facility_spawn_obj159_door_traversal_contract` independently passed at the
   pinned commit with a 1291.83-unit displacement, real door-allow/transition/
@@ -297,8 +308,8 @@ longer blocks MGB64 integration.
 - The visible FPS counter is not trusted yet. Validate it against actual Metal
   presentation cadence and correct its sampling/label before using it as
   performance evidence.
-- Organic mission completion, traversal from the promoted Dam endpoint to a
-  real objective, deeper Facility progression, crouch/objectives
+- Organic mission completion, traversal from upper Dam node 179 into the lower
+  bungee graph and a real objective, deeper Facility progression, crouch/objectives
   flow, physical-controller/gyro acceptance, touch-only
   mission completion, multiplayer, final game-bearing
   unsigned IPA, or final archive audit yet. Simulator UI automation proved the
@@ -307,9 +318,10 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Extend the clean Dam route from its promoted endpoint to one real objective and
-observe that objective change without mutation, while continuing Facility past
-the two-door corridor chain. Then replace the diagnostic success prerequisite
+Extend the clean Dam route from upper node 179 into the lower bungee graph and
+observe the organic bungee/objective transition without mutation, while
+continuing Facility past the two-door corridor chain. Then replace the
+diagnostic success prerequisite
 with organic objectives and mission completion through input. The traversal,
 chained-interaction, report, EEPROM write, lifecycle flush and relaunch seams no
 longer need to be rediscovered.
