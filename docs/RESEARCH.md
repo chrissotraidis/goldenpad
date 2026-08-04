@@ -1,6 +1,6 @@
 # Research
 
-Last verified: 2026-08-03. All checkouts below live under the ignored `ref/`
+Last verified: 2026-08-04. All checkouts below live under the ignored `ref/`
 directory and are references unless this document explicitly says otherwise.
 
 ## Decision
@@ -148,10 +148,14 @@ On this Apple M1 host, commit `cd9b58f`:
 The fallback documented as `-DMGB64_WEBGPU_BACKEND=OFF` failed at link time:
 `gfx_pc.c` still references `gfx_webgpu_api`. The default build succeeded.
 
-CTest result: 106 tests discovered; 92% passed, 8 failed, and 10 skipped. Failures
-included malformed shell `case` syntax, Bash-3-incompatible associative arrays,
-missing Pillow, pre-push assumptions, and stale/missing fidelity evidence paths.
-This is a working desktop oracle, not a release-ready upstream.
+The original internal checkout run discovered 106 tests, with eight failures
+split across macOS Bash 3 incompatibilities, a missing Pillow dependency and
+stale private fidelity evidence. That result mixed the public release surface
+with upstream's export-ignored fidelity program. GoldenPad now verifies the
+actual public export at the exact pin with a maintained compatibility patch:
+the exported source builds and reports 100% passed across 103 CTest entries,
+with 10 explicit ROM/browser/optional-binary skips. No private fidelity test or
+evidence path is reclassified as a production release gate.
 
 ## Renderer assessment
 

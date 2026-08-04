@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-04 — close the public MGB64 ROM-free test gate
+
+- Reproduced the stale internal result and classified all eight failures. They
+  split between public-harness Bash 3 compatibility defects and tests or
+  dependencies belonging to upstream's export-ignored private fidelity/evidence
+  surface rather than GoldenPad's public production input.
+- Added one exact-pin maintained patch: release guards retain their existing
+  patterns with Bash-3-compatible conditionals, the bad-ROM test uses upstream's
+  portable timeout helper, and two tests that directly import private fidelity
+  tools follow the existing export-ignore boundary.
+- Added a clean public-export verifier that applies the patch only in a
+  disposable Git checkout, builds the desktop core and runs CTest without ROM
+  data. The final run reported 100% passed across 103 entries with 10 explicit
+  ROM/browser/optional-binary skips, then restored `ref/mgb64` clean.
+- This closes D6 test infrastructure. It does not replace hands-on touch and
+  controller play, organic mission/save completion, multiplayer or physical
+  device acceptance.
+
 ## 2026-08-04 — isolate physical controller face buttons
 
 - Fixed a real controller translation defect: physical A previously inserted

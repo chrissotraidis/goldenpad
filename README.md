@@ -18,6 +18,11 @@ mobile SDKs. A separate five-object Fast3D frontend and the complete native
 Metal backend link without SDL, OpenGL, AppKit, matching-target SDK
 implementations, ROM data, or extracted media.
 
+The exact public MGB64 source export also has a reproducible ROM-free gate:
+GoldenPad's narrow macOS compatibility patch builds it and reports 100% passed
+across 103 CTest entries, with 10 prerequisite-dependent skips. Upstream's
+export-ignored private fidelity program is not relabeled as production coverage.
+
 After exact SHA-1 validation, the app keeps the supported retail ROM only in a
 private core-owned memory buffer, patches MGB64's native resource table, starts
 `bossEntry` once on a background thread, and lets the UIKit-owned `MTKView`

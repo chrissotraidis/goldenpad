@@ -27,6 +27,12 @@ longer blocks MGB64 integration.
   target compiles no `src/libultra/**` or `src/libultrare/**` implementation
   sources; matching-target SDK-lineage files remain outside GoldenPad's source
   and binary boundary.
+- MGB64's exact public-export source surface now builds and reports 100% passed
+  across 103 CTest entries on macOS; 10 ROM/browser/optional-binary cases skip
+  explicitly. The maintained patch fixes Bash 3 parsing, uses upstream's
+  portable timeout helper, and prevents tests that directly import
+  export-ignored fidelity tools from leaking into the public suite. The verifier
+  applies the patch to a temporary Git checkout and restores `ref/mgb64` clean.
 - GoldenPad's opt-in MGB64 target compiles all 135 game translation units, 70
   explicit upstream native system/portable units and five project-owned mobile
   adapters into 210-object, non-fat ARM64 archives for both
@@ -417,7 +423,6 @@ longer blocks MGB64 integration.
 ## Failed or blocked
 
 - MGB64 GL/Metal-only fallback fails to link: unresolved `gfx_webgpu_api`.
-- MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
 - Hands-on control feel is not yet accepted: v4 fixes the continuous-turn look

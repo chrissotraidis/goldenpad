@@ -34,9 +34,17 @@ native target, and a pinned retail-ROM-to-runtime recipe.
 - [x] D3: validate audio initialization and persistent config path.
 - [ ] D4: interactively validate menus, input, save/relaunch and mission progress.
 - [ ] D5: start and complete a local multiplayer match.
-- [ ] D6: make the selected production core's ROM-free tests clean.
+- [x] D6: make the selected production core's public ROM-free tests clean.
 
 Gate: selected core, not just the oracle, completes a mission and multiplayer.
+
+D6 passes against the exact public-export surface GoldenPad consumes. A narrow
+maintained patch makes upstream's release guards compatible with macOS Bash 3,
+uses the existing portable timeout helper, and keeps tests that directly import
+export-ignored fidelity tooling on that same internal-only side of the boundary.
+The clean exported checkout builds and reports 100% passed across 103 CTest
+entries; 10 ROM/browser/optional-binary cases skip explicitly. This closes core
+test infrastructure, not the D4/D5 mission and multiplayer acceptance gates.
 
 ### A — Apple application shell
 

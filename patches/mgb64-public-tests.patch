@@ -1,0 +1,202 @@
+diff --git a/.gitattributes b/.gitattributes
+index 9c65e39..9c979f3 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -126,6 +126,9 @@ docs/audit/** export-ignore
+ # directly), so it is exactly as internal as the tree it tests. Kept OUTSIDE
+ # the history-scan-exempt block above, for the same direct-push reason.
+ tools/tests/test_fidelity_ledger.py export-ignore
++# This unit test imports tools/fidelity/rng_callcount_diff.py directly, so it
++# belongs to the same internal-only fidelity surface as that helper.
++tools/tests/test_rng_callcount_diff.py export-ignore
+ #
+ # Path-gap docs: internal working documents that predate the docs/design/
+ # convention and sit at top-level docs/ paths that defeat every glob above.
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 89598e8..cc48569 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -283,11 +283,13 @@ if(BUILD_TESTING)
+     # consistent divergence and (b) downgrade a non-reproducible one-off load
+     # flake to an unstable-note (green), so the release-gating lane stops
+     # false-reddening runway_traverse under aggregate verify_all load.
+-    add_test(
+-        NAME gate_routes_smoke_selftest
+-        COMMAND bash "${CMAKE_SOURCE_DIR}/tools/fidelity/gate_routes_smoke.sh" --self-test
+-    )
+-    set_tests_properties(gate_routes_smoke_selftest PROPERTIES TIMEOUT 60)
++    if(GE007_HAVE_FIDELITY_PROGRAM)
++        add_test(
++            NAME gate_routes_smoke_selftest
++            COMMAND bash "${CMAKE_SOURCE_DIR}/tools/fidelity/gate_routes_smoke.sh" --self-test
++        )
++        set_tests_properties(gate_routes_smoke_selftest PROPERTIES TIMEOUT 60)
++    endif()
+     # FID-0062 sim-tick alignment regression lane (ROM-free): --align tick pairs the
+     # native (1 rec/tick) vs ares (~2 rec/tick + empty-roster interleave) streams by
+     # sim-tick with no phantom divergences, while --align move (index) skews ~2x.
+@@ -322,16 +324,18 @@ if(BUILD_TESTING)
+     # and the per-tick call-count extraction (segment gate at g_GlobalTimer
+     # resets, last-record-per-tick sampling, common-tick-span differentials)
+     # of tools/fidelity/rng_callcount_diff.py.
+-    add_test(
+-        NAME rng_callcount_diff_unittest
+-        COMMAND python3 -m unittest tools.tests.test_rng_callcount_diff
+-    )
+-    set_tests_properties(
+-        rng_callcount_diff_unittest
+-        PROPERTIES
+-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+-            TIMEOUT 30
+-    )
++    if(GE007_HAVE_FIDELITY_PROGRAM)
++        add_test(
++            NAME rng_callcount_diff_unittest
++            COMMAND python3 -m unittest tools.tests.test_rng_callcount_diff
++        )
++        set_tests_properties(
++            rng_callcount_diff_unittest
++            PROPERTIES
++                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++                TIMEOUT 30
++        )
++    endif()
+     # AUDIT-0019 perf-gate two-policy contract (ROM-free): the portable
+     # absolute-floor gate must pass a host-variance delta vs another machine's
+     # cold baseline, while relative regression only enforces under --regression
+diff --git a/scripts/ci/check_no_rom_data.sh b/scripts/ci/check_no_rom_data.sh
+index 1b14916..20b9b44 100755
+--- a/scripts/ci/check_no_rom_data.sh
++++ b/scripts/ci/check_no_rom_data.sh
+@@ -129,14 +129,17 @@ if [ "$HAVE_GIT" -eq 1 ]; then
+ else
+   sdk_reference_comments=$(
+     while IFS= read -r f; do
+-      case "$f" in
+-        *.c|*.h|*.s|*.S|*.def|CMakeLists.txt|Makefile)
+-          case "$f" in
+-            scripts/ci/check_no_rom_data.sh|src/libultra/*|src/libultrare/*) continue ;;
+-          esac
++      # Bash 3 cannot parse a case statement nested inside $(...), even though
++      # newer Bash releases accept it. Keep the same allow/exclude patterns as
++      # ordinary conditional tests.
++      if [[ "$f" == *.c || "$f" == *.h || "$f" == *.s || "$f" == *.S ||
++            "$f" == *.def || "$f" == "CMakeLists.txt" || "$f" == "Makefile" ]]; then
++          if [[ "$f" == "scripts/ci/check_no_rom_data.sh" ||
++                "$f" == src/libultra/* || "$f" == src/libultrare/* ]]; then
++            continue
++          fi
+           grep -InEi 'n64devkit|libsrc[\\/]+libultra|usr[\\/]+src[\\/]+pr|PR[\\/]+libultra[\\/]+|demos_old|audioMgr[.]c([^[:alnum:]_]|$)|audioMgr[[:space:]]+demo|audiomgr[[:space:]]+example|(^|[^[:alnum:]_])devkit([^[:alnum:]_]|$)' "$f" 2>/dev/null | sed "s#^#$f:#" || true
+-          ;;
+-      esac
++      fi
+     done < <(public_file_list)
+   )
+ fi
+@@ -152,9 +155,10 @@ if [ "$HAVE_GIT" -eq 1 ]; then
+ else
+   sdk_notice_paths=$(
+     while IFS= read -r f; do
+-      case "$f" in
+-        scripts/ci/check_no_rom_data.sh|scripts/ci/check_release_ready.sh) continue ;;
+-      esac
++      if [[ "$f" == "scripts/ci/check_no_rom_data.sh" ||
++            "$f" == "scripts/ci/check_release_ready.sh" ]]; then
++        continue
++      fi
+       if grep -Iq . "$f" 2>/dev/null && grep -IqE 'UNPUBLISHED[[:space:]]+PROPRIETARY|may not be disclosed|without the prior written (permission|consent)|RESTRICTED[[:space:]]+RIGHTS|subparagraph \(c\)\(1\)\(ii\) of the Rights' "$f" 2>/dev/null; then
+         printf '%s\n' "$f"
+       fi
+diff --git a/scripts/ci/check_release_ready.sh b/scripts/ci/check_release_ready.sh
+index 4e0c07c..c2a2e3f 100755
+--- a/scripts/ci/check_release_ready.sh
++++ b/scripts/ci/check_release_ready.sh
+@@ -115,14 +115,13 @@ binary_hits=$(
+     # Exception: hand-authored branding art (not ROM-derived), the single
+     # source every platform icon is generated/wrapped from. See the matching
+     # exception in .gitignore and scripts/ci/check_no_rom_data.sh.
+-    case "$f" in
+-      branding/appicon-source.png|branding/appicon-windows.ico) continue ;;
+-      # Fidelity determinism baselines: byte-exact controller input tapes
+-      # (record/replay, FID-0034). Input-events only — no ROM/game data (the
+-      # contamination guard verifies this) — but intentionally tracked binaries
+-      # that back the tape_regression / combat-oracle lanes.
+-      baselines/tapes/*.ge7tape) continue ;;
+-    esac
++    # Bash 3 cannot parse a case statement nested inside $(...), even though
++    # newer Bash releases accept it. Keep these exclusions as ordinary tests.
++    if [[ "$f" == "branding/appicon-source.png" ||
++          "$f" == "branding/appicon-windows.ico" ||
++          "$f" == baselines/tapes/*.ge7tape ]]; then
++      continue
++    fi
+     if ! grep -Iq . "$f" 2>/dev/null; then
+       printf '%s\n' "$f"
+     fi
+@@ -305,7 +304,7 @@ fi
+ 
+ echo
+ echo "== GitHub Actions local-CI policy =="
+-workflow_trigger_hits="$(
++collect_workflow_trigger_hits() {
+   python3 - <<'PY'
+ from pathlib import Path
+ import re
+@@ -351,7 +350,8 @@ for workflow in sorted(workflow_dir.glob("*.y*ml")):
+         if key in bad or list_item in bad:
+             print(f"{workflow}:{number}:{text}")
+ PY
+-)"
++}
++workflow_trigger_hits="$(collect_workflow_trigger_hits)"
+ if [ -n "$workflow_trigger_hits" ]; then
+   while IFS= read -r hit; do
+     note "GitHub Actions workflow has an automatic hosted trigger; public repo policy is local-CI only: $hit"
+@@ -369,9 +369,9 @@ workflow_action_hits="$(
+         no_comment="${line%%#*}"
+         ref="$(printf '%s\n' "$no_comment" | sed -nE 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]]+).*/\2/p')"
+         [ -n "$ref" ] || continue
+-        case "$ref" in
+-          ./*|../*) continue ;;
+-        esac
++        if [[ "$ref" == ./* || "$ref" == ../* ]]; then
++          continue
++        fi
+         if [[ "$ref" != *@* ]]; then
+           printf '%s:%s:%s\n' "$workflow" "$line_no" "$ref"
+           continue
+@@ -519,9 +519,10 @@ if [ "$HAVE_GIT" -eq 1 ]; then
+ else
+   sdk_notice_count=$(
+     while IFS= read -r f; do
+-      case "$f" in
+-        scripts/ci/check_no_rom_data.sh|scripts/ci/check_release_ready.sh) continue ;;
+-      esac
++      if [[ "$f" == "scripts/ci/check_no_rom_data.sh" ||
++            "$f" == "scripts/ci/check_release_ready.sh" ]]; then
++        continue
++      fi
+       if grep -Iq . "$f" 2>/dev/null && grep -IqE 'UNPUBLISHED[[:space:]]+PROPRIETARY|may not be disclosed|without the prior written (permission|consent)|RESTRICTED[[:space:]]+RIGHTS|subparagraph \(c\)\(1\)\(ii\) of the Rights' "$f" 2>/dev/null; then
+         printf '%s\n' "$f"
+       fi
+diff --git a/tools/tests/test_rom_reject.sh b/tools/tests/test_rom_reject.sh
+index 256f569..b6a2dc3 100755
+--- a/tools/tests/test_rom_reject.sh
++++ b/tools/tests/test_rom_reject.sh
+@@ -17,6 +17,7 @@
+ set -euo pipefail
+ cd "$(dirname "$0")/../.."
+ ROOT="$(pwd)"
++source "$ROOT/tools/validation_common.sh"
+ 
+ BIN="${GE007_BIN:-$ROOT/build-webgpu/ge007}"
+ [ -x "$BIN" ] || BIN="$ROOT/build/ge007"
+@@ -54,7 +55,7 @@ fail=0
+ check_reject() {  # $1=label $2=path
+     local label="$1" path="$2" out rc
+     out="$( SDL_AUDIODRIVER=dummy GE007_MUTE=1 GE007_BACKGROUND=1 \
+-            timeout 30 "$BIN" --rom "$path" --level dam --deterministic --no-ui \
++            validation_run_with_timeout 30 "$BIN" --rom "$path" --level dam --deterministic --no-ui \
+             --screenshot-frame 2 --screenshot-exit 2>&1 )" && rc=0 || rc=$?
+     if [ "$rc" -eq 0 ]; then
+         echo "rom-reject: FAIL $label — accepted a bad ROM (exit 0)" >&2; fail=1; return

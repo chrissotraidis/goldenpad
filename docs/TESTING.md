@@ -13,10 +13,16 @@ A lower level never substitutes for a higher one.
 ## Desktop baseline
 
 ```sh
-ctest --test-dir ref/mgb64/build-goldenpad-webgpu --output-on-failure
+./scripts/verify-mgb64-public-tests.sh
 ```
 
-Current upstream result is recorded in `STATUS.md`; it is not clean.
+This exports the exact pinned public source, temporarily applies
+`patches/mgb64-public-tests.patch`, builds it in a disposable directory and runs
+its complete public CTest surface. The expected result is 100% passed across
+103 entries with 10 explicit ROM/browser/optional-binary skips. Tests that
+directly import upstream's export-ignored private fidelity tools stay outside
+this public production gate. The ignored upstream checkout must be clean before
+the run and is restored clean afterward.
 
 For a private deterministic framebuffer proof, run from an ignored directory
 with a private ROM path and do not publish the output:

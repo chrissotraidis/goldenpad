@@ -54,11 +54,18 @@ build the complete audited C core for both Apple mobile SDKs:
 
 ```sh
 ./scripts/fetch-mgb64.sh
+./scripts/verify-mgb64-public-tests.sh
 ./scripts/verify-mgb64-ios-core.sh
 ./scripts/verify-mgb64-ios-metal.sh
 ./scripts/verify-mgb64-ios-fast3d.sh
 ./scripts/verify-mgb64-ios-renderer.sh
 ```
+
+The public-test verifier builds a disposable Git export of the exact pin rather
+than running upstream's private fidelity checkout in place. Its maintained
+compatibility patch keeps the public release guards valid on macOS Bash 3 and
+produces a 103-entry CTest surface with no failures; 10 prerequisite-dependent
+tests skip explicitly. It never requires or copies a ROM.
 
 The verifier compiles all 135 `src/game/*.c` translation units, 70 explicit
 upstream native system/portable units and five project-owned SDL-free mobile
