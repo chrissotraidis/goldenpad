@@ -88,6 +88,7 @@ do
         _goldenpad_mgb64_queue_controller_buttons \
         _goldenpad_mgb64_frame_stats_set_active \
         _goldenpad_mgb64_frame_stats_snapshot \
+        _goldenpad_mgb64_set_fps_overlay \
         _goldenpad_mgb64_dam_nav_padlock_state \
         _goldenpad_mgb64_dam_bungee_state \
         _goldenpad_mgb64_facility_door_state \

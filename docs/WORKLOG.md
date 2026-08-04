@@ -1,5 +1,33 @@
 # Worklog
 
+## 2026-08-04 — keep gameplay acceptance human and refine the mobile controls
+
+- Reaffirmed that automated mission routes are diagnostic leftovers, not a
+  product requirement. Production acceptance is ordinary launch plus a human
+  completing gameplay with touch or a physical controller.
+- Added v3 phone/tablet defaults with larger MOVE and LOOK capture regions and
+  larger action targets. Fixed a concrete Southpaw defect by mirroring the
+  action cluster away from the right-side movement stick instead of allowing
+  the two thumb zones to collide. The v3 key deliberately leaves experimental
+  v2 placement overrides behind.
+- Reorganized Game Settings into a native hierarchy: preset and destinations
+  live in the hub, Touch Controls owns aim/overlay/layout, Controllers owns
+  stick response/status, and Display owns the Performance HUD. This keeps the
+  landscape phone form short and gives the iPad sheet clear subpages.
+- The game FPS overlay is now off by default and opt-in through Performance HUD.
+  Internal presentation-cadence logging remains active for diagnostics, so the
+  debug readout is not confused with the game's simulation rate.
+- The maintained linked verifier built and inspected the Simulator and device
+  SDK targets. Exact Simulator binary
+  `a4dd8336e96320aa1a53c3d81f10663f5e035fac06ec7f35cb2b86cecbc5d7ad`
+  launched with private ROM input on iPhone 16 Pro, was removed and shut down,
+  then launched unchanged on iPad Pro 11-inch (M4). Direct captures showed the
+  v3 Modern overlay and no default FPS box on both. No physical device is
+  attached, so real-hand feel remains open and is not claimed by this pass.
+- After adding the schema-4 HUD field to the existing persistence probe, the
+  final linked Simulator/device rebuild also passed; its Simulator binary is
+  `14efc201561e3eb675cd73bfc604b83ea3ac21e5ba427cb0bc583f83f86ce966`.
+
 ## 2026-08-04 — pivot acceptance to human controls and ship v2 defaults
 
 - Shelved the unfinished Dam bungee-route experiment instead of extending bot

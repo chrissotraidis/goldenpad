@@ -132,8 +132,8 @@ release, the last non-neutral event remains visible for evidence, and controller
 count/assignment do not destabilize the touch snapshot. Classic A must report
 N64 mask `0x8000`; modern FIRE must report Z mask `0x2000`.
 
-For each phone and tablet profile, open **Game Settings**, then **Edit touch
-layout**, and verify:
+For each phone and tablet profile, open **Game Settings**, then **Touch
+Controls** > **Edit touch layout**, and verify:
 
 1. N64, Modern and Southpaw switch the visible live layout.
 2. Selecting a control, nudging it and pressing Done persists one placement
@@ -145,6 +145,8 @@ layout**, and verify:
    external-control auto-hide settings persist. Switching aim behavior must
    release any latched AIM input.
 6. Portrait and both landscape handed orientations stay within the safe guide.
+7. Southpaw mirrors the action cluster to the left; FIRE/AIM must not overlap
+   its right-side MOVE region.
 
 The 2026-08-03 Simulator pass covered the accessible nudge path, persistence,
 reset, hide/show, size/opacity controls and safe-area layout. Simulator presents
@@ -174,9 +176,11 @@ proves modal clock ownership and accessible state, not physical touch comfort.
 
 ### Presentation-cadence and touch-response gate
 
-The in-game FPS HUD must be sourced from `MTKView` display callbacks, not the
-simulation clock. Wait for at least 16 published 250 ms windows so ROM/audio
-startup has aged out, then require a non-zero log in this form:
+The Performance HUD defaults off. Enable it under **Game Settings** >
+**Display**, and require the visible values to be sourced from `MTKView` display
+callbacks, not the simulation clock. Wait for at least 16 published 250 ms
+windows so ROM/audio startup has aged out, then require a non-zero log in this
+form:
 
 ```text
 [GoldenPad] Presentation cadence: PASS 60.0 FPS 16.67 ms 1% low 54.8 generation=16

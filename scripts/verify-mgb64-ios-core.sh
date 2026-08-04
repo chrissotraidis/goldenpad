@@ -76,6 +76,7 @@ do
     nm -gU "$binary" | grep -q '_watchInvPerspAspect'
     nm -gU "$binary" | grep -q '__rarewarelogoSegmentRomStart'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_config_probe'
+    nm -gU "$binary" | grep -q '_goldenpad_mgb64_set_fps_overlay'
     nm -gU "$binary" | grep -q '_g_pcFovY'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_legacy_data_probe'
     nm -gU "$binary" | grep -q '_goldenpad_mgb64_mobile_host_probe'

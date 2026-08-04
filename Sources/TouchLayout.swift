@@ -96,16 +96,20 @@ enum TouchLayoutDefaults {
         switch preset {
         case .modern, .southpaw:
             let southpaw = preset == .southpaw
-            let moveX = southpaw ? (tablet ? 0.82 : 0.84) : (tablet ? 0.14 : 0.16)
-            let lookX = southpaw ? (tablet ? 0.30 : 0.34) : (tablet ? 0.70 : 0.62)
+            let moveX = southpaw ? (tablet ? 0.84 : 0.83) : (tablet ? 0.16 : 0.17)
+            let lookX = southpaw ? (tablet ? 0.31 : 0.38) : (tablet ? 0.69 : 0.62)
+            let fireX = southpaw ? 0.09 : 0.91
+            let aimX = southpaw ? 0.17 : 0.83
+            let utilityX = southpaw ? 0.25 : 0.75
+            let weaponX = southpaw ? 0.37 : 0.63
             return [
-                placement(.move, moveX, tablet ? 0.73 : 0.72, tablet ? 1.18 : 1.10),
-                placement(.look, lookX, tablet ? 0.64 : 0.60),
-                placement(.fire, 0.91, 0.56, 1.08),
-                placement(.aim, 0.84, 0.72, 0.96),
-                placement(.interact, 0.91, 0.31, 0.90),
-                placement(.crouch, 0.76, 0.84, 0.80),
-                placement(.weapon, 0.64, 0.84, 0.80),
+                placement(.move, moveX, tablet ? 0.75 : 0.74, tablet ? 1.14 : 1.08),
+                placement(.look, lookX, tablet ? 0.63 : 0.59),
+                placement(.fire, fireX, 0.55, 1.10),
+                placement(.aim, aimX, 0.74, 1.00),
+                placement(.interact, fireX, 0.30, 0.94),
+                placement(.crouch, utilityX, 0.86, 0.84),
+                placement(.weapon, weaponX, 0.86, 0.84),
                 placement(.pause, 0.50, 0.11, 0.72),
             ]
         case .classic:

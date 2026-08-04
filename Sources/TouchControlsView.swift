@@ -57,90 +57,44 @@ private struct GameplaySettingsView: View {
 
     let deviceClass: TouchDeviceClass
 
-    @State private var isEditorPresented = false
-
     var body: some View {
         NavigationStack {
             Form {
-                Section("Controls") {
+                Section("Control Setup") {
                     Picker("Preset", selection: presetBinding) {
                         ForEach(ControlPreset.allCases, id: \.self) { preset in
                             Text(preset.title).tag(preset)
                         }
                     }
-
-                    LabeledSlider(
-                        title: "Look sensitivity",
-                        value: settingBinding(\.lookSensitivity),
-                        range: 0.25...3,
-                        valueLabel: String(
-                            format: "%.2fx",
-                            platform.settings.lookSensitivity
-                        )
-                    )
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Aim button")
-                            .font(.subheadline)
-                        Picker("Aim button", selection: aimBehaviorBinding) {
-                            ForEach(TouchAimBehavior.allCases, id: \.self) { behavior in
-                                Text(behavior.title).tag(behavior)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .accessibilityLabel("Aim button behavior")
-                    }
-
-                    Toggle(
-                        "Gyroscope aiming",
-                        isOn: boolSettingBinding(\.gyroEnabled)
-                    )
-
-                    Button { isEditorPresented = true } label: {
+                    NavigationLink {
+                        TouchSettingsView(deviceClass: deviceClass)
+                            .environmentObject(input)
+                            .environmentObject(platform)
+                    } label: {
                         HStack {
-                            Label("Edit touch layout", systemImage: "hand.draw")
+                            Label("Touch Controls", systemImage: "hand.tap")
                             Spacer()
                             Text(deviceClass == .tablet ? "iPad" : "iPhone")
                                 .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.tertiary)
                         }
                     }
-                    .foregroundStyle(.primary)
+                    NavigationLink {
+                        PhysicalControllerSettingsView()
+                            .environmentObject(input)
+                            .environmentObject(platform)
+                    } label: {
+                        Label("Physical Controllers", systemImage: "gamecontroller")
+                    }
                 }
 
-                Section("Touch Overlay") {
-                    LabeledSlider(
-                        title: "Opacity",
-                        value: settingBinding(\.touchOpacity),
-                        range: 0.25...1,
-                        valueLabel: "\(Int((platform.settings.touchOpacity * 100).rounded()))%"
-                    )
-                    LabeledSlider(
-                        title: "Control size",
-                        value: settingBinding(\.touchScale),
-                        range: 0.70...1.40,
-                        valueLabel: "\(Int((platform.settings.touchScale * 100).rounded()))%"
-                    )
+                Section("Display") {
                     Toggle(
-                        "Hide when a controller connects",
-                        isOn: boolSettingBinding(\.touchControlsAutoHide)
+                        "Performance HUD",
+                        isOn: boolSettingBinding(\.performanceHUDEnabled)
                     )
-                }
-
-                Section("Physical Controllers") {
-                    LabeledSlider(
-                        title: "Dead zone",
-                        value: settingBinding(\.stickDeadZone),
-                        range: 0...0.40,
-                        valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
-                    )
-                    LabeledContent(
-                        "Connected",
-                        value: "\(input.externalControllerCount)"
-                    )
+                    Text("Shows presentation FPS, frame time and 1% low over the game.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Game Settings")
@@ -151,11 +105,6 @@ private struct GameplaySettingsView: View {
                         .fontWeight(.semibold)
                 }
             }
-            .sheet(isPresented: $isEditorPresented) {
-                TouchLayoutEditor(deviceClass: deviceClass)
-                    .environmentObject(input)
-                    .environmentObject(platform)
-            }
         }
     }
 
@@ -164,6 +113,95 @@ private struct GameplaySettingsView: View {
             get: { platform.settings.controlPreset },
             set: { preset in platform.updateSettings { $0.controlPreset = preset } }
         )
+    }
+
+    private func boolSettingBinding(
+        _ keyPath: WritableKeyPath<HostSettings, Bool>
+    ) -> Binding<Bool> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in
+                platform.updateSettings { $0[keyPath: keyPath] = value }
+            }
+        )
+    }
+}
+
+private struct TouchSettingsView: View {
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+
+    let deviceClass: TouchDeviceClass
+
+    @State private var isEditorPresented = false
+
+    var body: some View {
+        Form {
+            Section("Aiming") {
+                LabeledSlider(
+                    title: "Look sensitivity",
+                    value: settingBinding(\.lookSensitivity),
+                    range: 0.25...3,
+                    valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
+                )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Aim button")
+                        .font(.subheadline)
+                    Picker("Aim button", selection: aimBehaviorBinding) {
+                        ForEach(TouchAimBehavior.allCases, id: \.self) { behavior in
+                            Text(behavior.title).tag(behavior)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .accessibilityLabel("Aim button behavior")
+                }
+
+                Toggle("Gyroscope aiming", isOn: boolSettingBinding(\.gyroEnabled))
+            }
+
+            Section("Overlay") {
+                LabeledSlider(
+                    title: "Opacity",
+                    value: settingBinding(\.touchOpacity),
+                    range: 0.25...1,
+                    valueLabel: "\(Int((platform.settings.touchOpacity * 100).rounded()))%"
+                )
+                LabeledSlider(
+                    title: "Control size",
+                    value: settingBinding(\.touchScale),
+                    range: 0.70...1.40,
+                    valueLabel: "\(Int((platform.settings.touchScale * 100).rounded()))%"
+                )
+                Toggle(
+                    "Hide when a controller connects",
+                    isOn: boolSettingBinding(\.touchControlsAutoHide)
+                )
+            }
+
+            Section("Layout") {
+                Button { isEditorPresented = true } label: {
+                    HStack {
+                        Label("Edit touch layout", systemImage: "hand.draw")
+                        Spacer()
+                        Text(deviceClass == .tablet ? "iPad" : "iPhone")
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .foregroundStyle(.primary)
+            }
+        }
+        .navigationTitle("Touch Controls")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isEditorPresented) {
+            TouchLayoutEditor(deviceClass: deviceClass)
+                .environmentObject(input)
+                .environmentObject(platform)
+        }
     }
 
     private var aimBehaviorBinding: Binding<TouchAimBehavior> {
@@ -189,6 +227,40 @@ private struct GameplaySettingsView: View {
     private func boolSettingBinding(
         _ keyPath: WritableKeyPath<HostSettings, Bool>
     ) -> Binding<Bool> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in
+                platform.updateSettings { $0[keyPath: keyPath] = value }
+            }
+        )
+    }
+}
+
+private struct PhysicalControllerSettingsView: View {
+    @EnvironmentObject private var input: InputCoordinator
+    @EnvironmentObject private var platform: PlatformCoordinator
+
+    var body: some View {
+        Form {
+            Section("Stick Response") {
+                LabeledSlider(
+                    title: "Dead zone",
+                    value: settingBinding(\.stickDeadZone),
+                    range: 0...0.40,
+                    valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
+                )
+            }
+            Section("Status") {
+                LabeledContent("Connected", value: "\(input.externalControllerCount)")
+            }
+        }
+        .navigationTitle("Controllers")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func settingBinding(
+        _ keyPath: WritableKeyPath<HostSettings, Double>
+    ) -> Binding<Double> {
         Binding(
             get: { platform.settings[keyPath: keyPath] },
             set: { value in
@@ -559,14 +631,14 @@ private struct TouchControlCanvas: View {
 
     private func controlBaseSize(_ id: TouchControlID) -> CGSize {
         switch id {
-        case .move: CGSize(width: 112, height: 112)
-        case .look: CGSize(width: 252, height: 174)
+        case .move: CGSize(width: 128, height: 128)
+        case .look: CGSize(width: 320, height: 220)
         case .pause, .n64Start, .weapon, .crouch, .n64L, .n64R:
-            CGSize(width: 58, height: 58)
+            CGSize(width: 64, height: 64)
         case .n64CUp, .n64CDown, .n64CLeft, .n64CRight,
              .n64DUp, .n64DDown, .n64DLeft, .n64DRight:
             CGSize(width: 48, height: 48)
-        default: CGSize(width: 64, height: 64)
+        default: CGSize(width: 70, height: 70)
         }
     }
 }

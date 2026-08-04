@@ -317,6 +317,10 @@ longer blocks MGB64 integration.
   was visually inspected first on iPhone 16 Pro and then unchanged on iPad Pro
   11-inch (M4); the look drag and editor were exercised during the same v2
   iteration.
+- Human-play v3 defaults enlarge the MOVE/LOOK capture regions and action
+  targets. Southpaw now mirrors the action cluster to the left instead of
+  overlapping it with the right-side movement stick. New v3 layout keys keep
+  older experimental overrides from masking these defaults.
 - The in-game gear now opens a native Game Settings hub instead of jumping
   directly into layout editing. It groups only implemented settings into
   Controls, Touch Overlay and Physical Controllers, then presents the correct
@@ -324,9 +328,13 @@ longer blocks MGB64 integration.
   (`e1f2c1a2e17658fe8b44fad84221cf712a9c9b065d856739ca924492843038f9`)
   was exercised phone-first and then unchanged on iPad; the phone form scrolls
   in landscape and the iPad form sheet exposes all three sections.
+- Game Settings now uses a native hub-and-detail hierarchy: Touch Controls owns
+  aim/overlay/layout, Controllers owns dead zone/status, and Display owns the
+  opt-in Performance HUD. Schema 4 persists the HUD preference; the mobile
+  default is off while cadence diagnostics continue to log independently.
 - Modern touch AIM now defaults to Toggle, allowing the same right thumb to tap
   AIM and return to the relative-drag LOOK surface. Hold remains selectable in
-  Game Settings. Switching modes clears a latched aim state, schema 3 persists
+  Game Settings. Switching modes clears a latched aim state, schema 4 persists
   the preference, and older settings decode to Toggle. The layout editor now
   owns only placement/size/visibility; the setup lab and in-game gear share the
   native settings hub.
@@ -366,9 +374,10 @@ longer blocks MGB64 integration.
 - Full valid-ROM picker selection still needs a safe private Files fixture;
   current valid-ROM evidence invokes the same validator through an explicit
   automation launch argument after the picker UI itself was proven.
-- Hands-on control feel is not yet accepted: v2 fixes the small-look-region and
-  duplicate-action design defects, but sensitivity and button placement still
-  need real finger playtesting and tuning. `xcrun devicectl list devices`
+- Hands-on control feel is not yet accepted: v3 fixes the small-look-region,
+  duplicate-action and Southpaw-overlap design defects, but sensitivity and
+  button placement still need real finger playtesting and tuning.
+  `xcrun devicectl list devices`
   currently reports `No devices found` on this Mac, so this pass could not run
   signed physical-touch acceptance.
 - Organic mission completion, traversal from upper Dam node 179 into the lower

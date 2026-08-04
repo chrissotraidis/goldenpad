@@ -179,6 +179,10 @@ table pointers, then zeroes and frees the old allocation.
   sensitivity, Toggle/Hold aim, dead zone, gyro and controller auto-hide settings
   are supported. Entering native settings and switching control presets both
   neutralize touch state so a latched action cannot leak across UI modes.
+- **Native settings:** Game Settings is a hub. Touch Controls owns aiming,
+  overlay and layout; Controllers owns physical-stick response and connection
+  status; Display owns the opt-in Performance HUD. The HUD reads presentation
+  cadence and defaults off; its visibility does not control cadence sampling.
 - **Audio:** MGB64's native synth produces 22.05 kHz stereo PCM into a bounded
   lock-protected ring. An `AVAudioSourceNode` pulls it into `AVAudioEngine`,
   which resamples to the current device rate; `AVAudioSession` handles

@@ -19,6 +19,9 @@ private func goldenPadMGB64EEPROMSnapshot(
     _ bytes: UnsafeMutablePointer<UInt8>?, _ size: UInt32
 ) -> UInt32
 
+@_silgen_name("goldenpad_mgb64_set_fps_overlay")
+private func goldenPadMGB64SetFPSOverlay(_ enabled: Int32)
+
 enum ControlPreset: String, Codable, Sendable, CaseIterable {
     case classic
     case modern
@@ -31,7 +34,7 @@ enum TouchAimBehavior: String, Codable, Sendable, CaseIterable {
 }
 
 struct HostSettings: Codable, Equatable, Sendable {
-    static let currentSchema = 3
+    static let currentSchema = 4
 
     var schemaVersion = currentSchema
     var controlPreset: ControlPreset = .modern
@@ -42,6 +45,7 @@ struct HostSettings: Codable, Equatable, Sendable {
     var gyroEnabled = false
     var touchAimBehavior: TouchAimBehavior = .toggle
     var touchControlsAutoHide = true
+    var performanceHUDEnabled = false
     var touchLayoutOverrides: [String: TouchLayoutOverrides] = [:]
 
     private enum CodingKeys: String, CodingKey {
@@ -54,6 +58,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         case gyroEnabled
         case touchAimBehavior
         case touchControlsAutoHide
+        case performanceHUDEnabled
         case touchLayoutOverrides
     }
 
@@ -76,6 +81,10 @@ struct HostSettings: Codable, Equatable, Sendable {
             Bool.self,
             forKey: .touchControlsAutoHide
         ) ?? true
+        performanceHUDEnabled = try values.decodeIfPresent(
+            Bool.self,
+            forKey: .performanceHUDEnabled
+        ) ?? false
         touchLayoutOverrides = try values.decodeIfPresent(
             [String: TouchLayoutOverrides].self,
             forKey: .touchLayoutOverrides
@@ -93,6 +102,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         try values.encode(gyroEnabled, forKey: .gyroEnabled)
         try values.encode(touchAimBehavior, forKey: .touchAimBehavior)
         try values.encode(touchControlsAutoHide, forKey: .touchControlsAutoHide)
+        try values.encode(performanceHUDEnabled, forKey: .performanceHUDEnabled)
         try values.encode(touchLayoutOverrides, forKey: .touchLayoutOverrides)
     }
 
@@ -113,7 +123,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         deviceClass: TouchDeviceClass,
         preset: ControlPreset
     ) -> String {
-        "\(deviceClass.rawValue).\(preset.rawValue)-v2"
+        "\(deviceClass.rawValue).\(preset.rawValue)-v3"
     }
 }
 
@@ -257,6 +267,7 @@ final class PlatformCoordinator: ObservableObject {
             self.paths = paths
             self.storage = storage
             self.settings = settings
+            applyRuntimeSettings()
             try storage.saveSettings(settings)
             try restoreGameEEPROM(from: storage)
             storageState = "storage: sandbox ready"
@@ -310,6 +321,7 @@ final class PlatformCoordinator: ObservableObject {
     func updateSettings(_ update: (inout HostSettings) -> Void) {
         update(&settings)
         settings = settings.sanitized()
+        applyRuntimeSettings()
         persistSettings()
     }
 
@@ -366,6 +378,10 @@ final class PlatformCoordinator: ObservableObject {
             storageState = "storage: settings write failed"
             print("[GoldenPad] Settings persistence failed: \(error.localizedDescription)")
         }
+    }
+
+    private func applyRuntimeSettings() {
+        goldenPadMGB64SetFPSOverlay(settings.performanceHUDEnabled ? 1 : 0)
     }
 
     private func restoreGameEEPROM(from storage: PlatformStorage) throws {
@@ -439,6 +455,7 @@ final class PlatformCoordinator: ObservableObject {
                 settings.lookSensitivity = 1.37
                 settings.touchOpacity = 0.62
                 settings.touchAimBehavior = .hold
+                settings.performanceHUDEnabled = true
                 try storage?.saveSettings(settings)
                 try storage?.saveGameData(probeBytes, slot: 0)
                 storageState = "storage: probe written"
@@ -448,6 +465,7 @@ final class PlatformCoordinator: ObservableObject {
                     settings.lookSensitivity == 1.37,
                     settings.touchOpacity == 0.62,
                     settings.touchAimBehavior == .hold,
+                    settings.performanceHUDEnabled,
                     try storage.loadSave(slot: 0) == probeBytes
                 else {
                     storageState = "storage: relaunch failed"
