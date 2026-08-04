@@ -123,7 +123,7 @@ struct HostSettings: Codable, Equatable, Sendable {
         deviceClass: TouchDeviceClass,
         preset: ControlPreset
     ) -> String {
-        "\(deviceClass.rawValue).\(preset.rawValue)-v3"
+        "\(deviceClass.rawValue).\(preset.rawValue)-v4"
     }
 }
 

@@ -92,7 +92,7 @@ private struct GameplaySettingsView: View {
                         "Performance HUD",
                         isOn: boolSettingBinding(\.performanceHUDEnabled)
                     )
-                    Text("Shows presentation FPS, frame time and 1% low over the game.")
+                    Text("Shows produced game FPS, frame time and 1% low over the game.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -749,10 +749,11 @@ private struct LookSurface: View {
 
     @State private var normalized = SIMD2<Float>.zero
     @State private var isTracking = false
+    @State private var lastLocation: CGPoint?
 
     var body: some View {
         GeometryReader { geometry in
-            let responseDistance = max(min(geometry.size.width, geometry.size.height) * 0.32, 42)
+            let responseDistance = max(min(geometry.size.width, geometry.size.height) * 0.20, 38)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -777,10 +778,15 @@ private struct LookSurface: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         isTracking = true
+                        guard let previous = lastLocation else {
+                            lastLocation = value.location
+                            return
+                        }
                         var vector = SIMD2<Float>(
-                            Float(value.translation.width / responseDistance),
-                            Float(-value.translation.height / responseDistance)
+                            Float((value.location.x - previous.x) / responseDistance),
+                            Float((previous.y - value.location.y) / responseDistance)
                         )
+                        lastLocation = value.location
                         let magnitude = simd_length(vector)
                         if magnitude > 1 { vector /= magnitude }
                         normalized = vector
@@ -788,13 +794,14 @@ private struct LookSurface: View {
                     }
                     .onEnded { _ in
                         isTracking = false
+                        lastLocation = nil
                         normalized = .zero
                         onChange(.zero)
                     }
             )
         }
         .accessibilityLabel("Look")
-        .accessibilityHint("Drag anywhere in this area to aim")
+        .accessibilityHint("Swipe anywhere in this area to aim")
     }
 }
 

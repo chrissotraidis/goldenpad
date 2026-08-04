@@ -570,6 +570,9 @@ final class InputCoordinator: ObservableObject {
                 )
             }
         }
+        // Modern touch aiming is a relative swipe: each UI delta is consumed
+        // once, so lifting or holding a stationary finger cannot keep turning.
+        touch.look = .zero
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
             didReportCoreInputProbe = true

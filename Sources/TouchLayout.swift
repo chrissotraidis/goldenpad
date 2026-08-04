@@ -99,17 +99,17 @@ enum TouchLayoutDefaults {
             let moveX = southpaw ? (tablet ? 0.84 : 0.83) : (tablet ? 0.16 : 0.17)
             let lookX = southpaw ? (tablet ? 0.31 : 0.38) : (tablet ? 0.69 : 0.62)
             let fireX = southpaw ? 0.09 : 0.91
-            let aimX = southpaw ? 0.17 : 0.83
-            let utilityX = southpaw ? 0.25 : 0.75
-            let weaponX = southpaw ? 0.37 : 0.63
+            let aimX = fireX
+            let utilityX = southpaw ? 0.22 : 0.78
+            let weaponX = southpaw ? 0.34 : 0.66
             return [
                 placement(.move, moveX, tablet ? 0.75 : 0.74, tablet ? 1.14 : 1.08),
                 placement(.look, lookX, tablet ? 0.63 : 0.59),
-                placement(.fire, fireX, 0.55, 1.10),
-                placement(.aim, aimX, 0.74, 1.00),
-                placement(.interact, fireX, 0.30, 0.94),
-                placement(.crouch, utilityX, 0.86, 0.84),
-                placement(.weapon, weaponX, 0.86, 0.84),
+                placement(.fire, fireX, 0.52, 1.16),
+                placement(.aim, aimX, 0.75, 1.00),
+                placement(.interact, fireX, 0.27, 0.94),
+                placement(.crouch, utilityX, 0.90, 0.82),
+                placement(.weapon, weaponX, 0.90, 0.82),
                 placement(.pause, 0.50, 0.11, 0.72),
             ]
         case .classic:

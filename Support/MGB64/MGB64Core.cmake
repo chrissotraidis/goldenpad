@@ -185,6 +185,8 @@ add_library(goldenpad_mgb64_core STATIC
     Support/MGB64/mgb64_mobile_os.c
 )
 goldenpad_configure_mgb64_target(goldenpad_mgb64_core)
+target_compile_definitions(goldenpad_mgb64_core PRIVATE
+    MGB64_APPLE_MOBILE)
 target_include_directories(goldenpad_mgb64_core BEFORE PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/Support/MGB64/CoreSDLShim")
 

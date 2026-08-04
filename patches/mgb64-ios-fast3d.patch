@@ -1,3 +1,16 @@
+diff --git a/src/game/rsp.c b/src/game/rsp.c
+--- a/src/game/rsp.c
++++ b/src/game/rsp.c
+@@ -233,3 +233,9 @@ void rspGfxTaskStart(Gfx *firstGdl, Gfx *gdl, s32 arg2, OSMesg rspReplyMsg)
++#ifdef MGB64_APPLE_MOBILE
++    /* Count frames produced by the game, not UIKit presentation callbacks. */
++    extern void platformFrameStatsTick(void);
++    platformFrameStatsTick();
++#endif
++
+     {
+         size_t dl_size = (size_t)((u8 *)gdl - (u8 *)firstGdl);
+         if (dl_size > 512 * 1024) {
 diff --git a/src/platform/fast3d/gfx_pc.c b/src/platform/fast3d/gfx_pc.c
 index ae43b27..18fde7a 100644
 --- a/src/platform/fast3d/gfx_pc.c

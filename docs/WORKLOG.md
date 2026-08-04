@@ -1,5 +1,32 @@
 # Worklog
 
+## 2026-08-04 — fix the real FPS source and make look input swipe-based
+
+- Corrected the opt-in Performance HUD at its source. Mobile no longer calls
+  `platformFrameStatsTick` from every 60 Hz `MTKView` callback; the maintained
+  MGB64 patch calls it when `rspGfxTaskStart` submits an actual game display
+  list. The screen refresh rate, game-frame rate and simulation cadence are no
+  longer mislabeled as the same number.
+- Replaced the modern LOOK surface's sustained virtual-stick response with
+  incremental swipe deltas. Each delta is published once and then cleared, so
+  a stationary or lifted thumb cannot leave the camera turning. The v4 defaults
+  also place Action, Fire and Aim on one outside rail and move Weapon/Duck to a
+  lower utility row, preserving more uninterrupted swipe area. Southpaw mirrors
+  the same geometry.
+- The maintained linked verifier passed for ARM64 Simulator and device SDKs.
+  Exact Simulator binary
+  `057a5883725ee3bf972bd4fb9c4acfa766e5ec7a57eb2ce79ffbde62f347b43e`
+  launched with a private ignored ROM on iPhone 16 Pro, where the 60 Hz display
+  produced `Game-frame cadence: PASS 51.8 FPS 19.31 ms 1% low 29.2`. Computer
+  Use drove the visible LOOK surface in both directions and verified AIM changed
+  from Off to On. The app/container was then uninstalled and the phone shut down.
+- The unchanged binary then ran on iPad Pro 11-inch (M4) at 2420x1668. Its 60 Hz
+  display produced `Game-frame cadence: PASS 21.8 FPS 45.93 ms 1% low 15.6`;
+  visible iPad swipes and the Off-to-On AIM transition were exercised too. The
+  app/container and private ROM copy were removed before iPad shutdown. These
+  are Simulator interaction and truthful telemetry checks, not physical-finger
+  comfort or mission-completion acceptance.
+
 ## 2026-08-04 — launch from a user-selected ROM in Files
 
 - Declared one imported Nintendo 64 ROM content type for `.z64`, `.v64`, `.n64`

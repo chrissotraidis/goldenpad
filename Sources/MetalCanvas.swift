@@ -1,9 +1,6 @@
 import MetalKit
 import SwiftUI
 
-@_silgen_name("platformFrameStatsTick")
-private func goldenPadFrameStatsTick()
-
 @_silgen_name("goldenpad_mgb64_frame_stats_snapshot")
 private func goldenPadFrameStatsSnapshot(
     _ fps: UnsafeMutablePointer<Float>?,
@@ -54,7 +51,6 @@ struct MetalCanvas: UIViewRepresentable {
         }
 
         func draw(in view: MTKView) {
-            goldenPadFrameStatsTick()
             reportFrameStatsWhenReady()
             input.publishToCore()
             surface.drawFoundationFrame(in: view)
@@ -72,7 +68,7 @@ struct MetalCanvas: UIViewRepresentable {
             didReportFrameStats = true
             print(
                 String(
-                    format: "[GoldenPad] Presentation cadence: PASS %.1f FPS " +
+                    format: "[GoldenPad] Game-frame cadence: PASS %.1f FPS " +
                         "%.2f ms 1%% low %.1f generation=%u",
                     fps, frameMilliseconds, low1FPS, generation
                 )

@@ -3,10 +3,26 @@ set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_dir="${GOLDENPAD_MGB64_SOURCE_DIR:-$repo_root/ref/mgb64}"
+patch_file="$repo_root/patches/mgb64-ios-fast3d.patch"
 sim_build="$repo_root/build-mgb64-core-simulator"
 device_build="$repo_root/build-mgb64-core-device"
+patch_applied=0
+
+cleanup() {
+    if [ "$patch_applied" -eq 1 ]; then
+        git -C "$source_dir" apply -R "$patch_file"
+    fi
+}
+trap cleanup EXIT
 
 "$repo_root/scripts/fetch-mgb64.sh"
+if [ -n "$(git -C "$source_dir" status --porcelain)" ]; then
+    echo "MGB64 checkout is dirty; refusing to patch it." >&2
+    exit 1
+fi
+git -C "$source_dir" apply --check "$patch_file"
+git -C "$source_dir" apply "$patch_file"
+patch_applied=1
 python3 "$source_dir/tools/check_native_sdk_surface.py" --repo-root "$source_dir"
 
 cmake -S "$repo_root" -B "$sim_build" -G Xcode \
@@ -48,6 +64,7 @@ do
     nm -gU "$archive" | grep -q '__rarewarelogoSegmentRomStart'
     nm -gU "$archive" | grep -q '_modelConvertN64Binary'
     nm -gU "$archive" | grep -q '_setupPnamesResolve'
+    nm -u "$archive" | grep -q '_platformFrameStatsTick'
     echo "Verified $archive ($objects objects)"
 done
 

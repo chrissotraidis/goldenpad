@@ -190,12 +190,14 @@ phone/tablet layouts were exercised through the real mobile `osCont*` boundary
 on both simulators, including an exact deterministic probe. I4 has a compiled and
 persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
 Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
-still need device acceptance. The v3 modern defaults use a broad relative-drag
-look surface, larger movement/action targets and one contextual Action control
-instead of duplicate B-based Use/Reload buttons. Southpaw mirrors the action
-cluster away from its right-side movement stick. The maintained binary was
-inspected sequentially on phone and tablet simulators. The in-game gear now
-opens a native settings hub with Touch Controls, Controllers and Display detail
+still need device acceptance. The v4 modern defaults use a broad direct-swipe
+look surface whose deltas are consumed once, larger movement/action targets and
+one contextual Action control instead of duplicate B-based Use/Reload buttons.
+Southpaw mirrors the action
+rail away from its right-side movement stick. Action/Fire/Aim occupy the outside
+rail while Weapon/Duck use a lower utility row. The maintained binary was
+swiped and inspected sequentially on phone and tablet simulators. The in-game
+gear now opens a native settings hub with Touch Controls, Controllers and Display detail
 pages; the device-specific layout editor sits beneath Touch Controls instead of
 being the entire settings experience. The Performance HUD is off by default and
 opt-in from Display. Modern touch AIM now
@@ -214,10 +216,11 @@ persisted-save path is independently proven through an explicitly scripted
 diagnostic trigger. A separate clean Dam probe now proves more than 4700 units
 of controller-only stock-spawn traversal on both simulator classes without
 changing any objective state.
-When enabled, the FPS HUD is backed by monotonic `MTKView` presentation cadence
-rather than the previous all-zero mobile stub. A strict same-binary run reported
-60.0 FPS/16.67 ms on both iPhone and iPad after startup aged
-out of the rolling window. Touch input no longer passes through both Swift and
+When enabled, the FPS HUD is backed by monotonic timing at MGB64's actual game
+display-list submission boundary, not the previous all-zero stub or every
+`MTKView` callback. A strict same-binary run distinguished both 60 Hz displays
+from 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad workload.
+Touch input no longer passes through both Swift and
 MGB64 dead zones, and the mobile look curve is linear. Mapping and telemetry
 are proven; final sensitivity and action-placement acceptance remains a
 hands-on real-play task.

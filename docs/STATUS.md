@@ -302,11 +302,14 @@ longer blocks MGB64 integration.
   second dead zone. Mobile right-stick shaping is linear; the existing
   sensitivity setting remains available. This is a focused response fix, not
   hands-on acceptance.
-- The FPS HUD now samples real `MTKView` presentation callbacks with a monotonic
-  250 ms rolling publish window and two-second 1% low, resetting across scene
-  inactivity. The exact same app reported `60.0 FPS`, `16.67 ms`, 1% low 54.8
-  on iPhone, then `60.0 FPS`, `16.67 ms`, 1% low 54.7 on iPad at generation 16.
-  Both runs were cleaned up in strict phone-then-tablet order.
+- The old mobile FPS source was wrong: it counted every 60 Hz `MTKView` callback
+  and therefore described presentation refresh as game FPS. The corrected
+  maintained patch ticks only when MGB64 submits a game display list through
+  `rspGfxTaskStart`, retaining the monotonic 250 ms window and two-second 1% low.
+  Exact binary `057a5883725ee3bf972bd4fb9c4acfa766e5ec7a57eb2ce79ffbde62f347b43e`
+  reported 51.8 FPS/19.31 ms/29.2 low on iPhone and, unchanged, 21.8 FPS/45.93
+  ms/15.6 low on iPad at 2420x1668. Both displays remained 60 Hz, proving the
+  meter no longer parrots refresh rate.
 - A live editor provides per-control move, 70–150% size and hide/show controls,
   with the movement stick protected from hiding. Phone and tablet defaults are
   separate; schema-2 settings persist only changed placements. On iPhone, one
@@ -328,6 +331,12 @@ longer blocks MGB64 integration.
   targets. Southpaw now mirrors the action cluster to the left instead of
   overlapping it with the right-side movement stick. New v3 layout keys keep
   older experimental overrides from masking these defaults.
+- Human-play v4 changes LOOK from a sustained virtual stick into direct swipe
+  deltas consumed once per input publish. A stopped thumb now returns to neutral
+  instead of continuing to rotate. Action/Fire/Aim form one outside rail and
+  Weapon/Duck sit on a lower utility row; Southpaw mirrors it. The accessible
+  live surface accepted bidirectional swipes and AIM Off -> On on iPhone first,
+  then the unchanged app on iPad. Physical-finger feel remains open.
 - The in-game gear now opens a native Game Settings hub instead of jumping
   directly into layout editing. It groups only implemented settings into
   Controls, Touch Overlay and Physical Controllers, then presents the correct
@@ -340,7 +349,7 @@ longer blocks MGB64 integration.
   opt-in Performance HUD. Schema 4 persists the HUD preference; the mobile
   default is off while cadence diagnostics continue to log independently.
 - Modern touch AIM now defaults to Toggle, allowing the same right thumb to tap
-  AIM and return to the relative-drag LOOK surface. Hold remains selectable in
+  AIM and return to the direct-swipe LOOK surface. Hold remains selectable in
   Game Settings. Switching modes clears a latched aim state, schema 4 persists
   the preference, and older settings decode to Toggle. The layout editor now
   owns only placement/size/visibility; the setup lab and in-game gear share the
@@ -378,9 +387,9 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- Hands-on control feel is not yet accepted: v3 fixes the small-look-region,
-  duplicate-action and Southpaw-overlap design defects, but sensitivity and
-  button placement still need real finger playtesting and tuning.
+- Hands-on control feel is not yet accepted: v4 fixes the continuous-turn look
+  defect and separates the action rail from most of the swipe region, but
+  sensitivity and button placement still need real finger playtesting and tuning.
   `xcrun devicectl list devices`
   currently reports `No devices found` on this Mac, so this pass could not run
   signed physical-touch acceptance.
@@ -394,9 +403,10 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Hands-on playtest the v2 controls on iPhone, including Toggle-versus-Hold aim,
-tune look response and action placement, then repeat unchanged on iPad. Extend the now-established native
-settings schema only when real ROM management, save or display controls exist;
+Hands-on playtest the v4 controls on iPhone, including Toggle-versus-Hold aim,
+tune swipe sensitivity and action placement, then repeat unchanged on iPad.
+Extend the now-established native settings schema only when real ROM management,
+save or display controls exist;
 do not add placeholder menus. Keep diagnostic routes as bounded smoke coverage
 only; do not extend bot navigation as a product gate. Organic objectives and
 mission completion remain later human-play acceptance.

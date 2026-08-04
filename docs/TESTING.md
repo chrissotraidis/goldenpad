@@ -182,30 +182,36 @@ on iPhone 16 Pro, removed and shut down that phone, then repeated unchanged on
 iPad Pro 11-inch (M4). Both Simulator installs were removed afterward. This
 proves modal clock ownership and accessible state, not physical touch comfort.
 
-### Presentation-cadence and touch-response gate
+### Game-frame cadence and touch-response gate
 
 The Performance HUD defaults off. Enable it under **Game Settings** >
-**Display**, and require the visible values to be sourced from `MTKView` display
-callbacks, not the simulation clock. Wait for at least 16 published 250 ms
-windows so ROM/audio startup has aged out, then require a non-zero log in this
-form:
+**Display**, and require the visible values to be sourced from MGB64's actual
+`rspGfxTaskStart` display-list submissions. Do not report the device's 60 Hz
+`MTKView` callback rate as game FPS, and do not describe rendered game frames as
+simulation ticks. Wait for at least 16 published 250 ms windows so ROM/audio
+startup has aged out, then require a non-zero log in this form:
 
 ```text
-[GoldenPad] Presentation cadence: PASS 60.0 FPS 16.67 ms 1% low 54.8 generation=16
+[GoldenPad] Game-frame cadence: PASS 51.8 FPS 19.31 ms 1% low 29.2 generation=16
 ```
 
 Background/foreground the app and confirm the sampler resets instead of
 counting suspended time as a frame. Run phone first, cleanly
 terminate/uninstall/shut it down, then install the exact same app on iPad. The
-2026-08-03 pass reported the line above on iPhone and `60.0 FPS 16.67 ms 1% low
-54.7 generation=16` on iPad. Visual phone gameplay also showed `60 FPS 16.7ms`
-and `1% low 60` in the actual game HUD.
+2026-08-04 corrected-source pass used exact Simulator binary
+`057a5883725ee3bf972bd4fb9c4acfa766e5ec7a57eb2ce79ffbde62f347b43e`.
+The 60 Hz iPhone display reported `51.8 FPS 19.31 ms 1% low 29.2`; the unchanged
+app on the 60 Hz iPad display reported `21.8 FPS 45.93 ms 1% low 15.6` at
+2420x1668. Values are workload-dependent; the required invariant is that they
+track game submissions rather than blindly matching display refresh.
 
-For touch response, a small drift-free touch deflection must survive without a
-dead zone, while a physical controller still uses the configured Swift radial
-dead zone. Mobile MGB64 must keep its downstream dead zone at zero and look
-curve at one to avoid processing the merged axes twice. This proves the
-response path; it does not replace a hands-on mission playtest.
+For touch response, drag across the visible LOOK region and require incremental
+motion only: stopping the finger must produce neutral look on the following
+publish instead of continuous virtual-stick rotation. AIM must toggle Off to On
+without hiding the swipe region. A physical controller still uses the configured
+Swift radial dead zone; mobile MGB64 keeps its downstream dead zone at zero and
+look curve at one. This proves the response path, not physical comfort or a
+hands-on mission playtest.
 
 For repository contamination checks:
 

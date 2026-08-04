@@ -58,9 +58,12 @@ world units. The same binary passed first on iPhone at 15917 units and then on
 iPad at 15879; both retained objectives `[0,0,0,0]` with `stateMutation=0`.
 This is not the lower bungee graph or organic Dam completion. Touch response
 now avoids the previous duplicate dead zone and uses a linear mobile look
-curve, but hands-on control feel remains unaccepted. The formerly zero FPS HUD
-is now sourced from real Metal presentation callbacks and passed sequentially
-at 60.0 FPS/16.67 ms on both iPhone and iPad.
+curve. Modern touch look now uses one-shot swipe deltas instead of a sustained
+virtual stick, and its outer action rail was exercised on both Simulator form
+factors; physical-finger feel remains unaccepted. The opt-in FPS HUD now counts
+actual game display-list submissions instead of 60 Hz UIKit callbacks: the same
+binary measured 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad
+workload while both displays remained 60 Hz.
 An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
 loaded retail AI command stream, routes across the live waypoint graph, opens
 the interlock and padlocked gate through controller input, and observed the
