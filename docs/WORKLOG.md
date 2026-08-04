@@ -14,9 +14,15 @@
   n64-fast3d-engine, Perfect Dark, cgltf, jsmn and stb_image notices. The
   production IPA verifier now rejects an archive that omits those notices.
 - The complete Simulator/device linked build, 236-entry manifest verification
-  and local nine-member IPA audit passed. Fresh-clone reproduction of the
-  notice-bearing artifact remains before the new hashes replace the prior
-  package evidence.
+  and local nine-member IPA audit passed. Two independent fresh clones of exact
+  commit `09e02a0` then fetched MGB64 pin `cd9b58f5`, built both SDK apps and
+  passed every production archive audit.
+- Those two notice-bearing clean IPAs were not byte-identical. Every payload
+  member except the executable matched; optimized Swift code generation used
+  two equivalent layouts in the ROM byte-order helper, differing by 20 bytes
+  of `__text`. The observed IPA/content digest pairs were `6991d719...744f` /
+  `c9d10678...22d4` and `7a225bd8...1624` / `83221d7b...671`. P2 is reopened;
+  the product package and P3 contamination proof remain valid.
 
 ## 2026-08-04 — add explicit 1×–4× native resolution controls
 
@@ -53,7 +59,9 @@
   `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`;
   both reported sorted app-content SHA-256
   `2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`
-  and passed all production archive audits. P2/P3 are closed.
+  and passed all production archive audits. That historical artifact closed
+  P2/P3 at the time; the notice-bearing clean-build comparison above later
+  reopened byte-level P2 while leaving P3 closed.
 
 ## 2026-08-04 — fix the real FPS source and make look input swipe-based
 

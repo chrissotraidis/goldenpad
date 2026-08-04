@@ -401,6 +401,12 @@ longer blocks MGB64 integration.
   Both unsigned ARM64 payloads passed the ROM, signing, private-path and
   game-core symbol audits; sorted app-content SHA-256 is
   `2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.
+- The current notice-bearing package at `09e02a0` has nine members and passed
+  those audits plus the source-manifest/notices gate in two independent fresh
+  clones. Their IPA/content pairs were `6991d719...744f` / `c9d10678...22d4`
+  and `7a225bd8...1624` / `83221d7b...671`. Every member except the executable
+  matched; the optimized Swift ROM byte-order helper differed by one equivalent
+  20-byte `__text` layout. Byte-identical P2 is reopened; P3 remains closed.
 
 ## Failed or blocked
 
@@ -433,12 +439,12 @@ substantially integrated, but the complete port is not at definition of done.
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
 multiplayer and physical lifecycle/audio/controller acceptance. The source-level
-license manifest is closed; the updated notice-bearing IPA still needs its final
-fresh-clone reproduction.
+license manifest and audited notice-bearing IPA are closed; exact Swift Mach-O
+byte reproducibility is still open and is not on the critical gameplay path.
 
 With no physical device attached, the next unblocked production slice is the
-notice-bearing clean-package rerun, followed by scene-specific performance
-profiling. When hardware is available, hands-on playtest v4 on iPhone, tune
+scene-specific performance profile and removal of the first measured bottleneck.
+When hardware is available, hands-on playtest v4 on iPhone, tune
 swipe sensitivity/action placement, then repeat the accepted layout unchanged
 on iPad. Keep diagnostics as bounded smoke coverage only; do not extend bot
 navigation as a product gate.

@@ -643,7 +643,13 @@ entry point, the native Fast3D/Metal renderer entry points and the bundled
 third-party notices. It also prints a sorted-content digest independent of ZIP
 metadata.
 
-Commit `2bc7920` produced byte-identical working-tree and fresh-clone IPAs at
-SHA-256 `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`.
-Both reported sorted app-content SHA-256
-`2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.
+Commit `2bc7920` historically produced byte-identical working-tree and
+fresh-clone IPAs. The current notice-bearing commit `09e02a0` was built in two
+independent fresh clones; both passed every audit, but optimized Swift codegen
+produced two equivalent executable layouts. Their IPA/content digest pairs were
+`6991d7197f8476946de2d7cff0aba2d684ee4880ca68bcbdd0c8f95513ce744f` /
+`c9d10678c497d10c6738e88bba423ee81dce423d1d08acb58c893980901422d4`
+and
+`7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
+`83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
+Exact byte reproduction therefore remains an open packaging gate.

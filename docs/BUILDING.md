@@ -42,7 +42,7 @@ Package and verify the explicitly incomplete foundation artifact:
   dist/GoldenPad-0.1.0-foundation-unsigned.ipa
 ```
 
-This creates a reproducible, unsigned, ROM-free IPA for host-shell validation.
+This creates an unsigned, ROM-free IPA for host-shell validation.
 Its filename says `foundation` because it does not contain the game core and is
 not the final deliverable. Use the game-bearing package gate below for current
 production validation.
@@ -112,8 +112,10 @@ Package the complete unsigned device app after the combined verifier passes:
 Game-core mode requires MGB64's game entry point and the native Fast3D/Metal
 renderer entry points in addition to the normal ARM64, unsigned and ROM-free
 archive checks. Native compiler source paths are prefix-mapped to stable relative
-identities so the Mach-O and IPA reproduce across checkout directories. The IPA
-also carries the required third-party notices.
+identities so private checkout paths cannot enter the Mach-O. The IPA also
+carries the required third-party notices. The packaging process is repeatable,
+but optimized Swift code generation has produced two equivalent Mach-O layouts
+across clean builds, so byte-identical artifact reproduction remains open.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,

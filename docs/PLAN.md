@@ -245,7 +245,7 @@ Gate: four-player iPad match where core support allows it.
 ### P — Package and publish
 
 - [x] P1: original neutral icon at every required size.
-- [x] P2: reproducible unsigned IPA from clean checkout.
+- [ ] P2: byte-reproducible unsigned IPA from independent clean checkouts.
 - [x] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
 - [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
 - [x] P5: README/docs match observed behavior.
@@ -255,12 +255,18 @@ Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
 
 Commit `2bc7920` produced the same byte-for-byte game-bearing IPA from the
-working tree and a fresh clone. Both reported IPA SHA-256
-`73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`
-and sorted app-content SHA-256
-`2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.
-The fresh clone fetched the exact ignored MGB64 pin, built both SDK apps, and
-passed the ROM, signing, private-path, ARM64 and game-core symbol audits.
+working tree and one fresh clone. After notices entered the production package
+at `09e02a0`, two independent fresh builds both fetched the exact MGB64 pin and
+passed the ROM, signing, private-path, ARM64, notice and game-core audits, but
+their optimized Swift Mach-O code differed by one equivalent 20-byte layout in
+the ROM byte-order helper. The observed clean IPA/content digest pairs were
+`6991d7197f8476946de2d7cff0aba2d684ee4880ca68bcbdd0c8f95513ce744f` /
+`c9d10678c497d10c6738e88bba423ee81dce423d1d08acb58c893980901422d4`
+and
+`7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
+`83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
+P3 remains closed; P2 is honestly reopened without making compiler-layout
+determinism a gameplay priority.
 
 ## Test rhythm
 
