@@ -333,9 +333,12 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Resolve the clean-phone Dam interlock collision stop, then repeat the proven
-lower bungee room/velocity trigger first on iPhone and with the exact same app
-on iPad. In parallel, hands-on playtest and tune the corrected touch response.
+Resolve the clean-phone Dam live-guard survival/recovery gate, then repeat the
+proven lower bungee room/velocity trigger first on iPhone and with the exact
+same app on iPad. The original linked-slab collision stop has been crossed, but
+the latest clean phone run was killed during the second interlock, so iPad
+promotion remains closed. In parallel, hands-on playtest and tune the corrected
+touch response.
 Continue
 Facility past the two-door corridor chain, then replace the diagnostic success
 prerequisite with organic objectives and mission completion through input. The

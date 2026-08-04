@@ -143,6 +143,7 @@ static int goldenpad_scripted_mission_restore_debug_flag;
 #define GOLDENPAD_MAX_TIMERS 16
 #define GOLDENPAD_EEPROM_SIZE 2048
 #define GOLDENPAD_DAM_SWITCH_ORACLE_DISTANCE_SQUARED 16000000.0f
+#define GOLDENPAD_DAM_GUARD_ORACLE_DISTANCE_SQUARED 1000000.0f
 
 typedef struct {
     int active;
@@ -631,7 +632,8 @@ static void goldenpad_mgb64_sample_dam_nav(void) {
                 }
             }
             if (nearest_guard != NULL &&
-                nearest_guard_distance <= 40000.0f) {
+                nearest_guard_distance <=
+                    GOLDENPAD_DAM_GUARD_ORACLE_DISTANCE_SQUARED) {
                 atomic_store(&goldenpad_dam_nav_guard_valid, 1);
                 atomic_store(&goldenpad_dam_nav_guard_x,
                              (int)(nearest_guard->prop->pos.x * 100.0f));

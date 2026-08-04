@@ -160,9 +160,10 @@ control-lock and forced-velocity sequence, reads navigation, guard, padlock and
 linked-door state without writing it, and emits ordinary controller frames. It
 observed `room=64/64`, `force=0,400`, objective vector `[0,0,0,1]`,
 `controllerOnly=1` and `hostMutation=0`. This is not promoted acceptance:
-repeated clean-phone runs reproducibly stopped with the linked slab closing at
-`750/1000` while Bond remained in the interlock. Phone cleanup was performed;
-the exact same app was not advanced to iPad because the phone-first gate failed.
+the original linked-slab stop has been crossed in a clean phone run, but the
+live guard can still kill Bond during the second interlock before bounded
+obstruction recovery starts. Phone cleanup was performed; the exact same app
+was not advanced to iPad because the phone-first gate failed.
 
 ### I — Input and touch
 

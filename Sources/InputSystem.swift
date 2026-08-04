@@ -527,14 +527,11 @@ final class InputCoordinator: ObservableObject {
             let frame = player == 0
                 ? damRouteInput ?? facilityDoorRouteInput ?? mappedFrame(player: player)
                 : mappedFrame(player: player)
-            var primary = frame.primary
+            let primary = frame.primary
             let secondary = frame.secondary
             let connected = player == 0 || controllerSlots[player] != nil
-            let queuesSingleUseSample = player == 0 &&
+            let bridgesSingleUseSample = player == 0 &&
                 damRouteInput != nil && primary.buttons.contains(.b)
-            if queuesSingleUseSample {
-                primary.buttons.remove(.b)
-            }
             goldenPadMGB64SetControllerState(
                 Int32(player),
                 Int32((primary.stick.x * 80).rounded()),
@@ -544,7 +541,11 @@ final class InputCoordinator: ObservableObject {
                 Int32((-secondary.stick.y * 32_767).rounded()),
                 connected ? 1 : 0
             )
-            if queuesSingleUseSample {
+            if bridgesSingleUseSample {
+                // Keep the button in the live state for this display sample
+                // and queue it as a fallback. Whichever game poll observes it
+                // first consumes the queue; a missed display interval still
+                // receives one ordinary N64 Use sample.
                 goldenPadMGB64QueueControllerButtons(
                     Int32(player), UInt32(N64Buttons.b.rawValue)
                 )
@@ -1017,6 +1018,22 @@ final class InputCoordinator: ObservableObject {
                             switchDeltaX * switchDeltaX +
                             switchDeltaZ * switchDeltaZ
                         ).rounded())
+                        let guardDeltaX = Double(navGuardX - playerX)
+                        let guardDeltaZ = Double(navGuardZ - playerZ)
+                        let guardDistance = Int(sqrt(
+                            guardDeltaX * guardDeltaX +
+                            guardDeltaZ * guardDeltaZ
+                        ).rounded())
+                        let guardSwitchDeltaX = Double(navGuardX - navSwitchX)
+                        let guardSwitchDeltaZ = Double(navGuardZ - navSwitchZ)
+                        let guardSwitchDistance = Int(sqrt(
+                            guardSwitchDeltaX * guardSwitchDeltaX +
+                            guardSwitchDeltaZ * guardSwitchDeltaZ
+                        ).rounded())
+                        let guardBlocksSwitch = navGuardValid == 1 &&
+                            guardDistance < 60_000 &&
+                            guardSwitchDistance < 40_000 &&
+                            guardDistance < switchDistance
                         var switchYaw = atan2(
                             -switchDeltaX, switchDeltaZ
                         ) * 180.0 / .pi
@@ -1067,6 +1084,26 @@ final class InputCoordinator: ObservableObject {
                             )
                             if abs(wallYawError) < 25.0 {
                                 routeFrame.primary.stick.y = 0.35
+                            }
+                        }
+                        if guardBlocksSwitch {
+                            // A warned guard can clear the linked slab and then
+                            // stand directly between Bond and the switch. Arc
+                            // around him with ordinary strafe/forward input;
+                            // reverse the side only if a full bounded attempt
+                            // makes no route progress.
+                            let strafeRight =
+                                (damNavFramesWithoutTargetProgress / 240)
+                                    .isMultiple(of: 2)
+                            routeFrame.primary.stick.x = strafeRight ? 0.75 : -0.75
+                            routeFrame.primary.stick.y = 0.25
+                            if damNavFramesWithoutTargetProgress.isMultiple(of: 300) {
+                                print(
+                                    "[GoldenPad] Dam nav switch-guard sidestep: " +
+                                    "guardDistance=\(guardDistance) " +
+                                    "switchDistance=\(guardSwitchDistance) " +
+                                    "side=\(strafeRight ? "right" : "left")"
+                                )
                             }
                         }
                         if navSwitchEligibility == 0x1ff {
@@ -1150,7 +1187,8 @@ final class InputCoordinator: ObservableObject {
                             // shared collision group.
                             let targetingBlockingGuard =
                                 damNavSwitchRetryFrames >= 600 &&
-                                navGuardValid == 1
+                                navGuardValid == 1 &&
+                                !damNavObstructionShotSent
                             let chamberMidpointX =
                                 (navSwitchDoorX + navLinkedDoorX) / 2
                             let chamberMidpointZ =
@@ -1237,7 +1275,20 @@ final class InputCoordinator: ObservableObject {
                     } else if navSwitchValid == 0,
                               !isTargetingPadlock,
                               !isOpeningUnlockedDoor {
-                        if recoveryFrame < 60 {
+                        let isBungeeExitRecovery = isBungeeProbe &&
+                            navTargetNode == navDestinationNode &&
+                            navTargetRoom == bungeeRoom &&
+                            targetDistance <= 100_000
+                        if isBungeeExitRecovery {
+                            // The room-64 AI pad sits behind the central end
+                            // barrier. Clear its edge laterally, then let the
+                            // live target yaw carry Bond around the corner.
+                            let lateralDistance = abs(navTargetX - playerX)
+                            routeFrame.primary.stick.x = lateralDistance < 60_000
+                                ? 1.0 : 0.0
+                            routeFrame.primary.stick.y = lateralDistance < 60_000
+                                ? 0.25 : 1.0
+                        } else if recoveryFrame < 60 {
                             // First try an ordinary door: face the live route
                             // edge, settle, then send one normal Use press.
                             routeFrame.primary.stick = .zero
@@ -1255,7 +1306,8 @@ final class InputCoordinator: ObservableObject {
                                 ? 1 : -1
                             routeFrame.primary.stick.y = 0.35
                         }
-                        if recoveryFrame >= 60,
+                        if !isBungeeExitRecovery,
+                           recoveryFrame >= 60,
                            recoveryFrame.isMultiple(of: 15) ||
                             recoveryFrame % 15 == 1 {
                             routeFrame.primary.buttons.insert(.b)

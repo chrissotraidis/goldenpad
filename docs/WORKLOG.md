@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
+
+- Expanded the read-only linked-door guard search to the full local interlock
+  area. A clean phone run then crossed the previously blocked paired slabs,
+  destroyed the lower padlock with ordinary fire and reached the final
+  room-64 approach before its generic surface recovery oscillated.
+- Added bounded controller-only recovery for a guard standing between Bond and
+  a switch, resumed chamber movement immediately after the one warning shot,
+  and added a two-phase lateral/converging move for the final room boundary.
+- Kept automated Use in the live controller state for one display sample while
+  retaining the queued fallback. On the next clean phone run the first eligible
+  `0x1ff` switch sample opened the slab immediately; the earlier 45 consecutive
+  missed pulses did not recur.
+- Promotion is still closed. The latest clean phone run was killed by the live
+  guard during the second interlock before its obstruction recovery fired, so
+  there is no iPad claim. The app/container were removed and the phone
+  simulator was shut down. Linked simulator and device builds still pass.
+
 ## 2026-08-03 — replace zero FPS telemetry and remove duplicate touch shaping
 
 - Replaced the mobile host's permanently zero `PlatformFrameStats` stub with a
