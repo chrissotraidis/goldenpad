@@ -64,6 +64,12 @@ Run sequentially:
 5. Repeat on physical iPhone/iPad for controller, real audio, thermals and any
    simulator-limited Metal/audio behavior.
 
+Before the physical pass, build the opt-in signed target exactly as documented
+in `BUILDING.md`. The signed renderer verifier must accept its code signature,
+find `embedded.mobileprovision`, and confirm the requested bundle identifier.
+Installation must use the resulting `build-mgb64-renderer-device-signed` app;
+the reproducible `build-mgb64-renderer-device` app remains unsigned by design.
+
 Do not publish screenshots containing copyrighted game imagery.
 
 ### Current foundation evidence

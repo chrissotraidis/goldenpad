@@ -321,6 +321,11 @@ and shut down, and the physical-device gaps remain named below. P6 is closed at
 merge commit `4ed057ecd926c4b9f66e53544411986b1b4e37e8`; local `main` and
 `origin/main` matched after PR #1 merged, with the worktree clean. These package
 and publication gates do not close the human gameplay or physical-device gates.
+The physical path no longer requires manually editing the generated project:
+an optional team ID and caller-owned bundle identifier keep the maintained
+patches active through Xcode-managed signing in separate build trees, while the
+default unsigned executable remains byte-identical. A real signature, install
+and device acceptance still require external identity, provisioning and hardware.
 
 ## Test rhythm
 

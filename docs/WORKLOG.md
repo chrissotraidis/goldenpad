@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-08-04 — make the physical signing path real
+
+- Found that the public instructions told a developer to configure signing even
+  though the generated target hard-disabled it and the maintained MGB64 patches
+  were restored immediately after the unsigned verifier. Added opt-in team and
+  bundle-identifier inputs to the existing verifier so compile and automatic
+  provisioning happen inside the same safe patch window.
+- Kept signed Simulator/device trees separate from the reproducible unsigned
+  trees. The signed branch verifies the final code signature, embedded mobile
+  provision and requested bundle ID; the default branch still explicitly builds
+  with signing disabled.
+- Generated unsigned and signed probe projects. They respectively contained
+  `CODE_SIGNING_ALLOWED/REQUIRED=NO/NO` and `YES/YES`; the signed probe also
+  carried `ABCDE12345` and `com.example.goldenpad` exactly. Shell syntax passed.
+- Rebuilt the complete unsigned game/Metal/audio closure. Simulator and device
+  executables remained byte-identical at `818f1733...91a0` and
+  `43bfe1b5...f389`; the device app remained unsigned and `ref/mgb64` remained
+  clean. Actual signed installation is not claimed: this Mac reports zero valid
+  signing identities and no connected devices.
+
 ## 2026-08-04 — close the Simulator publication ledger
 
 - Reconciled the plan with the completed release handoff: PR #1 merged as
