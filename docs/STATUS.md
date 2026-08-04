@@ -302,6 +302,12 @@ longer blocks MGB64 integration.
 - The same input frame now carries exact libultra-compatible N64 masks. Direct
   classic A input reported `0x8000` on iPhone and iPad; modern FIRE reported the
   expected Z mask `0x2000`. Classic, modern and southpaw mappings are available.
+- Physical controller face buttons no longer combine incompatible N64 actions.
+  The old A mapping emitted A+B together; exact binary
+  `d6249e072a279a07a31835147a30006510a512fcddf09955c55c47a5c95f10cb`
+  now maps A/Y to N64 A and B/X to N64 B, and its isolation probe passed. The
+  compact Controllers reference was inspected phone-first and then unchanged on
+  iPad. This proves mapping and menu presentation, not a real gamepad playtest.
 - Touch axes are now kept separate from physical-controller noise filtering, so
   drift-free touch input no longer receives the Swift dead zone plus MGB64's
   second dead zone. Mobile right-stick shaping is linear; the existing
@@ -428,8 +434,11 @@ longer blocks MGB64 integration.
   811 of 3,217 game-thread samples reached `newTextureWithDescriptor`. The
   bounded, three-frame-safe recycler reduced that to 76 of 3,662 samples while
   3,141 samples returned to normal retrace sleep. This removes the first measured
-  bottleneck; it is not a final FPS result. Cold shader compilation, sustained
-  scene cadence and physical-device performance remain open.
+  bottleneck; it is not a final FPS result. On immediate relaunch, Metal's
+  automatic cache reduced synchronous shader creation to 2 of 3,702 game-thread
+  samples. Remaining Simulator time was dominated by XPC-backed texture upload,
+  which is not evidence of a physical-device bottleneck. First-install startup,
+  sustained scene cadence and physical-device performance remain open.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression,
   crouch/objectives flow, physical-controller/gyro acceptance, touch-only
@@ -448,9 +457,10 @@ license manifest and audited notice-bearing IPA are closed; exact Swift Mach-O
 byte reproducibility is still open and is not on the critical gameplay path.
 
 With no physical device attached, the first scene-specific warm bottleneck is
-now removed. The next unblocked performance slice is reducing the cold runtime
-Metal shader-compilation hitch, followed by a fresh sustained cadence profile.
-When hardware is available, hands-on playtest v4 on iPhone, tune
+removed and Metal's automatic cache makes shader compilation negligible after
+the first launch. Do not build a custom shader cache or optimize Simulator-only
+XPC texture transport without device evidence. When hardware is available,
+profile a first install and warm mission, hands-on playtest v4 on iPhone, tune
 swipe sensitivity/action placement, then repeat the accepted layout unchanged
 on iPad. Keep diagnostics as bounded smoke coverage only; do not extend bot
 navigation as a product gate.

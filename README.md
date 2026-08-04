@@ -64,6 +64,9 @@ factors; physical-finger feel remains unaccepted. The opt-in FPS HUD now counts
 actual game display-list submissions instead of 60 Hz UIKit callbacks: the same
 binary measured 51.8 FPS on iPhone and 21.8 FPS on the higher-resolution iPad
 workload while both displays remained 60 Hz.
+Physical controller A no longer emits N64 A+B simultaneously. The controller
+page now documents the isolated A/Y and B/X mapping in a compact phone/iPad
+layout; real-gamepad feel and multiplayer remain device gates.
 The native Display menu now exposes persisted 1×, 2×, 3× and 4× scene
 resolution. Exact binary
 `c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
@@ -75,7 +78,9 @@ variable and needs physical-device acceptance. Simulator profiling separated
 the misleading cold shader-compilation window from warm gameplay and found
 repeated Metal texture allocation as the first sustained bottleneck. A bounded
 three-frame-safe recycler reduced sampled texture creations from 811 to 76;
-cold shader compilation and final sustained cadence remain open.
+on relaunch, Metal's automatic cache left only two sampled shader-compilation
+frames. First-install and final physical-device cadence remain open; the
+Simulator's XPC texture-upload cost is not treated as device evidence.
 An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
 loaded retail AI command stream, routes across the live waypoint graph, opens
 the interlock and padlocked gate through controller input, and observed the

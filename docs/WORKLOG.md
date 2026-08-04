@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-04 — isolate physical controller face buttons
+
+- Fixed a real controller translation defect: physical A previously inserted
+  both Confirm and Interact, which the common mapper emitted as N64 A+B in the
+  same sample. A now emits only N64 A; B and X emit N64 B; Y and the right
+  bumper emit N64 A/next weapon.
+- Added a pure face-button isolation probe to the existing input diagnostic. It
+  requires A/Y to equal only `0x8000` and B/X to equal only `0x4000`; the linked
+  app reported `Physical face-button isolation probe: PASS` through the real
+  mobile launch path.
+- Replaced the controller page's ambiguous connected-count-only presentation
+  with a compact mapping reference. Exact Simulator binary
+  `d6249e072a279a07a31835147a30006510a512fcddf09955c55c47a5c95f10cb`
+  showed every mapping row without horizontal clipping on iPhone, then showed
+  the same mapping plus status in the iPad form sheet. Both installs were
+  removed and both simulators shut down; the full linked Simulator/device
+  verifier passed.
+
 ## 2026-08-04 — recycle completed Metal upload textures
 
 - Profiled cold and warm Simulator gameplay before changing the renderer. The
@@ -21,6 +39,12 @@
   source-license, notice, ROM, signing, private-path, ARM64 and game-core audits.
   This is a Simulator profile and removal of the first measured warm bottleneck,
   not physical-device FPS acceptance. Cold runtime shader compilation remains.
+- A terminate/relaunch profile then separated first-run shader cost from normal
+  startup. Metal's automatic per-app cache reduced synchronous shader creation
+  to 2 of 3,702 game-thread samples on the second launch. The remaining title
+  workload was mainly Simulator-driver XPC in `replaceRegion`; that transport is
+  not a physical-device result. A custom shader cache or font-atlas rewrite is
+  therefore deferred until hardware profiling demonstrates a product bottleneck.
 
 ## 2026-08-04 — inventory production licenses and bundle notices
 

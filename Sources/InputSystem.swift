@@ -301,6 +301,29 @@ enum GoldenEyeInputMapper {
     }
 }
 
+private enum PhysicalControllerFaceButtonMapper {
+    static func map(a: Bool, b: Bool, x: Bool, y: Bool) -> InputButtons {
+        var buttons: InputButtons = []
+        if a { buttons.insert(.confirm) }
+        if b { buttons.formUnion([.interact, .reload, .cancel]) }
+        if x { buttons.formUnion([.interact, .reload]) }
+        if y { buttons.insert(.nextWeapon) }
+        return buttons
+    }
+
+    static var isolationProbePasses: Bool {
+        func n64Buttons(a: Bool = false, b: Bool = false,
+                        x: Bool = false, y: Bool = false) -> N64Buttons {
+            let snapshot = InputSnapshot(buttons: map(a: a, b: b, x: x, y: y))
+            return GoldenEyeInputMapper.map(snapshot, preset: .modern).primary.buttons
+        }
+        return n64Buttons(a: true) == [.a] &&
+            n64Buttons(b: true) == [.b] &&
+            n64Buttons(x: true) == [.b] &&
+            n64Buttons(y: true) == [.a]
+    }
+}
+
 private extension SIMD2 where Scalar == Float {
     func mergingByMagnitude(_ other: SIMD2<Float>) -> SIMD2<Float> {
         SIMD2(
@@ -578,6 +601,10 @@ final class InputCoordinator: ObservableObject {
             didReportCoreInputProbe = true
             let result = goldenPadMGB64ControllerInputProbe()
             print("[GoldenPad] Mobile core input probe: \(result == 1 ? "PASS" : "FAIL")")
+            print(
+                "[GoldenPad] Physical face-button isolation probe: " +
+                "\(PhysicalControllerFaceButtonMapper.isolationProbePasses ? "PASS" : "FAIL")"
+            )
         }
     }
 
@@ -2044,8 +2071,16 @@ final class InputCoordinator: ObservableObject {
 
         if gamepad.rightTrigger.isPressed { buttons.insert(.fire) }
         if gamepad.leftTrigger.isPressed { buttons.insert(.aim) }
-        if gamepad.buttonA.isPressed { buttons.formUnion([.interact, .confirm]) }
-        if gamepad.buttonB.isPressed { buttons.formUnion([.reload, .cancel]) }
+        // Keep the face-button boundary faithful to the N64 pair. Mapping A to
+        // both confirm and interact made one physical press emit N64 A+B.
+        buttons.formUnion(
+            PhysicalControllerFaceButtonMapper.map(
+                a: gamepad.buttonA.isPressed,
+                b: gamepad.buttonB.isPressed,
+                x: gamepad.buttonX.isPressed,
+                y: gamepad.buttonY.isPressed
+            )
+        )
         if gamepad.leftShoulder.isPressed { buttons.insert(.crouch) }
         if gamepad.rightShoulder.isPressed { buttons.insert(.nextWeapon) }
         if gamepad.buttonMenu.isPressed { buttons.insert(.pause) }

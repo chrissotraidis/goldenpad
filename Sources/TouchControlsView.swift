@@ -280,6 +280,11 @@ private struct PhysicalControllerSettingsView: View {
                     valueLabel: "\(Int((platform.settings.stickDeadZone * 100).rounded()))%"
                 )
             }
+            Section("Mapping") {
+                Text("LT Aim  •  RT Fire")
+                Text("A Confirm / weapon  •  B or X Action / reload")
+                Text("LB Crouch  •  Y or RB Next weapon  •  Menu Pause / watch")
+            }
             Section("Status") {
                 LabeledContent("Connected", value: "\(input.externalControllerCount)")
             }

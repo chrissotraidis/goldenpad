@@ -243,6 +243,11 @@ texture creation and 3,141 were normal retrace sleep. Require the maintained
 patch apply/reverse check, both linked SDK builds, a visible no-corruption check
 and the production IPA audit after this class of change. These call-stack counts
 are bottleneck evidence, not an FPS or physical-device acceptance result.
+Terminate and relaunch without uninstalling before proposing a custom cache.
+Metal's automatic per-app cache reduced synchronous shader creation to 2 of
+3,702 game-thread samples in the follow-up run. Its remaining title-scene cost
+was mostly Simulator XPC under texture `replaceRegion`; only physical-device
+profiling can establish whether the upload itself needs another product change.
 
 For touch response, drag across the visible LOOK region and require incremental
 motion only: stopping the finger must produce neutral look on the following
@@ -251,6 +256,16 @@ without hiding the swipe region. A physical controller still uses the configured
 Swift radial dead zone; mobile MGB64 keeps its downstream dead zone at zero and
 look curve at one. This proves the response path, not physical comfort or a
 hands-on mission playtest.
+
+For physical face buttons, run `--input-probe` and require
+`Physical face-button isolation probe: PASS`. The pure mapping gate requires A
+and Y to produce only N64 A (`0x8000`) and B and X to produce only N64 B
+(`0x4000`); no single face button may emit A+B. Open **Game Settings** >
+**Physical Controllers** and confirm the compact mapping reference fits the
+landscape phone, then repeat unchanged in the iPad sheet. Exact binary
+`d6249e072a279a07a31835147a30006510a512fcddf09955c55c47a5c95f10cb`
+passed the diagnostic and visible menu check. A connected hardware playtest is
+still required for stick, button and multiplayer feel.
 
 For repository contamination checks:
 

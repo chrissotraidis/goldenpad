@@ -226,6 +226,10 @@ Touch input no longer passes through both Swift and
 MGB64 dead zones, and the mobile look curve is linear. Mapping and telemetry
 are proven; final sensitivity and action-placement acceptance remains a
 hands-on real-play task.
+Physical face buttons are now isolated at the N64 boundary: A/Y produce only A
+and B/X only B, fixing a prior A+B collision. The linked diagnostic passed and
+the compact mapping reference was inspected on phone and iPad. Real-controller
+comfort and multiplayer assignment acceptance remain I4/M1 hardware gates.
 
 Exact Simulator binary
 `c71c1630c4930bf60eb2827373025a1fe0431b6b364c53ca0155fa46b45d6681`
@@ -239,8 +243,11 @@ results. A warm profile then identified repeated Metal upload-texture allocation
 as the first sustained bottleneck. The maintained patch now recycles textures
 only after their three-frame semaphore slot completes: allocation samples fell
 from 811/3,217 to 76/3,662 while 3,141 post-change samples were normal retrace
-sleep. Cold shader compilation, sustained cadence and physical-device acceptance
-keep the performance gate open.
+sleep. A terminate/relaunch profile then found only 2 of 3,702 game-thread
+samples in synchronous shader creation because Metal's automatic per-app cache
+was active. Remaining Simulator time was primarily its XPC texture-upload path;
+do not treat that as a device bottleneck. First-install cost, sustained cadence
+and physical-device acceptance keep the performance gate open.
 
 ### M — Multiplayer
 
