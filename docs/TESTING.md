@@ -226,6 +226,24 @@ app on the 60 Hz iPad display reported `21.8 FPS 45.93 ms 1% low 15.6` at
 2420x1668. Values are workload-dependent; the required invariant is that they
 track game submissions rather than blindly matching display refresh.
 
+For a renderer change, separate cold startup from steady state with two samples
+of the live Simulator process. Capture once immediately after ROM launch and
+again after the title scene has warmed:
+
+```sh
+/usr/bin/sample <GoldenPad-pid> 8 -file /tmp/goldenpad-cold.sample.txt
+/usr/bin/sample <GoldenPad-pid> 5 -file /tmp/goldenpad-warm.sample.txt
+```
+
+The 2026-08-04 cold sample placed all 3,320 game-thread samples below synchronous
+Metal shader-library creation. The warm baseline placed 811 of 3,217 samples in
+`newTextureWithDescriptor` through `mtl_upload_texture`. After the bounded
+three-frame-safe upload-texture recycler, only 76 of 3,662 samples reached new
+texture creation and 3,141 were normal retrace sleep. Require the maintained
+patch apply/reverse check, both linked SDK builds, a visible no-corruption check
+and the production IPA audit after this class of change. These call-stack counts
+are bottleneck evidence, not an FPS or physical-device acceptance result.
+
 For touch response, drag across the visible LOOK region and require incremental
 motion only: stopping the finger must produce neutral look on the following
 publish instead of continuous virtual-stick rotation. AIM must toggle Off to On

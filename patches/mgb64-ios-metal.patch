@@ -1,14 +1,67 @@
 diff --git a/src/platform/fast3d/gfx_metal.mm b/src/platform/fast3d/gfx_metal.mm
-index 502daf1..218b814 100644
+index 502daf1..c520078 100644
 --- a/src/platform/fast3d/gfx_metal.mm
 +++ b/src/platform/fast3d/gfx_metal.mm
-@@ -40,4 +40,5 @@
+@@ -40,6 +40,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
 +#include <TargetConditionals.h>
  #include <stdarg.h>
-@@ -970,6 +971,8 @@ static bool s_vsync_enabled = true;
+ #include <dispatch/dispatch.h>
+ #include <os/signpost.h>      /* W3.E1: named GPU intervals for Instruments */
+@@ -956,6 +957,49 @@ static NSMutableDictionary<NSNumber *, id<MTLTexture>> *s_textures = nil;
+ static NSMutableDictionary<NSNumber *, id<MTLDepthStencilState>> *s_depth_cache = nil;
+ static NSMutableDictionary<NSNumber *, id<MTLSamplerState>> *s_sampler_cache = nil;
+
++/* Recycle evicted RGBA upload textures only after the frame slot that last used
++ * them has completed. Simulator texture creation is a synchronous driver XPC;
++ * keeping a bounded pool removes that churn while the existing three-slot
++ * semaphore preserves the same no-write-while-in-flight guarantee as s_vbuf. */
++#define MTL_UPLOAD_TEXTURE_POOL_CAP 1024
++static NSMutableDictionary<NSNumber *, NSMutableArray<id<MTLTexture>> *> *s_reusable_textures = nil;
++static NSMutableArray<id<MTLTexture>> *s_retired_textures[MTL_VBUF_SLOTS];
++static NSUInteger s_reusable_texture_count = 0;
++
++static NSNumber *mtl_upload_texture_key(NSUInteger width, NSUInteger height) {
++    return @(((uint64_t)width << 32) | (uint64_t)height);
++}
++
++static void mtl_recycle_completed_texture_slot(int slot) {
++    if (slot < 0 || slot >= MTL_VBUF_SLOTS || s_reusable_textures == nil) return;
++    NSMutableArray<id<MTLTexture>> *retired = s_retired_textures[slot];
++    for (id<MTLTexture> tex in retired) {
++        if (s_reusable_texture_count >= MTL_UPLOAD_TEXTURE_POOL_CAP) break;
++        NSNumber *key = mtl_upload_texture_key(tex.width, tex.height);
++        NSMutableArray<id<MTLTexture>> *bucket = s_reusable_textures[key];
++        if (bucket == nil) {
++            bucket = [NSMutableArray array];
++            s_reusable_textures[key] = bucket;
++        }
++        [bucket addObject:tex];
++        s_reusable_texture_count++;
++    }
++    [retired removeAllObjects];
++}
++
++static id<MTLTexture> mtl_take_reusable_texture(NSUInteger width, NSUInteger height) {
++    if (s_reusable_textures == nil) return nil;
++    NSNumber *key = mtl_upload_texture_key(width, height);
++    NSMutableArray<id<MTLTexture>> *bucket = s_reusable_textures[key];
++    id<MTLTexture> tex = bucket.lastObject;
++    if (tex != nil) {
++        [bucket removeLastObject];
++        s_reusable_texture_count--;
++        if (bucket.count == 0) [s_reusable_textures removeObjectForKey:key];
++    }
++    return tex;
++}
++
+ static id<MTLTexture> mtl_lookup_tex(uint32_t id) {
+     if (id == 0 || s_textures == nil) return nil;
+     return s_textures[@(id)];
+@@ -969,9 +1013,11 @@ static bool s_vsync_enabled = true;
+
  extern "C" void gfx_metal_set_vsync(int enabled) {
      s_vsync_enabled = (enabled != 0);
 +#if TARGET_OS_OSX
@@ -17,7 +70,9 @@ index 502daf1..218b814 100644
      }
 +#endif
  }
-@@ -1599,7 +1602,9 @@ static void mtl_init(void) {
+
+ /* Port of gfx_opengl_axis_filter_scale (gfx_opengl.c:594-615). */
+@@ -1600,13 +1646,20 @@ static void mtl_init(void) {
           * end_frame; a framebufferOnly drawable can't be a blit destination. */
          s_layer.framebufferOnly = NO;
          /* Re-apply the vsync mode the platform recorded before the layer existed. */
@@ -27,3 +82,46 @@ index 502daf1..218b814 100644
      } else {
          fprintf(stderr, "[metal] WARNING: no CAMetalLayer from platform — present will be skipped\n");
      }
+     s_textures = [NSMutableDictionary dictionary];
+     s_depth_cache = [NSMutableDictionary dictionary];
+     s_sampler_cache = [NSMutableDictionary dictionary];
++    s_reusable_textures = [NSMutableDictionary dictionary];
++    s_reusable_texture_count = 0;
++    for (int i = 0; i < MTL_VBUF_SLOTS; i++) {
++        s_retired_textures[i] = [NSMutableArray array];
++    }
+     {
+         /* Clamp+linear sampler for the XLU/RDP framebuffer snapshot (index 2). */
+         MTLSamplerDescriptor *ss = [[MTLSamplerDescriptor alloc] init];
+@@ -2094,6 +2147,7 @@ static void mtl_start_frame(void) {
+     if (s_frame_sem != nil) dispatch_semaphore_wait(s_frame_sem, DISPATCH_TIME_FOREVER);
+     s_vbuf_slot = s_ring_index % MTL_VBUF_SLOTS;
+     s_ring_index++;
++    mtl_recycle_completed_texture_slot(s_vbuf_slot);
+     s_vbuf_cursor = 0;
+     if (s_vbuf[s_vbuf_slot] == nil || s_vbuf_cap[s_vbuf_slot] < s_vbuf_want) {
+         /* Safe to (re)allocate: the semaphore guarantees this slot's prior GPU
+@@ -3284,7 +3338,13 @@ static uint32_t mtl_new_texture(void) {
+
+ static void mtl_delete_texture(uint32_t texture_id) {
+     if (texture_id != 0 && s_textures != nil) {
++        id<MTLTexture> tex = s_textures[@(texture_id)];
+         [s_textures removeObjectForKey:@(texture_id)];
++        NSMutableArray<id<MTLTexture>> *retired = s_retired_textures[s_vbuf_slot];
++        if (tex != nil && retired != nil &&
++            retired.count < MTL_UPLOAD_TEXTURE_POOL_CAP) {
++            [retired addObject:tex];
++        }
+     }
+ }
+
+@@ -3306,7 +3366,8 @@ static bool mtl_upload_texture(const uint8_t *rgba32_buf, int width, int height)
+                                                            width:width height:height mipmapped:NO];
+     d.usage = MTLTextureUsageShaderRead;
+     d.storageMode = MTLStorageModeShared;
+-    id<MTLTexture> tex = [s_device newTextureWithDescriptor:d];
++    id<MTLTexture> tex = mtl_take_reusable_texture((NSUInteger)width, (NSUInteger)height);
++    if (tex == nil) tex = [s_device newTextureWithDescriptor:d];
+     if (tex == nil) return false;
+     [tex replaceRegion:MTLRegionMake2D(0, 0, width, height) mipmapLevel:0
+              withBytes:rgba32_buf bytesPerRow:(NSUInteger)width * 4];

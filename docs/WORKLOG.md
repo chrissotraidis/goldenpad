@@ -1,5 +1,27 @@
 # Worklog
 
+## 2026-08-04 — recycle completed Metal upload textures
+
+- Profiled cold and warm Simulator gameplay before changing the renderer. The
+  cold eight-second sample spent all 3,320 sampled game-thread frames below
+  runtime Metal shader-library creation, explaining why the first FPS window
+  was not representative. After warm-up, 2,427 of 3,217 samples were active in
+  the game loop and 811 reached `newTextureWithDescriptor` through repeated
+  indexed-texture uploads.
+- Added one bounded recycler to the maintained MGB64 Metal patch. Evicted RGBA
+  upload textures are held in their existing three-frame ring slot and become
+  reusable only after that slot's semaphore wait proves its prior GPU work has
+  completed. The pool is keyed by dimensions and capped at 1,024 resources.
+- In the equivalent post-change sample, 3,141 of 3,662 game-thread samples were
+  normal retrace sleep, only 484 were active in `bossMainloop`, and just 76
+  reached `newTextureWithDescriptor`; reused textures instead reached
+  `replaceRegion`. A visible title-scene inspection showed intact rendering.
+- The complete maintained Simulator/device renderer verifier passed, upstream
+  applied and reversed cleanly, and the game-bearing unsigned IPA again passed
+  source-license, notice, ROM, signing, private-path, ARM64 and game-core audits.
+  This is a Simulator profile and removal of the first measured warm bottleneck,
+  not physical-device FPS acceptance. Cold runtime shader compilation remains.
+
 ## 2026-08-04 — inventory production licenses and bundle notices
 
 - Generated a 236-entry source manifest directly from the configured

@@ -421,10 +421,15 @@ longer blocks MGB64 integration.
   currently reports `No devices found` on this Mac, so this pass could not run
   signed physical-touch acceptance.
 - Performance is not accepted. Resolution scaling proves that pixel workload is
-  controllable, but produced-game cadence remains scene- and host-load-sensitive;
-  the final 1× binary's early sample was only 4.9 FPS on iPhone and 7.8 FPS on
-  iPad during this Simulator pass. Do not infer physical-device performance or
-  sustained mission cadence from a single startup window.
+  controllable, but produced-game cadence remains scene- and host-load-sensitive.
+  Profiling showed the reported 4.9 FPS phone and 7.8 FPS iPad startup windows
+  overlapped synchronous runtime Metal shader compilation. A warm baseline then
+  found repeated upload-texture allocation as the first sustained bottleneck:
+  811 of 3,217 game-thread samples reached `newTextureWithDescriptor`. The
+  bounded, three-frame-safe recycler reduced that to 76 of 3,662 samples while
+  3,141 samples returned to normal retrace sleep. This removes the first measured
+  bottleneck; it is not a final FPS result. Cold shader compilation, sustained
+  scene cadence and physical-device performance remain open.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
   bungee graph and a real objective, deeper Facility progression,
   crouch/objectives flow, physical-controller/gyro acceptance, touch-only
@@ -442,8 +447,9 @@ multiplayer and physical lifecycle/audio/controller acceptance. The source-level
 license manifest and audited notice-bearing IPA are closed; exact Swift Mach-O
 byte reproducibility is still open and is not on the critical gameplay path.
 
-With no physical device attached, the next unblocked production slice is the
-scene-specific performance profile and removal of the first measured bottleneck.
+With no physical device attached, the first scene-specific warm bottleneck is
+now removed. The next unblocked performance slice is reducing the cold runtime
+Metal shader-compilation hitch, followed by a fresh sustained cadence profile.
 When hardware is available, hands-on playtest v4 on iPhone, tune
 swipe sensitivity/action placement, then repeat the accepted layout unchanged
 on iPad. Keep diagnostics as bounded smoke coverage only; do not extend bot

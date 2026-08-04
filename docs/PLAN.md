@@ -233,6 +233,14 @@ live-switched all four resolution levels on both device classes. Phone targets
 were 874×402, 1748×804, 2622×1206 and 3496×1608; iPad targets were 1210×834,
 2420×1668, 3630×2502 and 4840×3336. This closes the settings/wiring slice, not
 the performance gate: truthful produced-frame samples vary materially by scene.
+An eight-second cold profile showed the whole sampled game thread under runtime
+Metal shader compilation, so the early 4.9/7.8 FPS windows are not steady-state
+results. A warm profile then identified repeated Metal upload-texture allocation
+as the first sustained bottleneck. The maintained patch now recycles textures
+only after their three-frame semaphore slot completes: allocation samples fell
+from 811/3,217 to 76/3,662 while 3,141 post-change samples were normal retrace
+sleep. Cold shader compilation, sustained cadence and physical-device acceptance
+keep the performance gate open.
 
 ### M — Multiplayer
 

@@ -71,7 +71,11 @@ live-switched all four levels on both form factors, from 874×402 through
 3496×1608 on iPhone and from 1210×834 through 4840×3336 on iPad. The SwiftUI
 controls remain at display resolution. Higher levels are optional
 supersampling, not a performance claim; scene-to-scene cadence is still highly
-variable and needs profiling plus physical-device acceptance.
+variable and needs physical-device acceptance. Simulator profiling separated
+the misleading cold shader-compilation window from warm gameplay and found
+repeated Metal texture allocation as the first sustained bottleneck. A bounded
+three-frame-safe recycler reduced sampled texture creations from 811 to 76;
+cold shader compilation and final sustained cadence remain open.
 An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
 loaded retail AI command stream, routes across the live waypoint graph, opens
 the interlock and padlocked gate through controller input, and observed the
