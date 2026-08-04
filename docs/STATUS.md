@@ -404,6 +404,14 @@ longer blocks MGB64 integration.
   3496×1608 on iPhone; iPad produced 1210×834, 2420×1668, 3630×2502 and
   4840×3336. Both private app containers were removed and both simulators shut
   down after the sequential pass.
+- The final public-menu recheck used exact Simulator executable
+  `818f1733fac43edec9a759c81874faf3b6b5bd0d1558c1fdecfb3f76520291a0`.
+  Phone FIRE resize/move/hide persisted across relaunch and Reset restored its
+  116% default; selecting 4× produced 3496×1608. After phone cleanup, the iPad's
+  independent profile repeated resize/move/hide persistence and Reset without
+  inheriting phone state. The same app exposed the complete settings hierarchy
+  cleanly on both form factors. This closes the final Simulator menu review, not
+  signed physical-touch acceptance.
 - Modern touch AIM now defaults to Toggle, allowing the same right thumb to tap
   AIM and return to the direct-swipe LOOK surface. Hold remains selectable in
   Game Settings. Switching modes clears a latched aim state, schema 4 persists

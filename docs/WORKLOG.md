@@ -1,5 +1,34 @@
 # Worklog
 
+## 2026-08-04 — prepare the public release surface and reaccept settings
+
+- Reworked the README from an engineering chronology into a HarkinianPad-style
+  public guide with an install-status table, feature matrix, first-launch flow,
+  touch/controller/scaling reference, ROM-free diagram, limitations, FAQ,
+  project map and direct legal boundary. It advertises no public IPA or physical
+  hardware acceptance that has not occurred.
+- Refined the existing project-owned app icon with OpenAI's built-in image tool,
+  using only the earlier GoldenPad icon as input. The opaque 1024×1024 source is
+  SHA-256 `90978310...fc15d`; Xcode compiled readable 120px iPhone and 152px iPad
+  launcher renditions at `a3a49b31...37038` and `f72163f4...157745`.
+  The compiled icon was then inspected by name on the clean iPhone Home Screen,
+  removed with that app container, and repeated unchanged on the iPad Home Screen.
+- Rebuilt the complete linked game/Metal/audio closure. With no ROM installed,
+  the final settings hierarchy visibly exposed Modern/N64/Southpaw setup,
+  Touch Controls, Physical Controllers, 1×–4× rendering and the opt-in
+  Performance HUD on phone first and then iPad.
+- On iPhone, selected FIRE, changed it from 116% to 126%, nudged it right,
+  hid/showed it, saved, terminated/relaunched, confirmed 126% persisted, and
+  Reset restored 116%. Selecting 4× produced the expected 3496×1608 drawable.
+  The separate iPad profile repeated 116% -> 126%, a left nudge, hide/show,
+  relaunch persistence and Reset to 116% without inheriting the phone edit.
+- Both app containers were removed and both simulators shut down. Exact
+  Simulator executable is `818f1733...291a0`; the working package passes all
+  nine-member game-core/notices/ROM audits with device executable
+  `43bfe1b5...1f389`, IPA `6eed064c...c738d` and sorted app content
+  `aed6b272...08a6c`. Physical-finger and device-performance acceptance remain
+  open and are stated that way publicly.
+
 ## 2026-08-04 — remove touch swipe loss and phone edge conflicts
 
 - Inspected the live current game overlay rather than extending gameplay

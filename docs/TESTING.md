@@ -185,6 +185,18 @@ a synthetic unattached MFi controller; GoldenPad ignores it for auto-hide only
 when compiled for Simulator. Direct finger dragging, physical Core Motion and
 real-controller auto-hide remain device gates.
 
+The 2026-08-04 release-menu pass repeated the mutable layout path with exact
+Simulator executable
+`818f1733fac43edec9a759c81874faf3b6b5bd0d1558c1fdecfb3f76520291a0`.
+On a clean phone profile, FIRE changed from 116% to 126%, moved right,
+hid/showed, persisted after terminate/relaunch, and returned to 116% after
+Reset. The phone Display menu selected 4× and exposed the expected 3496×1608
+drawable. The app was removed and the phone shut down before an independent
+iPad install repeated FIRE 116% -> 126%, moved left, hid/showed, persisted after
+relaunch and Reset to 116%. This proves that the final public menu schema and
+separate profile storage remain wired; it does not convert Simulator input into
+physical-finger acceptance.
+
 ### Native settings modal gate
 
 Run with an attached console and real gameplay visible. On each form factor:
