@@ -341,6 +341,20 @@ ROM data remained ignored local evidence. Simulator output proves nonzero native
 PCM delivery; a real-speaker and route/interruption pass remains a physical-device
 gate.
 
+Cold shader compilation can delay the first nonzero PCM beyond a fixed startup
+instant. The app therefore polls the rendered-frame/nonzero-sample atomics once
+per second for at most 30 seconds and emits exactly one terminal line:
+
+```text
+[GoldenPad] Native PCM output probe: PASS after Ns
+```
+
+Treat `FAIL timeout=30s` as a real gate failure. The 2026-08-04 strict pass used
+exact Simulator binary
+`2b83740c5fb394dd3ced14a25fd75bc76ba42a7c47468a6f1a2e8c22c15c102e`;
+iPhone 16 Pro passed after 10 seconds, was removed and shut down, then iPad Pro
+11-inch (M4) passed unchanged after 10 seconds and received the same cleanup.
+
 ### Controlled menu and mission-load gate
 
 Use the combined Simulator build with a private ignored supported V64 and the

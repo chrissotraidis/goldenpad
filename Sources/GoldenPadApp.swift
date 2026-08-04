@@ -78,11 +78,27 @@ private struct FoundationView: View {
         .onChange(of: validation.gameStarted) { _, started in
             guard started else { return }
             Task {
-                try? await Task.sleep(for: .seconds(8))
-                let result = goldenPadMGB64AudioOutputProbe()
-                print("[GoldenPad] Native PCM output probe: \(result == 1 ? "PASS" : "FAIL")")
+                await reportNativePCMWhenReady()
             }
         }
+    }
+
+    private func reportNativePCMWhenReady() async {
+        for elapsedSeconds in 1...30 {
+            do {
+                try await Task.sleep(for: .seconds(1))
+            } catch {
+                return
+            }
+            if goldenPadMGB64AudioOutputProbe() == 1 {
+                print(
+                    "[GoldenPad] Native PCM output probe: PASS " +
+                    "after \(elapsedSeconds)s"
+                )
+                return
+            }
+        }
+        print("[GoldenPad] Native PCM output probe: FAIL timeout=30s")
     }
 
     private var setupShell: some View {

@@ -135,6 +135,13 @@ longer blocks MGB64 integration.
   by an `AVAudioSourceNode`; `AVAudioEngine` performs device-rate conversion.
   Runtime proof requires rendered frames and non-zero samples and passed on
   both simulator classes.
+- The startup PCM diagnostic now polls the existing rendered-frame/nonzero-sample
+  atomics for up to 30 seconds instead of declaring failure at one fixed
+  eight-second instant. Cold Metal startup had produced repeatable early false
+  negatives. Exact Simulator binary
+  `2b83740c5fb394dd3ced14a25fd75bc76ba42a7c47468a6f1a2e8c22c15c102e`
+  reported `Native PCM output probe: PASS after 10s` on iPhone, then unchanged
+  on iPad; both were removed and shut down sequentially.
 - Strict private-ROM runtime proof rendered the GoldenEye title animation and
   loaded multiple demo-stage setup/resource sets at 2622x1206 on iPhone 16 Pro,
   then 2420x1668 on iPad Pro 11-inch (M4). Both runs decoded 261/261 SFX,

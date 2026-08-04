@@ -54,6 +54,16 @@
   on iPhone 16 Pro, then unchanged on iPad Pro 11-inch (M4). Both apps were
   removed and both simulators shut down. `xcrun devicectl list devices` returned
   `No devices found`, so real-finger feel remains open.
+- The fast menu passes exposed a false-negative evidence bug: the native PCM
+  probe sampled once at eight seconds, before cold Metal startup had produced
+  nonzero audio, and printed FAIL even though the path became ready shortly
+  afterward. Replaced that instant with one-second polling and a strict
+  30-second timeout; the underlying rendered-frame/nonzero-sample contract is
+  unchanged.
+- Linked Simulator/device builds passed. Exact Simulator binary
+  `2b83740c5fb394dd3ced14a25fd75bc76ba42a7c47468a6f1a2e8c22c15c102e`
+  reported `Native PCM output probe: PASS after 10s` on iPhone, then unchanged
+  on iPad. Both installs were removed and both simulators shut down.
 
 ## 2026-08-03 — narrow the Dam promotion blocker to live-guard recovery
 
