@@ -22,7 +22,7 @@ generated code from a public checkout.
   candidates with exact commits/licenses.
 - [x] R2b: record GoldenRecomp's irreducible public-input blocker and select the
   reproducible MGB64 native source surface.
-- [ ] R3: produce a source-level license manifest for every incorporated file.
+- [x] R3: produce a source-level license manifest for every incorporated file.
 
 Gate: no private/leaked/XBLA source, no proprietary SDK implementation in the
 native target, and a pinned retail-ROM-to-runtime recipe.

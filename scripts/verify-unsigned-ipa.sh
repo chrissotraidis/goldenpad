@@ -67,6 +67,17 @@ if codesign -dv "$app_path" >/dev/null 2>&1; then
 fi
 
 if [ "$require_game_core" -eq 1 ]; then
+  notices="$app_path/ThirdPartyNotices.txt"
+  if [ ! -f "$notices" ]; then
+    echo "IPA is missing ThirdPartyNotices.txt." >&2
+    exit 1
+  fi
+  for notice_name in MGB64 n64-fast3d-engine cgltf jsmn stb_image; do
+    if ! grep -Fq "$notice_name" "$notices"; then
+      echo "IPA third-party notices are missing: $notice_name" >&2
+      exit 1
+    fi
+  done
   for symbol in _bossEntry _gfx_init _gfx_run_dl; do
     if ! nm -gU "$executable" |
       awk -v required="$symbol" '$3 == required { found = 1 } END { exit !found }'; then
@@ -95,6 +106,6 @@ content_digest=$(
 
 echo "IPA audit passed: $(unzip -Z1 "$ipa_path" | wc -l | tr -d ' ') members"
 if [ "$require_game_core" -eq 1 ]; then
-  echo "Game-core symbol audit passed: bossEntry + Metal Fast3D entry points"
+  echo "Game-core/notices audit passed: bossEntry + Metal Fast3D entry points"
 fi
 echo "Unsigned ARM64 app content SHA-256: $content_digest"

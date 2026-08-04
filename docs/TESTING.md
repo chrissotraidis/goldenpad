@@ -630,6 +630,7 @@ without user-selected retail data. Record hashes of project-owned artifacts only
 The current game-bearing package gate is:
 
 ```sh
+./scripts/verify-source-license-manifest.sh
 ./scripts/package-unsigned-ipa.sh
 ./scripts/verify-unsigned-ipa.sh --game-core \
   dist/GoldenPad-0.1.0-unsigned.ipa
@@ -638,8 +639,9 @@ The current game-bearing package gate is:
 The verifier rejects ROM/save/signing path names, all three N64 byte-order magic
 headers, the supported retail SHA-1, a signed app, non-ARM64 code, and private
 developer/reference strings. Game-core mode additionally requires MGB64's game
-entry point and the native Fast3D/Metal renderer entry points. It also prints a
-sorted-content digest independent of ZIP metadata.
+entry point, the native Fast3D/Metal renderer entry points and the bundled
+third-party notices. It also prints a sorted-content digest independent of ZIP
+metadata.
 
 Commit `2bc7920` produced byte-identical working-tree and fresh-clone IPAs at
 SHA-256 `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`.

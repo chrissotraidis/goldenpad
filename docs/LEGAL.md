@@ -62,8 +62,9 @@ does not change this boundary or transfer any game-content rights.
 - GoldenRecomp and N64ModernRuntime are GPL-3.0; N64Recomp and RT64 are MIT.
   If used, GoldenPad must satisfy the combined license obligations and publish
   corresponding source for distributed GPL binaries.
-- Every incorporated file must have an entry in `docs/RESEARCH.md` or a
-  generated third-party manifest identifying its exact source and license.
+- Every incorporated production source must remain classified in
+  `docs/source-license-manifest.tsv`; `docs/SOURCE_LICENSES.md` explains the
+  boundaries and regeneration gate.
 
 The current touch editor and input mapper are original Swift implementation.
 HarkinianPad was used only to identify product-level control requirements, and
@@ -110,6 +111,10 @@ Before any IPA/archive is shared:
    local references, credentials, signing files, and undocumented binaries;
 4. verify the installed app requires user-selected retail data;
 5. record the audit command and result in `docs/WORKLOG.md`.
+
+The game-bearing IPA must also carry `ThirdPartyNotices.txt`. The package
+verifier rejects a production archive that omits the required MGB64,
+n64-fast3d-engine, cgltf, jsmn or stb_image notices.
 
 This policy is conservative engineering guidance, not legal advice. Development,
 private builds, source publication, and a clearly labelled free ROM-free

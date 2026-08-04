@@ -103,6 +103,7 @@ Package the complete unsigned device app after the combined verifier passes:
 
 ```sh
 ./scripts/verify-mgb64-ios-renderer.sh
+./scripts/verify-source-license-manifest.sh
 ./scripts/package-unsigned-ipa.sh
 ./scripts/verify-unsigned-ipa.sh --game-core \
   dist/GoldenPad-0.1.0-unsigned.ipa
@@ -111,7 +112,8 @@ Package the complete unsigned device app after the combined verifier passes:
 Game-core mode requires MGB64's game entry point and the native Fast3D/Metal
 renderer entry points in addition to the normal ARM64, unsigned and ROM-free
 archive checks. Native compiler source paths are prefix-mapped to stable relative
-identities so the Mach-O and IPA reproduce across checkout directories.
+identities so the Mach-O and IPA reproduce across checkout directories. The IPA
+also carries the required third-party notices.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,

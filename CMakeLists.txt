@@ -35,6 +35,7 @@ endif()
 
 add_executable(GoldenPad MACOSX_BUNDLE
     Assets.xcassets
+    Config/ThirdPartyNotices.txt
     Sources/AppleRenderSurface.swift
     Sources/GoldenPadApp.swift
     Sources/InputSystem.swift
@@ -75,7 +76,10 @@ set_target_properties(GoldenPad PROPERTIES
     XCODE_ATTRIBUTE_SWIFT_VERSION "5.0"
 )
 
-set_source_files_properties(Assets.xcassets PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+set_source_files_properties(
+    Assets.xcassets
+    Config/ThirdPartyNotices.txt
+    PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
 target_link_libraries(GoldenPad PRIVATE
     "-framework SwiftUI"

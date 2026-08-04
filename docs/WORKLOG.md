@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-04 — inventory production licenses and bundle notices
+
+- Generated a 236-entry source manifest directly from the configured
+  game-bearing target. It classifies 161 original-game/decompilation sources,
+  52 MGB64 MIT sources, 19 GoldenPad-original sources, two Fast3D/Perfect Dark
+  cases and the two single-header implementations that enter compiled code.
+- Added a verifier that regenerates the list and fails on any source-set drift
+  or unclassified path. This closes R3 without pretending MGB64's MIT license
+  applies to decompiled GoldenEye code or inventing an outbound GoldenPad
+  license.
+- Added `ThirdPartyNotices.txt` to the app resources with the applicable MGB64,
+  n64-fast3d-engine, Perfect Dark, cgltf, jsmn and stb_image notices. The
+  production IPA verifier now rejects an archive that omits those notices.
+- The complete Simulator/device linked build, 236-entry manifest verification
+  and local nine-member IPA audit passed. Fresh-clone reproduction of the
+  notice-bearing artifact remains before the new hashes replace the prior
+  package evidence.
+
 ## 2026-08-04 — add explicit 1×–4× native resolution controls
 
 - Added a persisted four-level Display control instead of a vague

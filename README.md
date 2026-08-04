@@ -110,6 +110,7 @@ Rare, Microsoft, MGM, Danjaq, EON Productions, or any other rights holder.
 - [Building](docs/BUILDING.md)
 - [Testing](docs/TESTING.md)
 - [Legal and provenance policy](docs/LEGAL.md)
+- [Production source licenses](docs/SOURCE_LICENSES.md)
 - [Original art provenance](docs/ART.md)
 - [Worklog](docs/WORKLOG.md)
 

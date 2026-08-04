@@ -17,6 +17,11 @@ longer blocks MGB64 integration.
 - Local retail V64 is ignored, 12 MiB, normalizes to the supported US SHA-1, and
   was never copied into the tracked tree or a package.
 - Required initial research/legal/architecture/plan/build/test/worklog docs exist.
+- The configured production target has a machine-checked 236-entry source
+  license manifest: 161 original-game/decompilation files, 52 MGB64 MIT files,
+  19 GoldenPad-original files, two Fast3D/Perfect Dark cases and two embedded
+  header implementations. The IPA now carries the corresponding third-party
+  notices, which the production package verifier requires.
 - MGB64 `cd9b58f` builds as native ARM64 on Apple Silicon with default WebGPU.
 - MGB64's native SDK-surface guard passes at the exact pin. Its native CMake
   target compiles no `src/libultra/**` or `src/libultrare/**` implementation
@@ -427,12 +432,14 @@ The Apple shell, native game boot, renderer, audio, save path and menu schema ar
 substantially integrated, but the complete port is not at definition of done.
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
-multiplayer, physical lifecycle/audio/controller acceptance and the source-level
-license manifest. The clean-checkout game-bearing unsigned IPA audit is closed.
+multiplayer and physical lifecycle/audio/controller acceptance. The source-level
+license manifest is closed; the updated notice-bearing IPA still needs its final
+fresh-clone reproduction.
 
 With no physical device attached, the next unblocked production slice is the
-source-license manifest. When hardware is available, hands-on playtest v4 on
-iPhone, tune swipe sensitivity/action placement, then repeat the accepted layout
-unchanged on iPad. Keep diagnostics as bounded smoke coverage only; do not
-extend bot navigation as a product gate.
+notice-bearing clean-package rerun, followed by scene-specific performance
+profiling. When hardware is available, hands-on playtest v4 on iPhone, tune
+swipe sensitivity/action placement, then repeat the accepted layout unchanged
+on iPad. Keep diagnostics as bounded smoke coverage only; do not extend bot
+navigation as a product gate.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.
