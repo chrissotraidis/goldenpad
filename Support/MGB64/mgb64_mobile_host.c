@@ -46,6 +46,7 @@ typedef struct {
 } GoldenPadControllerState;
 
 static GoldenPadControllerState goldenpad_controllers[MAXCONTROLLERS];
+static u16 goldenpad_controller_queued_buttons[MAXCONTROLLERS];
 
 #define GOLDENPAD_AUDIO_RING_FRAMES 65536u
 static s16 goldenpad_audio_ring[GOLDENPAD_AUDIO_RING_FRAMES * 2];
@@ -84,6 +85,15 @@ void goldenpad_mgb64_set_controller_state(
     pthread_mutex_unlock(&goldenpad_controller_mutex);
 }
 
+void goldenpad_mgb64_queue_controller_buttons(int player, u32 buttons) {
+    if (player < 0 || player >= MAXCONTROLLERS) {
+        return;
+    }
+    pthread_mutex_lock(&goldenpad_controller_mutex);
+    goldenpad_controller_queued_buttons[player] |= (u16)buttons;
+    pthread_mutex_unlock(&goldenpad_controller_mutex);
+}
+
 void goldenpad_mgb64_read_controller_pads(OSContPad *pads) {
     if (pads == NULL) {
         return;
@@ -95,7 +105,9 @@ void goldenpad_mgb64_read_controller_pads(OSContPad *pads) {
         if (state.connected) {
             pads[player].stick_x = state.stick_x;
             pads[player].stick_y = state.stick_y;
-            pads[player].button = state.buttons;
+            pads[player].button = state.buttons |
+                goldenpad_controller_queued_buttons[player];
+            goldenpad_controller_queued_buttons[player] = 0;
         } else {
             pads[player].errnum = CONT_NO_RESPONSE_ERROR;
         }

@@ -183,6 +183,14 @@ longer blocks MGB64 integration.
   toward destination 179 with objectives `4:[0,0,0,0]` and `stateMutation=0`.
   This proves the upper Dam graph and real two-door interlock, not the
   disconnected lower bungee graph or organic objective completion.
+- `--dam-bungee-probe` structurally finds the retail AI sequence that tests
+  Bond's room, locks control and applies forced velocity, then derives its lower
+  exit pad without embedding retail coordinates. An exploratory phone run
+  crossed the live interlock and padlocked gate with normal controller frames
+  and reported `room=64/64`, `force=0,400`, objectives `4:[0,0,0,1]`,
+  `controllerOnly=1` and `hostMutation=0`. Repeated clean-phone promotion runs
+  instead reproduced an actor/linked-door collision stop with the slab at
+  `open=750/1000`; the phone-first gate therefore failed and iPad was not run.
 - The input-only MGB64 desktop route
   `facility_spawn_obj159_door_traversal_contract` independently passed at the
   pinned commit with a 1291.83-unit displacement, real door-allow/transition/
@@ -318,11 +326,12 @@ longer blocks MGB64 integration.
 
 ## Next gate
 
-Extend the clean Dam route from upper node 179 into the lower bungee graph and
-observe the organic bungee/objective transition without mutation, while
-continuing Facility past the two-door corridor chain. Then replace the
-diagnostic success prerequisite
-with organic objectives and mission completion through input. The traversal,
-chained-interaction, report, EEPROM write, lifecycle flush and relaunch seams no
-longer need to be rediscovered.
+Resolve the clean-phone Dam interlock collision stop, then repeat the proven
+lower bungee room/velocity trigger first on iPhone and with the exact same app
+on iPad. In parallel, tune poor hands-on touch controls and replace the
+untrusted visible FPS value with presentation-cadence measurement. Continue
+Facility past the two-door corridor chain, then replace the diagnostic success
+prerequisite with organic objectives and mission completion through input. The
+traversal, chained-interaction, report, EEPROM write, lifecycle flush and
+relaunch seams no longer need to be rediscovered.
 Do not import matching-target SDK implementation sources or Xbox/XBLA material.

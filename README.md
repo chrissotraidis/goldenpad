@@ -59,6 +59,14 @@ iPad at 15879; both retained objectives `[0,0,0,0]` with `stateMutation=0`.
 This is not the lower bungee graph or organic Dam completion. Hands-on control
 feel and the visible FPS counter also remain unaccepted; neither is release
 evidence yet.
+An exploratory `--dam-bungee-probe` now derives the lower exit pad from the
+loaded retail AI command stream, routes across the live waypoint graph, opens
+the interlock and padlocked gate through controller input, and observed the
+retail room trigger plus forced velocity with `controllerOnly=1` and
+`hostMutation=0`. Promotion is still open: repeated clean-phone runs exposed a
+stock actor/linked-door collision stop at `open=750/1000`, so the required clean
+iPhone then same-binary iPad gate has not passed. This is not yet organic Dam
+completion.
 The same host also exposes the exact `UIView`/`CAMetalLayer` pair RT64 expects.
 All 56
 generated Metal shaders compile for both Apple mobile SDKs, the complete

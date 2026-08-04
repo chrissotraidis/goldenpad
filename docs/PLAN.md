@@ -154,6 +154,16 @@ and B input crossed both interlock doors and reached upper-graph node 179 within
 upper pad-140 region, not the disconnected lower bungee graph; organic bungee
 activation remains the next Dam traversal gate.
 
+An exploratory lower-route run has now reached that retail bungee trigger. The
+host structurally derives the target pad from the loaded AI room-test,
+control-lock and forced-velocity sequence, reads navigation, guard, padlock and
+linked-door state without writing it, and emits ordinary controller frames. It
+observed `room=64/64`, `force=0,400`, objective vector `[0,0,0,1]`,
+`controllerOnly=1` and `hostMutation=0`. This is not promoted acceptance:
+repeated clean-phone runs reproducibly stopped with the linked slab closing at
+`750/1000` while Bond remained in the interlock. Phone cleanup was performed;
+the exact same app was not advanced to iPad because the phone-first gate failed.
+
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.

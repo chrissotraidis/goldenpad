@@ -1,5 +1,28 @@
 # Worklog
 
+## 2026-08-03 — derive the retail bungee trigger and expose a strict blocker
+
+- Added a structural scan for the loaded Dam AI sequence that tests Bond's
+  room, locks control and applies forced velocity. It derives the lower exit
+  pad and publishes read-only navigation, linked-door, guard and padlock state;
+  no retail coordinate or state mutation is embedded in the host.
+- Added `--dam-bungee-probe`, which continues the live waypoint route, handles
+  the padlocked gate with ordinary controller input, and accepts only the real
+  room trigger plus forced velocity. A diagnostic-only one-read button queue
+  preserves B presses across the `osContGetReadData` boundary; normal held user
+  controls are unchanged.
+- An exploratory phone run observed the retail trigger at `distance=28461`,
+  `pad=330`, `room=64/64`, `force=0,400`, objectives `4:[0,0,0,1]`,
+  `controllerOnly=1` and `hostMutation=0`.
+- Repeated clean-phone promotion runs instead reproduced a linked-door
+  collision stop with the slab at `state=2 open=750/1000`, including through
+  frame 14700. The phone app was terminated/uninstalled and its simulator shut
+  down; iPad was not run because the phone-first gate failed.
+- The linked simulator and device verification matrix still passes. This is an
+  exploratory retail-trigger proof plus a reproducible promotion blocker, not
+  organic Dam completion. Hands-on controls remain poor and the visible FPS
+  value remains untrusted; both are explicit next-production gates.
+
 ## 2026-08-03 — cross Dam's live two-door interlock
 
 - Added a read-only Dam waypoint snapshot and private breadth-first navigator.

@@ -13,6 +13,12 @@ private func goldenPadMGB64SetControllerState(
     _ connected: Int32
 )
 
+@_silgen_name("goldenpad_mgb64_queue_controller_buttons")
+private func goldenPadMGB64QueueControllerButtons(
+    _ player: Int32,
+    _ buttons: UInt32
+)
+
 @_silgen_name("goldenpad_mgb64_controller_input_probe")
 private func goldenPadMGB64ControllerInputProbe() -> Int32
 
@@ -88,6 +94,52 @@ private func goldenPadMGB64DamNavState(
     _ switchDoorOpenPosition: UnsafeMutablePointer<Int32>?,
     _ switchDoorPerimPosition: UnsafeMutablePointer<Int32>?,
     _ switchEligibility: UnsafeMutablePointer<Int32>?
+)
+
+@_silgen_name("goldenpad_mgb64_set_dam_nav_bungee_mode")
+private func goldenPadMGB64SetDamNavBungeeMode(_ enabled: Int32)
+
+@_silgen_name("goldenpad_mgb64_dam_nav_linked_door_state")
+private func goldenPadMGB64DamNavLinkedDoorState(
+    _ valid: UnsafeMutablePointer<Int32>?,
+    _ x: UnsafeMutablePointer<Int32>?,
+    _ z: UnsafeMutablePointer<Int32>?,
+    _ state: UnsafeMutablePointer<Int32>?,
+    _ openPosition: UnsafeMutablePointer<Int32>?
+)
+
+@_silgen_name("goldenpad_mgb64_dam_nav_guard_state")
+private func goldenPadMGB64DamNavGuardState(
+    _ valid: UnsafeMutablePointer<Int32>?,
+    _ x: UnsafeMutablePointer<Int32>?,
+    _ y: UnsafeMutablePointer<Int32>?,
+    _ z: UnsafeMutablePointer<Int32>?,
+    _ viewY: UnsafeMutablePointer<Int32>?
+)
+
+@_silgen_name("goldenpad_mgb64_dam_nav_padlock_state")
+private func goldenPadMGB64DamNavPadlockState(
+    _ valid: UnsafeMutablePointer<Int32>?,
+    _ healthy: UnsafeMutablePointer<Int32>?,
+    _ x: UnsafeMutablePointer<Int32>?,
+    _ y: UnsafeMutablePointer<Int32>?,
+    _ z: UnsafeMutablePointer<Int32>?,
+    _ viewY: UnsafeMutablePointer<Int32>?,
+    _ doorX: UnsafeMutablePointer<Int32>?,
+    _ doorZ: UnsafeMutablePointer<Int32>?
+)
+
+@_silgen_name("goldenpad_mgb64_dam_bungee_state")
+private func goldenPadMGB64DamBungeeState(
+    _ valid: UnsafeMutablePointer<Int32>?,
+    _ pad: UnsafeMutablePointer<Int32>?,
+    _ x: UnsafeMutablePointer<Int32>?,
+    _ z: UnsafeMutablePointer<Int32>?,
+    _ room: UnsafeMutablePointer<Int32>?,
+    _ playerRoom: UnsafeMutablePointer<Int32>?,
+    _ inRoom: UnsafeMutablePointer<Int32>?,
+    _ forceX: UnsafeMutablePointer<Int32>?,
+    _ forceZ: UnsafeMutablePointer<Int32>?
 )
 
 @_silgen_name("goldenpad_mgb64_facility_door_state")
@@ -338,6 +390,7 @@ final class InputCoordinator: ObservableObject {
     private var damNavSwitchSettleFrames = 0
     private var damNavSwitchRetryFrames = 0
     private var damNavSwitchAttempts = 0
+    private var damNavObstructionShotSent = false
     private var damNavSwitchAligningWall = false
     private var damNavSwitchWallAlignFrames = 0
     private var damNavSwitchWallAligned = false
@@ -349,6 +402,8 @@ final class InputCoordinator: ObservableObject {
     private var damNavCrossingTargetZ: Int32 = 0
     private var damNavCrossingDoorX: Int32 = 0
     private var damNavCrossingDoorZ: Int32 = 0
+    private var damBungeeSawTriggerRoom = false
+    private var damBungeeSawForcedVelocity = false
     private var didReportProgressionProbe = false
 
     init() {
@@ -472,9 +527,14 @@ final class InputCoordinator: ObservableObject {
             let frame = player == 0
                 ? damRouteInput ?? facilityDoorRouteInput ?? mappedFrame(player: player)
                 : mappedFrame(player: player)
-            let primary = frame.primary
+            var primary = frame.primary
             let secondary = frame.secondary
             let connected = player == 0 || controllerSlots[player] != nil
+            let queuesSingleUseSample = player == 0 &&
+                damRouteInput != nil && primary.buttons.contains(.b)
+            if queuesSingleUseSample {
+                primary.buttons.remove(.b)
+            }
             goldenPadMGB64SetControllerState(
                 Int32(player),
                 Int32((primary.stick.x * 80).rounded()),
@@ -484,6 +544,11 @@ final class InputCoordinator: ObservableObject {
                 Int32((-secondary.stick.y * 32_767).rounded()),
                 connected ? 1 : 0
             )
+            if queuesSingleUseSample {
+                goldenPadMGB64QueueControllerButtons(
+                    Int32(player), UInt32(N64Buttons.b.rawValue)
+                )
+            }
         }
         if !didReportCoreInputProbe,
            ProcessInfo.processInfo.arguments.contains("--input-probe") {
@@ -500,6 +565,7 @@ final class InputCoordinator: ObservableObject {
                 arguments.contains("--mission-flow-probe") ||
                 arguments.contains("--dam-route-probe") ||
                 arguments.contains("--dam-nav-probe") ||
+                arguments.contains("--dam-bungee-probe") ||
                 arguments.contains("--facility-door-probe") ||
                 arguments.contains("--facility-door-chain-probe") else { return }
         if arguments.contains("--mission-flow-probe") {
@@ -566,9 +632,13 @@ final class InputCoordinator: ObservableObject {
     private func runDamRouteProbeIfRequested() {
         let arguments = ProcessInfo.processInfo.arguments
         let isNavProbe = arguments.contains("--dam-nav-probe")
-        guard arguments.contains("--dam-route-probe") || isNavProbe else {
+        let isBungeeProbe = arguments.contains("--dam-bungee-probe")
+        guard arguments.contains("--dam-route-probe") || isNavProbe ||
+                isBungeeProbe else {
             return
         }
+
+        goldenPadMGB64SetDamNavBungeeMode(isBungeeProbe ? 1 : 0)
 
         var stage: Int32 = -1
         var ready: Int32 = 0
@@ -576,6 +646,8 @@ final class InputCoordinator: ObservableObject {
         var playerX: Int32 = 0
         var playerZ: Int32 = 0
         var yaw: Int32 = 0
+        var pitch: Int32 = 0
+        var ammo: Int32 = -1
         var cameraMode: Int32 = -1
         var objectiveCount: Int32 = 0
         var objective0: Int32 = -1
@@ -602,10 +674,37 @@ final class InputCoordinator: ObservableObject {
         var navSwitchDoorOpenPosition: Int32 = 0
         var navSwitchDoorPerimPosition: Int32 = 0
         var navSwitchEligibility: Int32 = 0
+        var navLinkedDoorValid: Int32 = 0
+        var navLinkedDoorX: Int32 = 0
+        var navLinkedDoorZ: Int32 = 0
+        var navLinkedDoorState: Int32 = -1
+        var navLinkedDoorOpenPosition: Int32 = 0
+        var navGuardValid: Int32 = 0
+        var navGuardX: Int32 = 0
+        var navGuardY: Int32 = 0
+        var navGuardZ: Int32 = 0
+        var navGuardViewY: Int32 = 0
+        var navPadlockValid: Int32 = 0
+        var navPadlockHealthy: Int32 = 0
+        var navPadlockX: Int32 = 0
+        var navPadlockY: Int32 = 0
+        var navPadlockZ: Int32 = 0
+        var navPadlockViewY: Int32 = 0
+        var navPadlockDoorX: Int32 = 0
+        var navPadlockDoorZ: Int32 = 0
+        var bungeeValid: Int32 = 0
+        var bungeePad: Int32 = -1
+        var bungeeX: Int32 = 0
+        var bungeeZ: Int32 = 0
+        var bungeeRoom: Int32 = -1
+        var bungeePlayerRoom: Int32 = -1
+        var bungeeInRoom: Int32 = 0
+        var bungeeForceX: Int32 = 0
+        var bungeeForceZ: Int32 = 0
         goldenPadMGB64RuntimeState(nil, &stage, nil, nil, nil, nil, nil)
         goldenPadMGB64GameplayState(
-            &ready, &viewMode, &playerX, &playerZ, &yaw, nil,
-            nil, nil, nil, nil, nil, nil, nil
+            &ready, &viewMode, &playerX, &playerZ, &yaw, &pitch,
+            nil, nil, &ammo, nil, nil, nil, nil
         )
         goldenPadMGB64DamRouteState(
             &cameraMode, &objectiveCount, &objective0, &objective1,
@@ -620,6 +719,25 @@ final class InputCoordinator: ObservableObject {
             &navSwitchDoorX, &navSwitchDoorZ, &navSwitchDoorState,
             &navSwitchDoorOpenPosition, &navSwitchDoorPerimPosition,
             &navSwitchEligibility
+        )
+        goldenPadMGB64DamBungeeState(
+            &bungeeValid, &bungeePad, &bungeeX, &bungeeZ,
+            &bungeeRoom, &bungeePlayerRoom, &bungeeInRoom,
+            &bungeeForceX, &bungeeForceZ
+        )
+        goldenPadMGB64DamNavLinkedDoorState(
+            &navLinkedDoorValid, &navLinkedDoorX, &navLinkedDoorZ,
+            &navLinkedDoorState, &navLinkedDoorOpenPosition
+        )
+        goldenPadMGB64DamNavGuardState(
+            &navGuardValid, &navGuardX, &navGuardY, &navGuardZ,
+            &navGuardViewY
+        )
+        goldenPadMGB64DamNavPadlockState(
+            &navPadlockValid, &navPadlockHealthy,
+            &navPadlockX, &navPadlockY, &navPadlockZ,
+            &navPadlockViewY,
+            &navPadlockDoorX, &navPadlockDoorZ
         )
 
         damRouteInput = nil
@@ -644,11 +762,14 @@ final class InputCoordinator: ObservableObject {
             damNavSwitchSettleFrames = 0
             damNavSwitchRetryFrames = 0
             damNavSwitchAttempts = 0
+            damNavObstructionShotSent = false
             damNavSwitchAligningWall = false
             damNavSwitchWallAlignFrames = 0
             damNavSwitchWallAligned = false
             damNavSwitchCrossingFrames = 0
             damNavSwitchCrossingStarted = false
+            damBungeeSawTriggerRoom = false
+            damBungeeSawForcedVelocity = false
             damRouteProbePhase = .route
             print(
                 "[GoldenPad] Dam native route stock spawn: PASS " +
@@ -677,7 +798,8 @@ final class InputCoordinator: ObservableObject {
                 routeFrame.primary.stick = SIMD2(-1, 1)
             }
 
-            if isNavProbe, damRouteFrame >= 640, navValid == 1 {
+            if (isNavProbe || isBungeeProbe), damRouteFrame >= 640,
+               navValid == 1 {
                 let deltaX = Double(navTargetX - playerX)
                 let deltaZ = Double(navTargetZ - playerZ)
                 let targetDistance = Int(sqrt(
@@ -698,6 +820,86 @@ final class InputCoordinator: ObservableObject {
                 }
 
                 damNavFrame += 1
+                if bungeeInRoom == 1 { damBungeeSawTriggerRoom = true }
+                if bungeeForceX != 0 || bungeeForceZ != 0 {
+                    damBungeeSawForcedVelocity = true
+                }
+
+                let padlockRangeX = Double(navPadlockX - playerX)
+                let padlockRangeZ = Double(navPadlockZ - playerZ)
+                let padlockRange = sqrt(
+                    padlockRangeX * padlockRangeX +
+                    padlockRangeZ * padlockRangeZ
+                )
+                let isTargetingPadlock = isBungeeProbe &&
+                    navPadlockValid == 1 && navPadlockHealthy == 1 &&
+                    padlockRange <= 80_000.0
+                if isTargetingPadlock {
+                    let lockDeltaX = Double(navPadlockX - playerX)
+                    let lockDeltaZ = Double(navPadlockZ - playerZ)
+                    let horizontalDistance = max(
+                        1.0,
+                        sqrt(lockDeltaX * lockDeltaX + lockDeltaZ * lockDeltaZ)
+                    )
+                    var lockYaw = atan2(
+                        -lockDeltaX, lockDeltaZ
+                    ) * 180.0 / .pi
+                    if lockYaw < 0 { lockYaw += 360.0 }
+                    var lockYawError = lockYaw - Double(yaw) / 100.0
+                    while lockYawError > 180.0 { lockYawError -= 360.0 }
+                    while lockYawError < -180.0 { lockYawError += 360.0 }
+                    let desiredPitch = atan2(
+                        Double(navPadlockY - navPadlockViewY),
+                        horizontalDistance
+                    ) * 180.0 / .pi
+                    let pitchError = desiredPitch - Double(pitch) / 100.0
+
+                    routeFrame.primary.stick = .zero
+                    routeFrame.secondary.stick.x = Float(max(
+                        -1.0, min(1.0, lockYawError / 30.0)
+                    ))
+                    routeFrame.secondary.stick.y = Float(max(
+                        -1.0, min(1.0, pitchError / 8.0)
+                    ))
+                    if abs(lockYawError) < 10.0, abs(pitchError) < 6.0 {
+                        if ammo > 0, damNavFrame % 12 < 5 {
+                            routeFrame.primary.buttons.insert(.z)
+                        } else if ammo == 0, damNavFrame % 60 < 12 {
+                            routeFrame.primary.buttons.insert(.b)
+                        }
+                    }
+                }
+                let unlockedDoorRangeX = Double(navPadlockDoorX - playerX)
+                let unlockedDoorRangeZ = Double(navPadlockDoorZ - playerZ)
+                let unlockedDoorRange = sqrt(
+                    unlockedDoorRangeX * unlockedDoorRangeX +
+                    unlockedDoorRangeZ * unlockedDoorRangeZ
+                )
+                let isOpeningUnlockedDoor = isBungeeProbe &&
+                    navPadlockValid == 1 && navPadlockHealthy == 0 &&
+                    unlockedDoorRange <= 100_000.0
+                if isOpeningUnlockedDoor {
+                    var doorYaw = atan2(
+                        -unlockedDoorRangeX, unlockedDoorRangeZ
+                    ) * 180.0 / .pi
+                    if doorYaw < 0 { doorYaw += 360.0 }
+                    var doorYawError = doorYaw - Double(yaw) / 100.0
+                    while doorYawError > 180.0 { doorYawError -= 360.0 }
+                    while doorYawError < -180.0 { doorYawError += 360.0 }
+                    let crossingYawError = unlockedDoorRange <= 20_000.0
+                        ? yawError : doorYawError
+                    routeFrame.primary.stick = .zero
+                    routeFrame.secondary.stick.x = Float(max(
+                        -1.0, min(1.0, crossingYawError / 35.0)
+                    ))
+                    if abs(crossingYawError) < 25.0 {
+                        routeFrame.primary.stick.y = abs(crossingYawError) < 10.0
+                            ? 0.7 : 0.3
+                    }
+                    if abs(crossingYawError) < 12.0, damNavFrame % 30 < 6 {
+                        routeFrame.primary.buttons.insert(.b)
+                    }
+                }
 
                 if navTargetNode != damNavLastTargetNode {
                     damNavLastTargetNode = navTargetNode
@@ -739,8 +941,8 @@ final class InputCoordinator: ObservableObject {
                    !damNavSwitchCrossingStarted,
                    damNavSwitchCrossingFrames == 0,
                    navSwitchDoorPerimPosition > 0,
-                   (navSwitchDoorState == 1 ||
-                    navSwitchDoorOpenPosition + 60 >= navSwitchDoorPerimPosition) {
+                   navSwitchDoorOpenPosition + 60 >=
+                    navSwitchDoorPerimPosition {
                     damNavCrossingSourceX = navSourceX
                     damNavCrossingSourceZ = navSourceZ
                     damNavCrossingTargetX = navTargetX
@@ -864,8 +1066,19 @@ final class InputCoordinator: ObservableObject {
                                 max(-1.0, min(1.0, wallYawError / 45.0))
                             )
                             if abs(wallYawError) < 25.0 {
-                                routeFrame.primary.stick.y = 0.15
+                                routeFrame.primary.stick.y = 0.35
                             }
+                        }
+                        if navSwitchEligibility == 0x1ff {
+                            // Preserve the live switch alignment while the game
+                            // and display threads settle on the same sample.
+                            routeFrame.primary.stick = .zero
+                            routeFrame.primary.buttons.remove(.z)
+                            routeFrame.secondary.stick.x = abs(switchYawError) < 8.0
+                                ? 0.0
+                                : Float(max(
+                                    -1.0, min(1.0, switchYawError / 30.0)
+                                ))
                         }
                         if navSwitchDoorState == 1 {
                             damNavSwitchPulseSent = true
@@ -881,8 +1094,7 @@ final class InputCoordinator: ObservableObject {
                                 "perim=\(navSwitchDoorPerimPosition)"
                             )
                         } else if navSwitchEligibility == 0x1ff,
-                                  abs(switchYawError) < 8.0,
-                                  !damNavSwitchAligningWall {
+                                  abs(switchYawError) < 8.0 {
                             // The eligibility snapshot and controller sample
                             // cross threads. Stop turning long enough for the
                             // game thread to observe a stationary candidate
@@ -892,14 +1104,18 @@ final class InputCoordinator: ObservableObject {
                             if damNavSwitchSettleFrames < 12 {
                                 damNavSwitchSettleFrames += 1
                             } else {
+                                routeFrame.primary.buttons.remove(.z)
                                 routeFrame.primary.buttons.insert(.b)
                                 damNavSwitchPulseSent = true
                                 damNavSwitchAttempts += 1
                                 damNavSwitchRetryFrames = 0
-                                // Keep one press visible across the independent
-                                // display/game cadences. The N64 still observes a
-                                // single edge followed by a held button.
-                                damNavSwitchHoldFrames = 8
+                                damNavObstructionShotSent = false
+                                // Use one display sample. GoldenEye evaluates
+                                // held Use near this switch repeatedly, so a
+                                // multi-sample hold can reverse the interlock.
+                                // The stationary-state retry below handles a
+                                // sample missed by the independent game cadence.
+                                damNavSwitchHoldFrames = 0
                                 damNavCrossingSourceX = navSourceX
                                 damNavCrossingSourceZ = navSourceZ
                                 damNavCrossingTargetX = navTargetX
@@ -923,15 +1139,80 @@ final class InputCoordinator: ObservableObject {
                         // threshold is observed above.
                         routeFrame.primary.stick = .zero
                         routeFrame.secondary.stick = .zero
-                        if navSwitchDoorState == 3 {
-                            // Dam's paired gate waits for the first slab to
-                            // close. Keep walking toward the second slab so
-                            // Bond vacates the first slab's collision zone.
-                            routeFrame.secondary.stick.x = Float(
-                                max(-1.0, min(1.0, yawError / 45.0))
-                            )
-                            if abs(yawError) < 70.0 {
-                                routeFrame.primary.stick.y = 1.0
+                        if navSwitchDoorState == 3 ||
+                            (navSwitchDoorState == 0 && navLinkedDoorState == 2) {
+                            damNavSwitchRetryFrames += 1
+                            // Dam's paired gate waits for the live sibling to
+                            // close. First move Bond clear of its collision
+                            // volume. If a live guard still obstructs it after
+                            // Bond reaches the midpoint, fire one warning shot
+                            // to alert the guard without leaving a corpse in the
+                            // shared collision group.
+                            let targetingBlockingGuard =
+                                damNavSwitchRetryFrames >= 600 &&
+                                navGuardValid == 1
+                            let chamberMidpointX =
+                                (navSwitchDoorX + navLinkedDoorX) / 2
+                            let chamberMidpointZ =
+                                (navSwitchDoorZ + navLinkedDoorZ) / 2
+                            let recoveryTargetX = targetingBlockingGuard
+                                ? navGuardX
+                                : chamberMidpointX
+                            let recoveryTargetZ = targetingBlockingGuard
+                                ? navGuardZ
+                                : chamberMidpointZ
+                            let recoveryDeltaX =
+                                Double(recoveryTargetX - playerX)
+                            let recoveryDeltaZ =
+                                Double(recoveryTargetZ - playerZ)
+                            var recoveryYaw = atan2(
+                                -recoveryDeltaX, recoveryDeltaZ
+                            ) * 180.0 / .pi
+                            if recoveryYaw < 0 { recoveryYaw += 360.0 }
+                            var recoveryYawError = recoveryYaw - Double(yaw) / 100.0
+                            while recoveryYawError > 180.0 {
+                                recoveryYawError -= 360.0
+                            }
+                            while recoveryYawError < -180.0 {
+                                recoveryYawError += 360.0
+                            }
+                            routeFrame.secondary.stick.x = Float(max(
+                                -1.0, min(1.0, recoveryYawError / 35.0)
+                            ))
+                            routeFrame.primary.stick = .zero
+                            if targetingBlockingGuard {
+                                let horizontalDistance = max(1.0, sqrt(
+                                    recoveryDeltaX * recoveryDeltaX +
+                                    recoveryDeltaZ * recoveryDeltaZ
+                                ))
+                                let guardPitch = navGuardValid == 1
+                                    ? atan2(
+                                        Double(navGuardY - navGuardViewY),
+                                        horizontalDistance
+                                    ) * 180.0 / .pi
+                                    : 0.0
+                                let guardPitchError =
+                                    guardPitch - Double(pitch) / 100.0
+                                routeFrame.secondary.stick.y = Float(max(
+                                    -1.0, min(1.0, guardPitchError / 8.0)
+                                ))
+                                if !damNavObstructionShotSent,
+                                   abs(recoveryYawError) < 18.0,
+                                   abs(guardPitchError) < 7.0,
+                                   ammo > 0 {
+                                    routeFrame.primary.buttons.insert(.z)
+                                    damNavObstructionShotSent = true
+                                    print(
+                                        "[GoldenPad] Dam nav linked-door " +
+                                        "obstruction recovery: warning shot " +
+                                        "guard=\(navGuardX),\(navGuardY)," +
+                                        "\(navGuardZ)"
+                                    )
+                                }
+                            } else if navLinkedDoorValid == 1,
+                                      abs(recoveryYawError) < 35.0 {
+                                routeFrame.primary.stick.y =
+                                    abs(recoveryYawError) < 15.0 ? 1.0 : 0.45
                             }
                             damNavSwitchHoldFrames = 0
                         } else if damNavSwitchHoldFrames > 0 {
@@ -939,7 +1220,8 @@ final class InputCoordinator: ObservableObject {
                             damNavSwitchHoldFrames -= 1
                         } else if navSwitchDoorState == 0,
                                   navSwitchDoorOpenPosition == 0,
-                                  damNavSwitchAttempts < 4 {
+                                  (navLinkedDoorValid == 0 ||
+                                   navLinkedDoorState == 0) {
                             damNavSwitchRetryFrames += 1
                             if damNavSwitchRetryFrames >= 90 {
                                 damNavSwitchPulseSent = false
@@ -952,12 +1234,29 @@ final class InputCoordinator: ObservableObject {
                                 )
                             }
                         }
-                    } else if navSwitchValid == 0 {
-                        // Fall back to following a blocking surface in both
-                        // directions when the live setup has no nearby switch.
-                        routeFrame.primary.stick.x = recoveryFrame < 180 ? 1 : -1
-                        routeFrame.primary.stick.y = 0.35
-                        if recoveryFrame.isMultiple(of: 15) ||
+                    } else if navSwitchValid == 0,
+                              !isTargetingPadlock,
+                              !isOpeningUnlockedDoor {
+                        if recoveryFrame < 60 {
+                            // First try an ordinary door: face the live route
+                            // edge, settle, then send one normal Use press.
+                            routeFrame.primary.stick = .zero
+                            routeFrame.secondary.stick.x = Float(
+                                max(-1.0, min(1.0, yawError / 45.0))
+                            )
+                            if (12..<20).contains(recoveryFrame),
+                               abs(yawError) < 12.0 {
+                                routeFrame.primary.buttons.insert(.b)
+                            }
+                        } else {
+                            // Then follow the blocking surface in both
+                            // directions while retrying normal Use.
+                            routeFrame.primary.stick.x = recoveryFrame < 210
+                                ? 1 : -1
+                            routeFrame.primary.stick.y = 0.35
+                        }
+                        if recoveryFrame >= 60,
+                           recoveryFrame.isMultiple(of: 15) ||
                             recoveryFrame % 15 == 1 {
                             routeFrame.primary.buttons.insert(.b)
                         }
@@ -986,7 +1285,7 @@ final class InputCoordinator: ObservableObject {
                 )
             }
 
-            if isNavProbe, damRouteFrame >= 640 {
+            if (isNavProbe || isBungeeProbe), damRouteFrame >= 640 {
                 let destinationDeltaX = Double(navDestinationX - playerX)
                 let destinationDeltaZ = Double(navDestinationZ - playerZ)
                 let destinationDistance = Int(sqrt(
@@ -995,15 +1294,58 @@ final class InputCoordinator: ObservableObject {
                 ).rounded())
                 if damNavFrame > 0, damNavFrame.isMultiple(of: 300) {
                     print(
-                        "[GoldenPad] Dam nav frame \(damNavFrame): " +
-                        "pos=\(playerX),\(playerZ) yaw=\(yaw) " +
+                        "[GoldenPad] Dam \(isBungeeProbe ? "bungee" : "nav") " +
+                        "frame \(damNavFrame): " +
+                        "pos=\(playerX),\(playerZ) yaw=\(yaw) ammo=\(ammo) " +
                         "source=\(navSourceNode) target=\(navTargetNode) " +
                         "destinationDistance=\(destinationDistance / 100) " +
+                        "bungee=\(bungeeValid):\(bungeePad) " +
+                        "room=\(bungeePlayerRoom)/\(bungeeRoom) " +
+                        "force=\(bungeeForceX),\(bungeeForceZ) " +
                         "door=\(navSwitchDoorState):" +
                         "\(navSwitchDoorOpenPosition)/\(navSwitchDoorPerimPosition) " +
                         "doorPos=\(navSwitchDoorX),\(navSwitchDoorZ) " +
+                        "linked=\(navLinkedDoorValid):\(navLinkedDoorState):" +
+                        "\(navLinkedDoorOpenPosition)@" +
+                        "\(navLinkedDoorX),\(navLinkedDoorZ) " +
+                        "guard=\(navGuardValid):" +
+                        "\(navGuardX),\(navGuardY),\(navGuardZ) " +
+                        "padlock=\(navPadlockValid):\(navPadlockHealthy):" +
+                        "\(navPadlockX),\(navPadlockY),\(navPadlockZ) " +
+                        "viewY=\(navPadlockViewY) pitch=\(pitch)@" +
+                        "\(navPadlockDoorX),\(navPadlockDoorZ) " +
                         "switchEligibility=0x\(String(navSwitchEligibility, radix: 16))"
                     )
+                }
+
+                if isBungeeProbe {
+                    let reachedTrigger = damBungeeSawTriggerRoom &&
+                        damBungeeSawForcedVelocity
+                    let timedOut = damRouteFrame >= 18_000
+                    guard reachedTrigger || timedOut else { return }
+
+                    let deltaX = Double(playerX - damRouteStartX)
+                    let deltaZ = Double(playerZ - damRouteStartZ)
+                    let distance = Int(sqrt(
+                        deltaX * deltaX + deltaZ * deltaZ
+                    ).rounded())
+                    let passed = reachedTrigger && bungeeValid == 1 &&
+                        objectiveCount == 4
+                    damRouteProbePhase = .complete
+                    damRouteInput = nil
+                    touch = .neutral
+                    print(
+                        "[GoldenPad] Dam retail bungee AI trigger: " +
+                        "\(passed ? "PASS" : "FAIL") distance=\(distance / 100) " +
+                        "pad=\(bungeePad) trigger=\(bungeeX),\(bungeeZ) " +
+                        "room=\(bungeePlayerRoom)/\(bungeeRoom) " +
+                        "force=\(bungeeForceX),\(bungeeForceZ) " +
+                        "objectives=\(objectiveCount):" +
+                        "[\(objective0),\(objective1)," +
+                        "\(objective2),\(objective3)] " +
+                        "controllerOnly=1 hostMutation=0"
+                    )
+                    return
                 }
 
                 let reachedDestination = navValid == 1 &&

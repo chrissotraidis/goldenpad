@@ -417,6 +417,22 @@ the exact same app on iPad. The final strict run passed at
 destination 179. This endpoint is the upper pad-140 region; it is not proof of
 the disconnected lower bungee path or objective completion.
 
+### Dam retail-bungee controller gate
+
+Launch a clean install with `--dam-bungee-probe`. The host structurally derives
+the lower exit pad from the loaded retail AI room-test, control-lock and
+forced-velocity sequence. Navigation, linked-door, guard and padlock snapshots
+are read-only; Swift emits ordinary controller frames, including one-read B
+presses through the same `osContGetReadData` boundary.
+
+Require `Dam retail bungee AI trigger: PASS`, the current room to equal the
+derived bungee room, non-zero forced velocity, `controllerOnly=1` and
+`hostMutation=0`. An exploratory phone run passed at `distance=28461`,
+`pad=330`, `room=64/64`, `force=0,400` and objectives `4:[0,0,0,1]`. Promotion
+remains open: repeated clean-phone runs stopped in the linked-door interlock at
+`state=2 open=750/1000`, including through frame 14700. The phone was cleaned
+up and iPad was not run because the phone-first gate failed.
+
 ### Facility controller-interaction gate
 
 First verify the pinned MGB64 desktop contract with a private ignored retail ROM:

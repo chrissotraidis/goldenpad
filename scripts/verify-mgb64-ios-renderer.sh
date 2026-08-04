@@ -82,6 +82,12 @@ do
         _goldenpad_mgb64_progression_state \
         _goldenpad_mgb64_dam_route_state \
         _goldenpad_mgb64_dam_nav_state \
+        _goldenpad_mgb64_set_dam_nav_bungee_mode \
+        _goldenpad_mgb64_dam_nav_linked_door_state \
+        _goldenpad_mgb64_dam_nav_guard_state \
+        _goldenpad_mgb64_queue_controller_buttons \
+        _goldenpad_mgb64_dam_nav_padlock_state \
+        _goldenpad_mgb64_dam_bungee_state \
         _goldenpad_mgb64_facility_door_state \
         _goldenpad_mgb64_facility_door155_state \
         _alBnkfNew \
