@@ -142,7 +142,7 @@ without embedding the referenced ROM bytes.
 ## ROM and resources
 
 ```text
-UIDocumentPicker -> security-scoped URL -> mapped private source
+UIDocumentPicker or Files Open In -> security-scoped URL -> mapped private source
     -> normalize Z64/V64/N64 byte order -> SHA-1 validation
     -> copy normalized bytes into volatile core-owned memory
     -> patch native file table to owned-buffer offsets
@@ -152,7 +152,9 @@ UIDocumentPicker -> security-scoped URL -> mapped private source
 The handoff rechecks exact size, big-endian header and internal title before
 copying. Replacement clears the prior heap buffer before freeing it; process or
 app-container removal clears the remainder. The final flow never bundles the
-ROM. Generated caches are versioned by ROM hash,
+ROM. GoldenPad declares a narrow imported content type for Z64/V64/N64/ROM and
+routes picker and Files-open events through one validator. Generated caches are
+versioned by ROM hash,
 core version, schema, and locale, and can be regenerated. Caches must stay in
 `Application Support`, never `Documents` or the app bundle.
 

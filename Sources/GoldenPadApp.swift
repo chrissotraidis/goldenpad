@@ -1,6 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+private extension UTType {
+    static let goldenPadN64ROM = UTType(
+        importedAs: "com.chrissotraidis.goldenpad.n64-rom",
+        conformingTo: .data
+    )
+}
+
 @_silgen_name("goldenpad_mgb64_core_identity")
 private func goldenPadMGB64CoreIdentity() -> UnsafePointer<CChar>
 
@@ -67,10 +74,13 @@ private struct FoundationView: View {
         .preferredColorScheme(.dark)
         .fileImporter(
             isPresented: $isImporterPresented,
-            allowedContentTypes: [.data],
+            allowedContentTypes: [.goldenPadN64ROM],
             allowsMultipleSelection: false
         ) { result in
             validateSelection(result)
+        }
+        .onOpenURL { url in
+            validateImportedURL(url)
         }
         .task {
             await runAutomationValidationIfRequested()
@@ -194,6 +204,7 @@ private struct FoundationView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color(red: 0.32, green: 0.76, blue: 0.64))
+            .accessibilityHint("Choose a Z64, V64, N64, or ROM file from Files")
         }
         .padding(20)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -210,11 +221,22 @@ private struct FoundationView: View {
     private func validateSelection(_ result: Result<[URL], Error>) {
         guard case let .success(urls) = result, let url = urls.first else {
             if case let .failure(error) = result {
+                let cocoaError = error as NSError
+                guard cocoaError.domain != NSCocoaErrorDomain ||
+                        cocoaError.code != NSUserCancelledError else { return }
                 validation = .invalid("The file picker failed: \(error.localizedDescription)")
             }
             return
         }
 
+        validateImportedURL(url)
+    }
+
+    private func validateImportedURL(_ url: URL) {
+        guard !validation.gameStarted else {
+            print("[GoldenPad] Ignored ROM import while the native game is already running")
+            return
+        }
         validation = .validating
 
         Task {

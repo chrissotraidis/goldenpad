@@ -1,5 +1,33 @@
 # Worklog
 
+## 2026-08-04 — launch from a user-selected ROM in Files
+
+- Declared one imported Nintendo 64 ROM content type for `.z64`, `.v64`, `.n64`
+  and `.rom`. The native picker now filters to that type instead of accepting
+  arbitrary data, and cancelling leaves the setup screen unchanged rather than
+  reporting an invalid file.
+- Registered GoldenPad as an alternate viewer for that type and routed Files
+  `Open in GoldenPad` events through the same security-scoped validator used by
+  the in-app picker. An import is ignored once the native game is already
+  running, avoiding destructive mid-session ROM replacement.
+- Exact Simulator binary
+  `91f1a1a87ab02eb7fc983e510f388e49bb8003bc31de88211a4d09a87f1faee5`
+  received a real Files-origin `UIOpenURLAction` on iPhone 16 Pro, validated a
+  private V64, started MGB64 and reached Metal rendering plus native PCM. The
+  app, private Files copy and phone container were then removed and the phone
+  shut down.
+- The unchanged binary repeated that chain on iPad Pro 11-inch (M4), reporting
+  the 2420x1668 surface, `Validated ROM installed; MGB64 scheduler ready`, 60 Hz
+  presentation cadence and native PCM readiness. The iPad private Files copy,
+  app container and all temporary inspection images were deleted before
+  shutdown. The maintained linked verifier passed both Simulator and device SDK
+  targets, and the ROM-safety audit remained clean.
+- Computer Use could identify Simulator but timed out before returning its
+  accessibility tree, so the already-proven picker open/cancel path was not
+  re-driven. The complementary Files Open In route supplies actual supported-ROM
+  selection evidence without a private launch argument; physical Files-provider
+  behavior remains a device gate.
+
 ## 2026-08-04 — keep gameplay acceptance human and refine the mobile controls
 
 - Reaffirmed that automated mission routes are diagnostic leftovers, not a

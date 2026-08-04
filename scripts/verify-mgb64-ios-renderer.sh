@@ -58,6 +58,16 @@ for binary in \
     "$device_build/Release-iphoneos/GoldenPad.app/GoldenPad"
 do
     test -f "$binary"
+    info_plist=$(dirname "$binary")/Info.plist
+    test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw -o - "$info_plist")" = "true"
+    document_types=$(plutil -extract CFBundleDocumentTypes json -o - "$info_plist")
+    imported_types=$(plutil -extract UTImportedTypeDeclarations json -o - "$info_plist")
+    printf '%s' "$document_types" | grep -q 'com.chrissotraidis.goldenpad.n64-rom'
+    printf '%s' "$imported_types" | grep -q 'com.chrissotraidis.goldenpad.n64-rom'
+    for extension in z64 v64 n64 rom
+    do
+        printf '%s' "$imported_types" | grep -q "\"$extension\""
+    done
     file "$binary" | grep -q 'Mach-O 64-bit executable arm64'
     for symbol in \
         _gfx_init \

@@ -54,15 +54,23 @@ The 2026-08-03 pass used iOS 18.5 simulators, in this strict order:
 3. Remove the iPhone installation as well, so neither app container retains the
    temporary retail-data copy.
 
-The private test seam accepts `--validate-rom /absolute/path` or
+The private diagnostic seam accepts `--validate-rom /absolute/path` or
 `GOLDENPAD_VALIDATE_ROM_PATH`. It invokes the same `ROMValidator` used by the
 Files picker and exists to make simulator validation reproducible. It does not
-copy or persist the file.
+copy or persist the file and is not the production user flow.
 
-The picker UI interaction pass is now complete on both simulators: open native
-Files, inspect the visible picker, cancel, and confirm GoldenPad returns. A real
-selection still uses the private validator seam to avoid placing a retail dump
-in Files recents or published captures.
+The picker UI interaction pass opened native Files and cancelled cleanly on both
+simulators. GoldenPad now declares one imported N64 ROM type for `.z64`, `.v64`,
+`.n64` and `.rom`; cancel must leave the setup state unchanged.
+
+Actual selection uses either that picker or **Open in GoldenPad** from Files.
+The 2026-08-04 Files-origin pass used exact Simulator binary
+`91f1a1a87ab02eb7fc983e510f388e49bb8003bc31de88211a4d09a87f1faee5`.
+iPhone first received `UIOpenURLAction`, then logged `Validated ROM installed;
+MGB64 scheduler ready`, Metal rendering and PCM readiness. After complete phone
+cleanup, the unchanged iPad build repeated the chain at 2420x1668. Each private
+Files copy, app container and temporary inspection artifact was deleted before
+shutdown. This proves Simulator Files import, not a physical file provider.
 
 Missing-file and wrong-hash acceptance also passes on both. Use a nonexistent
 path for the first case. For the second, create a temporary zero-filled 12 MiB

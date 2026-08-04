@@ -11,8 +11,11 @@ Productions, or any other rights holder. No trademark license is claimed.
   source, or dependencies with unclear/incompatible provenance.
 - Never commit, push, package, publish, document, or capture a ROM or extracted
   copyrighted assets in screenshots.
-- Never include a ROM or ROM-derived media in an app, IPA, archive, test
-  fixture, CI cache, container, or release.
+- Never bundle or prepopulate a ROM or ROM-derived media in an app, IPA,
+  archive, test fixture, CI cache, app container, or release. A user-supplied
+  source may exist temporarily in that user's private Files storage for import;
+  GoldenPad closes source access after copying validated bytes into volatile
+  core memory.
 - Never commit credentials, keys, certificates, profiles, or private data.
 - Audit tracked and staged files before each commit and push.
 

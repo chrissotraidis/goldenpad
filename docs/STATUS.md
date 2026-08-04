@@ -274,6 +274,13 @@ longer blocks MGB64 integration.
   at 48 kHz on iPhone, followed by the same successful cycle on iPad.
 - The real system Files picker opened and cancelled cleanly on iPhone, followed
   by iPad, through direct UI interaction rather than the automation seam.
+- GoldenPad now declares and filters one N64 ROM document type covering Z64,
+  V64, N64 and ROM extensions. Files **Open in GoldenPad** feeds the same
+  security-scoped validator as the picker. Exact binary
+  `91f1a1a87ab02eb7fc983e510f388e49bb8003bc31de88211a4d09a87f1faee5`
+  received a real Files-origin open event, validated V64 and reached game Metal
+  rendering plus PCM on iPhone, then unchanged on iPad. Both private Files
+  copies and app containers were removed before sequential shutdown.
 - Missing-path input visibly produced the unreadable-file state on both device
   classes. A synthetic zero-filled 12 MiB Z64-header fixture reached the hash
   gate and visibly produced the SHA-1 mismatch state on both. The fixture was
@@ -371,9 +378,6 @@ longer blocks MGB64 integration.
 - MGB64 CTest is not clean: 8/106 failed and 10 skipped on this host.
 - GoldenRecomp's `lib/ge` submodule URL is unavailable.
 - GoldenRecomp generated function directories are absent from clean checkout.
-- Full valid-ROM picker selection still needs a safe private Files fixture;
-  current valid-ROM evidence invokes the same validator through an explicit
-  automation launch argument after the picker UI itself was proven.
 - Hands-on control feel is not yet accepted: v3 fixes the small-look-region,
   duplicate-action and Southpaw-overlap design defects, but sensitivity and
   button placement still need real finger playtesting and tuning.

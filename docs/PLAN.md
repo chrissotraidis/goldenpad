@@ -44,14 +44,16 @@ Gate: selected core, not just the oracle, completes a mission and multiplayer.
 - [x] A1b: add the guarded shared MGB64 core library and host probe bridge.
 - [x] A2: render an original Metal clear frame on iPhone simulator.
 - [x] A3: stop iPhone; render on iPad simulator; compare logs and layout.
-- [x] A4: implement Files picker, byte-order normalization and SHA-1 validation.
+- [x] A4: implement typed Files picker/Open In, byte-order normalization and
+  SHA-1 validation.
 - [x] A5: persist cache/settings/saves under sandbox-safe paths.
 - [x] A6: implement lifecycle and audio-session transitions.
 
 Gate: both simulators handle valid, missing and invalid ROM flows and relaunch.
-This gate passes: valid V64, native Files-picker open/cancel, settings/save
-relaunch, missing-file rejection and a synthetic 12 MiB wrong-hash rejection
-were driven sequentially on both; invalid-size rejection also passed on iPad.
+This gate passes: valid V64 from a real Files-origin open event, native
+Files-picker open/cancel, settings/save relaunch, missing-file rejection and a
+synthetic 12 MiB wrong-hash rejection were driven sequentially on both;
+invalid-size rejection also passed on iPad.
 
 A5 now passes with versioned/clamped settings, bounded atomic save slots, data
 protection and terminate/relaunch verification. A6 passes its host gate: Home
