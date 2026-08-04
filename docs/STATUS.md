@@ -506,7 +506,12 @@ The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
 multiplayer completion and physical lifecycle/audio/controller acceptance. The
 source-level license manifest, audited notice-bearing IPA and current byte
-reproducibility are closed.
+reproducibility are closed. The sequential Simulator acceptance and publication
+ledger are also closed: PR #1 merged as
+`4ed057ecd926c4b9f66e53544411986b1b4e37e8`, local and remote `main` matched,
+and a clean iPhone-first/iPad-second no-ROM pass produced the two public setup
+screenshots before both app containers were removed and both simulators shut
+down. Those captures contain only project-owned UI.
 
 With no physical device attached, the first scene-specific warm bottleneck is
 removed and Metal's automatic cache makes shader compilation negligible after
