@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-04 — make touch + gamepad multiplayer discoverable
+
+- Drove the current iPad app through private ROM validation, the authentic file
+  menu and mode-select screen using the visible mobile controls. With touch and
+  the synthetic gamepad both assigned to Player 1, GoldenEye correctly rendered
+  Multiplayer disabled because the core exposed only one connected player.
+- Used the native Controllers page to move the gamepad to Player 2. The original
+  Multiplayer row immediately became available, proving the assignment UI is
+  connected to the real controller-count gate rather than being display-only.
+- Added one concise stateful instruction to the existing page. Before assignment
+  it says how to enable touch + one-gamepad multiplayer; afterward it shows a
+  green `Two-player touch + gamepad is ready` confirmation. Exact Simulator
+  binary `ad158472f316e184ec155de42985f8847d0e77c8fa33be83d4b43fe3c2728071`
+  was inspected phone-first and then unchanged on iPad.
+- The full linked Simulator/device build, source-license manifest, ROM scan and
+  game-bearing IPA audit passed. This improves the human menu schema and proves
+  authentic multiplayer availability; it does not claim match setup or play.
+
 ## 2026-08-04 — close current unsigned-IPA reproducibility
 
 - Re-tested P2 from current commit `651e4fe` instead of relying on the older

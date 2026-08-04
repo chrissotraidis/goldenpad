@@ -72,8 +72,11 @@ workload while both displays remained 60 Hz.
 Physical controller A no longer emits N64 A+B simultaneously. The controller
 page now documents the isolated A/Y and B/X mapping and exposes Players 1–4.
 Touch remains on Player 1 while a connected controller can be moved or swapped
-between slots; the same UI path passed on phone and iPad. The native desktop core
-also boots a two-player Temple deathmatch with distinct split-screen views.
+between slots. The Controllers page now explains that a touch + one-gamepad
+match needs the gamepad on Player 2 and confirms when that state is ready; the
+same UI path passed on phone and iPad. The authentic Multiplayer row changed
+from disabled to enabled after that assignment. The native desktop core also
+boots a two-player Temple deathmatch with distinct split-screen views.
 Real-gamepad feel, physical multi-controller assignment, and a human-completed
 match remain open gates.
 The native Display menu now exposes persisted 1×, 2×, 3× and 4× scene

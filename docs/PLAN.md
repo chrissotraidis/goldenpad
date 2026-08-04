@@ -274,6 +274,12 @@ and iPad, while a linked pure-input probe proved touch never enters Players
 The selected desktop core also passed a reproducible two-player Temple
 deathmatch startup smoke with distinct split-screen views and an elapsed match
 timer. That proves the core path beneath M2, not a human-completed match.
+The authentic mobile mode-select menu now has an explicit preparation path too:
+with touch and the gamepad both on Player 1 its Multiplayer row stays disabled,
+as the original game expects only one connected player. Moving the gamepad to
+Player 2 enables the row, and the native Controllers page now explains that
+requirement and confirms when touch + gamepad is ready. Match setup and
+completion remain open.
 
 ### P — Package and publish
 

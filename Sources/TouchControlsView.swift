@@ -311,7 +311,16 @@ private struct PhysicalControllerSettingsView: View {
                         }
                     }
                 }
-                Text("Touch always controls Player 1. Moving into an occupied slot swaps the two controllers.")
+                if playerTwoHasController {
+                    Label("Two-player touch + gamepad is ready", systemImage: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                } else {
+                    Text("To enable Multiplayer with touch + one gamepad, move the gamepad to Player 2.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Moving into an occupied slot swaps the two controllers.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -332,6 +341,10 @@ private struct PhysicalControllerSettingsView: View {
         }
         .navigationTitle("Controllers")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var playerTwoHasController: Bool {
+        input.controllerAssignments.first { $0.player == 1 }?.controllerName != nil
     }
 
     private func settingBinding(

@@ -170,7 +170,9 @@ table pointers, then zeroes and frees the old allocation.
   simulation tick. Players 1-4 are assigned deterministically. Touch is Player 1
   only and auto-hides when an active physical controller is assigned. The native
   Controllers page mirrors all four slots and can swap a connected controller
-  into another slot without changing the gameplay mapping layer.
+  into another slot without changing the gameplay mapping layer. It treats
+  Player 1 touch plus a Player 2 gamepad as the ready state for the original
+  game's two-controller multiplayer gate.
 - **Input mapping:** one frame carries normalized movement/look/actions plus an
   exact libultra-compatible N64 controller state. Classic exposes A/B/Z/Start,
   D-pad, L/R and all four C buttons; modern and southpaw preserve independent

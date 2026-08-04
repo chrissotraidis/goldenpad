@@ -328,6 +328,14 @@ longer blocks MGB64 integration.
   and reached the configured 120/120-tick timer. The verifier deletes its
   ROM-derived artifacts and restores the exact upstream pin clean. This proves
   M2's core split-screen path, not a person completing a match.
+- The authentic mobile mode-select path now exposes a clear touch + gamepad
+  preparation flow. With the Simulator gamepad still merged into Player 1, the
+  original Multiplayer row was disabled. Moving that gamepad to Player 2 made
+  the row available. Exact Simulator binary
+  `ad158472f316e184ec155de42985f8847d0e77c8fa33be83d4b43fe3c2728071`
+  now explains the required move and changes to a green `Two-player touch +
+  gamepad is ready` state. Both native states were inspected on iPhone and then
+  unchanged on iPad. This closes discoverability, not match completion.
 - Touch axes are now kept separate from physical-controller noise filtering, so
   drift-free touch input no longer receives the Swift dead zone plus MGB64's
   second dead zone. Mobile right-stick shaping is linear; the existing

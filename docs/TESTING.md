@@ -300,6 +300,18 @@ controllers. Exact Simulator binary
 passed phone first and then unchanged on iPad with the synthetic MFi controller.
 Physical multi-controller assignment and gameplay feel remain hardware gates.
 
+For the authentic touch + gamepad preparation path, start from a clean install
+with one controller on Player 1. Enter the original file and mode-select menus;
+Multiplayer must be visibly disabled because the core sees only one player.
+Open **Game Settings** > **Controllers** and require the instruction to move the
+gamepad to Player 2. Perform that move and require `Two-player touch + gamepad is
+ready`; after returning to mode select, Multiplayer must be enabled. Exact
+Simulator binary
+`ad158472f316e184ec155de42985f8847d0e77c8fa33be83d4b43fe3c2728071`
+showed both native readiness states phone-first and then unchanged on iPad. The
+authentic disabled-to-enabled game-menu transition was visually confirmed on
+iPad. This proves preparation/discoverability, not match setup or completion.
+
 For repository contamination checks:
 
 ```sh
