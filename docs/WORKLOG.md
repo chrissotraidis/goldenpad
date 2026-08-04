@@ -1,5 +1,26 @@
 # Worklog
 
+## 2026-08-04 — prove the public another-Mac handoff
+
+- Compared GoldenPad directly with HarkinianPad's public README and aligned the
+  useful visitor structure: captioned current screenshots, install status,
+  supported game, direct signed-iPad commands, licensing FAQ, project map, and
+  contribution/security guidance. Claims remain narrower where physical proof
+  is absent.
+- Added `CONTRIBUTING.md`, `SECURITY.md` and `docs/RELEASE_CHECKLIST.md`. The
+  README now gives the exact Apple-team/bundle-ID build and `devicectl` install
+  path rather than requiring a reader to reconstruct it from engineering notes.
+- Cloned public-surface commit `f6d33ee25d5abc05900c02ab5b483d643b085f31`
+  with `--no-local` into a fresh temporary directory. It fetched MGB64 from its
+  public GitHub remote at the exact pin, built both ARM64 SDK apps, packaged and
+  audited the IPA, resolved all tracked Markdown/image targets, restored the
+  ignored upstream checkout and ended clean.
+- The clean clone reproduced Simulator executable `818f1733...91a0`, device
+  executable `43bfe1b5...f389`, IPA `6eed064c...c738d`, and sorted app content
+  `aed6b272...08a6c`. The temporary clone was deleted. Signed installation is
+  ready for a receiving Mac's own Apple identity and iPad, not falsely claimed
+  as completed here.
+
 ## 2026-08-04 — make the physical signing path real
 
 - Found that the public instructions told a developer to configure signing even
