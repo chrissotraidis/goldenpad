@@ -388,14 +388,14 @@ longer blocks MGB64 integration.
   Its eight-member payload passed extension, ROM-header, known-hash, signing,
   private-path and ARM64 checks. Its sorted app-content SHA-256 is
   `102337b9cb2a07b4471f7e015c7c06459643de98f6d68c62bdae630308e827cd`.
-- The current game-bearing device app now packages through a distinct production
-  gate that also requires MGB64's `bossEntry` plus the Fast3D/Metal entry points.
-  Two consecutive local packages were byte-identical at SHA-256
-  `6fe7bbc17e4271e03bfc1be202e3debe0dc5fb5e5864da2c9d788fe615c062c7`.
-  The eight-member unsigned ARM64 payload passed the ROM, signing, private-path
-  and game-core symbol audits; its sorted app-content SHA-256 is
-  `1708463a1665974cded140570edf70db07cfd1f6695c9ca8455156107c323769`.
-  Clean-checkout reproduction remains open.
+- Commit `2bc7920` packages the game-bearing device app through a production
+  gate that requires MGB64's `bossEntry` plus the Fast3D/Metal entry points.
+  The working tree and a fresh clone produced byte-identical eight-member IPAs
+  at SHA-256
+  `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`.
+  Both unsigned ARM64 payloads passed the ROM, signing, private-path and
+  game-core symbol audits; sorted app-content SHA-256 is
+  `2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.
 
 ## Failed or blocked
 
@@ -415,10 +415,9 @@ longer blocks MGB64 integration.
   iPad during this Simulator pass. Do not infer physical-device performance or
   sustained mission cadence from a single startup window.
 - Organic mission completion, traversal from upper Dam node 179 into the lower
-  bungee graph and a real objective, deeper Facility progression, crouch/objectives
-  flow, physical-controller/gyro acceptance, touch-only
-  mission completion, multiplayer, clean-checkout game-bearing
-  unsigned IPA reproduction, or final archive gate yet. Simulator UI automation proved the
+  bungee graph and a real objective, deeper Facility progression,
+  crouch/objectives flow, physical-controller/gyro acceptance, touch-only
+  mission completion and multiplayer remain open. Simulator UI automation proved the
   editor's accessible nudge path; direct finger drag remains a physical-device
   interaction gate.
 
@@ -428,11 +427,11 @@ The Apple shell, native game boot, renderer, audio, save path and menu schema ar
 substantially integrated, but the complete port is not at definition of done.
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
-multiplayer, physical lifecycle/audio/controller acceptance, the source-level
-license manifest and a clean-checkout game-bearing unsigned IPA audit.
+multiplayer, physical lifecycle/audio/controller acceptance and the source-level
+license manifest. The clean-checkout game-bearing unsigned IPA audit is closed.
 
 With no physical device attached, the next unblocked production slice is the
-source-license/package gate. When hardware is available, hands-on playtest v4 on
+source-license manifest. When hardware is available, hands-on playtest v4 on
 iPhone, tune swipe sensitivity/action placement, then repeat the accepted layout
 unchanged on iPad. Keep diagnostics as bounded smoke coverage only; do not
 extend bot navigation as a product gate.

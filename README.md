@@ -116,5 +116,7 @@ Rare, Microsoft, MGM, Danjaq, EON Productions, or any other rights holder.
 The current game-bearing unsigned IPA is built with
 `./scripts/package-unsigned-ipa.sh` after the complete renderer verifier passes;
 it is a developer artifact that contains no ROM and still requires a user's
-supported retail dump. Multiplayer and final physical-device acceptance remain
-open. Contributions must preserve the provenance and no-ROM rules above.
+supported retail dump. Commit `2bc7920` reproduced the exact IPA from a fresh
+clone and passed the production contamination audit. Multiplayer and final
+physical-device acceptance remain open. Contributions must preserve the
+provenance and no-ROM rules above.

@@ -24,11 +24,18 @@
 - Replaced the stale foundation-only production package path with a game-bearing
   unsigned IPA gate. It requires `bossEntry`, `gfx_init` and `gfx_run_dl` in the
   archived ARM64 executable, then applies the existing signing, ROM, private-path
-  and member audit. Two consecutive packages were byte-identical at SHA-256
-  `6fe7bbc17e4271e03bfc1be202e3debe0dc5fb5e5864da2c9d788fe615c062c7`;
-  their sorted app-content SHA-256 was
-  `1708463a1665974cded140570edf70db07cfd1f6695c9ca8455156107c323769`.
-  Fresh-checkout reproduction remains the next package gate.
+  and member audit.
+- The first fresh-clone package correctly exposed two reproducibility defects:
+  MGB64's compiled `__FILE__` strings varied by checkout path, and the prior
+  `strings | grep -q` private-path scan could be defeated by `pipefail` when
+  `grep` exited early. Compiler prefix mapping now emits stable relative source
+  identities, and the verifier consumes the complete string stream.
+- Commit `2bc7920` then rebuilt both SDK apps in a new untouched clone. Its IPA
+  exactly matched the working-tree package at SHA-256
+  `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`;
+  both reported sorted app-content SHA-256
+  `2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`
+  and passed all production archive audits. P2/P3 are closed.
 
 ## 2026-08-04 — fix the real FPS source and make look input swipe-based
 

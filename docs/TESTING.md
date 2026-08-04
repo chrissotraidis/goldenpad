@@ -640,3 +640,8 @@ headers, the supported retail SHA-1, a signed app, non-ARM64 code, and private
 developer/reference strings. Game-core mode additionally requires MGB64's game
 entry point and the native Fast3D/Metal renderer entry points. It also prints a
 sorted-content digest independent of ZIP metadata.
+
+Commit `2bc7920` produced byte-identical working-tree and fresh-clone IPAs at
+SHA-256 `73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`.
+Both reported sorted app-content SHA-256
+`2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.

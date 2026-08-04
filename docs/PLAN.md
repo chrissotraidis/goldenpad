@@ -245,8 +245,8 @@ Gate: four-player iPad match where core support allows it.
 ### P — Package and publish
 
 - [x] P1: original neutral icon at every required size.
-- [ ] P2: reproducible unsigned IPA from clean checkout.
-- [ ] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
+- [x] P2: reproducible unsigned IPA from clean checkout.
+- [x] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
 - [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
 - [x] P5: README/docs match observed behavior.
 - [ ] P6: staged-file audit, coherent commits, push, and remote verification.
@@ -254,9 +254,13 @@ Gate: four-player iPad match where core support allows it.
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
 
-The current game-bearing IPA reproduces byte-for-byte locally and passes the
-contamination plus game-core symbol auditors. P2/P3 remain open until the same
-artifact is rebuilt and audited from a fresh checkout.
+Commit `2bc7920` produced the same byte-for-byte game-bearing IPA from the
+working tree and a fresh clone. Both reported IPA SHA-256
+`73a70d94633c21b318453fea5979a8434b3cf9a09c9e1429c4a46556c43fbe5b`
+and sorted app-content SHA-256
+`2af801fed7b7902e3622862d2232237fc338988d079ed0752e9fc9a5e50fb016`.
+The fresh clone fetched the exact ignored MGB64 pin, built both SDK apps, and
+passed the ROM, signing, private-path, ARM64 and game-core symbol audits.
 
 ## Test rhythm
 
