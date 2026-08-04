@@ -718,4 +718,16 @@ produced two equivalent executable layouts. Their IPA/content digest pairs were
 and
 `7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
 `83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
-Exact byte reproduction therefore remains an open packaging gate.
+That historical mismatch reopened the packaging gate. A new current-state run
+at commit `651e4fe` built the complete Simulator/device closure and packaged the
+app independently under two different clean checkout paths. Both device
+executables matched SHA-256
+`48e97f9bd63b5c1d9da5428c4472fb280d055fead337addfe7a4165d94a260f6`.
+Both nine-member IPAs were byte-identical at SHA-256
+`4e05ad08dfef3a0c7beeff6bdea116ec304d06641c0a44b31c31792cee1ac94f`,
+with sorted app-content SHA-256
+`00c7579a1c913f2452b2237e44fb4f511a06c7e609dab56dea0d5dc86460d41e`.
+Each checkout independently passed the source-manifest, ARM64, unsigned,
+game-core symbol, notices, private-path and ROM-contamination audits. This
+closes P2 for the current source state while retaining the older contrary result
+as historical evidence.

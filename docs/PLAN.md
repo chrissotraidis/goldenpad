@@ -278,7 +278,7 @@ timer. That proves the core path beneath M2, not a human-completed match.
 ### P — Package and publish
 
 - [x] P1: original neutral icon at every required size.
-- [ ] P2: byte-reproducible unsigned IPA from independent clean checkouts.
+- [x] P2: byte-reproducible unsigned IPA from independent clean checkouts.
 - [x] P3: archive contamination scan proves no ROM/assets/secrets/private paths.
 - [ ] P4: sequential iPhone then iPad acceptance matrix; record device-only gaps.
 - [x] P5: README/docs match observed behavior.
@@ -298,8 +298,14 @@ the ROM byte-order helper. The observed clean IPA/content digest pairs were
 and
 `7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
 `83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
-P3 remains closed; P2 is honestly reopened without making compiler-layout
-determinism a gameplay priority.
+P3 remained closed while P2 was reopened. At current commit `651e4fe`, two new
+independent clean checkouts produced byte-identical device executables and
+byte-identical nine-member IPAs. Both archives matched SHA-256
+`4e05ad08dfef3a0c7beeff6bdea116ec304d06641c0a44b31c31792cee1ac94f` and
+sorted app-content SHA-256
+`00c7579a1c913f2452b2237e44fb4f511a06c7e609dab56dea0d5dc86460d41e`.
+P2 is therefore closed again with current evidence; the older compiler-layout
+variation remains recorded rather than erased.
 
 ## Test rhythm
 

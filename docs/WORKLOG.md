@@ -1,5 +1,24 @@
 # Worklog
 
+## 2026-08-04 — close current unsigned-IPA reproducibility
+
+- Re-tested P2 from current commit `651e4fe` instead of relying on the older
+  notice-bearing mismatch. Two independent local clean clones fetched the exact
+  MGB64 pin and built the complete Simulator and device game/Metal/audio closure
+  under different absolute paths.
+- Both device executables matched SHA-256
+  `48e97f9bd63b5c1d9da5428c4472fb280d055fead337addfe7a4165d94a260f6`.
+  Both nine-member IPAs were byte-identical at SHA-256
+  `4e05ad08dfef3a0c7beeff6bdea116ec304d06641c0a44b31c31792cee1ac94f`
+  and reported sorted app-content SHA-256
+  `00c7579a1c913f2452b2237e44fb4f511a06c7e609dab56dea0d5dc86460d41e`.
+- Each clone independently passed the source-license manifest, unsigned ARM64,
+  game-core symbol, third-party notice, private-path and ROM-contamination
+  audits. The working-tree package reports the same content digest.
+- The historical 20-byte optimized Swift layout difference remains documented.
+  Current evidence supersedes it for P2 without deleting the contrary record or
+  changing gameplay code.
+
 ## 2026-08-04 — expose multiplayer ownership and prove split-screen startup
 
 - Replaced the Controllers page's total-count status with visible Player 1–4

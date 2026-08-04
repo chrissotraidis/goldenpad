@@ -432,7 +432,15 @@ longer blocks MGB64 integration.
   clones. Their IPA/content pairs were `6991d719...744f` / `c9d10678...22d4`
   and `7a225bd8...1624` / `83221d7b...671`. Every member except the executable
   matched; the optimized Swift ROM byte-order helper differed by one equivalent
-  20-byte `__text` layout. Byte-identical P2 is reopened; P3 remains closed.
+  20-byte `__text` layout. That historical result reopened P2; P3 remained closed.
+- Current commit `651e4fe` closes P2 again with fresh evidence. Two independent
+  clean checkouts built identical device executables at SHA-256
+  `48e97f9bd63b5c1d9da5428c4472fb280d055fead337addfe7a4165d94a260f6`
+  and byte-identical nine-member IPAs at SHA-256
+  `4e05ad08dfef3a0c7beeff6bdea116ec304d06641c0a44b31c31792cee1ac94f`.
+  Both reported sorted app-content SHA-256
+  `00c7579a1c913f2452b2237e44fb4f511a06c7e609dab56dea0d5dc86460d41e`
+  and independently passed every production package audit.
 
 ## Failed or blocked
 
@@ -471,9 +479,9 @@ The Apple shell, native game boot, renderer, audio, save path and menu schema ar
 substantially integrated, but the complete port is not at definition of done.
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
-multiplayer completion and physical lifecycle/audio/controller acceptance. The source-level
-license manifest and audited notice-bearing IPA are closed; exact Swift Mach-O
-byte reproducibility is still open and is not on the critical gameplay path.
+multiplayer completion and physical lifecycle/audio/controller acceptance. The
+source-level license manifest, audited notice-bearing IPA and current byte
+reproducibility are closed.
 
 With no physical device attached, the first scene-specific warm bottleneck is
 removed and Metal's automatic cache makes shader compilation negligible after

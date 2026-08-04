@@ -120,9 +120,10 @@ Game-core mode requires MGB64's game entry point and the native Fast3D/Metal
 renderer entry points in addition to the normal ARM64, unsigned and ROM-free
 archive checks. Native compiler source paths are prefix-mapped to stable relative
 identities so private checkout paths cannot enter the Mach-O. The IPA also
-carries the required third-party notices. The packaging process is repeatable,
-but optimized Swift code generation has produced two equivalent Mach-O layouts
-across clean builds, so byte-identical artifact reproduction remains open.
+carries the required third-party notices. At commit `651e4fe`, two independent
+clean checkouts produced the same device executable and byte-identical IPA, so
+the current package is byte reproducible. Exact hashes are recorded in
+`TESTING.md`.
 
 The Metal verifier applies `patches/mgb64-ios-metal.patch` only inside the exact
 ignored checkout, compiles the complete native Metal backend plus its combiner,
