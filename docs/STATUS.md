@@ -522,6 +522,13 @@ ledger are also closed: PR #1 merged as
 and a clean iPhone-first/iPad-second no-ROM pass produced the two public setup
 screenshots before both app containers were removed and both simulators shut
 down. Those captures contain only project-owned UI.
+The final public-facing handoff also passed from a `--no-local` clone of commit
+`f6d33ee25d5abc05900c02ab5b483d643b085f31`: GitHub fetched the exact MGB64
+pin, both SDK closures built, the package reproduced its exact hashes, every
+tracked documentation link/image resolved, the upstream checkout was clean and
+the clone had no tracked changes. The README now exposes the signed iPad command
+directly and links concise contribution, security and release-checklist entry
+points. Repository visibility remains a separate owner decision.
 
 With no physical device attached, the first scene-specific warm bottleneck is
 removed and Metal's automatic cache makes shader compilation negligible after

@@ -779,3 +779,14 @@ Each checkout independently passed the source-manifest, ARM64, unsigned,
 game-core symbol, notices, private-path and ROM-contamination audits. This
 closes P2 for the current source state while retaining the older contrary result
 as historical evidence.
+
+The public-handoff commit `f6d33ee25d5abc05900c02ab5b483d643b085f31`
+was then cloned with `--no-local` into a new temporary path. That clone fetched
+MGB64 from GitHub at the exact pin, built both complete SDK closures, restored
+the ignored upstream checkout, packaged the nine-member IPA, resolved every
+tracked Markdown link and README image, and ended with no tracked changes. It
+reproduced the same Simulator executable `818f1733...91a0`, device executable
+`43bfe1b5...f389`, IPA `6eed064c...c738d`, and sorted content
+`aed6b272...08a6c`. The temporary clone was deleted after the pass. This proves
+the source handoff on another clean path; signing still requires the receiving
+Mac's own Apple identity, team and connected iPad.
