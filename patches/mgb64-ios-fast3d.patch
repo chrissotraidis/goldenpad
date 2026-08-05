@@ -11,6 +11,110 @@ diff --git a/src/game/rsp.c b/src/game/rsp.c
      {
          size_t dl_size = (size_t)((u8 *)gdl - (u8 *)firstGdl);
          if (dl_size > 512 * 1024) {
+diff --git a/src/game/bondview.c b/src/game/bondview.c
+--- a/src/game/bondview.c
++++ b/src/game/bondview.c
+@@ -12002,6 +12002,17 @@ static void bondviewApplyNativeMoveIntent(struct MoveData *moveData, s8 stick_x
+     /* Native mouse/right-stick look owns camera pitch in gameplay. */
+     moveData->canNaturalPitch = 0;
+     moveData->analogPitch = 0;
++    moveData->disableLookAhead = 1;
++
++    /* The original controller path recenters pitch while Bond runs. Relative
++     * touch look and a modern right stick need the camera to remain where the
++     * player left it, including while the movement stick is held. */
++    if (g_CurrentPlayer != NULL) {
++        g_CurrentPlayer->automovecentre = FALSE;
++        g_CurrentPlayer->field_104 = 0;
++        g_CurrentPlayer->field_10C = 0;
++        g_CurrentPlayer->speedverta = 0.0f;
++    }
+
+     if (in_tank_flag == 1) {
+         /* In the tank, WASD is a driving surface: W/S throttle, A/D hull
+diff --git a/src/game/lvl.c b/src/game/lvl.c
+index 481a099..b5b3e78 100644
+--- a/src/game/lvl.c
++++ b/src/game/lvl.c
+@@ -391,6 +391,10 @@ s32 D_80048380 = 0;
+  * local_player_number (get_cur_playernum(), 0..MAXCONTROLLERS-1). */
+ static f32 s_gpLookRemX[MAXCONTROLLERS];
+ static f32 s_gpLookRemY[MAXCONTROLLERS];
++/* Once a player has supplied native vertical look, that pitch belongs to the
++ * relative mouse/right-stick path. Preserve it across the retail movement
++ * update, which otherwise eases the camera back toward look-ahead. */
++static s32 s_nativePitchOwned[MAXCONTROLLERS];
+
+ void pcResetGamepadLookRemainders(void)
+ {
+@@ -398,6 +402,7 @@ void pcResetGamepadLookRemainders(void)
+     for (i = 0; i < MAXCONTROLLERS; i++) {
+         s_gpLookRemX[i] = 0.0f;
+         s_gpLookRemY[i] = 0.0f;
++        s_nativePitchOwned[i] = 0;
+     }
+ }
+ #endif
+@@ -5861,6 +5866,10 @@ void lvlViewMoveTick(void)
+     s32 padding;
+     f32 temp_f0;
+     f32 temp_f2;
++#ifdef NATIVE_PORT
++    f32 native_pitch_before_move = 0.0f;
++    s32 native_pitch_was_owned = 0;
++#endif
+
+ #ifdef NATIVE_PORT
+     /* Skip gameplay tick entirely if level has no geometry data (stub levels) */
+@@ -5868,6 +5877,13 @@ void lvlViewMoveTick(void)
+ #endif
+
+     local_player_number = get_cur_playernum();
++#ifdef NATIVE_PORT
++    if (local_player_number >= 0 && local_player_number < MAXCONTROLLERS
++        && g_CurrentPlayer != NULL && s_nativePitchOwned[local_player_number]) {
++        native_pitch_before_move = g_CurrentPlayer->vv_verta;
++        native_pitch_was_owned = 1;
++    }
++#endif
+     cheat_buttons_mp_related();
+
+ #ifdef NATIVE_PORT
+@@ -5938,6 +5954,12 @@ void lvlViewMoveTick(void)
+             int mdx = 0, mdy = 0;
+             int grx = 0, gry = 0;
+             int live_look_allowed = pcNativeLiveLookAllowed();
++            int restored_native_pitch = 0;
++            if (live_look_allowed && native_pitch_was_owned) {
++                g_CurrentPlayer->vv_verta = native_pitch_before_move;
++                g_CurrentPlayer->speedverta = 0.0f;
++                restored_native_pitch = 1;
++            }
+             if (local_player_number == 0) {
+                 platformGetMouseDelta(&mdx, &mdy);
+             }
+@@ -6069,6 +6091,9 @@ void lvlViewMoveTick(void)
+                     g_CurrentPlayer->vv_theta += (f32)mdx * sens;
+                 }
+                 g_CurrentPlayer->vv_verta -= (f32)mdy * sens * (g_pcInvertY ? -1.0f : 1.0f);
++                if (mdy != 0) {
++                    s_nativePitchOwned[local_player_number] = 1;
++                }
+
+                 /* Wrap theta [0, 360) */
+                 while (g_CurrentPlayer->vv_theta < 0.0f)
+@@ -6098,6 +6123,11 @@ void lvlViewMoveTick(void)
+                  * world is shearing or leaning. */
+                 bondviewApplyVertaTheta();
+                 bondviewSyncViewBasisFromHead();
++            } else if (restored_native_pitch) {
++                /* The movement update already refreshed the basis using its
++                 * recentered pitch. Rebuild it after restoring the held angle. */
++                bondviewApplyVertaTheta();
++                bondviewSyncViewBasisFromHead();
+             }
+
+             /* Sync the PC rendering camera from the player's world position.
 diff --git a/src/platform/fast3d/gfx_pc.c b/src/platform/fast3d/gfx_pc.c
 index ae43b27..18fde7a 100644
 --- a/src/platform/fast3d/gfx_pc.c
@@ -122,3 +226,115 @@ index ae43b27..18fde7a 100644
  }
 
  void gfx_register_n64_dl_region(void *addr, size_t size) {
+
+diff --git a/src/platform/audio_pc.c b/src/platform/audio_pc.c
+index cef844e..e89a781 100644
+--- a/src/platform/audio_pc.c
++++ b/src/platform/audio_pc.c
+@@ -101,6 +101,8 @@ typedef struct {
+     u8  stopOnGainEnd;
+     u8  fxMix;
+     s32 delaySamples;
++    s32 autoReleaseSamplesRemaining;
++    s32 releaseSamples;
+     s32 active;
+ } PortVoice;
+
+@@ -697,11 +699,25 @@ static void portAudioSetVoiceEnvelopeLocked(PortVoice *voice, const PortSfxPlayP
+     voice->envSamplesRemaining = 0;
+     voice->envDecayTarget = 1.0f;
+     voice->envDecaySamples = 0;
++    voice->autoReleaseSamplesRemaining = -1;
++    voice->releaseSamples = 0;
+
+     if (!params || !params->useEnvelope) {
+         return;
+     }
+
++    /* The native sound player automatically posts STOP after attack+decay,
++     * then ramps through release. PORT_SND_STUBS bypasses that event queue,
++     * so carry the same authored lifetime on the mixer voice. A decay time of
++     * -1 is the native marker for a sustained sound that must be stopped by
++     * its owner. */
++    if (params->decayTime >= 0) {
++        voice->autoReleaseSamplesRemaining =
++            portAudioMicrosecondsToSamples(params->attackTime) +
++            portAudioMicrosecondsToSamples(params->decayTime);
++        voice->releaseSamples = portAudioMicrosecondsToSamples(params->releaseTime);
++    }
++
+     voice->envEnabled = 1;
+     voice->envDecayTarget = portAudioClamp01((f32)params->decayVolume / 127.0f);
+     voice->envDecaySamples = portAudioMicrosecondsToSamples(params->decayTime);
+@@ -763,6 +779,23 @@ static void portAudioAdvanceRampsLocked(PortVoice *voice)
+             }
+         }
+     }
++
++    if (voice->autoReleaseSamplesRemaining >= 0) {
++        if (voice->autoReleaseSamplesRemaining > 0) {
++            voice->autoReleaseSamplesRemaining--;
++        }
++        if (voice->autoReleaseSamplesRemaining == 0) {
++            voice->autoReleaseSamplesRemaining = -1;
++            if (voice->releaseSamples > 0) {
++                portAudioStartGainRampLocked(voice, 0.0f, voice->releaseSamples);
++                voice->stopOnGainEnd = 1;
++            } else {
++                voice->active = 0;
++                voice->stopOnGainEnd = 0;
++                s_sfxMixStats.voiceStops++;
++            }
++        }
++    }
+ }
+
+ static void portAudioComputeSpatial(f32 worldX, f32 worldY, f32 worldZ,
+@@ -1080,7 +1113,14 @@ static int portTraceWeaponAudio(void)
+  * (alAudioFrame + the libaudio low-pass) lives in audi_port.c
+  * (portAudioSynthWorkerRunJob) so it can reach that file's static synth state;
+  * this file owns only the thread + handshake. */
++#ifdef MGB64_APPLE_MOBILE
++/* Mobile rendering and the game simulation are separately paced. Keep the
++ * expensive music synth off the game thread so audio work cannot create
++ * visible frame hitches; the established worker adds one frame of latency. */
++static s32 s_audioSynthThread = 1;
++#else
+ static s32 s_audioSynthThread = 0;   /* Audio.SynthThread: 0/1, default 0 */
++#endif
+
+ #ifndef __EMSCRIPTEN__
+ #include <pthread.h>
+@@ -1838,6 +1878,7 @@ void portAudioReleaseVoice(s32 voiceIdx, ALMicroTime releaseUsec)
+     SDL_LockMutex(s_audioMutex);
+     if (s_voices[voiceIdx].active) {
+         wasActive = 1;
++        s_voices[voiceIdx].autoReleaseSamplesRemaining = -1;
+         if (releaseSamples > 0) {
+             portAudioStartGainRampLocked(&s_voices[voiceIdx], 0.0f, releaseSamples);
+             s_voices[voiceIdx].stopOnGainEnd = 1;
+diff --git a/src/platform/audio_pc.h b/src/platform/audio_pc.h
+index 671a14e..fea68d7 100644
+--- a/src/platform/audio_pc.h
++++ b/src/platform/audio_pc.h
+@@ -15,3 +15,4 @@ typedef struct PortSfxPlayParams_s {
+     ALMicroTime attackTime;
+     ALMicroTime decayTime;
++    ALMicroTime releaseTime;
+ } PortSfxPlayParams;
+diff --git a/src/snd.c b/src/snd.c
+index 180dfb2..3c3fed8 100644
+--- a/src/snd.c
++++ b/src/snd.c
+@@ -991,4 +991,9 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
+                 params.decayVolume = chainSound->envelope->decayVolume;
+-                params.attackTime = chainSound->envelope->attackTime;
+-                params.decayTime = chainSound->envelope->decayTime;
++                params.attackTime = (ALMicroTime)
++                    ((f32)chainSound->envelope->attackTime / params.pitch);
++                params.decayTime = chainSound->envelope->decayTime < 0
++                    ? -1
++                    : (ALMicroTime)((f32)chainSound->envelope->decayTime / params.pitch);
++                params.releaseTime = (ALMicroTime)
++                    ((f32)chainSound->envelope->releaseTime / params.pitch);
+             }

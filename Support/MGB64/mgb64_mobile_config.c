@@ -45,7 +45,7 @@ void goldenpad_mgb64_set_fps_overlay(int enabled) {
 float g_pcGamepadDeadzone = 0.0f;
 int g_pcGamepadFpsScale = 1;
 float g_pcGamepadLookCurve = 1.0f;
-float g_pcGamepadLookSpeed = 8.0f;
+float g_pcGamepadLookSpeed = 20.0f;
 int g_pcGamepadRadialDeadzone = 1;
 int g_pcHitMarkers = 1;
 int g_pcIntroSkipStyle = 0;
@@ -58,7 +58,9 @@ int g_pcMinimapObjectives = 1;
 int g_pcMinimapSharpOverlay = 1;
 int g_pcMinimapShowAllEnemies = 0;
 int g_pcModernCrosshair = 1;
-float g_pcMouseSensAim = 0.05f;
+/* The game already reduces right-stick speed to one third while aiming. Keep
+ * the sensitivity equal here so touch input is not slowed a second time. */
+float g_pcMouseSensAim = 0.15f;
 float g_pcMouseSensitivity = 0.15f;
 int g_pcPerPixelLight = 0;
 int g_pcReticleTargetFeedback = 1;
@@ -79,13 +81,17 @@ int g_pcSteadyView = 1;
 float g_pcSunShadowRadius = 500.0f;
 int g_pcTextureAnisotropy = 16;
 char g_pcTexturePack[1024] = "";
-float g_pcViewmodelFov = 50.0f;
+/* Match the original 60-degree first-person framing. The desktop remaster's
+ * tighter 50-degree default enlarges long weapons enough to crop the sniper
+ * rifle against an iPad's bottom/right edges. */
+float g_pcViewmodelFov = 60.0f;
 float g_pcViewmodelSway = 1.0f;
 int g_pcWeaponCycleBack = 0;
 int g_pcWeaponCycleForward = 0;
 
 int goldenpad_mgb64_mobile_config_probe(void) {
     return g_pcAdsEnabled == 0 && g_pcFovY == 50.0f &&
+           g_pcViewmodelFov == 60.0f &&
            g_pcStartLevel == -1 && g_pcStartRamrom == NULL &&
            g_pcFpsOverlay == 0 &&
            g_pcFaithfulSim == 0 && g_pcTexturePack[0] == '\0' &&

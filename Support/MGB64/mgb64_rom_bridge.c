@@ -151,6 +151,9 @@ extern void portWatchdogInit(void);
 static void *goldenpad_mgb64_game_thread(void *unused) {
     (void)unused;
     pthread_setname_np("GoldenEye game");
+    /* The original sniper root is oversized at the iPad camera FOV. Keep an
+     * explicit launch override available, but use a compact mobile default. */
+    setenv("GE007_FP_HEAVY_SCALE", "0.72", 0);
     portAudioInit();
     portWatchdogInit();
     atomic_store(&goldenpad_game_state, 2);

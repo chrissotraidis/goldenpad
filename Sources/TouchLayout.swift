@@ -96,26 +96,27 @@ enum TouchLayoutDefaults {
         switch preset {
         case .modern, .southpaw:
             let southpaw = preset == .southpaw
-            let moveX = southpaw ? (tablet ? 0.84 : 0.83) : (tablet ? 0.16 : 0.17)
-            let lookX = southpaw ? (tablet ? 0.31 : 0.38) : (tablet ? 0.69 : 0.62)
-            // Keep the action rail clear of a landscape phone's rounded edge.
-            // Tablets have enough inset for the wider placement.
+            let moveX = southpaw ? (tablet ? 0.87 : 0.86) : (tablet ? 0.13 : 0.14)
+            let lookX = southpaw ? (tablet ? 0.22 : 0.29) : (tablet ? 0.78 : 0.71)
+            // Keep the action rail close to the look surface, but clear of a
+            // landscape phone's rounded edge.
             let fireX = southpaw
                 ? (tablet ? 0.09 : 0.13)
                 : (tablet ? 0.91 : 0.87)
-            let aimX = fireX
-            let utilityX = southpaw ? 0.22 : 0.78
-            let weaponX = southpaw ? 0.34 : 0.66
-            let utilityY = tablet ? 0.90 : 0.82
+            let weaponX = southpaw
+                ? (tablet ? 0.29 : 0.35)
+                : (tablet ? 0.71 : 0.65)
+            let crouchX = southpaw
+                ? (tablet ? 0.19 : 0.24)
+                : (tablet ? 0.81 : 0.76)
             return [
-                placement(.move, moveX, tablet ? 0.75 : 0.74, tablet ? 1.14 : 1.08),
-                placement(.look, lookX, tablet ? 0.63 : 0.59),
-                placement(.fire, fireX, 0.52, 1.16),
-                placement(.aim, aimX, 0.75, 1.00),
-                placement(.interact, fireX, 0.27, 0.94),
-                placement(.crouch, utilityX, utilityY, 0.82),
-                placement(.weapon, weaponX, utilityY, 0.82),
-                placement(.pause, 0.50, 0.11, 0.72),
+                placement(.move, moveX, tablet ? 0.82 : 0.80, tablet ? 1.14 : 1.08),
+                placement(.look, lookX, tablet ? 0.72 : 0.68),
+                placement(.fire, fireX, tablet ? 0.71 : 0.69, 1.16),
+                placement(.aim, fireX, tablet ? 0.58 : 0.55),
+                placement(.interact, fireX, tablet ? 0.84 : 0.83, 0.94),
+                placement(.crouch, crouchX, tablet ? 0.89 : 0.85, 0.82),
+                placement(.weapon, weaponX, tablet ? 0.89 : 0.85, 0.82),
             ]
         case .classic:
             return [

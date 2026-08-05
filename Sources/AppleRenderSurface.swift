@@ -169,8 +169,7 @@ final class AppleRenderSurface: ObservableObject {
                 height: view.bounds.height * view.contentScaleFactor
             )
         }
-        let refreshRate = view.window?.screen.maximumFramesPerSecond
-            ?? UIScreen.main.maximumFramesPerSecond
+        let refreshRate = view.preferredFramesPerSecond
         guard size != lastReportedSize || refreshRate != lastReportedRefreshRate else { return }
         lastReportedSize = size
         lastReportedRefreshRate = refreshRate

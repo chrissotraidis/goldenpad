@@ -19,20 +19,47 @@ struct GameplayTouchControls: View {
                     opacity: platform.settings.touchOpacity,
                     globalScale: platform.settings.touchScale,
                     input: input,
-                    showsBackground: false
+                    showsBackground: false,
+                    showsMoveGuide: platform.settings.moveGuideVisible,
+                    showsLookGuide: platform.settings.lookGuideVisible
                 )
                 .ignoresSafeArea()
             }
 
-            Button { isSettingsPresented = true } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 15, weight: .bold))
-                    .frame(width: 42, height: 42)
-                    .background(.black.opacity(0.46), in: Circle())
+            if input.playerVitals.isVisible {
+                PlayerVitalsHUD(vitals: input.playerVitals)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(.top, 20)
+                    .padding(.leading, 24)
+                    .allowsHitTesting(false)
             }
-            .foregroundStyle(.white)
-            .padding(14)
-            .accessibilityLabel("Open game settings")
+
+            HStack(alignment: .center, spacing: 10) {
+                if input.shouldShowTouchControls,
+                   platform.settings.controlPreset != .classic {
+                    TouchControlVisual(
+                        id: .pause,
+                        input: input,
+                        editing: false,
+                        selected: false,
+                        showsGuide: true
+                    )
+                    .frame(width: 50, height: 50)
+                    .opacity(platform.settings.touchOpacity)
+                    .accessibilityLabel("Pause")
+                }
+
+                Button { isSettingsPresented = true } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 15, weight: .bold))
+                        .frame(width: 42, height: 42)
+                        .background(.black.opacity(0.46), in: Circle())
+                }
+                .foregroundStyle(.white)
+                .accessibilityLabel("Open game settings")
+            }
+            .padding(.top, 14)
+            .padding(.trailing, 50)
         }
         .sheet(isPresented: $isSettingsPresented) {
             GameplaySettingsView(deviceClass: deviceClass)
@@ -47,6 +74,49 @@ struct GameplayTouchControls: View {
             input.releaseTouchInput()
             renderSurface.setSystemOverlayPresented(false)
         }
+    }
+}
+
+private struct PlayerVitalsHUD: View {
+    let vitals: PlayerVitals
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            VitalBar(label: "HEALTH", value: vitals.health, tint: .green)
+            if vitals.armor > 0.001 {
+                VitalBar(label: "ARMOR", value: vitals.armor, tint: .cyan)
+            }
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background(.black.opacity(0.48), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+private struct VitalBar: View {
+    let label: String
+    let value: Double
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .frame(width: 42, alignment: .leading)
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.16))
+                    Capsule()
+                        .fill(tint)
+                        .frame(width: geometry.size.width * value)
+                }
+            }
+            .frame(width: 90, height: 7)
+            Text("\(Int((value * 100).rounded()))%")
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .frame(width: 34, alignment: .trailing)
+        }
+        .foregroundStyle(.white.opacity(0.9))
     }
 }
 
@@ -85,6 +155,18 @@ private struct GameplaySettingsView: View {
                     } label: {
                         Label("Physical Controllers", systemImage: "gamecontroller")
                     }
+                }
+
+                Section("Aiming") {
+                    LabeledSlider(
+                        title: "Look sensitivity",
+                        value: settingBinding(\.lookSensitivity),
+                        range: 0.25...8,
+                        valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
+                    )
+                    Text("Higher values reach full turn speed with a smaller thumb movement.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section("Display") {
@@ -134,6 +216,17 @@ private struct GameplaySettingsView: View {
         )
     }
 
+    private func settingBinding(
+        _ keyPath: WritableKeyPath<HostSettings, Double>
+    ) -> Binding<Double> {
+        Binding(
+            get: { platform.settings[keyPath: keyPath] },
+            set: { value in
+                platform.updateSettings { $0[keyPath: keyPath] = value }
+            }
+        )
+    }
+
     private func boolSettingBinding(
         _ keyPath: WritableKeyPath<HostSettings, Bool>
     ) -> Binding<Bool> {
@@ -168,13 +261,6 @@ private struct TouchSettingsView: View {
     var body: some View {
         Form {
             Section("Aiming") {
-                LabeledSlider(
-                    title: "Look sensitivity",
-                    value: settingBinding(\.lookSensitivity),
-                    range: 0.25...3,
-                    valueLabel: String(format: "%.2fx", platform.settings.lookSensitivity)
-                )
-
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Aim button")
                         .font(.subheadline)
@@ -208,6 +294,8 @@ private struct TouchSettingsView: View {
                     "Hide when a controller connects",
                     isOn: boolSettingBinding(\.touchControlsAutoHide)
                 )
+                Toggle("Show movement guide", isOn: boolSettingBinding(\.moveGuideVisible))
+                Toggle("Show look guide", isOn: boolSettingBinding(\.lookGuideVisible))
             }
 
             Section("Layout") {
@@ -647,6 +735,8 @@ private struct TouchControlCanvas: View {
     let globalScale: Double
     let input: InputCoordinator
     var showsBackground = true
+    var showsMoveGuide = true
+    var showsLookGuide = true
     var editing = false
     var selectedID: TouchControlID?
     var onSelect: ((TouchControlID) -> Void)?
@@ -679,12 +769,15 @@ private struct TouchControlCanvas: View {
     @ViewBuilder
     private func control(_ placement: TouchControlPlacement, in size: CGSize) -> some View {
         let controlScale = CGFloat(placement.scale * globalScale) * canvasScale(for: size)
-        let baseSize = controlBaseSize(placement.id)
+        let baseSize = controlBaseSize(placement.id, editing: editing)
         let control = TouchControlVisual(
             id: placement.id,
             input: input,
             editing: editing,
-            selected: selectedID == placement.id
+            selected: selectedID == placement.id,
+            showsGuide: placement.id == .move
+                ? showsMoveGuide
+                : placement.id == .look ? showsLookGuide : true
         )
         .frame(
             width: baseSize.width * controlScale,
@@ -718,9 +811,14 @@ private struct TouchControlCanvas: View {
         min(max(size.width / 720, 0.62), 1.18)
     }
 
-    private func controlBaseSize(_ id: TouchControlID) -> CGSize {
+    private func controlBaseSize(_ id: TouchControlID, editing: Bool) -> CGSize {
         switch id {
-        case .move: CGSize(width: 128, height: 128)
+        case .move:
+            // The live movement surface is a generous bottom-corner zone. The
+            // editor keeps a compact marker so it remains easy to reposition.
+            editing
+                ? CGSize(width: 128, height: 128)
+                : CGSize(width: 300, height: 260)
         case .look: CGSize(width: 320, height: 220)
         case .pause, .n64Start, .weapon, .crouch, .n64L, .n64R:
             CGSize(width: 64, height: 64)
@@ -737,17 +835,22 @@ private struct TouchControlVisual: View {
     @ObservedObject var input: InputCoordinator
     let editing: Bool
     let selected: Bool
+    let showsGuide: Bool
 
     var body: some View {
         Group {
             if editing {
                 EditorControlFace(id: id, tint: tint)
             } else if id == .move {
-                VirtualStick(title: id.label, systemImage: "figure.walk") {
+                VirtualStick(
+                    title: id.label,
+                    systemImage: "figure.walk",
+                    showsGuide: showsGuide
+                ) {
                     input.updateMovement($0)
                 }
             } else if id == .look {
-                LookSurface { input.updateLook($0) }
+                LookSurface(showsGuide: showsGuide) { input.updateLook($0) }
             } else if id == .aim, input.touchAimBehavior == .toggle {
                 ToggleAction(
                     title: id.label,
@@ -834,6 +937,7 @@ private struct EditorControlFace: View {
 }
 
 private struct LookSurface: View {
+    let showsGuide: Bool
     let onChange: (SIMD2<Float>) -> Void
 
     @State private var normalized = SIMD2<Float>.zero
@@ -842,25 +946,32 @@ private struct LookSurface: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let responseDistance = max(min(geometry.size.width, geometry.size.height) * 0.20, 38)
+            let responseDistance = max(min(geometry.size.width, geometry.size.height) * 0.05, 10)
 
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.black.opacity(isTracking ? 0.16 : 0.08))
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(.white.opacity(isTracking ? 0.24 : 0.12), lineWidth: 1)
-                Image(systemName: "scope")
-                    .font(.title3.weight(.medium))
-                    .foregroundStyle(.white.opacity(isTracking ? 0.72 : 0.34))
-                    .offset(
-                        x: CGFloat(normalized.x) * 18,
-                        y: CGFloat(-normalized.y) * 18
-                    )
-                Text("LOOK")
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
-                    .tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.36))
-                    .offset(y: 30)
+                // Keep a real rendered surface in the hierarchy even when the
+                // guide is hidden. An empty ZStack has no hit-testable content,
+                // so contentShape alone cannot receive the drag gesture.
+                Rectangle()
+                    .fill(.white.opacity(0.001))
+                if showsGuide {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(.black.opacity(isTracking ? 0.16 : 0.08))
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(.white.opacity(isTracking ? 0.24 : 0.12), lineWidth: 1)
+                    Image(systemName: "scope")
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.white.opacity(isTracking ? 0.72 : 0.34))
+                        .offset(
+                            x: CGFloat(normalized.x) * 18,
+                            y: CGFloat(-normalized.y) * 18
+                        )
+                    Text("LOOK")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.36))
+                        .offset(y: 30)
+                }
             }
             .contentShape(Rectangle())
             .gesture(
@@ -945,47 +1056,74 @@ private extension TouchAimBehavior {
 private struct VirtualStick: View {
     let title: String
     let systemImage: String
+    let showsGuide: Bool
     let onChange: (SIMD2<Float>) -> Void
 
     @State private var normalized = SIMD2<Float>.zero
+    @State private var isTracking = false
+    @State private var anchor: CGPoint?
 
     var body: some View {
         GeometryReader { geometry in
-            let diameter = min(geometry.size.width, geometry.size.height)
+            let diameter = min(min(geometry.size.width, geometry.size.height) * 0.52, 150)
             let travel = diameter * 0.27
+            let center = anchor ?? CGPoint(
+                x: geometry.size.width / 2,
+                y: geometry.size.height / 2
+            )
 
             ZStack {
-                Circle().fill(.black.opacity(0.42))
-                Circle().stroke(.white.opacity(0.34), lineWidth: 1)
-                Circle()
-                    .fill(.white.opacity(0.18))
-                    .frame(width: diameter * 0.46, height: diameter * 0.46)
-                    .overlay {
-                        Image(systemName: systemImage)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
-                    .offset(
-                        x: CGFloat(normalized.x) * travel,
-                        y: CGFloat(-normalized.y) * travel
-                    )
-                Text(title)
-                    .font(.system(size: 8, weight: .bold, design: .rounded))
-                    .tracking(1)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .offset(y: diameter * 0.38)
+                // Visually invisible, but intentionally nonzero-alpha so the
+                // movement zone continues to participate in hit testing.
+                Rectangle()
+                    .fill(.white.opacity(0.001))
+                if showsGuide || isTracking {
+                    Circle()
+                        .fill(.black.opacity(0.42))
+                        .frame(width: diameter, height: diameter)
+                        .position(center)
+                    Circle()
+                        .stroke(.white.opacity(0.34), lineWidth: 1)
+                        .frame(width: diameter, height: diameter)
+                        .position(center)
+                    Circle()
+                        .fill(.white.opacity(0.18))
+                        .frame(width: diameter * 0.46, height: diameter * 0.46)
+                        .overlay {
+                            Image(systemName: systemImage)
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                        .position(
+                            x: center.x + CGFloat(normalized.x) * travel,
+                            y: center.y - CGFloat(normalized.y) * travel
+                        )
+                    Text(title)
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .position(x: center.x, y: center.y + diameter * 0.38)
+                }
             }
-            .frame(width: diameter, height: diameter)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Circle())
+            .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                        let radius = max(diameter / 2, 1)
+                        if !isTracking {
+                            isTracking = true
+                            anchor = value.location
+                            normalized = .zero
+                            onChange(.zero)
+                            return
+                        }
+                        let activeCenter = anchor ?? value.startLocation
+                        // Reach a full N64 stick before the thumb reaches the
+                        // edge of the touch zone, making running practical.
+                        let radius = max(diameter * 0.325, 1)
                         var vector = SIMD2<Float>(
-                            Float((value.location.x - center.x) / radius),
-                            Float((center.y - value.location.y) / radius)
+                            Float((value.location.x - activeCenter.x) / radius),
+                            Float((activeCenter.y - value.location.y) / radius)
                         )
                         let magnitude = simd_length(vector)
                         if magnitude > 1 { vector /= magnitude }
@@ -993,11 +1131,15 @@ private struct VirtualStick: View {
                         onChange(vector)
                     }
                     .onEnded { _ in
+                        isTracking = false
+                        anchor = nil
                         normalized = .zero
                         onChange(.zero)
                     }
             )
         }
+        .accessibilityLabel("Move")
+        .accessibilityHint("Touch anywhere in the lower-left area, then drag to move")
     }
 }
 
