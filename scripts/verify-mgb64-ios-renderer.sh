@@ -104,6 +104,7 @@ do
         _goldenpad_mgb64_eeprom_snapshot \
         _goldenpad_mgb64_runtime_state \
         _goldenpad_mgb64_gameplay_state \
+        _goldenpad_mgb64_player_vitals \
         _goldenpad_mgb64_request_scripted_mission_success \
         _goldenpad_mgb64_progression_state \
         _goldenpad_mgb64_dam_route_state \
@@ -112,6 +113,7 @@ do
         _goldenpad_mgb64_dam_nav_linked_door_state \
         _goldenpad_mgb64_dam_nav_guard_state \
         _goldenpad_mgb64_queue_controller_buttons \
+        _goldenpad_mgb64_request_crouch_toggle \
         _goldenpad_mgb64_frame_stats_set_active \
         _goldenpad_mgb64_frame_stats_snapshot \
         _goldenpad_mgb64_set_fps_overlay \

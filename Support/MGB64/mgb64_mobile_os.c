@@ -14,6 +14,7 @@
 #include "game/chrobjhandler.h"
 #include "game/file2.h"
 #include "game/loadobjectmodel.h"
+#include "game/lvl.h"
 #include "game/mp_music.h"
 #include "game/objective_status.h"
 #include "game/player.h"
@@ -66,6 +67,12 @@ static _Atomic int goldenpad_gameplay_trigger_timer;
 static _Atomic int goldenpad_gameplay_watch_state;
 static _Atomic int goldenpad_gameplay_outside_watch = 1;
 static _Atomic int goldenpad_gameplay_pausing;
+static _Atomic int goldenpad_player_vitals_ready;
+static _Atomic int goldenpad_player_health = 1000;
+static _Atomic int goldenpad_player_armor;
+static int goldenpad_combat_last_stage = -1;
+static int goldenpad_combat_last_difficulty = -1;
+static int goldenpad_combat_last_health = -1;
 static _Atomic int goldenpad_scripted_mission_success_requested;
 static _Atomic int goldenpad_scripted_mission_success_applied;
 static _Atomic int goldenpad_progression_ready;
@@ -1117,9 +1124,20 @@ s32 osContGetReadData(OSContPad *pads) {
     extern s32 port_front_hover_folder;
     extern f32 cursor_h_pos;
     extern f32 cursor_v_pos;
+    extern int g_pcCrouchRequest;
+    extern int goldenpad_mgb64_consume_crouch_toggle(void);
     save_data *dam_save;
 
     goldenpad_mgb64_read_controller_pads(pads);
+    if (goldenpad_mgb64_consume_crouch_toggle()) {
+        if (g_StageNum != LEVELID_TITLE &&
+            g_CurrentPlayer != NULL &&
+            g_CurrentPlayer->prop != NULL &&
+            !g_CurrentPlayer->bonddead) {
+            g_pcCrouchRequest = 1;
+            fprintf(stderr, "[GoldenPad] Native crouch toggle accepted\n");
+        }
+    }
 
     /*
      * Diagnostics-only mission seam. This deliberately mirrors MGB64's
@@ -1193,6 +1211,58 @@ s32 osContGetReadData(OSContPad *pads) {
         atomic_store(&goldenpad_gameplay_pausing, g_CurrentPlayer->pausing_flag);
     } else {
         atomic_store(&goldenpad_gameplay_ready, 0);
+    }
+
+    if (g_StageNum != LEVELID_TITLE &&
+        g_CurrentPlayer != NULL &&
+        g_CurrentPlayer->prop != NULL) {
+        int health = (int)(g_CurrentPlayer->bondhealth * 1000.0f);
+        int armor = (int)(g_CurrentPlayer->bondarmour * 1000.0f);
+        int selected_difficulty = (int)lvlGetSelectedDifficulty();
+        if (health < 0) health = 0;
+        if (health > 1000) health = 1000;
+        if (armor < 0) armor = 0;
+        if (armor > 1000) armor = 1000;
+        atomic_store(&goldenpad_player_health, health);
+        atomic_store(&goldenpad_player_armor, armor);
+        atomic_store(&goldenpad_player_vitals_ready, 1);
+        if (goldenpad_combat_last_stage != g_StageNum ||
+            goldenpad_combat_last_difficulty != selected_difficulty) {
+            fprintf(stderr,
+                    "[GoldenPad] Combat state stage=%d difficulty=%d "
+                    "ai_accuracy=%.3f ai_damage=%.3f invincible=(%d,%d)\n",
+                    g_StageNum,
+                    selected_difficulty,
+                    g_AiAccuracyModifier,
+                    g_AiDamageModifier,
+                    g_CurrentPlayer->bondinvincible,
+                    g_PlayerInvincible);
+        }
+        if (goldenpad_combat_last_health >= 0 &&
+            goldenpad_combat_last_health != health) {
+            fprintf(stderr,
+                    "[GoldenPad] Health delta stage=%d difficulty=%d "
+                    "health=%d->%d armor=%d damage_show=%d "
+                    "ai_accuracy=%.3f ai_damage=%.3f invincible=(%d,%d)\n",
+                    g_StageNum,
+                    selected_difficulty,
+                    goldenpad_combat_last_health,
+                    health,
+                    armor,
+                    bondviewGetIfCurrentPlayerDamageShowTime(),
+                    g_AiAccuracyModifier,
+                    g_AiDamageModifier,
+                    g_CurrentPlayer->bondinvincible,
+                    g_PlayerInvincible);
+        }
+        goldenpad_combat_last_stage = g_StageNum;
+        goldenpad_combat_last_difficulty = selected_difficulty;
+        goldenpad_combat_last_health = health;
+    } else {
+        atomic_store(&goldenpad_player_vitals_ready, 0);
+        goldenpad_combat_last_stage = -1;
+        goldenpad_combat_last_difficulty = -1;
+        goldenpad_combat_last_health = -1;
     }
 
     if (g_StageNum == LEVELID_FACILITY) {
@@ -1297,6 +1367,12 @@ void goldenpad_mgb64_gameplay_state(
         *outside_watch = atomic_load(&goldenpad_gameplay_outside_watch);
     }
     if (pausing != NULL) *pausing = atomic_load(&goldenpad_gameplay_pausing);
+}
+
+void goldenpad_mgb64_player_vitals(int *ready, int *health, int *armor) {
+    if (ready != NULL) *ready = atomic_load(&goldenpad_player_vitals_ready);
+    if (health != NULL) *health = atomic_load(&goldenpad_player_health);
+    if (armor != NULL) *armor = atomic_load(&goldenpad_player_armor);
 }
 
 void goldenpad_mgb64_request_scripted_mission_success(void) {

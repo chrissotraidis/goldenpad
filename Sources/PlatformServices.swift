@@ -41,13 +41,15 @@ enum RenderResolution: String, Codable, Sendable, CaseIterable {
 }
 
 struct HostSettings: Codable, Equatable, Sendable {
-    static let currentSchema = 5
+    static let currentSchema = 7
 
     var schemaVersion = currentSchema
     var controlPreset: ControlPreset = .modern
-    var lookSensitivity = 1.0
+    var lookSensitivity = 4.0
     var touchOpacity = 0.72
     var touchScale = 1.0
+    var moveGuideVisible = false
+    var lookGuideVisible = false
     var stickDeadZone = 0.12
     var gyroEnabled = false
     var touchAimBehavior: TouchAimBehavior = .toggle
@@ -62,6 +64,8 @@ struct HostSettings: Codable, Equatable, Sendable {
         case lookSensitivity
         case touchOpacity
         case touchScale
+        case moveGuideVisible
+        case lookGuideVisible
         case stickDeadZone
         case gyroEnabled
         case touchAimBehavior
@@ -80,6 +84,8 @@ struct HostSettings: Codable, Equatable, Sendable {
         lookSensitivity = try values.decodeIfPresent(Double.self, forKey: .lookSensitivity) ?? 1
         touchOpacity = try values.decodeIfPresent(Double.self, forKey: .touchOpacity) ?? 0.72
         touchScale = try values.decodeIfPresent(Double.self, forKey: .touchScale) ?? 1
+        moveGuideVisible = try values.decodeIfPresent(Bool.self, forKey: .moveGuideVisible) ?? false
+        lookGuideVisible = try values.decodeIfPresent(Bool.self, forKey: .lookGuideVisible) ?? false
         stickDeadZone = try values.decodeIfPresent(Double.self, forKey: .stickDeadZone) ?? 0.12
         gyroEnabled = try values.decodeIfPresent(Bool.self, forKey: .gyroEnabled) ?? false
         touchAimBehavior = try values.decodeIfPresent(
@@ -111,6 +117,8 @@ struct HostSettings: Codable, Equatable, Sendable {
         try values.encode(lookSensitivity, forKey: .lookSensitivity)
         try values.encode(touchOpacity, forKey: .touchOpacity)
         try values.encode(touchScale, forKey: .touchScale)
+        try values.encode(moveGuideVisible, forKey: .moveGuideVisible)
+        try values.encode(lookGuideVisible, forKey: .lookGuideVisible)
         try values.encode(stickDeadZone, forKey: .stickDeadZone)
         try values.encode(gyroEnabled, forKey: .gyroEnabled)
         try values.encode(touchAimBehavior, forKey: .touchAimBehavior)
@@ -123,7 +131,7 @@ struct HostSettings: Codable, Equatable, Sendable {
     func sanitized() -> HostSettings {
         var copy = self
         copy.schemaVersion = Self.currentSchema
-        copy.lookSensitivity = copy.lookSensitivity.clamped(to: 0.25...3.0)
+        copy.lookSensitivity = copy.lookSensitivity.clamped(to: 0.25...8.0)
         copy.touchOpacity = copy.touchOpacity.clamped(to: 0.25...1.0)
         copy.touchScale = copy.touchScale.clamped(to: 0.7...1.4)
         copy.stickDeadZone = copy.stickDeadZone.clamped(to: 0.0...0.4)
@@ -133,11 +141,22 @@ struct HostSettings: Codable, Equatable, Sendable {
         return copy
     }
 
+    func migrated() -> HostSettings {
+        var copy = self
+        if copy.schemaVersion < 6, abs(copy.lookSensitivity - 1.0) < 0.000_1 {
+            copy.lookSensitivity = 2.0
+        }
+        if copy.schemaVersion < 7, copy.lookSensitivity <= 2.0 {
+            copy.lookSensitivity *= 2.0
+        }
+        return copy.sanitized()
+    }
+
     static func layoutKey(
         deviceClass: TouchDeviceClass,
         preset: ControlPreset
     ) -> String {
-        "\(deviceClass.rawValue).\(preset.rawValue)-v4"
+        "\(deviceClass.rawValue).\(preset.rawValue)-v9"
     }
 }
 
@@ -212,7 +231,7 @@ struct PlatformStorage {
         guard stored.schemaVersion > 0, stored.schemaVersion <= HostSettings.currentSchema else {
             throw PlatformStorageError.unsupportedSettingsSchema(stored.schemaVersion)
         }
-        return stored.sanitized()
+        return stored.migrated()
     }
 
     func saveSettings(_ settings: HostSettings) throws {

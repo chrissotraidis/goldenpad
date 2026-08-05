@@ -36,6 +36,7 @@ static int goldenpad_watchdog_loading;
 static int goldenpad_watchdog_paused;
 static u32 goldenpad_watchdog_frames;
 static pthread_mutex_t goldenpad_controller_mutex = PTHREAD_MUTEX_INITIALIZER;
+static _Atomic int goldenpad_crouch_toggle_requested;
 
 #define GOLDENPAD_FRAME_STATS_RING_CAP 1024
 #define GOLDENPAD_FRAME_STATS_PUBLISH_MS 250.0
@@ -67,11 +68,14 @@ static u16 goldenpad_controller_queued_buttons[MAXCONTROLLERS];
 
 #define GOLDENPAD_AUDIO_RING_FRAMES 65536u
 static s16 goldenpad_audio_ring[GOLDENPAD_AUDIO_RING_FRAMES * 2];
-static u32 goldenpad_audio_read_frame;
-static u32 goldenpad_audio_frame_count;
-static u32 goldenpad_audio_dropped_buffers;
+static _Atomic u64 goldenpad_audio_read_frame;
+static _Atomic u64 goldenpad_audio_write_frame;
+static _Atomic u32 goldenpad_audio_dropped_buffers;
 static PortAiStats goldenpad_audio_stats;
-static pthread_mutex_t goldenpad_audio_mutex = PTHREAD_MUTEX_INITIALIZER;
+static _Atomic int goldenpad_audio_started;
+static _Atomic u64 goldenpad_audio_callback_count;
+static _Atomic u64 goldenpad_audio_callback_requested_frames;
+static _Atomic u64 goldenpad_audio_callback_shortfall_frames;
 static _Atomic u64 goldenpad_audio_rendered_frames;
 static _Atomic u64 goldenpad_audio_nonzero_samples;
 
@@ -109,6 +113,14 @@ void goldenpad_mgb64_queue_controller_buttons(int player, u32 buttons) {
     pthread_mutex_lock(&goldenpad_controller_mutex);
     goldenpad_controller_queued_buttons[player] |= (u16)buttons;
     pthread_mutex_unlock(&goldenpad_controller_mutex);
+}
+
+void goldenpad_mgb64_request_crouch_toggle(void) {
+    atomic_store(&goldenpad_crouch_toggle_requested, 1);
+}
+
+int goldenpad_mgb64_consume_crouch_toggle(void) {
+    return atomic_exchange(&goldenpad_crouch_toggle_requested, 0);
 }
 
 void goldenpad_mgb64_read_controller_pads(OSContPad *pads) {
@@ -170,18 +182,22 @@ int goldenpad_mgb64_controller_input_probe(void) {
 
 void platformDrainEvents(void) {}
 
-/* Audio synthesis remains single-threaded on mobile. AVAudioEngine pulls the
- * real MGB64 sequence/SFX mix from this bounded PCM ring. */
+/* AVAudioEngine pulls the real MGB64 sequence/SFX mix from this bounded PCM
+ * ring. The game/audio-synth side is the sole producer and AVAudioEngine is the
+ * sole consumer, so monotonic atomic cursors avoid ever dropping a render
+ * callback merely because the producer briefly owns a mutex. */
 void portSynthLockInit(void) {}
 void portAiInit(void) {
-    pthread_mutex_lock(&goldenpad_audio_mutex);
-    goldenpad_audio_read_frame = 0;
-    goldenpad_audio_frame_count = 0;
-    goldenpad_audio_dropped_buffers = 0;
+    atomic_store(&goldenpad_audio_read_frame, 0);
+    atomic_store(&goldenpad_audio_write_frame, 0);
+    atomic_store(&goldenpad_audio_dropped_buffers, 0);
     memset(&goldenpad_audio_stats, 0, sizeof(goldenpad_audio_stats));
+    atomic_store(&goldenpad_audio_started, 0);
+    atomic_store(&goldenpad_audio_callback_count, 0);
+    atomic_store(&goldenpad_audio_callback_requested_frames, 0);
+    atomic_store(&goldenpad_audio_callback_shortfall_frames, 0);
     atomic_store(&goldenpad_audio_rendered_frames, 0);
     atomic_store(&goldenpad_audio_nonzero_samples, 0);
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
     printf("[GoldenPad] MGB64 audio mixer connected to mobile PCM ring\n");
 }
 
@@ -189,108 +205,160 @@ u32 osAiGetStatus(void) { return 0; }
 s32 osAiSetFrequency(u32 frequency) { return (s32)frequency; }
 
 s32 osAiSetNextBuffer(void *buffer, u32 size) {
+    static int audio_dump_enabled = -1;
     const s16 *source = (const s16 *)buffer;
     u32 incoming_frames = size / (2u * (u32)sizeof(s16));
+    u64 read_frame;
+    u64 write_frame;
+    u64 queued_frames;
+    u64 available_frames;
     if (source == NULL || incoming_frames == 0) {
         return 0;
+    }
+    /* Diagnostic-only final-mix tap. audi_port.c's music dump runs before SFX;
+     * this matching tap runs after SFX and master gain, immediately before the
+     * mobile PCM transport. With both dumps armed, their difference isolates
+     * the effects bus without altering normal device audio. */
+    if (audio_dump_enabled < 0) {
+        audio_dump_enabled = getenv("GE007_AUDIO_DUMP") != NULL ? 1 : 0;
+    }
+    if (audio_dump_enabled) {
+        extern void portAudioDump(const void *buf, unsigned int bytes);
+        portAudioDump(buffer, size);
     }
     if (incoming_frames > GOLDENPAD_AUDIO_RING_FRAMES) {
         source += (incoming_frames - GOLDENPAD_AUDIO_RING_FRAMES) * 2u;
         incoming_frames = GOLDENPAD_AUDIO_RING_FRAMES;
     }
 
-    pthread_mutex_lock(&goldenpad_audio_mutex);
+    read_frame = atomic_load_explicit(
+        &goldenpad_audio_read_frame, memory_order_acquire);
+    write_frame = atomic_load_explicit(
+        &goldenpad_audio_write_frame, memory_order_relaxed);
+    queued_frames = write_frame >= read_frame ? write_frame - read_frame : 0;
+    if (queued_frames > GOLDENPAD_AUDIO_RING_FRAMES) {
+        queued_frames = GOLDENPAD_AUDIO_RING_FRAMES;
+    }
+    available_frames = GOLDENPAD_AUDIO_RING_FRAMES - queued_frames;
     goldenpad_audio_stats.queue_before_bytes =
-        goldenpad_audio_frame_count * 2u * (u32)sizeof(s16);
+        (u32)queued_frames * 2u * (u32)sizeof(s16);
     goldenpad_audio_stats.requested_bytes = size;
-    if (incoming_frames > GOLDENPAD_AUDIO_RING_FRAMES - goldenpad_audio_frame_count) {
-        u32 discard = incoming_frames -
-            (GOLDENPAD_AUDIO_RING_FRAMES - goldenpad_audio_frame_count);
-        goldenpad_audio_read_frame =
-            (goldenpad_audio_read_frame + discard) % GOLDENPAD_AUDIO_RING_FRAMES;
-        goldenpad_audio_frame_count -= discard;
-        goldenpad_audio_dropped_buffers++;
+    if ((u64)incoming_frames > available_frames) {
+        u32 discard = incoming_frames - (u32)available_frames;
+        source += discard * 2u;
+        incoming_frames -= discard;
+        atomic_fetch_add(&goldenpad_audio_dropped_buffers, 1);
         goldenpad_audio_stats.dropped_bytes += discard * 2u * (u32)sizeof(s16);
     }
-    u32 write_frame =
-        (goldenpad_audio_read_frame + goldenpad_audio_frame_count) %
-        GOLDENPAD_AUDIO_RING_FRAMES;
     for (u32 frame = 0; frame < incoming_frames; ++frame) {
-        u32 destination = ((write_frame + frame) % GOLDENPAD_AUDIO_RING_FRAMES) * 2u;
+        u32 destination = (u32)(
+            (write_frame + frame) % GOLDENPAD_AUDIO_RING_FRAMES) * 2u;
         goldenpad_audio_ring[destination] = source[frame * 2u];
         goldenpad_audio_ring[destination + 1u] = source[frame * 2u + 1u];
     }
-    goldenpad_audio_frame_count += incoming_frames;
+    atomic_store_explicit(
+        &goldenpad_audio_write_frame,
+        write_frame + incoming_frames,
+        memory_order_release);
+    atomic_store_explicit(&goldenpad_audio_started, 1, memory_order_release);
     goldenpad_audio_stats.accepted_bytes = incoming_frames * 2u * (u32)sizeof(s16);
     goldenpad_audio_stats.queue_after_bytes =
-        goldenpad_audio_frame_count * 2u * (u32)sizeof(s16);
+        ((u32)queued_frames + incoming_frames) * 2u * (u32)sizeof(s16);
     goldenpad_audio_stats.queue_limit_bytes = sizeof(goldenpad_audio_ring);
-    goldenpad_audio_stats.dropped_buffers = goldenpad_audio_dropped_buffers;
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
+    goldenpad_audio_stats.dropped_buffers =
+        atomic_load(&goldenpad_audio_dropped_buffers);
     return 0;
 }
 
 u32 osAiGetLength(void) {
-    u32 bytes;
-    pthread_mutex_lock(&goldenpad_audio_mutex);
-    bytes = goldenpad_audio_frame_count * 2u * (u32)sizeof(s16);
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
-    return bytes;
+    u64 read_frame = atomic_load_explicit(
+        &goldenpad_audio_read_frame, memory_order_acquire);
+    u64 write_frame = atomic_load_explicit(
+        &goldenpad_audio_write_frame, memory_order_acquire);
+    u64 queued_frames = write_frame >= read_frame ? write_frame - read_frame : 0;
+    if (queued_frames > GOLDENPAD_AUDIO_RING_FRAMES) {
+        queued_frames = GOLDENPAD_AUDIO_RING_FRAMES;
+    }
+    return (u32)queued_frames * 2u * (u32)sizeof(s16);
 }
 
 int osAiQueueBelowLimit(void) {
-    int below;
-    pthread_mutex_lock(&goldenpad_audio_mutex);
-    below = goldenpad_audio_frame_count < GOLDENPAD_AUDIO_RING_FRAMES / 2u;
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
-    return below;
+    return osAiGetLength() <
+        (GOLDENPAD_AUDIO_RING_FRAMES / 2u) * 2u * (u32)sizeof(s16);
 }
 
 u32 portAiGetDroppedBufferCount(void) {
-    u32 count;
-    pthread_mutex_lock(&goldenpad_audio_mutex);
-    count = goldenpad_audio_dropped_buffers;
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
-    return count;
+    return atomic_load(&goldenpad_audio_dropped_buffers);
 }
 void portAiGetStats(PortAiStats *stats) {
     if (stats == NULL) {
         return;
     }
-    pthread_mutex_lock(&goldenpad_audio_mutex);
     *stats = goldenpad_audio_stats;
-    pthread_mutex_unlock(&goldenpad_audio_mutex);
 }
 
 u32 goldenpad_mgb64_audio_render(float *left, float *right, u32 frames) {
-    u32 produced = 0;
+    u64 read_frame;
+    u64 write_frame;
+    u64 available_frames;
+    u32 produced;
     u32 nonzero = 0;
     if (left == NULL || right == NULL) {
         return 0;
     }
-    if (pthread_mutex_trylock(&goldenpad_audio_mutex) == 0) {
-        produced = frames < goldenpad_audio_frame_count
-            ? frames : goldenpad_audio_frame_count;
-        for (u32 frame = 0; frame < produced; ++frame) {
-            u32 source =
-                ((goldenpad_audio_read_frame + frame) % GOLDENPAD_AUDIO_RING_FRAMES) * 2u;
-            left[frame] = (float)goldenpad_audio_ring[source] / 32768.0f;
-            right[frame] = (float)goldenpad_audio_ring[source + 1u] / 32768.0f;
-            nonzero += goldenpad_audio_ring[source] != 0;
-            nonzero += goldenpad_audio_ring[source + 1u] != 0;
-        }
-        goldenpad_audio_read_frame =
-            (goldenpad_audio_read_frame + produced) % GOLDENPAD_AUDIO_RING_FRAMES;
-        goldenpad_audio_frame_count -= produced;
-        pthread_mutex_unlock(&goldenpad_audio_mutex);
+    read_frame = atomic_load_explicit(
+        &goldenpad_audio_read_frame, memory_order_relaxed);
+    write_frame = atomic_load_explicit(
+        &goldenpad_audio_write_frame, memory_order_acquire);
+    available_frames = write_frame >= read_frame ? write_frame - read_frame : 0;
+    if (available_frames > GOLDENPAD_AUDIO_RING_FRAMES) {
+        available_frames = GOLDENPAD_AUDIO_RING_FRAMES;
     }
+    produced = frames < available_frames ? frames : (u32)available_frames;
+    for (u32 frame = 0; frame < produced; ++frame) {
+        u32 source = (u32)(
+            (read_frame + frame) % GOLDENPAD_AUDIO_RING_FRAMES) * 2u;
+        left[frame] = (float)goldenpad_audio_ring[source] / 32768.0f;
+        right[frame] = (float)goldenpad_audio_ring[source + 1u] / 32768.0f;
+        nonzero += goldenpad_audio_ring[source] != 0;
+        nonzero += goldenpad_audio_ring[source + 1u] != 0;
+    }
+    atomic_store_explicit(
+        &goldenpad_audio_read_frame,
+        read_frame + produced,
+        memory_order_release);
     for (u32 frame = produced; frame < frames; ++frame) {
         left[frame] = 0.0f;
         right[frame] = 0.0f;
     }
+    if (atomic_load_explicit(&goldenpad_audio_started, memory_order_acquire)) {
+        atomic_fetch_add(&goldenpad_audio_callback_count, 1);
+        atomic_fetch_add(&goldenpad_audio_callback_requested_frames, frames);
+        atomic_fetch_add(
+            &goldenpad_audio_callback_shortfall_frames, frames - produced);
+    }
     atomic_fetch_add(&goldenpad_audio_rendered_frames, produced);
     atomic_fetch_add(&goldenpad_audio_nonzero_samples, nonzero);
     return produced;
+}
+
+void goldenpad_mgb64_audio_callback_stats(
+    u64 *callbacks, u64 *requested_frames, u64 *rendered_frames,
+    u64 *shortfall_frames) {
+    if (callbacks != NULL) {
+        *callbacks = atomic_load(&goldenpad_audio_callback_count);
+    }
+    if (requested_frames != NULL) {
+        *requested_frames = atomic_load(
+            &goldenpad_audio_callback_requested_frames);
+    }
+    if (rendered_frames != NULL) {
+        *rendered_frames = atomic_load(&goldenpad_audio_rendered_frames);
+    }
+    if (shortfall_frames != NULL) {
+        *shortfall_frames = atomic_load(
+            &goldenpad_audio_callback_shortfall_frames);
+    }
 }
 
 int goldenpad_mgb64_audio_output_probe(void) {

@@ -17,6 +17,14 @@ private func goldenPadMGB64CoreProbe() -> UInt32
 @_silgen_name("goldenpad_mgb64_audio_output_probe")
 private func goldenPadMGB64AudioOutputProbe() -> Int32
 
+@_silgen_name("goldenpad_mgb64_audio_callback_stats")
+private func goldenPadMGB64AudioCallbackStats(
+    _ callbacks: UnsafeMutablePointer<UInt64>?,
+    _ requestedFrames: UnsafeMutablePointer<UInt64>?,
+    _ renderedFrames: UnsafeMutablePointer<UInt64>?,
+    _ shortfallFrames: UnsafeMutablePointer<UInt64>?
+)
+
 private enum MGB64CoreInfo {
     static let status: String = {
         let identity = String(cString: goldenPadMGB64CoreIdentity())
@@ -102,9 +110,24 @@ private struct FoundationView: View {
                 return
             }
             if goldenPadMGB64AudioOutputProbe() == 1 {
+                var callbacks: UInt64 = 0
+                var requestedFrames: UInt64 = 0
+                var renderedFrames: UInt64 = 0
+                var shortfallFrames: UInt64 = 0
+                goldenPadMGB64AudioCallbackStats(
+                    &callbacks,
+                    &requestedFrames,
+                    &renderedFrames,
+                    &shortfallFrames
+                )
                 print(
                     "[GoldenPad] Native PCM output probe: PASS " +
                     "after \(elapsedSeconds)s"
+                )
+                print(
+                    "[GoldenPad] Audio callback health: callbacks=\(callbacks) " +
+                    "requested=\(requestedFrames) rendered=\(renderedFrames) " +
+                    "shortfall=\(shortfallFrames)"
                 )
                 return
             }
@@ -259,17 +282,53 @@ private struct FoundationView: View {
         } else {
             nil
         }
+        let documentName: String? = if let flag = arguments.firstIndex(of: "--validate-rom-document"),
+                                       arguments.indices.contains(flag + 1) {
+            arguments[flag + 1]
+        } else {
+            nil
+        }
+        let validationURL: URL? = if let path = argumentPath
+            ?? ProcessInfo.processInfo.environment["GOLDENPAD_VALIDATE_ROM_PATH"] {
+            URL(fileURLWithPath: path)
+        } else if let documentName,
+                  let documents = FileManager.default.urls(
+                    for: .documentDirectory,
+                    in: .userDomainMask
+                  ).first {
+            documents.appendingPathComponent(documentName)
+        } else {
+            automaticROMDocumentURL()
+        }
 
         guard
             !performedAutomationValidation,
-            let path = argumentPath ?? ProcessInfo.processInfo.environment["GOLDENPAD_VALIDATE_ROM_PATH"]
+            let validationURL
         else { return }
 
         performedAutomationValidation = true
         validation = .validating
         validation = await Task.detached(priority: .userInitiated) {
-            ROMValidator.validate(url: URL(fileURLWithPath: path))
+            ROMValidator.validate(url: validationURL)
         }.value
+    }
+
+    private func automaticROMDocumentURL() -> URL? {
+        guard let documents = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first else { return nil }
+
+        let supportedExtensions = Set(["z64", "v64", "n64", "rom"])
+        return try? FileManager.default
+            .contentsOfDirectory(
+                at: documents,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            )
+            .filter { supportedExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .first
     }
 }
 

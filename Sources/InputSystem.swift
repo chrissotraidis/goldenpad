@@ -19,6 +19,9 @@ private func goldenPadMGB64QueueControllerButtons(
     _ buttons: UInt32
 )
 
+@_silgen_name("goldenpad_mgb64_request_crouch_toggle")
+private func goldenPadMGB64RequestCrouchToggle()
+
 @_silgen_name("goldenpad_mgb64_controller_input_probe")
 private func goldenPadMGB64ControllerInputProbe() -> Int32
 
@@ -48,6 +51,13 @@ private func goldenPadMGB64GameplayState(
     _ watchState: UnsafeMutablePointer<Int32>?,
     _ outsideWatch: UnsafeMutablePointer<Int32>?,
     _ pausing: UnsafeMutablePointer<Int32>?
+)
+
+@_silgen_name("goldenpad_mgb64_player_vitals")
+private func goldenPadMGB64PlayerVitals(
+    _ ready: UnsafeMutablePointer<Int32>?,
+    _ health: UnsafeMutablePointer<Int32>?,
+    _ armor: UnsafeMutablePointer<Int32>?
 )
 
 @_silgen_name("goldenpad_mgb64_request_scripted_mission_success")
@@ -394,18 +404,27 @@ private extension SIMD2 where Scalar == Float {
 }
 
 private enum TouchLookAccumulator {
+    // A thumb swipe needs a shorter physical travel than a controller stick.
+    // Keep this gain on the touch path so paired gamepads retain their tuning.
+    static let touchGain: Float = 1.5
+
+    static func amplified(_ delta: SIMD2<Float>) -> SIMD2<Float> {
+        delta * touchGain
+    }
+
     static func appending(_ delta: SIMD2<Float>, to pending: SIMD2<Float>) -> SIMD2<Float> {
         (pending + delta).clampedUnitSquare()
     }
 
     static var probePasses: Bool {
-        let pending = appending(SIMD2(0.25, 0.50), to: .zero)
-        return appending(SIMD2(0.50, -0.25), to: pending) == SIMD2(0.75, 0.25)
+        let pending = appending(amplified(SIMD2(0.20, 0.40)), to: .zero)
+        return pending == SIMD2(0.30, 0.60) &&
+            appending(amplified(SIMD2(0.20, -0.20)), to: pending) == SIMD2(0.60, 0.30)
     }
 }
 
 private enum GameplayProbePhase {
-    case waiting, settle, movement, aim, fire
+    case waiting, settle, movement, aim, pitchHold, fire
     case reloadPulse, reloadWait, weaponPulse, weaponWait
     case pausePulse, pauseWait, complete
 }
@@ -428,6 +447,12 @@ private enum DamRouteProbePhase {
     case waitingForDam, route, complete
 }
 
+struct PlayerVitals: Equatable {
+    var isVisible = false
+    var health = 1.0
+    var armor = 0.0
+}
+
 @MainActor
 final class InputCoordinator: ObservableObject {
     @Published private(set) var diagnosticSummary = "input: neutral • controllers: 0"
@@ -435,6 +460,7 @@ final class InputCoordinator: ObservableObject {
     @Published private(set) var externalControllerCount = 0
     @Published private(set) var controllerAssignments: [ControllerAssignment] = []
     @Published private(set) var currentPreset = ControlPreset.modern
+    @Published private(set) var playerVitals = PlayerVitals()
 
     private var touch = InputSnapshot.neutral
     private var controllerSlots: [GCController?] = Array(repeating: nil, count: 4)
@@ -444,6 +470,7 @@ final class InputCoordinator: ObservableObject {
     private let motionManager = CMMotionManager()
     private var motionLook = SIMD2<Float>.zero
     private var didReportCoreInputProbe = false
+    private var nativeCrouchWasPressed = false
     private var menuProbeLastMenu: Int32 = .min
     private var menuProbeLastStage: Int32 = .min
     private var menuProbeLastPendingStage: Int32 = .min
@@ -583,7 +610,10 @@ final class InputCoordinator: ObservableObject {
         // SwiftUI may deliver several drag deltas before the renderer samples
         // input. Preserve the full swipe instead of keeping only the last event.
         guard value != .zero else { return }
-        touch.look = TouchLookAccumulator.appending(value, to: touch.look)
+        touch.look = TouchLookAccumulator.appending(
+            TouchLookAccumulator.amplified(value),
+            to: touch.look
+        )
         refreshSummary()
     }
 
@@ -643,6 +673,7 @@ final class InputCoordinator: ObservableObject {
     }
 
     func publishToCore() {
+        refreshPlayerVitals()
         runMenuProbeIfRequested()
         runGameplayProbeIfRequested()
         runMissionFlowProbeIfRequested()
@@ -658,6 +689,12 @@ final class InputCoordinator: ObservableObject {
                 buttons: [.fire, .interact]
             )
         }
+        let nativeCrouchIsPressed = snapshot(player: 0).buttons.contains(.crouch)
+        if nativeCrouchIsPressed && !nativeCrouchWasPressed {
+            goldenPadMGB64RequestCrouchToggle()
+        }
+        nativeCrouchWasPressed = nativeCrouchIsPressed
+
         for player in 0..<controllerSlots.count {
             let frame = player == 0
                 ? damRouteInput ?? facilityDoorRouteInput ?? mappedFrame(player: player)
@@ -706,6 +743,21 @@ final class InputCoordinator: ObservableObject {
                 "[GoldenPad] Touch look accumulation probe: " +
                 "\(TouchLookAccumulator.probePasses ? "PASS" : "FAIL")"
             )
+        }
+    }
+
+    private func refreshPlayerVitals() {
+        var ready: Int32 = 0
+        var health: Int32 = 1000
+        var armor: Int32 = 0
+        goldenPadMGB64PlayerVitals(&ready, &health, &armor)
+        let next = PlayerVitals(
+            isVisible: ready != 0,
+            health: Double(min(max(health, 0), 1000)) / 1000,
+            armor: Double(min(max(armor, 0), 1000)) / 1000
+        )
+        if next != playerVitals {
+            playerVitals = next
         }
     }
 
@@ -1682,6 +1734,29 @@ final class InputCoordinator: ObservableObject {
                 print(
                     "[GoldenPad] Gameplay probe aim/look: " +
                     "\(passed ? "PASS" : "FAIL") mode=\(aimMode) delta=\(angleDelta)"
+                )
+                gameplayProbePhase = .pitchHold
+                gameplayProbeFrames = 0
+            }
+
+        case .pitchHold:
+            // Relative touch look must hold its last pitch while moving. The
+            // original N64 look-ahead path recentred vertically whenever the
+            // movement stick was held, which fights touch and modern sticks.
+            touch.movement = SIMD2(0, 0.8)
+            touch.leftTrigger = 1
+            touch.buttons = [.aim]
+            // publishToCore runs before this frame's input reaches the core.
+            // Let the final queued look sample land, then measure only the
+            // stationary-look interval rather than counting that last sample.
+            if gameplayProbeFrames == 2 {
+                gameplayProbeStartPitch = pitch
+            }
+            if gameplayProbeFrames >= 122 {
+                let pitchDrift = abs(pitch - gameplayProbeStartPitch)
+                print(
+                    "[GoldenPad] Gameplay probe pitch hold: " +
+                    "\(pitchDrift <= 100 ? "PASS" : "FAIL") drift=\(pitchDrift)"
                 )
                 gameplayProbeFireAmmo = ammo
                 gameplayProbePhase = .fire
