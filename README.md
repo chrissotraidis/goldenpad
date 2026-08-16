@@ -81,7 +81,9 @@ release.
 | Packaging | ROM-free unsigned ARM64 IPA with source-license and third-party-notice audits |
 
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
-ledger and the remaining physical-device gates.
+ledger and remaining physical-device gates. [Technical debt and upstream
+watch](docs/TECH_DEBT.md) records when decompilation, MGB64, and renderer changes
+are safe to evaluate or adopt.
 
 ## Supported game
 
