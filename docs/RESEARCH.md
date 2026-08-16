@@ -1,6 +1,6 @@
 # Research
 
-Last verified: 2026-08-04. All checkouts below live under the ignored `ref/`
+Last verified: 2026-08-16. All checkouts below live under the ignored `ref/`
 directory and are references unless this document explicitly says otherwise.
 
 ## Decision
@@ -22,6 +22,13 @@ GoldenRecomp + N64Recomp + N64ModernRuntime + RT64 remains the preferred static-
 recomp reference architecture, but not the active production path: its pinned
 game-code submodule is unavailable, generated `RecompiledFuncs` are absent, and
 its TLB-free ROM/ELF recipe cannot be reproduced from the public checkout.
+
+The upstream GoldenEye decompilation tracker reached 99.5% on 2026-08-16, but
+the corresponding current source was not publicly auditable and MGB64's public
+head remained GoldenPad's existing `cd9b58f` pin. This changes upgrade timing,
+not the selected architecture. The source/engine watch, texture-impact analysis,
+and gated MGB64 update procedure are maintained in [Technical debt and upstream
+watch](TECH_DEBT.md).
 
 ## Verified inventory
 

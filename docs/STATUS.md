@@ -1,6 +1,6 @@
 # Status
 
-Updated: 2026-08-04
+Updated: 2026-08-16
 
 ## Summary
 
@@ -512,6 +512,10 @@ longer blocks MGB64 integration.
 
 The Apple shell, native game boot, renderer, audio, save path and menu schema are
 substantially integrated, but the complete port is not at definition of done.
+The GoldenEye decompilation's 99.5% milestone does not require an architecture
+change: MGB64 remains pinned at `cd9b58f` until a newer public engine revision
+passes the isolated comparison and adoption gates in [Technical debt and
+upstream watch](TECH_DEBT.md).
 The remaining product gates are human touch/controller mission completion,
 scene-specific performance profiling, organic save progression, local
 multiplayer completion and physical lifecycle/audio/controller acceptance. The
