@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-16
+Updated: 2026-08-17
 
 This document records upstream changes that can materially improve GoldenPad,
 the evidence required before adopting them, and the known debt that should be
@@ -13,55 +13,55 @@ Keep GoldenPad on the exact MGB64 pin
 `cd9b58f5f91291579b8e551aa925aab000d311cf` until a newer, public MGB64 commit
 can be inspected and passes the gates below.
 
-The GoldenEye decompilation tracker reached **99.5%** on 2026-08-16. That is an
-important signal because MGB64 is built on that decompilation and its maintainer
-has said the near-complete source is being used for further engine and
-performance work. It does **not** make the raw decompilation a replacement for
-MGB64: the decomp reconstructs the game code, while MGB64 supplies the native
-renderer, ROM loader, audio, input, save, portability, and platform layers that
-GoldenPad integrates.
+The matching GoldenEye decompilation reached **100%** at
+[`c73a8531e05a7584dc857405d5b91fe9bc95f9e3`](https://gitlab.com/kholdfuzion/goldeneye_src/-/commit/c73a8531e05a7584dc857405d5b91fe9bc95f9e3)
+on 2026-08-16. The final source is now public and auditable, which makes it an
+authoritative reference for replacing guessed or nonmatching game-code behavior.
+It does **not** make the raw decompilation a replacement for MGB64: the decomp
+reconstructs the N64 game, while MGB64 supplies the native renderer, ROM loader,
+audio, input, save, portability, and platform layers that GoldenPad integrates.
 
 The practical change is sequencing:
 
 1. preserve the current known GoldenPad baseline;
-2. watch for the next public MGB64 engine/source update;
-3. evaluate that update in an isolated reference checkout;
+2. use the final decomp as a targeted oracle for known MGB64 divergences;
+3. watch for and evaluate the next public MGB64 engine/source update;
 4. rebase GoldenPad only after texture, performance, build, legal, and package
    evidence is better than the current pin.
 
-Do not switch GoldenPad to the raw decompilation, rewrite Fast3D/TMEM, or migrate
-to RT64 solely because the matching percentage increased.
+Do not bulk-import the final decomp, switch to GoldenRecomp, rewrite Fast3D/TMEM,
+or migrate to RT64 solely because matching reached 100%.
 
-## 2026-08-16 upstream snapshot
+## 2026-08-17 upstream snapshot
 
-The live [GoldenEye decompilation status
-tracker](https://raw.githubusercontent.com/kholdfuzion/goldeneyestatus/master/index.html)
-reported:
+The completed [`goldeneye_src`](https://gitlab.com/kholdfuzion/goldeneye_src)
+repository resolves to:
 
-| Surface | Current result |
+| Surface | Audited result |
 | --- | --- |
-| Overall | 99.5% |
-| Files | 193 of 204 |
-| `src` | 63,044 bytes; 99.4% |
-| `src/game` | 927,056 bytes; 99.8% |
-| `src/inflate` | 5,248 bytes; 100.0% |
-| `src/libultra` | 20,996 bytes; 87.4% |
+| Final commit | `c73a8531e05a7584dc857405d5b91fe9bc95f9e3` (`for england james?`) |
+| Final commit date | 2026-08-16 |
+| Final commit size | 340 files changed; 152 source files; 125 `src/game` files |
+| `NONMATCHING` guards in `src/game` | 273 before the final commit; 0 after |
+| Remaining `GLOBAL_ASM` references in `src/game` | 62, observed in data/section declarations rather than undecompiled gameplay-function bodies |
 
-This is a fast-moving tracker snapshot, not a stable release identifier. The
-current source repository referenced by the tracker,
-`github.com/kholdfuzion/goldeneye_src`, was not publicly readable during this
-review. The public [n64decomp/007 mirror](https://github.com/n64decomp/007) was
-still at `754a0a977efcbc99a46d079a73292e40780e3aab` from 2025-04-25 and was
-therefore behind the tracked work. The new 99.5% source delta cannot yet be
-audited or incorporated directly.
+The repository still contains MIPS assembly units and an N64-target build. In
+this context, 100% means that the matching-decompilation project is complete; it
+does not mean portable ISO C, an iOS app, or a ready static-recompilation input.
+The repository also has no top-level license file. Public readability and a
+matching result do not place Rare/Nintendo code or game assets in the public
+domain, so GoldenPad must preserve its existing provenance review and
+bring-your-own-ROM boundary.
 
 The public [MGB64 repository](https://github.com/akratch/mgb64) still resolved
 to GoldenPad's current `cd9b58f` pin during this review. GoldenPad is not behind
-an available public MGB64 commit today. The MGB64 maintainer has publicly
-[described taking a step back to improve the engine against the newer
-decomp](https://www.reddit.com/r/R36S/comments/1utcfug/goldeneye_native_port_remaster_decompilation_based/)
-and break through performance barriers. Treat that as direction and an upgrade
-trigger, not as a promised date or verified fix. GoldenEye Depot's
+an available public MGB64 commit today. Its only other public branch and open
+pull request concern app icon/signing work, not the completed decomp or renderer.
+The public [GoldenRecomp repository](https://github.com/kholdfuzion/GoldenRecomp)
+also remains at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f`, with no open pull request
+or published TLB-free/input-metadata completion. Its `lib/ge` submodule still
+points to an unavailable GitHub source revision, so it is not a faster
+reproducible foundation today. GoldenEye Depot's
 [site](https://goldeneyedepot.com/) and [X account](https://x.com/goldeneyedepot)
 remain announcement sources; the live tracker and exact repository commits are
 the technical evidence.
@@ -78,13 +78,50 @@ against the newer decomp:
 
 | Ledger item | Current divergence | Why GoldenPad should retest it |
 | --- | --- | --- |
-| `FID-0104` | `texWriteLoadToTmemAddr` is a nonmatching native rewrite with pipe-sync, fast-path, and tile-number differences from retail. | It is reached on non-TLUT texture loads and could change emitted texture state. |
+| `FID-0104` | `texWriteLoadToTmemAddr` is a nonmatching native rewrite with pipe-sync, fast-path, format, and tile-number differences from the now-exact retail function. | It is reached on non-TLUT texture loads and could change emitted texture state. |
 | `FID-0119` | `bgTestBulletHitBackground` returns `-1` texture coordinates instead of performing the retail backward display-list scan. | It can affect surface/material identification for bullet impacts. |
 | `FID-0071` | The object-hit texture scan treats a display-list boundary differently from retail. | It can select a different impact material, sound, or decal. |
 
+The exact `FID-0104` function was applied to a temporary copy of the current
+MGB64 pin. The full native executable compiled and linked, and the targeted
+texture/renderer tests passed. Private deterministic native-Metal captures at
+frame 70 were then byte-identical to the current implementation on Dam,
+Facility, Surface 1, Archives, and Cradle. This proves that it is a clean
+ABI-compatible comparison candidate, but supplies no evidence that importing it
+fixes GoldenPad's current visible rendering problems. Do not promote it without
+a reproducer that makes the two implementations diverge.
+
+`FID-0119` is not a drop-in source replacement: the exact retail function scans
+backward from a display-list command pointer that MGB64's native collision path
+does not currently preserve. `FID-0071` has a small exact boundary-semantic
+difference, but both items primarily affect bullet-impact material, sound, or
+decal selection rather than large world-texture rendering. Keep them as scoped
+follow-up work instead of release blockers.
+
 These are comparison targets, not proof that they cause every visible texture
-problem and not authorization to patch them from ledger notes alone. Any change
-must be re-derived from the newly available source and verified in a scene.
+problem. Any change must be re-derived from the final source and verified in a
+scene where behavior changes.
+
+## Rendering decision from the 100% review
+
+The reported Dam edge/cliff problem remains a filtering issue in the current
+MGB64 evidence, not a missing decompiled function. MGB64's anisotropic-filtering
+fix is WebGPU-only: the shared renderer deliberately keeps native Metal on the
+nearest-sampler plus in-shader N64 three-point path to avoid double filtering.
+GoldenPad's `g_pcTextureAnisotropy = 16` therefore does not activate the same
+WebGPU fix on iOS.
+
+A private Metal A/B at the documented Dam viewpoint compared the current path
+with `GE007_DISABLE_N64_FILTER=1`. Disabling the N64 shader filter changed
+137,458 of the 307,200 capture pixels (normalized RMSE 0.0161) and visibly made
+the road and cliff softer/smeared. Do not make this diagnostic flag a GoldenPad
+default. If the grazing-angle artifact remains release-blocking, the correct
+next experiment is a scoped Metal minification/aniso policy with explicit
+masked/wrapped-texture seam tests, not a global filter replacement.
+
+The Dam door-indicator corruption remains covered by MGB64's existing native
+display-list collision-pointer-table repair. The completed decomp does not
+replace that native 64-bit pointer fix.
 
 ## What the decomp progress will not fix automatically
 
@@ -115,7 +152,7 @@ tag, or public artifact rather than a social percentage alone.
 | Foundation | GoldenPad use | Watch for | Adoption rule |
 | --- | --- | --- | --- |
 | [akratch/mgb64](https://github.com/akratch/mgb64) | Active game core, Fast3D/Metal renderer, native port services | New commits/releases; decomp imports; renderer, texture-cache, audio, timing, or portability changes | Evaluate first. Update the pin only after all gates pass. |
-| [GoldenEye status tracker](https://raw.githubusercontent.com/kholdfuzion/goldeneyestatus/master/index.html) and `kholdfuzion/goldeneye_src` | Source/parity signal feeding MGB64 | Public auditable source, matching milestones, changes touching known fidelity items | Research input only; never integrate private or unavailable source. |
+| [goldeneye_src](https://gitlab.com/kholdfuzion/goldeneye_src) and [status tracker](https://kholdfuzion.github.io/goldeneyestatus/) | Exact game-code/parity reference feeding MGB64 | Post-completion corrections and changes touching known fidelity items | Use as a targeted oracle; preserve provenance and never bulk-import it. |
 | [n64decomp/007](https://github.com/n64decomp/007) | Public decomp reference | Mirror synchronization and relevant source history | Reference only; preserve provenance and license review. |
 | [GoldenRecomp](https://github.com/kholdfuzion/GoldenRecomp) | Static-recomp architecture reference | Public TLB-free ELF/ROM recipe, generated functions, or complete metadata | Reconsider only when a clean public pipeline is reproducible. |
 | [N64Recomp](https://github.com/N64Recomp/N64Recomp) and [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime) | Translator/runtime reference | Metadata compatibility and portable runtime improvements | Pin and test only as part of a reproducible GoldenRecomp path. |
@@ -124,7 +161,7 @@ tag, or public artifact rather than a social percentage alone.
 Concrete review triggers are:
 
 - a new MGB64 commit, tag, release, or published engine branch;
-- the current 99.5% decomp source becoming publicly auditable;
+- a post-completion decomp correction touching a known divergence;
 - an upstream change touching `FID-0104`, `FID-0119`, `FID-0071`, texture cache,
   Fast3D, Metal, display-list state, or texture uploads;
 - a reproducible GoldenRecomp TLB-free input/metadata pipeline; or
@@ -161,12 +198,16 @@ When a trigger lands:
 
 ## Open debt after this review
 
-- Wait for a public MGB64 engine/decomp update; there is no new production pin
-  to adopt today.
-- Build a repeatable visual comparison set for the scenes named above before
-  changing the core pin.
-- Re-evaluate the three fidelity-ledger texture/material items against the new
-  public source when it appears.
+- Wait for a public MGB64 engine update; there is no new production pin to adopt
+  today.
+- Preserve the repeatable private native-Metal comparison route used for Dam,
+  Facility, Surface 1, Archives, and Cradle; add the exact user-reported scene
+  before changing renderer policy.
+- Keep `FID-0104` unmodified until a visual or command-stream divergence is
+  reproduced. Investigate `FID-0119` and `FID-0071` only in bullet-impact tests.
+- If the Dam grazing-angle artifact is release-blocking, prototype scoped Metal
+  anisotropy/minification and test masked/wrapped textures; do not globally
+  disable the N64 shader filter.
 - Keep renderer defects and mobile upload performance in their own evidence
   lanes; do not label them "fixed by decomp" without a measured result.
 - Refresh this ledger when a concrete trigger lands, not for every percentage
