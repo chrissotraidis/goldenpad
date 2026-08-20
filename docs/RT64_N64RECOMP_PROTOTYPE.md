@@ -127,6 +127,15 @@ with `GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR` and
 `GOLDENPAD_RECOMP_RT64_SOURCE_DIR`. The subsequent AOT integration will add the
 ignored N64ModernRuntime checkout and private generated output explicitly.
 
+On the current host, `verify-rt64-ios-static.sh` reaches RT64's generated MSL
+compile and stops because `xcrun -sdk macosx metal` reports a missing Metal
+Toolchain. Xcode 26.6's `xcodebuild -downloadComponent MetalToolchain` completed
+successfully, but the command still reports the component unavailable. This is
+a host-toolchain registration blocker, not an RT64 source or iOS patch failure;
+the patches apply/reverse cleanly. Do not treat the surface-only host as a
+linked RT64 renderer until this command succeeds and the four verified archives
+exist.
+
 After a supported private ROM is supplied, build/install/launch evidence must
 be separate from game-frame evidence. It must install via `simctl` without
 removing `com.chrissotraidis.goldenpad`; capture intro, menu and Dam privately;
