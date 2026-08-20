@@ -1,5 +1,9 @@
 # RT64 + N64Recomp prototype
 
+The accepted physical-iPad baseline and its bounded next-day worklist are
+recorded in
+[`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md).
+
 ## Objective and isolation
 
 This branch evaluates a **separate**, non-production `GoldenPadRecompPrototype`
@@ -7,7 +11,7 @@ iOS/iPadOS app for the original Nintendo 64 release of GoldenEye 007. It does
 not alter the `GoldenPad` MGB64 target, bundle identifier, container, saves, or
 renderer. The prototype identifier is
 `com.chrissotraidis.goldenpad.recomp-prototype`, so it can coexist with
-production in a Simulator.
+production in Simulator or on hardware.
 
 The intended execution route is AOT/static N64Recomp output from a user-owned
 US retail ROM, N64ModernRuntime's libultra replacement, and RT64's Metal
@@ -47,37 +51,39 @@ GoldenEye64Recomp's local, pinned `vanilla_to_tlbfree.xdelta` input and writes
 only outside the repository. N64Recomp then consumes the private TLB-free ROM
 and `us.toml`; the generated `RecompiledFuncs/` directory remains private.
 
-No retail ROM was located in the project workspace during this audit, so this
-branch has not generated or inspected game-derived code.
+A user-supplied ROM was later imported into private local build and app-container
+storage for validation. The repository still contains no retail ROM, generated
+game functions, extracted assets, saves or captures.
 
 ## AOT iOS finding
 
-N64ModernRuntime currently unconditionally builds N64Recomp's `LiveRecomp`
+N64ModernRuntime upstream unconditionally builds N64Recomp's `LiveRecomp`
 target. It failed for ARM64 iOS Simulator in SLJIT's Apple executable allocator,
 which is expected for an iOS AOT path and is not a source failure. The narrow
 patch [`patches/n64modernruntime-ios-aot.patch`](../patches/n64modernruntime-ios-aot.patch)
 skips that live-recompiler dependency when the runtime is only used with static
 generated C/C++. It applies and reverses cleanly against the exact ignored
-checkout, and produced ARM64 Simulator `libultramodern.a` and `liblibrecomp.a`.
-It has not yet been integrated into the app target.
+checkout, and produced ARM64 Simulator and iPhoneOS `libultramodern.a` and
+`liblibrecomp.a`. The private AOT build now uses those archives in the
+isolated prototype target.
 
 ## RT64/UIKit host
 
 `GoldenPadRecompPrototype` is an independent CMake/Xcode target. Its SwiftUI
 host owns an `MTKView`/`CAMetalLayer` and uses its own C++ bridge to create
-RT64's Plume Metal interface and swapchain. The initial ARM64 Simulator host
-build passed with the unique bundle identifier and contains neither `bossEntry`
-nor `goldenpad_mgb64_*` symbols. This is host/surface evidence only; it does
-not submit a colored triangle or a synthetic display list and does **not** count
-as RT64 GoldenEye rendering.
+RT64's Plume Metal interface and swapchain. The ARM64 Simulator and iPhoneOS
+builds use the unique bundle identifier and contain neither production MGB64
+runtime nor production app state. The target now submits the recompiled game's
+real display lists to RT64; synthetic render tests are not used as gameplay
+evidence.
 
 ## Required game path and carried fixes
 
-The next integration stage must register a UIKit-native N64ModernRuntime
-renderer context and call RT64's `loadUCodeGBI` plus `processDisplayLists` with
-the actual `OSTask` RSP/DP data and RDRAM from the recompiled game. It must also
-adapt production's AVAudioEngine, GameController/touch snapshots, atomic save
-root and scene lifecycle rather than transplanting the macOS AppKit/SDL host.
+The prototype registers a UIKit-native N64ModernRuntime renderer context and
+calls RT64's `loadUCodeGBI` plus `processDisplayLists` with actual `OSTask`
+RSP/DP data and RDRAM from the recompiled game. It also has prototype-local
+AVAudioEngine, GameController/touch snapshots, private config/log storage and
+scene lifecycle rather than transplanting the macOS AppKit/SDL host.
 
 The following changes are required before considering a frame valid:
 
@@ -94,7 +100,7 @@ The following changes are required before considering a frame valid:
    fixes are absent from the static generator route rather than applying them
    blindly.
 
-## Rendering validation and known blocker
+## Rendering validation
 
 The rendering order is intro logos/gunbarrel, main menu/briefings, then Dam.
 For every checkpoint, capture a private deterministic frame and record display
@@ -102,20 +108,17 @@ list submissions, texture-cache hits/misses, TMEM upload bytes, pipeline
 creation, frame time and FPS. Compare equal internal/output resolution against
 production MGB64; Simulator results are not iPhone/iPad performance claims.
 
-GoldenEye64Recomp currently reports black skyboxes and flat water because their
-custom command path is not represented by RT64. The completed GoldenEye decomp
-builds the sky/water from projected vertices (`skyRenderTri`/`skyRenderFull`),
-and Perfect Dark's non-N64 port converts the equivalent projected vertices into
-ordinary allocated vertices before submitting display-list triangles. The first
-candidate fix is therefore a small GoldenEye-specific conversion of those
-computed vertices into ordinary RT64-supported triangles (or documented RT64
-extended commands), preserving texture coordinates and vertex color. A flat
-clear color is unacceptable as a final result. Framebuffer-dependent glass,
-monitors and blending remain separate validation gates after base geometry.
+The current hardware build renders the intro, menus and playable stages through
+RT64 at automatic high resolution, expanded aspect and optional 2x MSAA. It uses
+the original presentation rate because display-rate interpolation exposed
+intermittent geometry shimmer. Sky, water, framebuffer-dependent glass,
+monitors, blending, camera near-plane behavior and later-stage effects remain
+separate validation gates; a correct Dam frame is not proof that every effect
+or mission is correct.
 
 ## Build and Simulator instructions
 
-Build the current ROM-free host:
+Build the ROM-free host checks:
 
 ```sh
 ./scripts/verify-recomp-prototype-host.sh
@@ -127,27 +130,126 @@ with `GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR` and
 `GOLDENPAD_RECOMP_RT64_SOURCE_DIR`. The subsequent AOT integration will add the
 ignored N64ModernRuntime checkout and private generated output explicitly.
 
-On the current host, `verify-rt64-ios-static.sh` reaches RT64's generated MSL
-compile and stops because `xcrun -sdk macosx metal` reports a missing Metal
-Toolchain. Xcode 26.6's `xcodebuild -downloadComponent MetalToolchain` completed
-successfully, but the command still reports the component unavailable. This is
-a host-toolchain registration blocker, not an RT64 source or iOS patch failure;
-the patches apply/reverse cleanly. Do not treat the surface-only host as a
-linked RT64 renderer until this command succeeds and the four verified archives
-exist.
+The static-archive verifier uses the installed Metal toolchain via
+`TOOLCHAINS=metal-2600.50.6.1` and
+`GOLDENPAD_METAL_TOOLCHAIN=metal-2600.50.6.1`. Private generated game output
+and runtime build directories remain explicit local inputs and are not
+committed.
 
 After a supported private ROM is supplied, build/install/launch evidence must
 be separate from game-frame evidence. It must install via `simctl` without
 removing `com.chrissotraidis.goldenpad`; capture intro, menu and Dam privately;
 and retain console/PID/liveness logs independently.
 
+## Current AOT result — 2026-08-20
+
+The isolated target now links private generated AOT sources, the AOT-only
+N64ModernRuntime archives and RT64. With the user-supplied ROM staged only in
+the prototype container, the process reaches real GoldenEye PI DMA, scheduler,
+RSP and DP completion work. This is execution evidence, not a rendered-frame
+claim. ROM derivatives, generated sources, saves and captures remain ignored
+private state and are never committed.
+
+The original Simulator failure was RT64's flat common-set ABI: it requested 52
+buffers and 18 samplers where the Simulator permits 31 and 16. The private,
+Simulator-only static archive now removes unused extended/ray-tracing bindings,
+aliases the remaining samplers, and bypasses unavailable counter sampling. It
+renders real GoldenEye frames from the user-supplied input. Hardware validation
+has since advanced through intro, menus and playable stages. This remains a
+private prototype result, not a claim that every stage or effect is complete.
+
+The prototype has independent input plumbing using the production GoldenPad
+touch placement and tuning: move, relative look, fire, aim, action, duck,
+weapon and Start. AIM supports toggle or hold and has a distinct yellow active
+state; DUCK is a yellow C-button-style action. Look uses the production 1.5x
+swipe accumulation, 4x default sensitivity and one-third-speed precision while
+aiming. Settings include aim behavior, optional aim-only vertical inversion,
+an optional centered reticle and persisted 2x MSAA. A prototype-only
+`Unlock all missions` setting uses GoldenEye's existing mission-availability
+predicate without marking missions complete or writing EEPROM. It is intended
+for later-stage rendering tests and leaves the user's real save progression
+unchanged. Its
+N64ModernRuntime bridge explicitly advertises a normal controller in port 1,
+matching the reference implementation; it previously reported `Device::None`,
+which caused GoldenEye's controller-socket error. A Simulator UI gesture on A
+was verified in the native log as button bit `0x8000` followed by release. The
+bridge is prototype-local and does not use or change the production MGB64 input
+system.
+
+The native GameController map supports Xbox/MFi-style hardware: left stick
+moves, right stick supplies modern analog look, LT aims, RT fires, A/Y changes
+weapon, B/X acts, LB toggles duck, RB changes weapon, Menu is Start and the
+d-pad maps directly. Code-path and connection reporting are verified; a full
+physical Bluetooth controller playthrough is still an acceptance gate.
+
+Patch regeneration produces a matched `RecompiledPatches/patches.c` and
+embedded `patches_bin.c`; rebuilding or installing with only one half updated
+is an invalid black-screen artifact and must fail the display-list liveness
+gate. A later experiment that rebuilt `field_488.applied_view` after modern
+look was also rejected: it reduced physical-iPad gameplay presentation to about
+17-18 frames per second and made controller input feel sluggish.
+
+The bridge writes bounded `[GoldenPadRecomp]` unified-log events for ROM
+validation, runtime/overlay setup, the active game loop, controller presence,
+first polling/input state, button transitions, audio submission, rumble
+requests, stop, and errors. It intentionally emits no per-frame port warnings.
+Audio is consumed by a 22,050 Hz stereo `AVAudioSourceNode` and converted by
+AVAudioEngine to the current device route. Diagnostics separately report the
+real queued, rendered, non-zero, producer-dropped and consumer-underrun frame
+counts. Physical logging identified the reported static as consumer cadence
+jitter rather than a sample-rate mismatch: the game and engine averaged the
+same rate, but larger AVAudioEngine pulls occasionally arrived just before the
+next per-VI game chunk. The host now keeps a 1,024-frame scheduling reserve,
+prebuffers about 46 ms and uses 32-frame fades only when rebuffering. The final
+hardware soak rendered more than 2.3 million frames with zero underrun frames,
+zero underrun callbacks and zero producer drops. Physical-speaker listening
+remains the final audio acceptance gate. The iOS ring now also matches the
+reference GoldenEye64Recomp host's stereo-pair swap required by
+N64ModernRuntime's RDRAM address ordering; queue health alone could not detect
+that channel-order defect.
+
+For runtime diagnosis, the prototype also applies a temporary,
+reversible trace at the reference RT64 render-context seam. It reports the
+first display list and every 300 thereafter, alongside the equivalent VI
+presentation count. Physical soaks have reached tens of thousands of processed
+display lists and VI updates. A pre-fix hardware run rendered more than 15.5
+million audio frames without reproducing the former
+`alAuxBusPull`/`alEnvmixerPull` crash. Those faults were traced to 32-bit N64
+KSEG addresses losing sign extension across nested recompiled audio calls; the
+AOT runtime patch now canonicalizes all RDRAM accesses to the 29-bit physical
+address range.
+
+The host explicitly fills and clips the Metal surface over an edge-to-edge
+black background. A former two-physical-pixel blue strip at the right edge is
+no longer visible in the latest QuickTime hardware frame. This is visible-seam
+evidence, not yet a claim that every UIKit/CAMetalLayer drawable dimension has
+been proven across all device sizes and orientations.
+
+An in-place hardware update on 2026-08-20 preserved prototype database UUID
+`D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. A subsequent 34.7-second QuickTime
+capture showed playable full-frame RT64 output with no visible right-edge blue
+strip. During the same title/demo progression, native counters exceeded four
+thousand display-list/VI updates and two million rendered audio frames with no
+consumer underruns or producer drops. The capture contained a 48 kHz mono
+audio track but at an extremely low recorded level, so it is not used as a
+physical-speaker static acceptance result.
+
+When rebuilding the AOT target, temporarily apply and reverse the existing
+RT64 iOS SDK, embedded-host and Plume patches around the Xcode build: the
+external RT64 render-context source otherwise includes the desktop SDL path.
+The RT64 static-archive verifier works with the downloaded Metal component via
+`TOOLCHAINS=metal-2600.50.6.1` and
+`GOLDENPAD_METAL_TOOLCHAIN=metal-2600.50.6.1`.
+
 ## Migration gates and current recommendation
 
-Do not migrate production based on the current host build. Continue MGB64 while
-the prototype advances. Migration requires all of the following: AOT game
-execution, real intro/menu/Dam RT64 frames, correct textures/core geometry,
-audio plus touch or controller, confirmed or specifically reproduced sky/water
-state, framebuffer effects, an equivalent-settings comparison, and a clean
-ROM/generated-code audit. Until then, the recommendation is **continue both
-temporarily**: production MGB64 remains the playable baseline and this isolated
-prototype is the RT64 investigation path.
+Do not replace production based on build/install/liveness evidence alone. The
+prototype now has AOT game execution, real intro/menu/gameplay RT64 frames,
+native audio and the production touch schema, so it is the stronger path for
+high-resolution rendering and continued stabilization. Migration still
+requires physical controller acceptance, physical-speaker audio acceptance,
+longer mission/lifecycle soaks, later-stage/effect comparison, save
+compatibility and a clean ROM/generated-code audit. Until those pass, the
+recommendation remains **continue both temporarily**: production MGB64 is the
+known fallback while the isolated recomp prototype is brought to replacement
+quality.

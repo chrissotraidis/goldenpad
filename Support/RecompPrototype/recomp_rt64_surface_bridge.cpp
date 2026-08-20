@@ -1,45 +1,39 @@
-#include "plume_render_interface.h"
-
 #include <memory>
 #include <string>
 
-namespace plume {
-std::unique_ptr<RenderInterface> CreateMetalInterface();
-}
+#if defined(GOLDENPAD_RECOMP_AOT_LINKED)
+extern "C" uint32_t goldenpad_recomp_aot_entrypoint_address();
+#endif
 
 namespace {
 struct MetalContext {
-    std::unique_ptr<plume::RenderInterface> renderInterface;
-    std::unique_ptr<plume::RenderDevice> device;
-    std::unique_ptr<plume::RenderCommandQueue> commandQueue;
-    std::unique_ptr<plume::RenderSwapChain> swapChain;
     std::string status;
 };
 
 std::unique_ptr<MetalContext> context;
+std::string failureStatus;
+
+const char *fail(const char *stage) {
+    failureStatus = "RT64 prototype: Metal initialization failed at ";
+    failureStatus += stage;
+    return failureStatus.c_str();
+}
 }
 
 extern "C" const char *goldenpad_recomp_rt64_initialize(void *window, void *view) {
     if (window == nullptr || view == nullptr) {
-        return nullptr;
+        return fail("window handle");
     }
     auto candidate = std::make_unique<MetalContext>();
-    candidate->renderInterface = plume::CreateMetalInterface();
-    if (candidate->renderInterface == nullptr) {
-        return nullptr;
-    }
-    candidate->device = candidate->renderInterface->createDevice();
-    candidate->commandQueue = candidate->device->createCommandQueue(plume::RenderCommandListType::DIRECT);
-    const plume::RenderWindow renderWindow = {window, view};
-    candidate->swapChain = candidate->commandQueue->createSwapChain(
-        plume::RenderSwapChainDesc(renderWindow, plume::RenderFormat::B8G8R8A8_UNORM, 3));
-    if (candidate->swapChain == nullptr || !candidate->swapChain->resize()) {
-        return nullptr;
-    }
-    candidate->status = "RT64 prototype: Metal " + candidate->device->getDescription().name +
-        " " + std::to_string(candidate->swapChain->getWidth()) + "x" +
-        std::to_string(candidate->swapChain->getHeight()) +
-        "; awaiting private AOT GoldenEye output";
+    // GoldenPad's working mobile renderer has one owner for each CAMetalLayer.
+    // RT64 creates the actual device/queue/swap chain after the AOT game starts,
+    // so this bridge must only validate the host surface, never claim it first.
+    candidate->status = "RT64 prototype: host Metal surface ready";
+#if defined(GOLDENPAD_RECOMP_AOT_LINKED)
+    candidate->status += "; AOT entry 0x" + std::to_string(goldenpad_recomp_aot_entrypoint_address());
+#else
+    candidate->status += "; awaiting private AOT GoldenEye output";
+#endif
     context = std::move(candidate);
     return context->status.c_str();
 }

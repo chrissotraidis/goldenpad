@@ -1,51 +1,215 @@
 diff --git a/N64Recomp/CMakeLists.txt b/N64Recomp/CMakeLists.txt
-index 34dc7e8..0000000 100644
 --- a/N64Recomp/CMakeLists.txt
 +++ b/N64Recomp/CMakeLists.txt
-@@ -180,28 +180,30 @@ target_link_libraries(RecompModMerger N64Recomp)
+@@ -167,5 +167,6 @@ target_link_libraries(OfflineModRecomp fmt rabbitizer tomlplusplus::tomlplusplu
+ 
  # Live recompiler
 +if (N64RECOMP_ENABLE_LIVE_RECOMP)
  project(LiveRecomp)
  add_library(LiveRecomp)
  
- target_sources(LiveRecomp PRIVATE
-     ${CMAKE_CURRENT_SOURCE_DIR}/LiveRecomp/live_generator.cpp
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src/sljitLir.c
- )
- 
- target_include_directories(LiveRecomp PRIVATE
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src
- )
- 
- target_link_libraries(LiveRecomp N64Recomp)
- 
- # Live recompiler test
- project(LiveRecompTest)
- add_executable(LiveRecompTest)
- 
- target_sources(LiveRecompTest PRIVATE
-     ${CMAKE_CURRENT_SOURCE_DIR}/LiveRecomp/live_recompiler_test.cpp
- )
- 
- target_include_directories(LiveRecompTest PRIVATE
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src
+@@ -193,3 +194,8 @@ target_include_directories(LiveRecompTest PRIVATE
  )
  
  target_link_libraries(LiveRecompTest LiveRecomp)
++else()
++target_sources(N64Recomp PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR}/LiveRecomp/shim_function_aot.cpp
++)
 +endif()
+diff --git a/N64Recomp/LiveRecomp/shim_function_aot.cpp b/N64Recomp/LiveRecomp/shim_function_aot.cpp
+new file mode 100644
+--- /dev/null
++++ b/N64Recomp/LiveRecomp/shim_function_aot.cpp
+@@ -0,0 +1,25 @@
++#include "recompiler/live_recompiler.h"
++
++N64Recomp::ShimFunction::ShimFunction(recomp_func_ext_t* to_shim, uintptr_t value)
++    : code(nullptr), func(nullptr) {
++    (void)to_shim;
++    (void)value;
++}
++
++N64Recomp::ShimFunction::~ShimFunction() = default;
++
++void N64Recomp::live_recompiler_init() {}
++
++N64Recomp::LiveGeneratorOutput::~LiveGeneratorOutput() = default;
++
++size_t N64Recomp::LiveGeneratorOutput::num_reference_symbol_jumps() const {
++    return 0;
++}
++
++void N64Recomp::LiveGeneratorOutput::set_reference_symbol_jump(size_t, recomp_func_t*) {}
++
++N64Recomp::ReferenceJumpDetails N64Recomp::LiveGeneratorOutput::get_reference_symbol_jump_details(size_t) {
++    return {};
++}
++
++void N64Recomp::LiveGeneratorOutput::populate_import_symbol_jumps(size_t, recomp_func_t*) {}
+diff --git a/N64Recomp/include/recomp.h b/N64Recomp/include/recomp.h
+--- a/N64Recomp/include/recomp.h
++++ b/N64Recomp/include/recomp.h
+@@ -92,22 +92,25 @@ typedef uint64_t gpr;
+ #define SUB32(a, b) \
+     ((gpr)(int32_t)((a) - (b)))
+ 
++#define RDRAM_OFFSET(offset, reg) \
++    ((uint32_t)((reg) + (offset)) & 0x1FFFFFFFu)
++
+ #define MEM_W(offset, reg) \
+-    (*(int32_t*)(rdram + ((((reg) + (offset))) - 0xFFFFFFFF80000000)))
++    (*(int32_t*)(rdram + RDRAM_OFFSET((offset), (reg))))
+ 
+ #define MEM_H(offset, reg) \
+-    (*(int16_t*)(rdram + ((((reg) + (offset)) ^ 2) - 0xFFFFFFFF80000000)))
++    (*(int16_t*)(rdram + (RDRAM_OFFSET((offset), (reg)) ^ 2)))
+ 
+ #define MEM_B(offset, reg) \
+-    (*(int8_t*)(rdram + ((((reg) + (offset)) ^ 3) - 0xFFFFFFFF80000000)))
++    (*(int8_t*)(rdram + (RDRAM_OFFSET((offset), (reg)) ^ 3)))
+ 
+ #define MEM_HU(offset, reg) \
+-    (*(uint16_t*)(rdram + ((((reg) + (offset)) ^ 2) - 0xFFFFFFFF80000000)))
++    (*(uint16_t*)(rdram + (RDRAM_OFFSET((offset), (reg)) ^ 2)))
+ 
+ #define MEM_BU(offset, reg) \
+-    (*(uint8_t*)(rdram + ((((reg) + (offset)) ^ 3) - 0xFFFFFFFF80000000)))
++    (*(uint8_t*)(rdram + (RDRAM_OFFSET((offset), (reg)) ^ 3)))
+ 
+ #define SD(val, offset, reg) { \
+-    *(uint32_t*)(rdram + ((((reg) + (offset) + 4)) - 0xFFFFFFFF80000000)) = (uint32_t)((gpr)(val) >> 0); \
+-    *(uint32_t*)(rdram + ((((reg) + (offset) + 0)) - 0xFFFFFFFF80000000)) = (uint32_t)((gpr)(val) >> 32); \
++    *(uint32_t*)(rdram + RDRAM_OFFSET((offset) + 4, (reg))) = (uint32_t)((gpr)(val) >> 0); \
++    *(uint32_t*)(rdram + RDRAM_OFFSET((offset) + 0, (reg))) = (uint32_t)((gpr)(val) >> 32); \
+ }
 diff --git a/librecomp/CMakeLists.txt b/librecomp/CMakeLists.txt
-index 7df8b08..0000000 100644
 --- a/librecomp/CMakeLists.txt
 +++ b/librecomp/CMakeLists.txt
-@@ -63,5 +63,10 @@ endif()
+@@ -57,7 +57,16 @@ if (WIN32)
+ endif()
+ 
  add_subdirectory(${PROJECT_SOURCE_DIR}/../thirdparty/miniz ${CMAKE_CURRENT_BINARY_DIR}/miniz)
 +set(N64RECOMP_ENABLE_LIVE_RECOMP ${N64MODERNRUNTIME_ENABLE_LIVE_RECOMP} CACHE BOOL
 +    "Build N64Recomp's SLJIT live-recompiler path")
  add_subdirectory(${PROJECT_SOURCE_DIR}/../N64Recomp ${CMAKE_CURRENT_BINARY_DIR}/N64Recomp EXCLUDE_FROM_ALL)
  
 -target_link_libraries(librecomp PRIVATE ultramodern N64Recomp LiveRecomp)
++target_compile_definitions(librecomp PRIVATE
++    N64RECOMP_ENABLE_LIVE_RECOMP=$<BOOL:${N64MODERNRUNTIME_ENABLE_LIVE_RECOMP}>
++)
++
 +target_link_libraries(librecomp PRIVATE ultramodern N64Recomp)
 +if (N64MODERNRUNTIME_ENABLE_LIVE_RECOMP)
 +    target_link_libraries(librecomp PRIVATE LiveRecomp)
 +endif()
  target_link_libraries(librecomp PUBLIC miniz)
+diff --git a/librecomp/src/mods.cpp b/librecomp/src/mods.cpp
+--- a/librecomp/src/mods.cpp
++++ b/librecomp/src/mods.cpp
+@@ -473,6 +473,7 @@ recomp::mods::CodeModLoadError recomp::mods::DynamicLibraryCodeHandle::populate_
+     return CodeModLoadError::Good;
+ }
+ 
++#if N64RECOMP_ENABLE_LIVE_RECOMP
+ recomp::mods::LiveRecompilerCodeHandle::LiveRecompilerCodeHandle(
+     const N64Recomp::Context& context, const ModCodeHandleInputs& inputs,
+     std::unordered_map<size_t, size_t>&& entry_func_hooks, std::unordered_map<size_t, size_t>&& return_func_hooks, std::vector<size_t>&& original_section_indices, bool regenerated)
+@@ -550,6 +551,28 @@ recomp::mods::GenericFunction recomp::mods::LiveRecompilerCodeHandle::get_functi
+     return GenericFunction{ recompiler_output->functions[func_index] };
+ }
+ 
++#else
++
++// Static iOS builds must not request executable memory. Keep the mod ABI intact,
++// but report live code modules as unavailable instead of pulling in SLJIT.
++recomp::mods::LiveRecompilerCodeHandle::LiveRecompilerCodeHandle(
++    const N64Recomp::Context&, const ModCodeHandleInputs& inputs,
++    std::unordered_map<size_t, size_t>&&, std::unordered_map<size_t, size_t>&&, std::vector<size_t>&&, bool)
++    : base_event_index(inputs.base_event_index) {}
++
++void recomp::mods::LiveRecompilerCodeHandle::set_imported_function(size_t, GenericFunction) {}
++
++recomp::mods::CodeModLoadError recomp::mods::LiveRecompilerCodeHandle::populate_reference_symbols(
++    const N64Recomp::Context&, std::string&) {
++    return CodeModLoadError::Good;
++}
++
++recomp::mods::GenericFunction recomp::mods::LiveRecompilerCodeHandle::get_function_handle(size_t) {
++    return GenericFunction{ static_cast<recomp_func_t*>(nullptr) };
++}
++
++#endif
++
+ void patch_func(recomp_func_t* target_func, recomp::mods::GenericFunction replacement_func) {
+     uint8_t* target_func_u8 = reinterpret_cast<uint8_t*>(target_func);
+     size_t offset = 0;
+diff --git a/librecomp/src/pi.cpp b/librecomp/src/pi.cpp
+--- a/librecomp/src/pi.cpp
++++ b/librecomp/src/pi.cpp
+@@ -366,20 +366,19 @@ extern "C" void osPiGetStatus_recomp(RDRAM_ARG recomp_context * ctx) {
+ }
+ 
+ extern "C" void osPiRawStartDma_recomp(RDRAM_ARG recomp_context * ctx) {
+-    ultramodern::error_handling::message_box(
+-        "Stub `osPiRawStartDma_recomp` function called!\n"
+-        "Most games do not call this function directly, which means the libultra function\n"
+-        "that uses this function was not properly named.\n"
+-        "\n"
+-        "If you triggered this message, please make sure you have properly identified\n"
+-        "every libultra function on your recompiled game. If you are sure every libultra\n"
+-        "function has been identified and you still get this problem then open an issue on\n"
+-        "the N64ModernRuntime Github repository mentioning the game you are trying to\n"
+-        "recompile and steps to reproduce the issue.\n"
+-        "\n"
+-        "The application will close now, bye and good luck!"
+-    );
+-    ULTRAMODERN_QUICK_EXIT();
++    const uint32_t direction = ctx->r4;
++    const uint32_t device_address = ctx->r5;
++    const gpr rdram_address = ctx->r6;
++    const uint32_t size = ctx->r7;
++
++    if (direction != 0) {
++        throw std::runtime_error("PI raw DMA writes are unsupported");
++    }
++
++    // Some N64 boot code calls raw PI DMA directly. It is synchronous on the
++    // recompiled host because the caller immediately waits for completion.
++    recomp::do_rom_read(rdram, rdram_address, device_address + recomp::rom_base, size);
++    ctx->r2 = 0;
+ }
+ 
+ extern "C" void osEPiRawStartDma_recomp(RDRAM_ARG recomp_context * ctx) {
+diff --git a/ultramodern/include/ultramodern/ultramodern.hpp b/ultramodern/include/ultramodern/ultramodern.hpp
+--- a/ultramodern/include/ultramodern/ultramodern.hpp
++++ b/ultramodern/include/ultramodern/ultramodern.hpp
+@@ -152,6 +152,9 @@ void set_callbacks(
+ #define MIN(a, b) ((a) < (b) ? (a) : (b))
+ 
+-//#define debug_printf(...)
+-#define debug_printf(...) printf(__VA_ARGS__);
++#if defined(N64MODERNRUNTIME_VERBOSE_LOGGING)
++#define debug_printf(...) printf(__VA_ARGS__)
++#else
++#define debug_printf(...) ((void)0)
++#endif
+ 
+ #endif
+diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
+--- a/ultramodern/src/events.cpp
++++ b/ultramodern/src/events.cpp
+@@ -202,4 +202,6 @@ static void send_complete_retry(PTR(OSMesgQueue) mq, OSMesg msg) {
+ 
+ void sp_complete() {
++#if defined(N64MODERNRUNTIME_VERBOSE_LOGGING)
+     fprintf(stderr, "[complete] SP -> mq %08X msg %08X\n", (uint32_t)events_context.sp.mq, (uint32_t)events_context.sp.msg);
++#endif
+     send_complete_retry(events_context.sp.mq, events_context.sp.msg);
+@@ -207,4 +209,6 @@ void sp_complete() {
+ 
+ void dp_complete() {
++#if defined(N64MODERNRUNTIME_VERBOSE_LOGGING)
+     fprintf(stderr, "[complete] DP -> mq %08X msg %08X\n", (uint32_t)events_context.dp.mq, (uint32_t)events_context.dp.msg);
++#endif
+     send_complete_retry(events_context.dp.mq, events_context.dp.msg);

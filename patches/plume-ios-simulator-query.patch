@@ -1,0 +1,57 @@
+diff --git a/plume_metal.cpp b/plume_metal.cpp
+index 373c87e..bccca2d 100644
+--- a/plume_metal.cpp
++++ b/plume_metal.cpp
+@@ -2200,25 +2200,34 @@ namespace plume {
+         MetalAutoreleasePool releasePool;
+         this->device = device;
+ 
+-        MTL::CounterSampleBufferDescriptor *sampleBufferDesc = MTL::CounterSampleBufferDescriptor::alloc()->init();
+-        sampleBufferDesc->setCounterSet(device->timestampCounterSet);
+-        sampleBufferDesc->setStorageMode(MTL::StorageModeShared);
+-        sampleBufferDesc->setSampleCount(queryCount);
+-        sampleBuffer = device->mtl->newCounterSampleBuffer(sampleBufferDesc, nullptr);
+-        sampleBufferDesc->release();
++        if (device->timestampCounterSet != nullptr) {
++            MTL::CounterSampleBufferDescriptor *sampleBufferDesc = MTL::CounterSampleBufferDescriptor::alloc()->init();
++            sampleBufferDesc->setCounterSet(device->timestampCounterSet);
++            sampleBufferDesc->setStorageMode(MTL::StorageModeShared);
++            sampleBufferDesc->setSampleCount(queryCount);
++            sampleBuffer = device->mtl->newCounterSampleBuffer(sampleBufferDesc, nullptr);
++            sampleBufferDesc->release();
++        }
+ 
+         results.resize(queryCount, 0);
+     }
+ 
+     MetalQueryPool::~MetalQueryPool() {
+         MetalAutoreleasePool releasePool;
+-        sampleBuffer->release();
++        if (sampleBuffer != nullptr) {
++            sampleBuffer->release();
++        }
+     }
+ 
+     void MetalQueryPool::queryResults() {
+         MetalAutoreleasePool releasePool;
++        if (sampleBuffer == nullptr) {
++            return;
++        }
+         const NS::Data* data = sampleBuffer->resolveCounterRange(NS::Range(0, results.size()));
+-        std::memcpy(results.data(), data->mutableBytes(), results.size() * sizeof(uint64_t));
++        if (data != nullptr) {
++            std::memcpy(results.data(), data->mutableBytes(), results.size() * sizeof(uint64_t));
++        }
+     }
+ 
+     const uint64_t *MetalQueryPool::getResults() const {
+@@ -3204,6 +3213,9 @@ namespace plume {
+         MetalAutoreleasePool releasePool;
+         const MetalQueryPool *interfaceQueryPool = static_cast<const MetalQueryPool *>(queryPool);
+ 
++        if (interfaceQueryPool->sampleBuffer == nullptr) {
++            return;
++        }
+         MTL::ComputeCommandEncoder *computeEncoder = activeComputeEncoder != nullptr ? activeComputeEncoder : activeResolveComputeEncoder;
+         if (computeEncoder != nullptr && device->mtl->supportsCounterSampling(MTL::CounterSamplingPointAtDispatchBoundary)) {
+             computeEncoder->sampleCountersInBuffer(interfaceQueryPool->sampleBuffer, queryIndex, true);
