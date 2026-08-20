@@ -1,0 +1,51 @@
+diff --git a/N64Recomp/CMakeLists.txt b/N64Recomp/CMakeLists.txt
+index 34dc7e8..0000000 100644
+--- a/N64Recomp/CMakeLists.txt
++++ b/N64Recomp/CMakeLists.txt
+@@ -180,28 +180,30 @@ target_link_libraries(RecompModMerger N64Recomp)
+ # Live recompiler
++if (N64RECOMP_ENABLE_LIVE_RECOMP)
+ project(LiveRecomp)
+ add_library(LiveRecomp)
+ 
+ target_sources(LiveRecomp PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}/LiveRecomp/live_generator.cpp
+     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src/sljitLir.c
+ )
+ 
+ target_include_directories(LiveRecomp PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src
+ )
+ 
+ target_link_libraries(LiveRecomp N64Recomp)
+ 
+ # Live recompiler test
+ project(LiveRecompTest)
+ add_executable(LiveRecompTest)
+ 
+ target_sources(LiveRecompTest PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}/LiveRecomp/live_recompiler_test.cpp
+ )
+ 
+ target_include_directories(LiveRecompTest PRIVATE
+     ${CMAKE_CURRENT_SOURCE_DIR}/lib/sljit/sljit_src
+ )
+ 
+ target_link_libraries(LiveRecompTest LiveRecomp)
++endif()
+diff --git a/librecomp/CMakeLists.txt b/librecomp/CMakeLists.txt
+index 7df8b08..0000000 100644
+--- a/librecomp/CMakeLists.txt
++++ b/librecomp/CMakeLists.txt
+@@ -63,5 +63,10 @@ endif()
+ add_subdirectory(${PROJECT_SOURCE_DIR}/../thirdparty/miniz ${CMAKE_CURRENT_BINARY_DIR}/miniz)
++set(N64RECOMP_ENABLE_LIVE_RECOMP ${N64MODERNRUNTIME_ENABLE_LIVE_RECOMP} CACHE BOOL
++    "Build N64Recomp's SLJIT live-recompiler path")
+ add_subdirectory(${PROJECT_SOURCE_DIR}/../N64Recomp ${CMAKE_CURRENT_BINARY_DIR}/N64Recomp EXCLUDE_FROM_ALL)
+ 
+-target_link_libraries(librecomp PRIVATE ultramodern N64Recomp LiveRecomp)
++target_link_libraries(librecomp PRIVATE ultramodern N64Recomp)
++if (N64MODERNRUNTIME_ENABLE_LIVE_RECOMP)
++    target_link_libraries(librecomp PRIVATE LiveRecomp)
++endif()
+ target_link_libraries(librecomp PUBLIC miniz)
