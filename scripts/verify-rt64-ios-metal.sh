@@ -8,6 +8,11 @@ rt64_patch="$repo_root/patches/rt64-ios-sdk.patch"
 plume_patch="$repo_root/patches/plume-ios-metal.patch"
 expected_rt64=5473732a822a4423b5696e7cb18fecc425a59875
 expected_plume=d890ac899e505fb30040e037a4037cdeca68f033
+metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
+metal_toolchain_args=()
+if [ -n "$metal_toolchain" ]; then
+    metal_toolchain_args=(--toolchain "$metal_toolchain")
+fi
 
 if [ ! -d "$rt64_path/.git" ] || [ ! -f "$plume_path/plume_metal.cpp" ]; then
     echo "Expected the pinned RT64 checkout at: $rt64_path" >&2
@@ -87,8 +92,8 @@ for sdk in iphoneos iphonesimulator; do
     while IFS= read -r target; do
         name=${target#src/shaders/}
         source="$build_path/src/shaders/$name"
-        xcrun -sdk "$sdk" metal -c "$source" -o "$sdk_output/shaders/$name.air"
-        xcrun -sdk "$sdk" metallib \
+        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metal -c "$source" -o "$sdk_output/shaders/$name.air"
+        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metallib \
             "$sdk_output/shaders/$name.air" \
             -o "$sdk_output/shaders/$name.metallib"
     done < "$target_list"

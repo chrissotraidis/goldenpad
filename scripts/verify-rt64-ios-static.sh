@@ -7,6 +7,8 @@ plume_path="$rt64_path/src/contrib/plume"
 rt64_sdk_patch="$repo_root/patches/rt64-ios-sdk.patch"
 rt64_embedded_patch="$repo_root/patches/rt64-ios-embedded.patch"
 plume_patch="$repo_root/patches/plume-ios-metal.patch"
+plume_query_patch="$repo_root/patches/plume-ios-simulator-query.patch"
+simulator_resource_patch="$repo_root/patches/rt64-ios-simulator-resource-limits.patch"
 shim_path="$repo_root/Support/RT64"
 link_probe="$shim_path/rt64_link_probe.cpp"
 expected_rt64=5473732a822a4423b5696e7cb18fecc425a59875
@@ -16,6 +18,12 @@ expected_metal_shaders=56
 expected_rt64_members=210
 expected_closure_members=246
 artifact_root=${GOLDENPAD_RT64_ARTIFACT_DIR:-}
+simulator_resource_limits=${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}
+metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
+metal_toolchain_args=()
+if [ -n "$metal_toolchain" ]; then
+    metal_toolchain_args=(--toolchain "$metal_toolchain")
+fi
 
 if [ ! -d "$rt64_path/.git" ] || [ ! -f "$plume_path/plume_metal.cpp" ]; then
     echo "Expected the pinned RT64 checkout at: $rt64_path" >&2
@@ -49,12 +57,25 @@ if ! git -C "$plume_path" diff --quiet -- plume_apple.mm plume_metal.cpp; then
     exit 1
 fi
 
+if [ "$simulator_resource_limits" = "ON" ] && ! git -C "$rt64_path" diff --quiet -- src/render/rt64_descriptor_sets.h src/render/rt64_shader_library.cpp src/shaders/FbRendererCommon.hlsli src/shaders/TextureSampler.hlsli; then
+    echo "RT64 Simulator resource-limit sources have local changes; refusing to patch them." >&2
+    exit 1
+fi
+
 probe_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-rt64-static.XXXXXX")
 rt64_sdk_patch_applied=0
 rt64_embedded_patch_applied=0
 plume_patch_applied=0
+plume_query_patch_applied=0
+simulator_resource_patch_applied=0
 
 cleanup() {
+    if [ "$simulator_resource_patch_applied" -eq 1 ]; then
+        git -C "$rt64_path" apply --reverse "$simulator_resource_patch" >/dev/null
+    fi
+    if [ "$plume_query_patch_applied" -eq 1 ]; then
+        patch -R -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
+    fi
     if [ "$plume_patch_applied" -eq 1 ]; then
         patch -R -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
     fi
@@ -74,6 +95,12 @@ patch -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
 rt64_embedded_patch_applied=1
 patch -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
 plume_patch_applied=1
+patch -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
+plume_query_patch_applied=1
+if [ "$simulator_resource_limits" = "ON" ]; then
+    git -C "$rt64_path" apply "$simulator_resource_patch"
+    simulator_resource_patch_applied=1
+fi
 
 host_build="$probe_root/host"
 cmake -S "$rt64_path" -B "$host_build" -G Ninja \
@@ -133,8 +160,8 @@ for sdk in iphoneos iphonesimulator; do
             echo "Could not read the generated array name from: $host_blob_c" >&2
             exit 1
         fi
-        xcrun -sdk "$sdk" metal -c "$source" -o "$output_base.air"
-        xcrun -sdk "$sdk" metallib "$output_base.air" -o "$output_base.metallib"
+        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metal -c "$source" -o "$output_base.air"
+        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metallib "$output_base.air" -o "$output_base.metallib"
         "$file_to_c" "$output_base.metallib" "$array_name" \
             "$output_base.c" "$output_base.h"
     done < "$metal_sources"

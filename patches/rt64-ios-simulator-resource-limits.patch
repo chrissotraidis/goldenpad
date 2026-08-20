@@ -1,0 +1,139 @@
+diff --git a/src/render/rt64_descriptor_sets.h b/src/render/rt64_descriptor_sets.h
+index 69a82ac..a2715f5 100644
+--- a/src/render/rt64_descriptor_sets.h
++++ b/src/render/rt64_descriptor_sets.h
+@@ -237,51 +237,6 @@ namespace RT64 {
+             gNearestMirrorMirrorSampler = builder.addImmutableSampler(20, samplerLibrary.nearest.mirrorMirror.get());
+             gNearestMirrorClampSampler = builder.addImmutableSampler(21, samplerLibrary.nearest.mirrorClamp.get());
+             gNearestClampWrapSampler = builder.addImmutableSampler(22, samplerLibrary.nearest.clampWrap.get());
+-            gNearestClampMirrorSampler = builder.addImmutableSampler(23, samplerLibrary.nearest.clampMirror.get());
+-            gNearestClampClampSampler = builder.addImmutableSampler(24, samplerLibrary.nearest.clampClamp.get());
+-            RtParams = builder.addConstantBuffer(25);
+-            SceneBVH = raytracing ? builder.addAccelerationStructure(26) : 0;
+-            posBuffer = builder.addByteAddressBuffer(27);
+-            normBuffer = builder.addByteAddressBuffer(28);
+-            velBuffer = builder.addByteAddressBuffer(29);
+-            genTexCoordBuffer = builder.addByteAddressBuffer(30);
+-            shadedColBuffer = builder.addByteAddressBuffer(31);
+-            srcFogIndices = builder.addByteAddressBuffer(32);
+-            srcLightIndices = builder.addByteAddressBuffer(33);
+-            srcLightCounts = builder.addByteAddressBuffer(34);
+-            indexBuffer = builder.addByteAddressBuffer(35);
+-            RSPFogVector = builder.addStructuredBuffer(36);
+-            RSPLightVector = builder.addStructuredBuffer(37);
+-            instanceExtraParams = builder.addStructuredBuffer(38);
+-            SceneLights = builder.addStructuredBuffer(39);
+-            interleavedRasters = builder.addStructuredBuffer(40);
+-            gHitVelocityDistance = builder.addReadWriteFormattedBuffer(41);
+-            gHitColor = builder.addReadWriteFormattedBuffer(42);
+-            gHitNormalFog = builder.addReadWriteFormattedBuffer(43);
+-            gHitInstanceId = builder.addReadWriteFormattedBuffer(44);
+-            gViewDirection = builder.addReadWriteTexture(45);
+-            gShadingPosition = builder.addReadWriteTexture(46);
+-            gShadingNormal = builder.addReadWriteTexture(47);
+-            gShadingSpecular = builder.addReadWriteTexture(48);
+-            gDiffuse = builder.addReadWriteTexture(49);
+-            gInstanceId = builder.addReadWriteTexture(50);
+-            gDirectLightAccum = builder.addReadWriteTexture(51);
+-            gIndirectLightAccum = builder.addReadWriteTexture(52);
+-            gReflection = builder.addReadWriteTexture(53);
+-            gRefraction = builder.addReadWriteTexture(54);
+-            gTransparent = builder.addReadWriteTexture(55);
+-            gFlow = builder.addReadWriteTexture(56);
+-            gReactiveMask = builder.addReadWriteTexture(57);
+-            gLockMask = builder.addReadWriteTexture(58);
+-            gNormalRoughness = builder.addReadWriteTexture(59);
+-            gDepth = builder.addReadWriteTexture(60);
+-            gPrevNormalRoughness = builder.addReadWriteTexture(61);
+-            gPrevDepth = builder.addReadWriteTexture(62);
+-            gPrevDirectLightAccum = builder.addReadWriteTexture(63);
+-            gPrevIndirectLightAccum = builder.addReadWriteTexture(64);
+-            gFilteredDirectLight = builder.addReadWriteTexture(65);
+-            gFilteredIndirectLight = builder.addReadWriteTexture(66);
+-            gBlueNoise = builder.addTexture(67);
+             builder.end();
+ 
+             if (device != nullptr) {
+diff --git a/src/shaders/FbRendererCommon.hlsli b/src/shaders/FbRendererCommon.hlsli
+index bc250a2..1df00ed 100644
+--- a/src/shaders/FbRendererCommon.hlsli
++++ b/src/shaders/FbRendererCommon.hlsli
+@@ -36,8 +36,6 @@ SamplerState gNearestMirrorWrapSampler : register(s19, space0);
+ SamplerState gNearestMirrorMirrorSampler : register(s20, space0);
+ SamplerState gNearestMirrorClampSampler : register(s21, space0);
+ SamplerState gNearestClampWrapSampler : register(s22, space0);
+-SamplerState gNearestClampMirrorSampler : register(s23, space0);
+-SamplerState gNearestClampClampSampler : register(s24, space0);
+ 
+ // Set 1 - RGBA32 texture cache.
+ Texture2D<float4> gTextures[8192] : register(t0, space1);
+diff --git a/src/shaders/TextureSampler.hlsli b/src/shaders/TextureSampler.hlsli
+index 1ceb2ce..70cd890 100644
+--- a/src/shaders/TextureSampler.hlsli
++++ b/src/shaders/TextureSampler.hlsli
+@@ -132,10 +132,10 @@ float4 sampleTextureNative(Texture2D texture, uint nativeSampler, int2 texelBase
+         case NATIVE_SAMPLER_CLAMP_WRAP:
+             return texture.SampleLevel(gNearestClampWrapSampler, nativeUVCoord, 0.0f);
+         case NATIVE_SAMPLER_CLAMP_MIRROR:
+-            return texture.SampleLevel(gNearestClampMirrorSampler, nativeUVCoord, 0.0f);
++            return texture.SampleLevel(gNearestClampWrapSampler, nativeUVCoord, 0.0f);
+         case NATIVE_SAMPLER_CLAMP_CLAMP:
+         default:
+-            return texture.SampleLevel(gNearestClampClampSampler, nativeUVCoord, 0.0f);
++            return texture.SampleLevel(gNearestClampWrapSampler, nativeUVCoord, 0.0f);
+     }
+ }
+ 
+@@ -309,10 +309,10 @@ float4 sampleTexture(OtherMode otherMode, RenderFlags renderFlags, float2 inputU
+                 case NATIVE_SAMPLER_CLAMP_WRAP:
+                     return texture.SampleGrad(gLinearClampWrapSampler, nativeUVCoord, ddxUVNorm, ddyUVNorm);
+                 case NATIVE_SAMPLER_CLAMP_MIRROR:
+-                    return texture.SampleGrad(gLinearClampMirrorSampler, nativeUVCoord, ddxUVNorm, ddyUVNorm);
++                    return texture.SampleGrad(gLinearClampWrapSampler, nativeUVCoord, ddxUVNorm, ddyUVNorm);
+                 case NATIVE_SAMPLER_CLAMP_CLAMP:
+                 default:
+-                    return texture.SampleGrad(gLinearClampClampSampler, nativeUVCoord, ddxUVNorm, ddyUVNorm);
++                    return texture.SampleGrad(gLinearClampWrapSampler, nativeUVCoord, ddxUVNorm, ddyUVNorm);
+             }
+         }
+     }
+@@ -356,4 +356,4 @@ float4 sampleTexture(OtherMode otherMode, RenderFlags renderFlags, float2 inputU
+     }
+     
+     return textureColor;
+-}
+\ No newline at end of file
++}
+diff --git a/src/render/rt64_shader_library.cpp b/src/render/rt64_shader_library.cpp
+index 7ee856d..e7bbec8 100644
+--- a/src/render/rt64_shader_library.cpp
++++ b/src/render/rt64_shader_library.cpp
+@@ -853,28 +853,5 @@ namespace RT64 {
+         }
+         
+         // Raytracing debug.
+-        {
+-            FramebufferRendererDescriptorCommonSet descriptorCommonSet(samplerLibrary, deviceCapabilities.raytracing);
+-            FramebufferRendererDescriptorTextureSet descriptorTextureSet;
+-            FramebufferRendererDescriptorFramebufferSet descriptorFramebufferSet;
+-            layoutBuilder.begin();
+-            layoutBuilder.addDescriptorSet(descriptorCommonSet);
+-            layoutBuilder.addDescriptorSet(descriptorTextureSet);
+-            layoutBuilder.addDescriptorSet(descriptorTextureSet);
+-            layoutBuilder.addDescriptorSet(descriptorFramebufferSet);
+-            layoutBuilder.end();
+-            debug.pipelineLayout = layoutBuilder.create(device);
+-
+-            std::unique_ptr<RenderShader> pixelShader = device->createShader(CREATE_SHADER_INPUTS(DebugPSBlobDXIL, DebugPSBlobSPIRV, DebugPSBlobMSL, "PSMain", shaderFormat));
+-            RenderGraphicsPipelineDesc pipelineDesc;
+-            pipelineDesc.pipelineLayout = debug.pipelineLayout.get();
+-            pipelineDesc.renderTargetBlend[0] = RenderBlendDesc::AlphaBlend();
+-            pipelineDesc.renderTargetFormat[0] = RenderTarget::colorBufferFormat(usesHDR);
+-            pipelineDesc.renderTargetCount = 1;
+-            pipelineDesc.vertexShader = fullScreenVertexShader.get();
+-            pipelineDesc.pixelShader = pixelShader.get();
+-            pipelineDesc.multisampling = multisampling;
+-            debug.pipeline = device->createGraphicsPipeline(pipelineDesc);
+-        }
+
+         // RSP Vertex Test Z.

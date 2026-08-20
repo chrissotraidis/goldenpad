@@ -202,7 +202,22 @@ diff --git a/plume_metal.cpp b/plume_metal.cpp
 index 373c87e..0c24a02 100644
 --- a/plume_metal.cpp
 +++ b/plume_metal.cpp
-@@ -2022,12 +2022,20 @@ namespace plume {
+@@ -1959,8 +1959,14 @@ namespace plume {
+         // According to Apple, presenting via scheduled handler is more performant than using the presentDrawable method.
+         // We grab the underlying drawable because we might've acquired a new one by now and the old one would have been released.
+         CA::MetalDrawable *drawableMtl = drawable.mtl->retain();
++#if TARGET_OS_IPHONE
++        // On iPadOS the command buffer owns presentation. Calling present on
++        // a scheduled handler leaves the host CAMetalLayer black.
++        presentBuffer->presentDrawable(drawableMtl);
++#else
+         presentBuffer->addScheduledHandler([drawableMtl](MTL::CommandBuffer* cmdBuffer) {
+             drawableMtl->present();
+         });
++#endif
+ 
+         presentBuffer->addCompletedHandler([drawableMtl, presentId, this](MTL::CommandBuffer* cmdBuffer) {
+@@ -2022,12 +2028,20 @@ namespace plume {
 
      void MetalSwapChain::setVsyncEnabled(const bool vsyncEnabled) {
          MetalAutoreleasePool releasePool;
@@ -253,10 +268,12 @@ index 373c87e..0c24a02 100644
 
          const std::string deviceName(mtl->name()->utf8String());
          description.name = deviceName;
-@@ -3797,6 +3809,10 @@ namespace plume {
+@@ -3797,9 +3809,19 @@ namespace plume {
          const std::string deviceName(mtl->name()->utf8String());
          description.name = deviceName;
-+#if TARGET_OS_SIMULATOR
++#if TARGET_OS_IPHONE
++        // MTLDevice.location is a macOS-only selector. Physical Apple GPUs
++        // expose AGX device objects without it, just like the Simulator.
 +        description.type = RenderDeviceType::VIRTUAL;
 +#else
          description.type = mapDeviceType(mtl->location());
@@ -264,6 +281,14 @@ index 373c87e..0c24a02 100644
          description.driverVersion = 1; // Unavailable
          description.vendor = mtl->supportsFamily(MTL::GPUFamilyApple1) ? RenderDeviceVendor::APPLE : getRenderDeviceVendor(mtl->registryID());
          description.dedicatedVideoMemory = mtl->recommendedMaxWorkingSetSize();
+ 
+-        timestampCounterSet = findTimestampCounterSet();
++#if TARGET_OS_SIMULATOR
++        timestampCounterSet = nullptr;
++#else
++        timestampCounterSet = findTimestampCounterSet();
++#endif
+         if (timestampCounterSet != nullptr) {
 @@ -4193,10 +4209,16 @@ namespace plume {
          capabilities.shaderFormat = RenderShaderFormat::METAL;
 
@@ -284,3 +309,4 @@ index 373c87e..0c24a02 100644
 +            device->release();
          }
      }
+ 
