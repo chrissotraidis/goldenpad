@@ -10,6 +10,8 @@
   mobile build and separate Apple-Silicon Mac Alpha artifact. This promotes
   macOS to official GoldenPad project support in Alpha status while preserving
   the disclosed input, blue-edge and sustained-performance debt.
+- Merged PR #10 into `main` as `b3d4cc4`; local `main`, `origin/main` and the
+  GitHub default-branch ref matched before release publication.
 - Found that the tracked mobile viewport patch had advanced while the ignored
   generated patch embedding was stale. Regenerated the matched MIPS patch and
   both C embeddings, then added configure-time guards that require the current

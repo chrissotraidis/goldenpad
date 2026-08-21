@@ -62,7 +62,7 @@ native Apple-Silicon macOS uses a separate `GoldenPad.app`.
   `7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`.
 - [x] Reconcile README, Status, Testing, Technical Debt, Worklog and release
   notes against the exact final artifacts before publishing.
-- [ ] Confirm local `main`, `origin/main` and GitHub's default branch match only
+- [x] Confirm local `main`, `origin/main` and GitHub's default branch match only
   after the reviewed source and both artifact records are complete.
 
 Do not reopen Mac renderer/input surgery for this update. The current Mac alpha
