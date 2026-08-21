@@ -6,6 +6,17 @@ build_dir=${GOLDENPAD_RECOMP_BUILD_DIR:-"$repo_root/build-recomp-prototype-simul
 bundle_identifier=${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad.recomp-prototype}
 rt64_archive_dir=${GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR:-}
 rt64_source_dir=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-}
+render_patch="$repo_root/patches/goldeneye64recomp-ios-prototype-render-trace.patch"
+
+if [ "$(grep -Fc 'gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, viGetX(), osViGetCurrentFramebuffer());' "$render_patch")" -ne 2 ]; then
+    echo "The GoldenEye skybox patch must restore the current framebuffer in both fill paths." >&2
+    exit 1
+fi
+
+if ! grep -Fq 'clear_buffer -= SCREEN_WIDTH * SCREEN_HEIGHT;' "$render_patch"; then
+    echo "The GoldenEye multiplayer depth clear must use the lower-view depth-image alias." >&2
+    exit 1
+fi
 
 if [ -n "$rt64_archive_dir" ] && [ -z "$rt64_source_dir" ]; then
     echo "GOLDENPAD_RECOMP_RT64_SOURCE_DIR is required with prototype RT64 archives." >&2
@@ -42,6 +53,7 @@ for required_symbol in \
     goldenpad_recomp_set_right_analog \
     goldenpad_recomp_set_controller_connected \
     goldenpad_recomp_set_two_player_test_mode \
+    goldenpad_recomp_set_four_player_test_mode \
     goldenpad_recomp_queue_touch_look \
     goldenpad_recomp_request_crouch_toggle \
     goldenpad_recomp_request_return_to_title \
@@ -58,7 +70,8 @@ for required_text in \
     'iPhone Touch Layout' \
     'iPad Touch Layout' \
     'recomp.touchLayout.phone.v1' \
-    'recomp.touchLayout.tablet.v1'
+    'recomp.touchLayout.tablet.v1' \
+    'Experimental four-player render test'
 do
     strings "$binary" | grep -Fq "$required_text"
 done

@@ -1,0 +1,54 @@
+diff --git a/plume_apple.h b/plume_apple.h
+index e2e3a87..65bf7f0 100644
+--- a/plume_apple.h
++++ b/plume_apple.h
+@@ -23,7 +23,9 @@ namespace plume {
+         void* windowHandle;
+         CocoaWindowAttributes cachedAttributes;
+         std::atomic<int> cachedRefreshRate;
+         mutable std::mutex attributesMutex;
++        std::atomic<bool> attributesUpdatePending;
++        std::atomic<bool> refreshRateUpdatePending;
+-
++
+         void updateWindowAttributesInternal(bool forceSync = false);
+         void updateRefreshRateInternal(bool forceSync = false);
+diff --git a/plume_apple.mm b/plume_apple.mm
+index c76b907..b0f44c2 100644
+--- a/plume_apple.mm
++++ b/plume_apple.mm
+@@ -103,3 +103,5 @@ namespace plume {
+     CocoaWindow::CocoaWindow(void* window)
+-        : windowHandle(window), cachedRefreshRate(0) {
++        : windowHandle(window), cachedRefreshRate(0),
++          attributesUpdatePending(false),
++          refreshRateUpdatePending(false) {
+         cachedAttributes = {0, 0, 0, 0};
+@@ -124,6 +126,12 @@ namespace plume {
+         if (forceSync) {
+             dispatch_sync(dispatch_get_main_queue(), updateBlock);
+         } else {
+-            dispatch_async(dispatch_get_main_queue(), updateBlock);
++            bool expected = false;
++            if (attributesUpdatePending.compare_exchange_strong(expected, true)) {
++                dispatch_async(dispatch_get_main_queue(), ^{
++                    updateBlock();
++                    attributesUpdatePending.store(false);
++                });
++            }
+         }
+     }
+@@ -137,6 +145,12 @@ namespace plume {
+         if (forceSync) {
+             dispatch_sync(dispatch_get_main_queue(), updateBlock);
+         } else {
+-            dispatch_async(dispatch_get_main_queue(), updateBlock);
++            bool expected = false;
++            if (refreshRateUpdatePending.compare_exchange_strong(expected, true)) {
++                dispatch_async(dispatch_get_main_queue(), ^{
++                    updateBlock();
++                    refreshRateUpdatePending.store(false);
++                });
++            }
+         }
+     }

@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-21
+Updated: 2026-08-22
 
 This document records upstream changes that can materially improve GoldenPad,
 the evidence required before adopting them, and the known debt that should be
@@ -14,11 +14,13 @@ as GoldenPad's primary iPhone/iPad runtime. Keep exact MGB64 pin
 `cd9b58f5f91291579b8e551aa925aab000d311cf` buildable as `GoldenPad Legacy` for
 regression comparison and fallback, not as the release product.
 
-Preview 1 deliberately leaves the following primary-runtime debt visible:
+The current preview line deliberately leaves the following primary-runtime
+debt visible:
 
-- local multiplayer is experimental and unstable, with split-screen flashing;
-- the public setup requires a user-derived TLBFREE input copied through Finder
-  file sharing instead of an in-app retail conversion flow;
+- local multiplayer has a physically coherent experimental baseline, but slight
+  lighting flicker and real three/four-controller routing remain open;
+- Preview 2 has the bounded in-app retail conversion flow, but its exact final
+  first-run path still needs hands-on acceptance on both iPhone and iPad;
 - occasional audio static and stage-specific geometry faults need precise
   reproduction and bounded fixes;
 - six anonymous `/private/tmp/goldenpad-recomp.*` compiler source literals
@@ -30,6 +32,153 @@ Preview 1 deliberately leaves the following primary-runtime debt visible:
 Do not regress the accepted single-player speed, high-resolution renderer,
 touch tuning, controller mapping, save compatibility, or clean-install defaults
 while addressing that debt.
+
+## macOS alpha disposition — 2026-08-21
+
+The native Apple-Silicon Mac product is retained as an **alpha**, one quality
+tier below the accepted iPhone/iPad single-player experience. The current
+packaged-source artifact is an arm64 `GoldenPad.app` whose product, bundle display
+name and executable are all `GoldenPad`; its executable SHA-256 is
+`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
+Hands-on review reached real gameplay and found the current build stable enough
+to preserve as the Mac alpha baseline, after which the user intentionally quit
+the app. That is alpha acceptance, not sustained-performance or release-parity
+evidence.
+
+The remaining Mac alpha debt is explicit:
+
+- mouse look works but remains too slow and the keyboard/mouse experience is
+  less natural than touch or controller input; the persisted sensitivity range
+  needs a later hands-on tuning pass;
+- a thin blue strip remains at the far-right render edge;
+- the Mac build performs below the iPhone/iPad versions, and prior iterations
+  have staggered or frozen under load, so sustained gameplay still needs a
+  bounded acceptance pass without screen recording or continuous diagnostics;
+- direct numeric weapon selection and accepted Mac multiplayer assignment are
+  not implemented; and
+- the separate arm64 Alpha archive is package-audited, while
+  oldest-supported-OS testing and notarization remain future gates.
+
+Freeze the accepted renderer/input boundary for the coordinated release. Do not
+try to remove the thin blue edge by changing RT64's window-size contract, and do
+not rewrite camera/player fields to make mouse input feel more desktop-like.
+Those experiments caused much worse world-geometry and control regressions. A
+later Mac-only repair must reproduce the thin edge, preserve Dam/Surface scene
+geometry, and pass the full input/render gate before replacing this baseline.
+
+Preview 2 is one coordinated source baseline, not one cross-platform binary.
+iPhone and iPad ship in an `.ipa`; macOS ships as a separate arm64 Alpha archive
+containing `GoldenPad.app`. Mobile multiplayer remains experimental despite the
+accepted render baseline because residual flicker and real Player 3/4 routing
+remain open.
+
+### Rejected macOS camera/input regressions
+
+A failed native Mac iteration attempted to suppress GoldenEye's automatic
+look-ahead by writing player camera fields directly while the mouse was
+captured. Hands-on testing rejected that build. Subsequent isolation found two
+independent regressions: the generated recompiler patch pair no longer
+contained the game-side camera and crouch bridge calls, and a Plume experiment
+that substituted
+`CAMetalLayer.drawableSize` for the swap chain's window size changed RT64's
+viewport contract. The latter expanded the former thin blue edge into large
+blue, missing, and duplicated room/background regions. Menu mouse Y was also
+reversed, and the enabled unlock-all-missions option did not expose later
+missions.
+
+That direct player-structure approach is prohibited from returning. Modern Mac
+mouse work must remain inside the accepted Metal-view input boundary and the
+existing camera-input patch; it must not write undocumented player/camera
+fields. The retained 21:16:44 `GoldenPadMac` executable is the hands-on control:
+mouse look and Crouch worked there. The generated `patches.c` and
+`patches_bin.c` were then replaced at 21:16:53 and 21:17:12 without the modern
+controls patch, so every later executable had host producers but no game-side
+consumer. Active Dam stage 33 with queued look `(0,0)` was therefore not proof
+of an AppKit event-delivery defect.
+
+Future regeneration must apply
+`patches/goldeneye64recomp-ios-modern-controls.patch` first and regenerate both
+halves of the embedded patch together. Before linking, verify generated
+`RecompiledPatches/patches.c` calls both `recomp_get_camera_inputs` and
+`goldenpad_recomp_consume_crouch_toggle`. Treat either missing call as a failed
+build. Do not replace the accepted view callbacks with an app-local event
+monitor to compensate for a missing game patch. Plume's swap-chain window-size
+query must likewise remain the
+accepted baseline until a separate, Mac-only edge fix passes scene comparisons;
+using the Metal drawable size there is a recorded rejected approach. The
+mission toggle must drive GoldenEye's retail debug-unlock global without
+modifying EEPROM or fabricating completion records.
+
+Any Mac input candidate must be rejected if Dam/Surface geometry differs from
+the last accepted RT64 rendering, captured mouse movement fails in either axis,
+menu pointer directions disagree with WASD, crouching changes camera pitch on
+its own, or unlock-all-missions changes the toggle without changing mission
+availability. A successful build and live PID are not acceptance for these
+interaction and rendering gates. Direct numeric weapon selection remains open;
+GoldenEye's current bridge exposes weapon cycling, not stable inventory-slot
+selection, so number-key behavior must not be fabricated without a game-side
+contract.
+
+The retained 21:16:44 executable later froze during extended hands-on use, so
+it is a comparison control, not a release fallback. A rebuilt candidate using
+the later multiplayer viewport patch also staggered and accumulated 46,323
+audio-underrun frames across 396 callbacks; the same host audio renderer in the
+retained control initially reported zero underruns. The Mac single-player
+candidate therefore isolates the compact 349-function patch set from the
+356-function multiplayer-derived set. That isolation must pass gameplay,
+audio, and freeze gates before it becomes the reproducible Mac configuration.
+
+The first compact candidate still became staggered and effectively
+uncontrollable. Its bounded log showed that rendering and audio initially
+progressed, while an earlier session later collapsed to only a few VI updates
+per interval and began accumulating underruns. QuickTime was not running when
+the process state was checked, so capture load may worsen the symptom but is
+not an adequate root-cause explanation. Source isolation found that Plume's
+background render thread requested both window attributes and refresh rate on
+every presentation, and each request enqueued a new AppKit main-queue block.
+That queue is also responsible for keyboard, mouse, and host timers. The Mac
+dependency build now applies
+`patches/plume-macos-main-queue-coalescing.patch`, which permits at most one
+pending update of each kind. Do not remove that bound or reintroduce an
+unbounded per-frame dispatch to the main queue.
+
+## Local multiplayer debt and sequencing
+
+The immediate Preview 2 blocker is stable two-player local multiplayer on iOS
+and iPadOS. Source tracing found full-frame render-target, sky, scissor, fade and
+depth-clear assumptions in the current GoldenEye64Recomp patches even though
+GoldenEye renders each player sequentially into a shared framebuffer. Repair and
+physically accept that path before expanding multiplayer scope.
+
+The first physical viewport-scoping candidate did not remove the temporal
+corruption. A bounded iPad recording showed the black/checkerboard region
+recovering and migrating between lower player views while presentation and all
+four player passes continued. The current follow-up candidate targets a deeper
+N64-to-RT64 ownership mismatch: GoldenEye shifts the lower players' depth-image
+base by one logical screen and relies on address/Y aliasing, whereas RT64's
+fill-only depth-clear fast path requires the clear address to exactly equal the
+following depth-image address. The candidate now clears lower players through
+that same shifted address and their original viewport Y range. Do not mark this
+debt resolved until physical two-player and four-player video remains clean;
+Simulator-only stability is not acceptance.
+
+The physical four-player retest of executable SHA-256
+`0976dcdfd17de60beda8e8e60ccff3fc81da7da0b2ef43f159cdea061149677d`
+removed the former large black/checkerboard corruption and establishes the
+stable experimental Preview 2 baseline. Slight lighting flicker remains as a
+separate, lower-severity debt item. Preserve this exact build and do not reopen
+the successful depth-alias repair speculatively unless the large corruption
+returns or a bounded lighting-state defect is identified.
+
+The four-port neutral render diagnostic now exists on iOS/iPadOS, but physical
+iPad testing with real three/four-controller routing and a macOS assignment
+remain open. Multiplayer LOD/effects restoration and network research are
+specified in
+[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md). They must not be bundled into
+the first two-player rendering repair. In particular, do not assume RT64's higher
+output resolution removes GoldenEye's fixed stage, effect, vertex or display-list
+budgets, and do not load single-player gameplay objects into multiplayer under a
+visual-quality label.
 
 ## Historical decomp/MGB64 watch
 

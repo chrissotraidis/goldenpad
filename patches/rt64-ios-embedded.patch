@@ -9,8 +9,8 @@
 +set(RT64_EMBEDDED_APPLE_SOURCE_DIR "" CACHE PATH "GoldenPad RT64 embedded shim directory")
 
 +if (RT64_EMBEDDED_APPLE)
-+    if (NOT APPLE OR NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-+        message(FATAL_ERROR "RT64_EMBEDDED_APPLE is only supported for iOS builds")
++    if (NOT APPLE OR (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
++        message(FATAL_ERROR "RT64_EMBEDDED_APPLE is only supported for native Apple builds")
 +    endif()
 +    if (NOT RT64_PREGENERATED_SHADER_DIR OR NOT RT64_EMBEDDED_APPLE_SOURCE_DIR)
 +        message(FATAL_ERROR "Embedded Apple builds require pregenerated shaders and shim sources")

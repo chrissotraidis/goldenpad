@@ -5,6 +5,7 @@
 #include "librecomp/rsp.hpp"
 #include "ultramodern/config.hpp"
 #include "ultramodern/ultramodern.hpp"
+#include "xxHash/xxh3.h"
 #include "zelda_render.h"
 
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include <os/log.h>
 #include <string>
 #include <thread>
+#include <vector>
 
 extern RspUcodeFunc aspMain;
 gpr get_entrypoint_address();
@@ -34,9 +36,11 @@ void register_patches();
 
 namespace {
 constexpr uint64_t kGoldenEyeTlbFreeHash = 0xd49fb2a8d6d3bd65ULL;
+constexpr std::streamsize kGoldenEyeTlbFreeSize = 0xC11460;
 const std::u8string kGameID = u8"ge007.us";
 
 std::atomic<bool> runtimeStarted = false;
+std::atomic<uint8_t *> activeRdram = nullptr;
 constexpr size_t kControllerPorts = 4;
 std::array<std::atomic<uint32_t>, kControllerPorts> controllerButtons{};
 std::array<std::atomic<int32_t>, kControllerPorts> controllerStickX{};
@@ -58,6 +62,7 @@ std::atomic<bool> returnToTitleRequested = false;
 std::atomic<bool> appActive = true;
 std::atomic<bool> controllerConnected = false;
 std::atomic<bool> twoPlayerTestMode = false;
+std::atomic<bool> fourPlayerTestMode = false;
 std::atomic<uint64_t> rt64DisplayListCount = 0;
 std::atomic<uint64_t> rt64ScreenUpdateCount = 0;
 std::atomic<uint64_t> rt64PresentedCount = 0;
@@ -228,6 +233,10 @@ int32_t readGameWord(uint8_t *rdram, uint32_t address) {
     return MEM_W(0, static_cast<gpr>(static_cast<int32_t>(address)));
 }
 
+void writeGameWord(uint8_t *rdram, uint32_t address, int32_t value) {
+    MEM_W(0, static_cast<gpr>(static_cast<int32_t>(address))) = value;
+}
+
 float readGameFloat(uint8_t *rdram, uint32_t address) {
     return std::bit_cast<float>(static_cast<uint32_t>(readGameWord(rdram, address)));
 }
@@ -292,8 +301,9 @@ void monitorGameState(uint8_t *rdram) {
                 static_cast<unsigned long long>(audioDroppedFrames.load(std::memory_order_relaxed)),
                 static_cast<unsigned long long>(audioUnderrunFrames.load(std::memory_order_relaxed)),
                 static_cast<unsigned long long>(audioUnderrunCallbacks.load(std::memory_order_relaxed)),
-                twoPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2" :
-                    (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" : "touch-p1"),
+                fourPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2+neutral-p3/p4" :
+                    (twoPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2" :
+                        (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" : "touch-p1")),
                 controllerLookX[0].load(std::memory_order_relaxed),
                 controllerLookY[0].load(std::memory_order_relaxed),
                 controllerLookX[1].load(std::memory_order_relaxed),
@@ -332,11 +342,23 @@ void monitorGameState(uint8_t *rdram) {
         previousScreenUpdates = screenUpdates;
         previousPresented = presented;
         heartbeat = (heartbeat + 1) % 5;
+#if defined(GOLDENPAD_RECOMP_MAC)
+        // Keep release diagnostics available without polling shared game state
+        // frequently enough to perturb the desktop runtime.
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+#else
         std::this_thread::sleep_for(std::chrono::seconds(2));
+#endif
     }
 }
 
 void installGoldenEyeRuntimeStubs(uint8_t *rdram, recomp_context *) {
+    activeRdram.store(rdram, std::memory_order_release);
+    // The retail unlock check reads this debug global directly. Initialize it
+    // when RDRAM becomes available so a setting restored at app launch works
+    // before the first mission-select screen without touching save data.
+    writeGameWord(rdram, 0x80036DB4,
+        unlockAllMissions.load(std::memory_order_relaxed) ? 1 : 0);
     // Overlay initialization clears its dynamic dispatch map immediately before
     // the game threads begin. Install GoldenEye's unused rmon monitor stubs at
     // thread creation so indirect calls see them after that reset.
@@ -411,7 +433,8 @@ void pollInput() {
 }
 bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
     const bool portAvailable = controllerNum == 0 ||
-        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed));
+        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
+        (controllerNum >= 2 && controllerNum < 4 && fourPlayerTestMode.load(std::memory_order_relaxed));
     if (!portAvailable || buttons == nullptr || x == nullptr || y == nullptr) {
         const uint8_t reportBit = controllerNum >= 0 && controllerNum < 4
             ? static_cast<uint8_t>(1u << controllerNum)
@@ -442,7 +465,8 @@ void setRumble(int controllerNum, bool enabled) {
 }
 ultramodern::input::connected_device_info_t getConnectedDeviceInfo(int controllerNum) {
     const bool portAvailable = controllerNum == 0 ||
-        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed));
+        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
+        (controllerNum >= 2 && controllerNum < 4 && fourPlayerTestMode.load(std::memory_order_relaxed));
     if (portAvailable) {
         const uint8_t reportBit = static_cast<uint8_t>(1u << controllerNum);
         if ((controllerPortsReported.fetch_or(reportBit) & reportBit) == 0) {
@@ -559,6 +583,26 @@ extern "C" const char *goldenpad_recomp_start_game(void *window, void *view, con
     return "AOT runtime: launch requested";
 }
 
+extern "C" int32_t goldenpad_recomp_validate_tlbfree_rom(const char *romPath) {
+    if (romPath == nullptr) {
+        return 0;
+    }
+    std::ifstream input(std::filesystem::path(romPath), std::ios::binary | std::ios::ate);
+    if (!input.good()) {
+        return 0;
+    }
+    const std::streamsize size = input.tellg();
+    if (size != kGoldenEyeTlbFreeSize) {
+        return 0;
+    }
+    input.seekg(0, std::ios::beg);
+    std::vector<uint8_t> bytes(static_cast<size_t>(size));
+    if (!input.read(reinterpret_cast<char *>(bytes.data()), size)) {
+        return 0;
+    }
+    return XXH3_64bits(bytes.data(), bytes.size()) == kGoldenEyeTlbFreeHash ? 1 : 0;
+}
+
 extern "C" const char *goldenpad_recomp_game_status() {
     thread_local std::string statusSnapshot;
     std::lock_guard lock(statusMutex);
@@ -611,6 +655,7 @@ extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
     const bool previous = controllerConnected.exchange(next, std::memory_order_relaxed);
     if (!next) {
         twoPlayerTestMode.store(false, std::memory_order_relaxed);
+        fourPlayerTestMode.store(false, std::memory_order_relaxed);
     }
     if (previous != next) {
         logEvent("input", "external controller %s; touch overlay %s",
@@ -622,11 +667,28 @@ extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
 extern "C" void goldenpad_recomp_set_two_player_test_mode(int32_t enabled) {
     const bool next = enabled != 0 && controllerConnected.load(std::memory_order_relaxed);
     const bool previous = twoPlayerTestMode.exchange(next, std::memory_order_relaxed);
+    if (!next) {
+        fourPlayerTestMode.store(false, std::memory_order_relaxed);
+    }
     if (previous != next) {
         controllerPortsReported.store(0, std::memory_order_relaxed);
         inputStateReported.store(0, std::memory_order_relaxed);
         invalidInputPortsReported.store(0, std::memory_order_relaxed);
         logEvent("input", "two-player test mode %s; external=P1 touch=P2",
+            next ? "enabled" : "disabled");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_four_player_test_mode(int32_t enabled) {
+    const bool next = enabled != 0 &&
+        controllerConnected.load(std::memory_order_relaxed) &&
+        twoPlayerTestMode.load(std::memory_order_relaxed);
+    const bool previous = fourPlayerTestMode.exchange(next, std::memory_order_relaxed);
+    if (previous != next) {
+        controllerPortsReported.store(0, std::memory_order_relaxed);
+        inputStateReported.store(0, std::memory_order_relaxed);
+        invalidInputPortsReported.store(0, std::memory_order_relaxed);
+        logEvent("input", "four-player render test %s; external=P1 touch=P2 neutral=P3/P4",
             next ? "enabled" : "disabled");
     }
 }
@@ -703,6 +765,9 @@ extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t enabled) {
 extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t enabled) {
     const bool next = enabled != 0;
     const bool previous = unlockAllMissions.exchange(next, std::memory_order_relaxed);
+    if (uint8_t *rdram = activeRdram.load(std::memory_order_acquire); rdram != nullptr) {
+        writeGameWord(rdram, 0x80036DB4, next ? 1 : 0);
+    }
     if (previous != next) {
         logEvent("progression", "unlock all missions %s; EEPROM unchanged", next ? "enabled" : "disabled");
     }
@@ -711,6 +776,34 @@ extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t enabled) {
 extern "C" void goldenpad_recomp_request_return_to_title() {
     returnToTitleRequested.store(true, std::memory_order_release);
     logEvent("navigation", "return to main menu requested");
+}
+
+extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() {
+#if defined(GOLDENPAD_RECOMP_MAC)
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
+        return 0;
+    }
+
+    constexpr int32_t kTitleStage = 90;
+    const int32_t stage = readGameWord(rdram, 0x80023FA8);
+    if (stage == kTitleStage) {
+        return 0;
+    }
+
+    const int32_t player = readGameWord(rdram, 0x80079EB0);
+    const uint32_t playerAddress = static_cast<uint32_t>(player);
+    if (playerAddress < 0x80000000 || playerAddress > 0x9FFFFFFF) {
+        return 0;
+    }
+
+    const int32_t watchLeft = readGameWord(rdram, playerAddress + 0x1C8);
+    const int32_t watchOutside = readGameWord(rdram, playerAddress + 0x1CC);
+    const int32_t watchRight = readGameWord(rdram, playerAddress + 0x1D0);
+    return watchLeft != 0 || watchOutside != 0 || watchRight != 0 ? 1 : 0;
+#else
+    return 1;
+#endif
 }
 
 extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
@@ -740,7 +833,14 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
     // GoldenEye's sight-aim camera applies the opposite vertical convention
     // from normal free look. Normalize that by default, while retaining an
     // explicit setting for players who prefer inverted aiming.
+#if defined(GOLDENPAD_RECOMP_MAC)
+    // On Mac the native setting follows its label: normal vertical aim is the
+    // default, and enabling "Invert vertical aim" performs the inversion.
+    if (aiming && invertAimY.load(std::memory_order_relaxed)) {
+#else
+    // Preserve the already tuned iPhone/iPad behavior.
     if (aiming && !invertAimY.load(std::memory_order_relaxed)) {
+#endif
         y = -y;
     }
     *xOut = x;
@@ -854,8 +954,20 @@ extern "C" void goldenpad_recomp_audio_stats(
 }
 
 extern "C" void goldenpad_recomp_stop_game() {
+#if defined(GOLDENPAD_RECOMP_MAC)
+    // N64ModernRuntime's graceful quit path can unmap RDRAM before every
+    // emulated OSThread has left game code, while a normal C++ exit runs
+    // destructors for process-lifetime joinable runtime threads. Close the
+    // diagnostic session, then use the OS process boundary without running
+    // either unsafe teardown path.
+    logEvent("lifecycle", "native Mac host is terminating");
+    markDiagnosticsSessionClean();
+    std::fflush(nullptr);
+    std::_Exit(EXIT_SUCCESS);
+#else
     if (runtimeStarted.load()) {
         logEvent("runtime", "stop requested by UIKit host");
         ultramodern::quit();
     }
+#endif
 }

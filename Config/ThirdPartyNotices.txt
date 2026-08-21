@@ -4,13 +4,15 @@ GoldenPad third-party notices
 GoldenPad is an unofficial project. Its original project code has no outbound
 license declared at this time. The notices below cover incorporated third-party
 components; they do not grant rights in GoldenEye 007, its decompiled code,
-assets, characters, music, or trademarks. The app contains no ROM or extracted
-retail assets and requires a user-supplied legally obtained retail dump.
+assets, characters, music, or trademarks. The app contains no complete ROM or
+standalone extracted retail media and requires a user-supplied legally obtained
+retail dump. Preview 2 includes GoldenEye64Recomp's pinned GEP1 transformation
+data; it is applied only to the verified user-supplied ROM on the user's device.
 
 Primary static-recompilation runtime
 ------------------------------------
 
-The GoldenPad Preview 1 package incorporates GoldenEye64Recomp and
+The GoldenPad package incorporates GoldenEye64Recomp and
 N64ModernRuntime under GPL-3.0, N64Recomp and RT64 under the MIT License, and
 RT64's Plume, re-spirv, Zstandard, fmt and Rabbitizer dependencies under their
 respective included licenses. The public package carries the complete license

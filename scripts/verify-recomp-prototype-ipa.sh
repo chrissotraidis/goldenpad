@@ -32,7 +32,9 @@ fi
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "2"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
+test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 
 if codesign -dv "$app_path" >/dev/null 2>&1; then
   echo "IPA is signed; expected an unsigned public artifact." >&2
@@ -47,6 +49,7 @@ if [ -n "$bad_names" ]; then
 fi
 
 known_hash='abe01e4aeb033b6c0836819f549c791b26cfde83'
+known_tlbfree_sha256='7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959'
 while IFS= read -r -d '' file_path; do
   size=$(stat -f '%z' "$file_path")
   magic=$(od -An -tx1 -N4 "$file_path" | tr -d ' \n')
@@ -60,13 +63,26 @@ while IFS= read -r -d '' file_path; do
     echo "Refusing known retail ROM bytes in archive." >&2
     exit 1
   fi
+  if [ "$size" -eq 12653664 ] && [ "$(shasum -a 256 "$file_path" | awk '{print $1}')" = "$known_tlbfree_sha256" ]; then
+    echo "Refusing known TLB-free ROM bytes in archive." >&2
+    exit 1
+  fi
 done < <(find "$goldenpad_audit" -type f -print0)
+
+rom_patch="$app_path/vanilla_to_tlbfree.gep1"
+if [ ! -f "$rom_patch" ] || [ "$(shasum -a 256 "$rom_patch" | awk '{print $1}')" != "5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263" ]; then
+  echo "IPA is missing the exact pinned Preview 2 GEP1 conversion patch." >&2
+  exit 1
+fi
 
 for required_symbol in \
   _goldenpad_recomp_start_game \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
+  _goldenpad_recomp_set_four_player_test_mode \
   _goldenpad_recomp_audio_render \
+  _goldenpad_recomp_import_rom \
+  _goldenpad_recomp_validate_tlbfree_rom \
   _goldenpad_recomp_request_return_to_title
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then

@@ -1,6 +1,6 @@
 # Status
 
-Updated: 2026-08-21
+Updated: 2026-08-22
 
 ## Summary
 
@@ -11,16 +11,89 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-The Preview 1 signed iPhone/iPad candidate launches real GoldenEye gameplay,
+The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
 installation, and has bounded single-player presentation/audio evidence. Touch
 and Xbox/MFi Player 1 control paths, separate phone/tablet touch layouts with a
 move/resize/opacity/reset editor, settings, diagnostics, return-to-menu plumbing,
 lifecycle handling, and the targeted multiplayer address-mask crash repair are
-integrated. The final iPhone touch editor, opacity control, accepted phone
+integrated. The accepted iPhone touch editor, opacity control, phone
 defaults, menu alignment, single-player gameplay and controller path received
-hands-on acceptance. Multiplayer remains explicitly experimental because the
-split-screen viewports visibly flash and the mode is not stable.
+hands-on acceptance in the preceding baseline. Multiplayer remains explicitly experimental: the latest
+physical build removes the former large split-screen corruption, but slight
+lighting flicker and real three/four-controller routing remain open.
+
+The first physical-iPad viewport follow-up was rejected after two-player still
+flashed in Player 2 and four-player corruption also reached the upper-right
+view. Live video then showed the corruption recover and migrate between lower
+views while the game loop remained healthy. A follow-up candidate now matches
+GoldenEye's shifted lower-player depth-image address during each clear, which is
+required by RT64's exact-address depth-clear tracking. It passed a 43.87-second
+four-player Simulator regression recording and is installed on the paired iPad
+at executable SHA-256
+`0976dcdfd17de60beda8e8e60ccff3fc81da7da0b2ef43f159cdea061149677d`.
+Physical four-player testing kept all four views coherent and did not reproduce
+the former black/checkerboard corruption. The user rated it the best build so
+far, with only slight residual lighting flicker. A 59.33-second device recording
+remained coherent across 3,336 consecutive frame comparisons, while the paired
+log reached 54,652 presented VI updates with zero audio drops or underruns.
+Freeze this executable as the Preview 2 stable experimental multiplayer
+baseline. Multiplayer is not yet bug-free or fully accepted pending the residual
+flicker investigation and real three/four-controller routing.
+
+GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
+the project's support status, not an official or commercial affiliation. The
+current arm64 Release product is `GoldenPad.app`; its product, display name and
+executable are all `GoldenPad`, and the final packaged-source executable
+SHA-256 is
+`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
+Hands-on review reached authentic gameplay with working keyboard and mouse
+input, and the user intentionally quit after evaluating it. The build is stable
+enough to retain as the Mac alpha baseline, but it is not at iPhone/iPad quality:
+mouse look remains too slow, desktop controls remain less polished, a thin blue
+strip persists at the far-right render edge, and longer performance testing is
+still open.
+
+Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
+input behavior; a mismatched generated patch removed the game-side mouse and
+Crouch consumers; substituting Metal drawable size for RT64's window-size
+contract expanded the thin blue edge into severe missing, duplicated and blue
+world geometry; and unbounded per-frame AppKit dispatch starved input and audio.
+The current source restores the matched input patch, retains the accepted
+window-size contract, and coalesces pending Plume window/refresh updates. Those
+rejected approaches and the remaining alpha debt are recorded in
+[`TECH_DEBT.md`](TECH_DEBT.md). No more Mac renderer surgery is planned for the
+coordinated update.
+
+The current iPhone/iPad single-player baseline and the Mac alpha both passed
+their latest hands-on launch/gameplay checks. This does not promote local
+multiplayer or Mac sustained performance to stable-release status. The
+coordinated repository update produces separate audited platform artifacts: an
+iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
+
+The exact final Preview 2 mobile executable SHA-256 is
+`100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`.
+It was installed in place on the connected iPhone and iPad as version `0.1.0`
+build `2` without changing app-data UUIDs
+`3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+`D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. Independent pre/post readbacks on both
+devices matched the Documents ROM, runtime ROM, active save, backup save and
+preferences; the exact build launched successfully on both devices. The user
+approved this exact rebuilt executable for publication after hands-on review.
+
+The audited Preview 2 mobile artifact is
+`GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
+`704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
+Its 18-member archive passed the ROM/save/signing/private-path audit and has
+sorted unsigned app-content SHA-256
+`bce1606fb88cf5a2a423875073871a8417d66f7b1462568bbbae390b72d1a5ec`.
+The audited Mac Alpha artifact is
+`GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip` at SHA-256
+`7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`;
+its 20-member archive has sorted app-content SHA-256
+`d07294bb9f9c1ca903ae7d9f84f5a75b1886796163fc2680b2a3730f38b3a342`.
+It contains a native arm64 macOS app, an ad-hoc signature, the GoldenPad icon
+and required notices, with no ROM, save, private path or non-system dependency.
 
 Exact Preview 1 signed executable
 `c0aee770a84482ee73e26042774ffd4119a09c73df20ff985327fc8ca08bea6f`
@@ -502,16 +575,28 @@ evidence ledger below is preserved as historical validation for
 
 ## Failed or blocked
 
-- Local multiplayer remains experimental. The earlier crash was repaired, but
-  split-screen flashing and physical multi-controller completion are not accepted.
+- Local multiplayer remains experimental. The earlier crash and large physical
+  split-screen corruption are repaired in the frozen Preview 2 baseline, but
+  slight lighting flicker remains. Enhanced multiplayer visuals and networking
+  are deferred in [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md).
+- An opt-in iOS/iPadOS four-player render diagnostic now advertises neutral
+  Players 3/4 without changing normal input routing. Its first ARM64 iPad
+  Simulator Temple run entered a real four-player match with all quadrants
+  correctly placed. Player 1 pause/watch remained isolated to its quadrant and
+  Player 1 controller plus Player 2 touch events registered independently.
+  All four views remained intact through 10,773 presented VI updates. The later
+  physical four-player run kept every quadrant coherent and is accepted as a
+  stable experimental render baseline. Real Player 3/4 controller routing is
+  not implemented or accepted.
 - Screenshot/background resume has previously frozen gameplay and needs a
   dedicated physical lifecycle pass.
 - A small amount of audible static has been reported during otherwise working
   audio; long-session speaker and route-change acceptance remains open.
 - Some maps can still expose original or renderer-specific geometry/clipping
   artifacts. Preview 1 does not claim complete stage/effect parity.
-- Preview 1 has no in-app retail-ROM conversion or importer. It requires a
-  compatible user-derived `GoldenEye_TLBFREE.z64` copied through file sharing.
+- Preview 2 includes the bounded in-app retail-ROM importer. Exact physical
+  first-run and negative-path acceptance on both iPhone and iPad remains open
+  quality work; a valid Preview 1 TLB-free input is preserved and reused.
 - The packaged executable retains six anonymous `/private/tmp/goldenpad-recomp.*`
   compiler source literals from prebuilt runtime archives. The verifier allows
   only those exact patterns and rejects user-home paths or other temporary paths.
@@ -519,8 +604,10 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Publish and verify the audited Preview 1 IPA and checksum, then use hands-on
-reports to prioritize lifecycle/audio fixes and multiplayer stabilization. Keep
-single-player behavior, accepted touch defaults, controller mapping, saves and
-user settings stable while addressing those items. Do not import matching-target
-SDK implementation sources or Xbox/XBLA material.
+Merge the reviewed source, confirm local and remote `main`, then publish and
+reverify the already audited mobile and Mac Alpha artifacts with their
+checksums. After publication, prioritize the
+documented lifecycle/audio, residual multiplayer flicker/routing and Mac Alpha
+input/edge/performance debt without changing the accepted single-player, touch,
+controller, save or settings baseline. Do not import matching-target SDK
+implementation sources or Xbox/XBLA material.

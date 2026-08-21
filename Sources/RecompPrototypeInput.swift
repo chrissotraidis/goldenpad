@@ -20,6 +20,9 @@ private func goldenPadRecompSetControllerConnected(_ connected: Int32)
 @_silgen_name("goldenpad_recomp_set_two_player_test_mode")
 private func goldenPadRecompSetTwoPlayerTestMode(_ enabled: Int32)
 
+@_silgen_name("goldenpad_recomp_set_four_player_test_mode")
+private func goldenPadRecompSetFourPlayerTestMode(_ enabled: Int32)
+
 @_silgen_name("goldenpad_recomp_queue_touch_look")
 private func goldenPadRecompQueueTouchLook(_ controller: Int32, _ x: Int32, _ y: Int32)
 
@@ -141,12 +144,14 @@ final class RecompPrototypeInput: ObservableObject {
     @Published private(set) var aimBehavior = RecompPrototypeAimBehavior.toggle
     @Published private(set) var controllerLookMode = RecompPrototypeControllerLookMode.analog
     @Published private(set) var twoPlayerTestModeActive = false
+    @Published private(set) var fourPlayerTestModeActive = false
     private var touchButtons: UInt16 = 0
     private var touchMovement = SIMD2<Float>.zero
     private var touchLook = SIMD2<Float>.zero
     private var touchCrouchIsPressed = false
     private var controllerCrouchWasPressed = false
     private var twoPlayerTestModeRequested = false
+    private var fourPlayerTestModeRequested = false
     private var lookSensitivity: Float = 4.0
     private var controller: GCController?
     private var controllerMapping = Dictionary(
@@ -229,14 +234,21 @@ final class RecompPrototypeInput: ObservableObject {
 
     func configureTwoPlayerTestMode(_ enabled: Bool) {
         twoPlayerTestModeRequested = enabled
-        let nextActive = enabled && controller != nil
-        guard twoPlayerTestModeActive != nextActive else {
-            goldenPadRecompSetTwoPlayerTestMode(nextActive ? 1 : 0)
-            return
-        }
-        twoPlayerTestModeActive = nextActive
-        goldenPadRecompSetTwoPlayerTestMode(nextActive ? 1 : 0)
-        if !nextActive && controller != nil {
+        updateTestModes()
+    }
+
+    func configureFourPlayerTestMode(_ enabled: Bool) {
+        fourPlayerTestModeRequested = enabled
+        updateTestModes()
+    }
+
+    private func updateTestModes() {
+        let wasTwoPlayerActive = twoPlayerTestModeActive
+        twoPlayerTestModeActive = twoPlayerTestModeRequested && controller != nil
+        fourPlayerTestModeActive = twoPlayerTestModeActive && fourPlayerTestModeRequested
+        goldenPadRecompSetTwoPlayerTestMode(twoPlayerTestModeActive ? 1 : 0)
+        goldenPadRecompSetFourPlayerTestMode(fourPlayerTestModeActive ? 1 : 0)
+        if wasTwoPlayerActive && !twoPlayerTestModeActive && controller != nil {
             releaseTouchInput()
         } else {
             publish()
@@ -295,11 +307,13 @@ final class RecompPrototypeInput: ObservableObject {
         controllerCrouchWasPressed = false
         externalControllerName = controller.map { $0.vendorName ?? "External controller" }
         twoPlayerTestModeActive = twoPlayerTestModeRequested && controller != nil
+        fourPlayerTestModeActive = twoPlayerTestModeActive && fourPlayerTestModeRequested
         if controller != nil && !twoPlayerTestModeActive {
             releaseTouchInput()
         }
         goldenPadRecompSetControllerConnected(controller == nil ? 0 : 1)
         goldenPadRecompSetTwoPlayerTestMode(twoPlayerTestModeActive ? 1 : 0)
+        goldenPadRecompSetFourPlayerTestMode(fourPlayerTestModeActive ? 1 : 0)
         publish()
     }
 
@@ -382,6 +396,10 @@ final class RecompPrototypeInput: ObservableObject {
         if twoPlayerTestModeActive {
             publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
             publishController(port: 1, buttons: touchButtons, stick: touchMovement, look: .zero)
+            if fourPlayerTestModeActive {
+                publishController(port: 2, buttons: 0, stick: .zero, look: .zero)
+                publishController(port: 3, buttons: 0, stick: .zero, look: .zero)
+            }
         } else if controller != nil {
             publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
             publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
