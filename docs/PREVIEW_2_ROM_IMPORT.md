@@ -63,7 +63,10 @@ the prior destination untouched and presents a specific recovery message.
 - [ ] Complete hands-on gameplay, touch, controller, physical-speaker audio,
   background/foreground, relaunch, and save/config preservation on iPhone.
 - [ ] Repeat first-import and gameplay acceptance on physical iPad.
-- [ ] Audit and checksum the exact unsigned Preview 2 IPA before publication.
+- [x] Audit and checksum the exact unsigned Preview 2 IPA before publication.
+  The 18-member archive passed at SHA-256
+  `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`
+  and reproduced byte-for-byte on a second packaging pass.
 
 Network or peer-to-peer multiplayer is explicitly outside this change. It must
 not be coupled to ROM onboarding or advertised until its own synchronization,
