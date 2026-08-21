@@ -122,8 +122,45 @@ install it on iOS/iPadOS 17 or later.
 
 GoldenPad does not include or download GoldenEye. Preview 1 expects a supported,
 user-derived `GoldenEye_TLBFREE.z64` in the app's Documents folder. Use Finder
-file sharing after installation to copy that file. The current preview does not
-convert a retail dump in-app and the project does not provide game data.
+file sharing after installation to copy that file.
+
+#### Create the required TLB-free file
+
+Generate this file locally from your own legally acquired NTSC-U GoldenEye dump.
+Do not download or request a converted ROM. Renaming a normal ROM does not work.
+
+These commands require a big-endian `.z64` dump whose SHA-1 is
+`abe01e4aeb033b6c0836819f549c791b26cfde83`. If your dump is `.v64` or `.n64`,
+first convert its byte order to big-endian `.z64`, then verify the SHA-1:
+
+```sh
+shasum "/path/to/your/GoldenEye.z64"
+```
+
+On macOS, install `xdelta`, download the ROM-free conversion patch from the
+exact [GoldenEye64Recomp revision used by GoldenPad](https://github.com/cblock85/GoldenEye64Recomp/tree/a787fe0d95e8278fcba5ba2d768fa6a606e75f55),
+verify it, and apply it to your dump:
+
+```sh
+brew install xdelta
+
+curl --fail --location --output vanilla_to_tlbfree.xdelta \
+  https://raw.githubusercontent.com/cblock85/GoldenEye64Recomp/a787fe0d95e8278fcba5ba2d768fa6a606e75f55/vanilla_to_tlbfree.xdelta
+
+echo "2942c16049c48a7bdb0ac0288bac21121847059f6f0b4e05343c0c1922a25b90  vanilla_to_tlbfree.xdelta" \
+  | shasum -a 256 --check
+
+xdelta3 -d -s "/path/to/your/GoldenEye.z64" \
+  vanilla_to_tlbfree.xdelta \
+  GoldenEye_TLBFREE.z64
+
+shasum -a 256 GoldenEye_TLBFREE.z64
+```
+
+The generated file must report SHA-256
+`7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959`.
+The delta patch contains no complete ROM; conversion happens locally and the
+retail input and generated output remain yours and must not be redistributed.
 
 ### Build from source
 
@@ -189,9 +226,11 @@ reference path.
 GoldenPad never downloads or bundles game data.
 
 1. Re-sign and install the unsigned Preview 1 IPA.
-2. In Finder, select the device, open **Files**, and copy your compatible,
-   user-derived file to `GoldenPad/GoldenEye_TLBFREE.z64`.
-3. Launch GoldenPad. The original logos, front end, file selection and missions
+2. Generate `GoldenEye_TLBFREE.z64` from your own legally acquired US retail
+   dump using **Create the required TLB-free file** above.
+3. In Finder, select the device, open **Files**, and copy the generated file to
+   `GoldenPad/GoldenEye_TLBFREE.z64`.
+4. Launch GoldenPad. The original logos, front end, file selection and missions
    should follow after the native runtime initializes.
 
 The file remains in the app's private Documents container. It is not in the
