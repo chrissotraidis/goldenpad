@@ -114,6 +114,11 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ### Preview 1
 
+> **Using the IPA does not require building GoldenPad from source.** Install and
+> re-sign the IPA, generate the required game-data file once from your own retail
+> dump, copy it into the app, and launch. The conversion is not repeated on later
+> launches.
+
 Download
 [`GoldenPad-0.1.0-preview.1-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.1/GoldenPad-0.1.0-preview.1-unsigned.ipa)
 and its adjacent `.sha256` file. The IPA is intentionally unsigned: re-sign it
@@ -128,6 +133,16 @@ file sharing after installation to copy that file.
 
 Generate this file locally from your own legally acquired NTSC-U GoldenEye dump.
 Do not download or request a converted ROM. Renaming a normal ROM does not work.
+
+**Why is this necessary?** Preview 1's statically recompiled runtime was built
+around a modified ROM memory layout that keeps the original TLB-mapped game code
+resident in Expansion Pak memory and stores the original compressed data segment
+uncompressed in the layout expected by the recompiled code. The unmodified retail
+ROM has a different layout, so Preview 1 cannot read it directly. This is a
+technical limitation of the current build, not a DRM check. A future release
+should perform this same
+private conversion inside GoldenPad so users can select their ordinary retail
+dump directly.
 
 These commands require a big-endian `.z64` dump whose SHA-1 is
 `abe01e4aeb033b6c0836819f549c791b26cfde83`. If your dump is `.v64` or `.n64`,
@@ -163,6 +178,12 @@ The delta patch contains no complete ROM; conversion happens locally and the
 retail input and generated output remain yours and must not be redistributed.
 
 ### Build from source
+
+> **This is not required for IPA users.** The primary RT64/AOT app cannot
+> currently be reproduced from the public checkout alone because its generated
+> game-code inputs are private and intentionally untracked. The public build
+> commands below produce the older `GoldenPad Legacy` fallback. To use the
+> current primary release, follow **Preview 1** and **First launch** instead.
 
 You need:
 
