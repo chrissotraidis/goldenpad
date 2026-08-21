@@ -402,6 +402,21 @@ diff-whitespace gates also pass.
   The strengthened ARM64 Simulator host verifier, contamination gate, source
   license manifest and diff-whitespace gate all pass. The newly aligned menu
   and opacity control still require the tester's final hands-on acceptance.
+- The exact same signed executable was then installed in place on the physical
+  iPad. Its database UUID remained
+  `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`; both ROMs, active save, backup save and
+  preferences matched byte-for-byte before and after. The iPad preferences hash
+  is `c76b41b43b9c4d633486a8f0396d803a94c4c59166d8872acd40ef6a7878e166`.
+  GoldenPad launched normally without a recorder, console stream or profiler
+  and remained alive as PID `6696` in the bounded process snapshot.
+- The ROM/save/package-member and legacy-symbol checks pass for the private
+  signed app, but the deliberately strict public-path audit found six embedded
+  `/private/tmp` compile source strings: private `aspMain.cpp` plus five
+  N64ModernRuntime translation units. Stripping the executable does not remove
+  them because they are compiled literals, not debug records. This is not an
+  installed-app regression, but it is a concrete public-package blocker: rebuild
+  the AOT/runtime inputs with deterministic source-prefix mapping and reject all
+  `/Users/` or `/private/tmp` strings before distribution.
 
 ## Preserved evidence
 

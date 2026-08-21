@@ -23,6 +23,14 @@ screenshot/resume, the right-edge seam mask, and controller/touch behavior.
 Multiplayer presentation is work in progress because the two Simulator
 viewports visibly flash.
 
+Exact final-polish executable
+`f0072a6dddd53ab6cc7fb061877aea2aed7717625340c4fd5f355a24077abc32`
+is installed in place on both the physical iPhone 14 and iPad Pro. Their
+app-data UUIDs remained `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+`D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`; independent pre/post readbacks matched
+for both ROMs, both saves and each device's preferences. Normal unrecorded
+launches remained alive as iPhone PID `4732` and iPad PID `6696`.
+
 There is no distributable primary-runtime package yet. The playable AOT app
 uses private generated inputs and a developer-staged retail-derived TLBFREE ROM;
 an end-user retail-ROM import/conversion flow plus a data-free package audit are

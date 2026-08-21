@@ -18,8 +18,9 @@ the legacy app in Simulator or on hardware without changing either container.
 The intended execution route is AOT/static N64Recomp output from a user-owned
 US retail ROM, N64ModernRuntime's libultra replacement, and RT64's Metal
 renderer. No live JIT or executable-memory allocation is permitted in the iOS
-route. The current target is a buildable UIKit/CAMetalLayer host only; it never
-claims to render a game frame until private AOT output drives real RSP/RDP tasks.
+route. A ROM-free build of the target is only a UIKit/CAMetalLayer host check;
+the signed private AOT build links generated output and now drives real RSP/RDP
+tasks through RT64 on iPhone and iPad hardware.
 
 ## Dependency record and license boundary
 
@@ -107,8 +108,9 @@ The following changes are required before considering a frame valid:
 The rendering order is intro logos/gunbarrel, main menu/briefings, then Dam.
 For every checkpoint, capture a private deterministic frame and record display
 list submissions, texture-cache hits/misses, TMEM upload bytes, pipeline
-creation, frame time and FPS. Compare equal internal/output resolution against
-production MGB64; Simulator results are not iPhone/iPad performance claims.
+creation, frame time and FPS. Equal internal/output-resolution comparison
+against MGB64 remains the standard for quantitative claims; Simulator results
+are not iPhone/iPad performance claims.
 
 The current hardware build renders the intro, menus and playable stages through
 RT64 at automatic high resolution, expanded aspect and optional 2x MSAA. It uses
@@ -117,6 +119,32 @@ intermittent geometry shimmer. Sky, water, framebuffer-dependent glass,
 monitors, blending, camera near-plane behavior and later-stage effects remain
 separate validation gates; a correct Dam frame is not proof that every effect
 or mission is correct.
+
+## MGB64 comparison ledger and migration decision
+
+The two runtimes have not yet produced a complete instrumented,
+equal-resolution benchmark. The table therefore separates accepted physical
+evidence from measurements that are still missing instead of treating
+subjective smoothness or presentation cadence as frame-time proof.
+
+| Area | Current evidence | Status |
+| --- | --- | --- |
+| Execution and renderer | MGB64 Legacy compiles reconstructed game logic with Fast3D/Metal. The primary build executes static N64Recomp output and submits GoldenEye's real display lists to RT64/Metal. | Both confirmed; RT64 selected as primary. |
+| Visual result | Physical iPad captures confirm RT64 automatic-high-resolution gameplay in Bunker, Jungle and other stages. The tester accepted the current RT64 result as visually superior to the earlier legacy build after the stable presentation rate was restored. | Qualitative physical acceptance; not an equal-resolution metric. |
+| Frame time and FPS | RT64 display-list/VI/presentation counters advance at normal playable speed on hardware. The older MGB64 ledger contains its own cadence measurements, but they were not captured from the same hardware, scene and internal resolution. | Comparable frame-time/FPS numbers remain unproven. |
+| Texture cache, uploads and pipelines | RT64 owns TMEM decode, framebuffer tracking and pipeline creation, but GoldenPad does not currently export matched per-scene cache-hit, upload-byte or pipeline-creation counters for both runtimes. | Not measured; no numeric superiority claim. |
+| Geometry and filtering | Intro, menus, Dam, Facility, Surface, Bunker and Jungle have rendered through RT64. Earlier blue-void/shimmer failures were reproduced and removed by restoring the original presentation rate; three-point filtering and 2x MSAA are restart-applied options. | Accepted across sampled stages; full-stage regression sweep remains open. |
+| Sky, water and framebuffer effects | Physical Surface captures show RT64 sky output. Water, glass, monitors, blending and every custom-sky path have not been checked at deterministic matched checkpoints. | Partially confirmed; later effects remain open. |
+| Audio | RT64 hardware soaks report zero producer drops and zero consumer underruns after the scheduling repair. The tester reports mostly correct audio with occasional static. | Counter health confirmed; speaker-static acceptance remains open. |
+| Touch and controller input | The legacy touch tuning was carried over. Physical iPhone/iPad touch and Xbox/MFi Player 1 control were accepted; the final build adds separate persisted layouts and per-control size/opacity. | Single-player accepted; multi-controller multiplayer remains open. |
+| Saves and lifecycle | In-place updates preserve both ROM copies, active/backup saves and preferences byte-for-byte. Cross-runtime save compatibility and the complete screenshot/background/foreground matrix are not fully accepted. | Preservation confirmed; compatibility/lifecycle matrix remains open. |
+
+The migration recommendation is **use RT64/N64Recomp as GoldenPad's primary
+runtime while retaining MGB64 as the deprecated GoldenPad Legacy fallback**.
+That decision is based on physical single-player stability, accepted controls
+and the high-resolution RT64 result—not on missing quantitative cache or FPS
+measurements. It does not authorize a public binary until the remaining release
+gates and user-ROM import boundary are closed.
 
 ## Build and Simulator instructions
 
@@ -296,5 +324,6 @@ GoldenPad's primary development runtime. MGB64 remains buildable only as the
 deprecated `GoldenPad Legacy` fallback. This product decision does not erase
 the remaining release gates: screenshot/background lifecycle recovery,
 physical-speaker audio, longer mission soaks, stage/effect comparison,
-multi-controller multiplayer, save compatibility and a clean
-ROM/generated-code audit still require explicit evidence.
+multi-controller multiplayer, save compatibility, end-user retail-ROM
+conversion/import and a clean distributable ROM/generated-code audit still
+require explicit evidence.

@@ -29,6 +29,10 @@ Before publishing any primary-runtime preview:
 - Build the public artifact from a clean checkout, enumerate every packaged
   member, and run `scripts/check-no-rom-data.sh` plus a package-specific binary
   contamination audit.
+- Rebuild private AOT/runtime inputs with deterministic source-prefix mapping.
+  The current signed developer executable contains six `/private/tmp` compile
+  source strings from `aspMain.cpp` and prebuilt N64ModernRuntime objects; a
+  public package must reject both `/Users/` and `/private/tmp` strings.
 - Keep source publication, binary publication, signing and rights clearance as
   separate decisions.
 
