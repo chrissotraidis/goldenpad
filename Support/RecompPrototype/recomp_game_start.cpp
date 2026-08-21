@@ -5,6 +5,7 @@
 #include "librecomp/rsp.hpp"
 #include "ultramodern/config.hpp"
 #include "ultramodern/ultramodern.hpp"
+#include "xxHash/xxh3.h"
 #include "zelda_render.h"
 
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include <os/log.h>
 #include <string>
 #include <thread>
+#include <vector>
 
 extern RspUcodeFunc aspMain;
 gpr get_entrypoint_address();
@@ -34,6 +36,7 @@ void register_patches();
 
 namespace {
 constexpr uint64_t kGoldenEyeTlbFreeHash = 0xd49fb2a8d6d3bd65ULL;
+constexpr std::streamsize kGoldenEyeTlbFreeSize = 0xC11460;
 const std::u8string kGameID = u8"ge007.us";
 
 std::atomic<bool> runtimeStarted = false;
@@ -557,6 +560,26 @@ extern "C" const char *goldenpad_recomp_start_game(void *window, void *view, con
     std::thread(runRuntime, ultramodern::renderer::WindowHandle{window, view},
         std::filesystem::path(romPath), std::filesystem::path(configPath)).detach();
     return "AOT runtime: launch requested";
+}
+
+extern "C" int32_t goldenpad_recomp_validate_tlbfree_rom(const char *romPath) {
+    if (romPath == nullptr) {
+        return 0;
+    }
+    std::ifstream input(std::filesystem::path(romPath), std::ios::binary | std::ios::ate);
+    if (!input.good()) {
+        return 0;
+    }
+    const std::streamsize size = input.tellg();
+    if (size != kGoldenEyeTlbFreeSize) {
+        return 0;
+    }
+    input.seekg(0, std::ios::beg);
+    std::vector<uint8_t> bytes(static_cast<size_t>(size));
+    if (!input.read(reinterpret_cast<char *>(bytes.data()), size)) {
+        return 0;
+    }
+    return XXH3_64bits(bytes.data(), bytes.size()) == kGoldenEyeTlbFreeHash ? 1 : 0;
 }
 
 extern "C" const char *goldenpad_recomp_game_status() {

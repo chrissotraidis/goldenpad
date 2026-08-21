@@ -55,6 +55,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
     endif()
     set(goldenpad_recomp_rt64_bridge Support/RecompPrototype/recomp_rt64_surface_stub.cpp)
     set(goldenpad_recomp_aot_sources)
+    set(goldenpad_recomp_resources)
     set(goldenpad_recomp_runtime_archives)
     if(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR)
         if(NOT GOLDENPAD_RECOMP_RT64_SOURCE_DIR)
@@ -94,6 +95,28 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
                     "Missing upstream recomp patch output: ${patch_source}. Generate RecompiledPatches before configuring the AOT prototype.")
             endif()
         endforeach()
+        set(goldenpad_recomp_render_context
+            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp")
+        file(READ "${goldenpad_recomp_render_context}" goldenpad_recomp_render_context_text)
+        string(FIND "${goldenpad_recomp_render_context_text}"
+            "GoldenPadRecompRT64" goldenpad_recomp_writable_rt64_path)
+        if(goldenpad_recomp_writable_rt64_path EQUAL -1)
+            message(FATAL_ERROR
+                "GoldenEye64Recomp is missing patches/goldeneye64recomp-ios-prototype-render-trace.patch; a clean iOS install would crash while RT64 creates its data directory")
+        endif()
+        set(goldenpad_recomp_rom_patch
+            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/vanilla_to_tlbfree.gep1")
+        if(NOT EXISTS "${goldenpad_recomp_rom_patch}")
+            message(FATAL_ERROR
+                "Missing pinned GoldenEye64Recomp GEP1 conversion patch: ${goldenpad_recomp_rom_patch}")
+        endif()
+        file(SHA256 "${goldenpad_recomp_rom_patch}" goldenpad_recomp_rom_patch_sha256)
+        if(NOT goldenpad_recomp_rom_patch_sha256 STREQUAL
+                "5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263")
+            message(FATAL_ERROR
+                "GoldenEye64Recomp GEP1 conversion patch does not match pinned revision a787fe0d95e8278fcba5ba2d768fa6a606e75f55")
+        endif()
+        set(goldenpad_recomp_resources "${goldenpad_recomp_rom_patch}")
         set(goldenpad_recomp_aot_sources
             ${goldenpad_recomp_patch_sources}
             ${goldenpad_recomp_aot_c}
@@ -101,12 +124,13 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             "${GOLDENPAD_RECOMP_AOT_DIR}/rsp/aspMain.cpp"
             Support/RecompPrototype/recomp_aot_link_bridge.cpp
             Support/RecompPrototype/recomp_game_start.cpp
+            Support/RecompPrototype/recomp_rom_import.cpp
             Support/RecompPrototype/recomp_register_overlays.cpp
             Support/RecompPrototype/recomp_ultra_shims.cpp
             Support/RecompPrototype/recomp_ui_stub.cpp
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp")
+            "${goldenpad_recomp_render_context}")
         set_source_files_properties(
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
+            "${goldenpad_recomp_render_context}"
             PROPERTIES
             COMPILE_OPTIONS
             "-DSDL_PROTOTYPES_ONLY=1;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/rt64_namespace_compat.hpp")
@@ -131,7 +155,9 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Sources/RecompPrototypeAudio.swift
         Sources/RecompPrototypeInput.swift
         Sources/RecompPrototypeMetalCanvas.swift
+        Sources/RecompPrototypeROMStore.swift
         Sources/RecompPrototypeTouchLayout.swift
+        ${goldenpad_recomp_resources}
         ${goldenpad_recomp_rt64_bridge}
         ${goldenpad_recomp_aot_sources}
     )
@@ -140,7 +166,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "1"
+        MACOSX_BUNDLE_BUNDLE_VERSION "2"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_recomp_code_signing_required}"
@@ -158,7 +184,10 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED TRUE
     )
-    set_source_files_properties(Assets.xcassets Config/ThirdPartyNotices.txt
+    set_source_files_properties(
+        Assets.xcassets
+        Config/ThirdPartyNotices.txt
+        ${goldenpad_recomp_resources}
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_link_libraries(GoldenPadRecompPrototype PRIVATE
         "-framework SwiftUI"
@@ -167,6 +196,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         "-framework MetalKit"
         "-framework QuartzCore"
         "-framework UIKit"
+        "-framework UniformTypeIdentifiers"
     )
     if(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR)
         target_include_directories(GoldenPadRecompPrototype PRIVATE

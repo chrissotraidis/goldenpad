@@ -112,6 +112,20 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Get started
 
+### Preview 2 development status
+
+Preview 2 is now being built around an in-app first-launch importer. In the
+current Preview 2 source, a new user chooses their own original NTSC-U retail
+ROM from Files; GoldenPad recognizes `.z64`, `.v64`, `.n64`, and `.rom` byte
+orders, performs the required TLB-free transformation privately on the device,
+verifies the exact output, and starts the existing runtime automatically. A
+valid Preview 1 `GoldenEye_TLBFREE.z64` is reused unchanged during an in-place
+update.
+
+There is not yet a published or physically accepted Preview 2 IPA. The public
+Preview 1 download still uses the manual instructions below. See the
+[Preview 2 ROM import plan and acceptance gates](docs/PREVIEW_2_ROM_IMPORT.md).
+
 ### Preview 1
 
 > **Using the IPA does not require building GoldenPad from source.** Install and
@@ -139,10 +153,10 @@ around a modified ROM memory layout that keeps the original TLB-mapped game code
 resident in Expansion Pak memory and stores the original compressed data segment
 uncompressed in the layout expected by the recompiled code. The unmodified retail
 ROM has a different layout, so Preview 1 cannot read it directly. This is a
-technical limitation of the current build, not a DRM check. A future release
-should perform this same
-private conversion inside GoldenPad so users can select their ordinary retail
-dump directly.
+technical limitation of the current build, not a DRM check. The Preview 2
+source now performs this same private conversion inside GoldenPad so users can
+select their ordinary retail dump directly; Preview 1 still needs the manual
+process below.
 
 These commands require a big-endian `.z64` dump whose SHA-1 is
 `abe01e4aeb033b6c0836819f549c791b26cfde83`. If your dump is `.v64` or `.n64`,
@@ -339,9 +353,9 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 
 - Multiplayer is unstable and unfinished; split-screen flashing and match
   instability are known Preview 1 issues.
-- The primary AOT build does not yet provide an in-app retail-ROM conversion
-  flow; Preview 1 requires a compatible user-derived TLBFREE input copied by
-  file sharing.
+- The published Preview 1 IPA requires a compatible user-derived TLBFREE input
+  copied by file sharing. Preview 2's in-app retail-ROM conversion is implemented
+  in source but still needs physical iPhone/iPad acceptance and package audit.
 - Some stage-specific geometry glitches remain to be captured precisely.
 - Occasional audio static and multi-controller play remain open quality work.
 - The generated-input pipeline is not independently reproducible from the

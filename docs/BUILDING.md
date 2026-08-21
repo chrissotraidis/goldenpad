@@ -39,6 +39,29 @@ Preview 1 expects a compatible user-derived `GoldenEye_TLBFREE.z64` in the
 installed app's Documents directory. No retail input, save, generated source,
 signing identity, or provisioning profile is placed in the IPA.
 
+Preview 2 source replaces the manual installed-app step with the bounded
+first-launch flow in [`PREVIEW_2_ROM_IMPORT.md`](PREVIEW_2_ROM_IMPORT.md). The
+packager now defaults to an `0.1.0-preview.2` filename, but that artifact must
+not be published until the Preview 2 physical-device and package gates pass.
+
+The complete AOT build must have the maintained GoldenEye iOS context patch
+applied while compiling:
+
+```sh
+git -C ref/goldeneye64recomp apply \
+  ../../patches/goldeneye64recomp-ios-prototype-render-trace.patch
+```
+
+CMake deliberately refuses a complete AOT configuration without the patch.
+It supplies the writable first-launch RT64 Application Support path as well as
+the existing render diagnostics. Reverse it after the build to leave the
+ignored upstream checkout clean:
+
+```sh
+git -C ref/goldeneye64recomp apply --reverse \
+  ../../patches/goldeneye64recomp-ios-prototype-render-trace.patch
+```
+
 ## iPhone/iPad foundation
 
 Configure and build the ARM64 simulator target:

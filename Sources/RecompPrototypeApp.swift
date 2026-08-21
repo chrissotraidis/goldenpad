@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 @_silgen_name("goldenpad_recomp_previous_session_ended_unexpectedly")
 private func goldenPadRecompPreviousSessionEndedUnexpectedly() -> Int32
@@ -29,6 +30,7 @@ enum RecompPrototypeResolutionMode: String, CaseIterable {
 
 @main
 struct GoldenPadApp: App {
+    @StateObject private var romStore = RecompPrototypeROMStore()
     @StateObject private var surface = RecompPrototypeSurface()
     @StateObject private var input = RecompPrototypeInput()
     @StateObject private var audio = RecompPrototypeAudio()
@@ -58,7 +60,9 @@ struct GoldenPadApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ZStack(alignment: .topTrailing) {
+            Group {
+                if romStore.isReady {
+                    ZStack(alignment: .topTrailing) {
                 Color.black
                     .ignoresSafeArea()
                 RecompPrototypeMetalCanvas(
@@ -205,6 +209,25 @@ struct GoldenPadApp: App {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Current mission progress since the last save will be discarded.")
+                    }
+                } else {
+                    RecompPrototypeROMSetupView(store: romStore)
+                }
+            }
+            .fileImporter(
+                isPresented: $romStore.isImporterPresented,
+                allowedContentTypes: [.data],
+                allowsMultipleSelection: false
+            ) { result in
+                romStore.handleSelection(result.flatMap { urls in
+                    guard let url = urls.first else {
+                        return .failure(CocoaError(.fileNoSuchFile))
+                    }
+                    return .success(url)
+                })
+            }
+            .onOpenURL { url in
+                romStore.handleOpenURL(url)
             }
         }
     }

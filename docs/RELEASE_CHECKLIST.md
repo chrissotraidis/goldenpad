@@ -18,7 +18,11 @@ Preview 1 release record:
   save, signing, private-user-path and legacy-core contamination.
 - [x] Preview 1 IPA SHA-256:
   `a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
-- [ ] Replace Finder-staged TLBFREE setup with an in-app retail conversion flow.
+- [x] Preview 2 source has a first-launch in-app retail conversion flow with
+  exact retail/output validation, common N64 byte-order normalization, atomic
+  replacement, and preservation of a valid Preview 1 Documents ROM.
+- [ ] Physically accept the Preview 2 importer on both an iPhone and iPad before
+  publishing the Preview 2 IPA.
 - [ ] Remove the six disclosed anonymous `/private/tmp/goldenpad-recomp.*`
   compiler source literals from a future build. Preview 1 rejects `/Users/` and
   any unexpected temporary path; the six literals contain no ROM or user name.

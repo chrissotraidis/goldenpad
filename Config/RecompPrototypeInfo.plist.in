@@ -12,6 +12,21 @@
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Nintendo 64 ROM</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.chrissotraidis.goldenpad.n64-rom</string>
+            </array>
+        </dict>
+    </array>
     <key>CFBundleName</key>
     <string>GoldenPad</string>
     <key>CFBundlePackageType</key>
@@ -19,10 +34,12 @@
     <key>CFBundleShortVersionString</key>
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>2</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.games</string>
     <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>UILaunchScreen</key>
     <dict/>
@@ -30,6 +47,31 @@
     <array>
         <string>arm64</string>
         <string>metal</string>
+    </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeDescription</key>
+            <string>Nintendo 64 ROM</string>
+            <key>UTTypeIdentifier</key>
+            <string>com.chrissotraidis.goldenpad.n64-rom</string>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>z64</string>
+                    <string>v64</string>
+                    <string>n64</string>
+                    <string>rom</string>
+                </array>
+                <key>public.mime-type</key>
+                <string>application/x-n64-rom</string>
+            </dict>
+        </dict>
     </array>
     <key>UIFileSharingEnabled</key>
     <true/>
