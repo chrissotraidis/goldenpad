@@ -17,6 +17,9 @@ Before publishing any primary-runtime preview:
 
 - Complete the current signed-iPad hands-on matrix in `docs/TESTING.md` and
   record the exact accepted executable hash.
+- Accept the separate touch-layout defaults and move/resize/opacity/reset editor
+  on one physical iPhone and one physical iPad, including persistence after
+  relaunch.
 - Keep multiplayer explicitly work in progress until split-screen flashing and
   a complete physical match are accepted.
 - Choose non-prototype public version metadata while preserving the existing

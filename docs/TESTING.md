@@ -54,6 +54,17 @@ Hands-on acceptance for the newest signed build must cover:
 5. Three-dot menu placement, Settings, Return to Main Menu, centered reticle,
    and no visible far-right seam.
 6. Graphics changes only after fully quitting and reopening GoldenPad.
+7. On both iPhone and iPad, choose **⋯ → Edit Touch Controls**. Verify the game
+   remains full size and the real three-dot menu stays visible. Drag, resize and
+   change the opacity of each of the eight controls, press Done, and verify
+   persistence after relaunch. Verify Cancel discards unsaved edits and Reset
+   restores only the current device-class draft.
+8. Confirm the default iPhone layout keeps MOVE, LOOK, START and the complete
+   action cluster visible and non-overlapping in landscape. Confirm the existing
+   accepted iPad layout is unchanged. At minimum size, every button label must
+   remain on one line inside its control.
+9. Confirm a clean install starts with **Unlock all missions** off. An in-place
+   update must preserve an existing user choice rather than resetting it.
 
 Multiplayer is not an initial single-player preview gate. The former RT64
 `0x0000000320000000` crash has a targeted KSEG1 address-mask repair and the

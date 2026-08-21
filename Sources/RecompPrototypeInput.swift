@@ -476,15 +476,13 @@ final class RecompPrototypeInput: ObservableObject {
 
 struct RecompPrototypeTouchControls: View {
     @ObservedObject var input: RecompPrototypeInput
+    let placements: [RecompTouchPlacement]
+    let deviceClass: RecompTouchDeviceClass
 
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // This is the production GoldenPad modern schema: the same
-                // movement/look zones, action rail, labels, and iPad-relative
-                // placement. Only the final N64 masks differ in this isolated
-                // runtime bridge.
-                ForEach(RecompTouchPlacement.productionSchema) { placement in
+                ForEach(placements) { placement in
                     control(placement, canvas: geometry.size)
                 }
             }
@@ -495,15 +493,23 @@ struct RecompPrototypeTouchControls: View {
 
     @ViewBuilder
     private func control(_ placement: RecompTouchPlacement, canvas: CGSize) -> some View {
-        let scale = min(max(canvas.width / 720, 0.62), 1.18) * placement.scale
+        // Saved editor placements are constrained before persistence. Keep the
+        // established iPad defaults unchanged, including the intentionally
+        // generous movement surface that reaches slightly past the edge.
+        let resolved = placement.sanitized()
+        let size = RecompTouchLayoutGeometry.renderedSize(
+            for: resolved,
+            canvas: canvas,
+            deviceClass: deviceClass
+        )
         Group {
             switch placement.id {
             case .move:
                 RecompStick(title: placement.id.label, symbol: "figure.walk") { input.setMovement($0) }
-                    .frame(width: 300 * scale, height: 260 * scale)
+                    .frame(width: size.width, height: size.height)
             case .look:
                 RecompLookSurface { input.setLook($0) }
-                    .frame(width: 320 * scale, height: 220 * scale)
+                    .frame(width: size.width, height: size.height)
             case .aim:
                 if input.aimBehavior == .toggle {
                     RecompToggleButton(
@@ -514,7 +520,7 @@ struct RecompPrototypeTouchControls: View {
                     ) {
                         input.toggleAim()
                     }
-                    .frame(width: 70 * scale, height: 70 * scale)
+                    .frame(width: size.width, height: size.height)
                 } else {
                     RecompMomentaryButton(
                         title: placement.id.label,
@@ -523,7 +529,7 @@ struct RecompPrototypeTouchControls: View {
                     ) {
                         input.setAimPressed($0)
                     }
-                    .frame(width: 70 * scale, height: 70 * scale)
+                    .frame(width: size.width, height: size.height)
                 }
             default:
                 RecompMomentaryButton(
@@ -536,56 +542,12 @@ struct RecompPrototypeTouchControls: View {
                         input.setButton(placement.id.n64Mask, pressed: $0)
                     }
                 }
-                .frame(width: placement.id == .pause ? 64 * scale : 70 * scale,
-                       height: placement.id == .pause ? 64 * scale : 70 * scale)
+                .frame(width: size.width, height: size.height)
             }
         }
-        .opacity(0.72)
-        .position(x: canvas.width * placement.x, y: canvas.height * placement.y)
+        .opacity(resolved.resolvedOpacity)
+        .position(x: canvas.width * resolved.x, y: canvas.height * resolved.y)
         .accessibilityLabel(placement.id.label)
-    }
-}
-
-private enum RecompTouchControlID: String {
-    case move, look, fire, aim, action, crouch, weapon, pause
-
-    var label: String {
-        switch self {
-        case .move: "MOVE"
-        case .look: "LOOK"
-        case .fire: "FIRE"
-        case .aim: "AIM"
-        case .action: "ACTION"
-        case .crouch: "DUCK"
-        case .weapon: "WEAPON"
-        case .pause: "START"
-        }
-    }
-
-    var n64Mask: UInt16 {
-        switch self {
-        case .move, .look: 0
-        case .fire: 0x2000       // Z trigger
-        case .aim: 0x0010        // R trigger
-        case .action: 0x4000     // B
-        case .crouch: 0           // Native edge-triggered crouch toggle
-        case .weapon: 0x8000     // A
-        case .pause: 0x1000      // Start
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        // GoldenEye uses Z to fire and R to aim, so those triggers stay
-        // neutral grey. The face-button actions use the N64 A/B colors.
-        case .fire: .gray
-        case .aim: .gray
-        case .weapon: .blue
-        case .action: .green
-        case .crouch: .yellow
-        case .pause: .red
-        default: .cyan
-        }
     }
 }
 
@@ -604,25 +566,7 @@ private extension SIMD2 where Scalar == Float {
     }
 }
 
-private struct RecompTouchPlacement: Identifiable {
-    let id: RecompTouchControlID
-    let x: CGFloat
-    let y: CGFloat
-    let scale: CGFloat
-
-    static let productionSchema: [RecompTouchPlacement] = [
-        .init(id: .move, x: 0.13, y: 0.82, scale: 1.14),
-        .init(id: .look, x: 0.78, y: 0.72, scale: 1),
-        .init(id: .fire, x: 0.91, y: 0.71, scale: 1.16),
-        .init(id: .aim, x: 0.91, y: 0.58, scale: 1),
-        .init(id: .action, x: 0.91, y: 0.84, scale: 0.94),
-        .init(id: .crouch, x: 0.81, y: 0.89, scale: 0.82),
-        .init(id: .weapon, x: 0.71, y: 0.89, scale: 0.82),
-        .init(id: .pause, x: 0.972, y: 0.14, scale: 0.78),
-    ]
-}
-
-private struct RecompStick: View {
+struct RecompStick: View {
     let title: String
     let symbol: String
     let onChange: (SIMD2<Float>) -> Void
@@ -640,7 +584,13 @@ private struct RecompStick: View {
                 Circle().fill(.white.opacity(0.18)).frame(width: diameter * 0.44, height: diameter * 0.44)
                     .overlay(Image(systemName: symbol).foregroundStyle(.white.opacity(0.8)))
                     .position(x: center.x + CGFloat(value.x) * diameter * 0.25, y: center.y - CGFloat(value.y) * diameter * 0.25)
-                Text(title).font(.system(size: 9, weight: .bold, design: .rounded)).tracking(1).foregroundStyle(.white.opacity(0.6)).position(x: center.x, y: center.y + diameter * 0.36)
+                Text(title)
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .tracking(1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.55)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .position(x: center.x, y: center.y + diameter * 0.36)
             }
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { gesture in
@@ -661,7 +611,7 @@ private struct RecompStick: View {
     }
 }
 
-private struct RecompLookSurface: View {
+struct RecompLookSurface: View {
     let onChange: (SIMD2<Float>) -> Void
     @State private var lastLocation: CGPoint?
 
@@ -672,7 +622,12 @@ private struct RecompLookSurface: View {
                 RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.14), lineWidth: 1)
                 VStack(spacing: 6) {
                     Image(systemName: "scope").foregroundStyle(.white.opacity(0.42))
-                    Text("LOOK").font(.system(size: 9, weight: .bold, design: .rounded)).tracking(1).foregroundStyle(.white.opacity(0.42))
+                    Text("LOOK")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .tracking(1)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                        .foregroundStyle(.white.opacity(0.42))
                 }
             }
             .contentShape(Rectangle())
@@ -692,7 +647,7 @@ private struct RecompLookSurface: View {
     }
 }
 
-private struct RecompMomentaryButton: View {
+struct RecompMomentaryButton: View {
     let title: String
     let tint: Color
     let pressedTint: Color
@@ -714,6 +669,10 @@ private struct RecompMomentaryButton: View {
     var body: some View {
         Text(title)
             .font(.system(size: title == "START" ? 8 : 12, weight: .bold, design: .rounded))
+            .lineLimit(1)
+            .minimumScaleFactor(0.42)
+            .allowsTightening(true)
+            .padding(.horizontal, 4)
             .foregroundStyle(pressed ? .black : .white.opacity(0.96))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(pressed ? pressedTint : tint.opacity(0.56), in: Circle())
@@ -731,7 +690,7 @@ private struct RecompMomentaryButton: View {
     }
 }
 
-private struct RecompToggleButton: View {
+struct RecompToggleButton: View {
     let title: String
     let tint: Color
     let activeTint: Color
@@ -742,6 +701,10 @@ private struct RecompToggleButton: View {
         Button(action: onToggle) {
             Text(title)
                 .font(.system(size: 12, weight: .bold, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.42)
+                .allowsTightening(true)
+                .padding(.horizontal, 4)
                 .foregroundStyle(isOn ? .black : .white.opacity(0.96))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(isOn ? activeTint : tint.opacity(0.56), in: Circle())

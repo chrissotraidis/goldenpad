@@ -50,6 +50,20 @@ for required_symbol in \
 do
     nm -gU "$binary" | grep -q "_$required_symbol"
 done
+for required_text in \
+    'Edit touch layout' \
+    'Edit Touch Controls' \
+    'Drag directly on the game' \
+    'opacity sliders at the top' \
+    'iPhone Touch Layout' \
+    'iPad Touch Layout' \
+    'recomp.touchLayout.phone.v1' \
+    'recomp.touchLayout.tablet.v1'
+do
+    strings "$binary" | grep -Fq "$required_text"
+done
+grep -Fq '@AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false' \
+    "$repo_root/Sources/RecompPrototypeApp.swift"
 if find "$app" -type f \( \
     -iname '*.z64' -o -iname '*.v64' -o -iname '*.n64' -o \
     -iname '*.rom' -o -iname '*.eep' -o -iname '*.sav' \

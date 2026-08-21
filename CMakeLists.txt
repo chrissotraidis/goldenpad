@@ -130,6 +130,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Sources/RecompPrototypeAudio.swift
         Sources/RecompPrototypeInput.swift
         Sources/RecompPrototypeMetalCanvas.swift
+        Sources/RecompPrototypeTouchLayout.swift
         ${goldenpad_recomp_rt64_bridge}
         ${goldenpad_recomp_aot_sources}
     )

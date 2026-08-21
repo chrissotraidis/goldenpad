@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/goldenpad-rt64-jungle-ipad.jpg" width="960" alt="GoldenPad RT64 gameplay on a physical iPad in the Jungle mission">
+  <img src="docs/images/goldenpad-rt64-bunker-ipad.jpg" width="960" alt="GoldenPad RT64 gameplay on a physical iPad in the Bunker mission">
 </p>
 <p align="center"><em>Native RT64/Metal gameplay on a physical iPad Pro.</em></p>
 
@@ -42,11 +42,11 @@ the primary development version.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/goldenpad-rt64-bunker-ipad.jpg" alt="GoldenPad RT64 gameplay in Bunker on a physical iPad"></td>
+    <td width="50%"><img src="docs/images/goldenpad-rt64-jungle-ipad.jpg" alt="GoldenPad RT64 gameplay in Jungle on a physical iPad"></td>
     <td width="50%"><img src="docs/images/goldenpad-rt64-bunker-action-ipad.jpg" alt="GoldenPad RT64 combat in Bunker on a physical iPad"></td>
   </tr>
   <tr>
-    <td align="center"><strong>Bunker</strong><br>Automatic high resolution with RT64 Metal.</td>
+    <td align="center"><strong>Jungle</strong><br>Automatic high resolution with RT64 Metal.</td>
     <td align="center"><strong>Live gameplay</strong><br>Native ARM64 game code and controller input.</td>
   </tr>
   <tr>
@@ -86,7 +86,7 @@ release.
 | Setup | The private developer build validates a user-derived NTSC-U TLBFREE input staged only in its app container; a public in-app retail-ROM import/conversion flow remains a release gate |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls |
-| Customization | Touch look sensitivity, hold/toggle aim, shared vertical inversion and optional centered reticle |
+| Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity and hold/toggle aim |
 | Controllers | `GCController` with accepted Player 1 movement, right-stick look, buttons, and automatic touch-overlay hiding |
 | Multiplayer | Opt-in physical-controller Player 1 + touch Player 2 test path; the crash repair is under test and flashing split-screen presentation remains work in progress |
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
@@ -195,28 +195,31 @@ GoldenPad defaults to a modern dual-stick FPS layout:
 | **ACTION** | Contextual N64 B for doors, use, and reload |
 | **WEAPON** | N64 A weapon cycle / confirm |
 | **DUCK** | C-down crouch |
-| **PAUSE** | Start / watch and menus |
+| **START** | Start / watch and menus |
 
-Open the persistent gear button and choose **Touch Controls** to adjust:
+Open the three-dot menu and choose **Edit Touch Controls** to customize the
+actual live overlay. The running game remains full size and the real three-dot
+menu stays visible as a placement reference. The same editor is also available
+through **Settings → Touch Controls**.
+
+Touch Controls also contains:
 
 - look sensitivity;
 - Toggle or Hold aim behavior;
-- gyroscope aiming;
-- overlay opacity and global control size;
-- controller auto-hide; and
-- the separate iPhone or iPad touch layout.
+- the current iPhone or iPad touch layout.
 
-Choose **Edit touch layout**, tap a control, and drag it to a comfortable
-position. The selected control can be resized from 70–150% and hidden or shown;
-MOVE cannot be hidden. **Reset** restores the selected device class and preset
-to its defaults. Only changed placements are stored, so phone, tablet, Modern,
-Southpaw, and N64 layouts remain independent.
+In edit mode, drag a control directly over the running game. The selected
+control receives a yellow outline and the always-visible top slider resizes it
+from 55–160%; the opacity slider adjusts that selected control from 20–100%.
+**Reset** restores the current device-class defaults, **Cancel** discards the
+draft, and **Done** saves it. Button labels stay on one line and scale down with
+smaller controls. Phone and tablet layouts use separate persisted profiles.
 
-The revised phone defaults keep WEAPON/DUCK above the home-indicator strip and
-the action rail clear of rounded edges. LOOK accumulates every swipe delta until
-the renderer samples it, preventing fast movement from being silently dropped.
-These fixes are Simulator-verified; final sensitivity and placement still need
-real-finger acceptance on physical hardware.
+The phone defaults use a height-aware reference canvas so MOVE remains inside
+the left edge, the LOOK region clears the action rail, and AIM/FIRE/ACTION plus
+WEAPON/DUCK fit above the bottom edge. LOOK preserves GoldenPad's tuned relative
+swipe accumulation. Final placement and touch feel still require hands-on
+acceptance on each physical device class.
 
 ## Controllers and multiplayer
 

@@ -32,6 +32,7 @@ struct GoldenPadApp: App {
     @StateObject private var surface = RecompPrototypeSurface()
     @StateObject private var input = RecompPrototypeInput()
     @StateObject private var audio = RecompPrototypeAudio()
+    @StateObject private var touchLayout = RecompTouchLayoutStore()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("recomp.lookSensitivity") private var lookSensitivity = 4.0
     @AppStorage("recomp.aimBehavior") private var aimBehavior = RecompPrototypeAimBehavior.toggle.rawValue
@@ -53,6 +54,7 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.twoPlayerTestMode") private var twoPlayerTestMode = false
     @State private var presentedSheet: RecompPrototypeSheet?
     @State private var showReturnToMenuConfirmation = false
+    @State private var isEditingTouchLayout = false
 
     var body: some Scene {
         WindowGroup {
@@ -82,13 +84,26 @@ struct GoldenPadApp: App {
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
-                if input.externalControllerName == nil || input.twoPlayerTestModeActive {
-                    RecompPrototypeTouchControls(input: input)
+                if isEditingTouchLayout {
+                    RecompPrototypeLiveTouchLayoutEditor(
+                        store: touchLayout,
+                        deviceClass: touchDeviceClass,
+                        onCancel: { isEditingTouchLayout = false },
+                        onDone: { isEditingTouchLayout = false }
+                    )
+                    .ignoresSafeArea()
+                } else if input.externalControllerName == nil || input.twoPlayerTestModeActive {
+                    RecompPrototypeTouchControls(
+                        input: input,
+                        placements: touchLayout.placements(for: touchDeviceClass),
+                        deviceClass: touchDeviceClass
+                    )
                         .ignoresSafeArea()
                 }
                 utilityMenu
                     .padding(.top, 26)
-                    .padding(.trailing, 20)
+                    .padding(.trailing, touchDeviceClass == .phone ? 4 : 20)
+                    .offset(x: touchDeviceClass == .phone ? 18 : 0)
             }
             .onAppear {
                 input.configureLookSensitivity(lookSensitivity)
@@ -168,6 +183,9 @@ struct GoldenPadApp: App {
                         threePointFiltering: $threePointFiltering,
                         unlockAllMissions: $unlockAllMissions,
                         twoPlayerTestMode: $twoPlayerTestMode,
+                        touchLayoutStore: touchLayout,
+                        touchDeviceClass: touchDeviceClass,
+                        onEditTouchLayout: beginTouchLayoutEditing,
                         runtimeStatus: surface.status,
                         audioStatus: audio.status,
                         controllerName: input.externalControllerName
@@ -199,6 +217,9 @@ struct GoldenPadApp: App {
             Button("Settings", systemImage: "gearshape") {
                 presentedSheet = RecompPrototypeSheet(content: .settings)
             }
+            Button("Edit Touch Controls", systemImage: "hand.draw") {
+                beginTouchLayoutEditing()
+            }
             Button("Share Diagnostics & Logs…", systemImage: "square.and.arrow.up") {
                 let url = RecompPrototypeDiagnostics.makeReport(
                     runtimeStatus: surface.status,
@@ -227,6 +248,16 @@ struct GoldenPadApp: App {
                 .overlay(Circle().stroke(.white.opacity(0.34), lineWidth: 1))
         }
         .accessibilityLabel("GoldenPad menu")
+    }
+
+    private var touchDeviceClass: RecompTouchDeviceClass {
+        RecompTouchDeviceClass.current
+    }
+
+    private func beginTouchLayoutEditing() {
+        input.releaseTouchInput()
+        presentedSheet = nil
+        isEditingTouchLayout = true
     }
 
     private var controllerMapping: [RecompPrototypeControllerControl: String] {
@@ -278,6 +309,9 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var threePointFiltering: Bool
     @Binding var unlockAllMissions: Bool
     @Binding var twoPlayerTestMode: Bool
+    @ObservedObject var touchLayoutStore: RecompTouchLayoutStore
+    let touchDeviceClass: RecompTouchDeviceClass
+    let onEditTouchLayout: () -> Void
     let runtimeStatus: String
     let audioStatus: String
     let controllerName: String?
@@ -319,6 +353,23 @@ private struct RecompPrototypeSettingsView: View {
                         }
                     }
                     LabeledContent("Duck button", value: "Toggle")
+                    Button {
+                        dismiss()
+                        DispatchQueue.main.async { onEditTouchLayout() }
+                    } label: {
+                        HStack {
+                            Text("Edit touch layout")
+                            Spacer()
+                            Text(touchLayoutStore.hasCustomLayout(for: touchDeviceClass)
+                                ? "Custom \(touchDeviceClass.title)"
+                                : touchDeviceClass.title)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+                    Text("Move and resize every touch control. iPhone and iPad layouts are saved separately.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 Section("Controller") {
                     Picker("Right stick", selection: $controllerLookMode) {

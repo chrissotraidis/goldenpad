@@ -11,15 +11,17 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-The current signed iPad candidate launches real GoldenEye gameplay, preserves
-its private ROM and save payloads across in-place installation, and has bounded
-single-player presentation/audio evidence. Touch and Xbox/MFi Player 1 control
-paths, settings, diagnostics, return-to-menu plumbing, lifecycle handling, and
-the targeted multiplayer address-mask crash repair are integrated. Final
-hands-on acceptance remains open for the newest candidate, including speaker
-listening, screenshot/resume, the right-edge seam mask, and controller/touch
-behavior. Multiplayer presentation is work in progress because the two
-Simulator viewports visibly flash.
+The current signed iPhone/iPad candidate launches real GoldenEye gameplay,
+preserves its private ROM, save and preference payloads across in-place
+installation, and has bounded single-player presentation/audio evidence. Touch
+and Xbox/MFi Player 1 control paths, separate phone/tablet touch layouts with a
+move/resize/opacity/reset editor, settings, diagnostics, return-to-menu plumbing,
+lifecycle handling, and the targeted multiplayer address-mask crash repair are
+integrated. Final hands-on acceptance remains open for the newest candidate,
+including touch-layout editing/persistence, speaker listening,
+screenshot/resume, the right-edge seam mask, and controller/touch behavior.
+Multiplayer presentation is work in progress because the two Simulator
+viewports visibly flash.
 
 There is no distributable primary-runtime package yet. The playable AOT app
 uses private generated inputs and a developer-staged retail-derived TLBFREE ROM;

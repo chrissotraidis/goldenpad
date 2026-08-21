@@ -322,6 +322,87 @@ diff-whitespace gates also pass.
   remain hands-on acceptance items; this transfer proves package, data,
   preference, launch and bounded runtime health only.
 
+## 12:15 iPhone touch-layout follow-up
+
+- Physical iPhone gameplay and performance were accepted, but the fixed iPad
+  overlay did not fit the 2532×1170 landscape phone capture. MOVE extended past
+  the left/bottom edges, LOOK occupied most of the right half, and the complete
+  action cluster overlapped. The private diagnostic screenshot SHA-256 is
+  `3c2f08a2b31f179836fa5c58aaccfbb4fa43ac60150d326e1f29af50d3544966`.
+- The initial focused follow-up exposed a scaled preview editor. Physical use
+  showed that the preview hid the real three-dot placement reference, shrank the
+  gameplay canvas, pushed the size slider below the visible phone viewport, and
+  allowed `WEAPON` to wrap at small sizes. The 12:45 editor and 12:46 live-layout
+  screenshot hashes are
+  `f4b1053c6cb21298b91dfa0d8f07aad77a48d342069fbbe4af2451975ea33f99`
+  and `67f7061422c9574de3d2efe5aa6faabe75fbc85b2da090ff2bf0ba488a98bd9a`.
+- The revised editor operates directly over the full-size running game. The real
+  three-dot menu remains visible, all eight controls drag at their actual live
+  size and position, the selected control is outlined, and an always-visible
+  floating slider resizes it from 55–160%. Cancel discards the draft, Reset
+  restores the current device defaults, and Done persists it. Touch button text
+  is single-line with automatic downscaling to prevent label overflow.
+- iPhone and iPad layouts use separate UserDefaults keys. The new phone defaults
+  use an 844×390 reference canvas and height-aware scaling; the tablet defaults
+  retain the accepted 1366×1024 positions and scale. No input mapping,
+  controller, renderer, audio or multiplayer code changes are part of this pass.
+- The initial preview-editor executable SHA-256 was
+  `adb91d0e391e0e0b1511c8f0170b27eaf687798ddf619454b7e0b36819aba228`;
+  it was immediately superseded after hands-on feedback. The corrected live
+  editor executable SHA-256 is
+  `025818412e672e73baf28a1ebdf42fc7e4c63631a164b53eac6f343e85e78d59`.
+  It was installed in place on both devices: the iPhone database UUID remained
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and the iPad UUID remained
+  `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. On both devices, independent
+  before/after readbacks matched byte-for-byte for both ROMs, both saves and the
+  existing preferences file.
+- Normal unrecorded launches remained healthy. The iPhone process was PID
+  `4637` and reached `dl=1517`, `vi=1517`, `presented=1517`, and 648,211 audio
+  frames with zero drops/underruns. The iPad process was PID `6568` and reached
+  `dl=1518`, `vi=1518`, `presented=1518`, and 647,741 audio frames with zero
+  drops/underruns. Their bounded log hashes are
+  `82a460c4dfce515baa0f775e6896fde4c8fc5544f4f1fc4b710ed9b55da40996`
+  and `73b9e6837b0cb76e532e6f688e5d1a5e7bcb24b6f5eb4b53c9c3f7bd4ed955fd`.
+- Host compilation and the strengthened ROM-free verifier pass. Physical
+  drag/resize/persistence and final comfort remain hands-on gates even though
+  the new editor, separate persistence keys and responsive defaults are linked
+  in both installed apps.
+- The custom iPhone draft saved with the preview editor was preserved across the
+  corrected in-place update. Its preferences readback remained byte-identical at
+  SHA-256 `daec411c0c2da2f3959431bb085a25c729fd29d1b49f8a842b5702b624d7cc08`,
+  including `recomp.touchLayout.phone.v1`.
+- Physical follow-up accepted the corrected full-screen editor and customized
+  iPhone layout. The remaining requested polish is intentionally narrow: move
+  only the iPhone three-dot menu closer to START, add a 20–100% opacity slider
+  for the selected control, and retain the repository default of **Unlock all
+  missions** off while preserving existing device preferences. The accepted
+  editor and Facility gameplay screenshot SHA-256 values are
+  `b26d88e766316f25fa37e90875bd1f468a9fd600b8e0e21cc9a32915465added`
+  and `546c945df9643f355b8eec020be6f143eeaa9f5cb332497306c11a4d503cc577`.
+- The final polish keeps the accepted live editor and mappings unchanged. It
+  moves only the iPhone utility menu approximately 34 points right, adds a
+  per-selected-control 20–100% opacity slider, and decodes the existing saved
+  layout schema with the established 72% opacity when that new field is absent.
+  Clean installs retain the source default `Unlock all missions = false`; the
+  in-place update deliberately preserved the tester's existing `true` choice.
+- The signed final-polish executable SHA-256 is
+  `f0072a6dddd53ab6cc7fb061877aea2aed7717625340c4fd5f355a24077abc32`.
+  It was installed in place on the physical iPhone without a live console,
+  recorder or profiler. The installation database UUID remained
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`, and the normal launch remained alive
+  as PID `4732` in the bounded process snapshot.
+- Independent pre/post-install readbacks matched byte-for-byte: both ROMs
+  `7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959`,
+  active save
+  `f4ff93fe66c1ca8b36ad2a8f4897e4387c69f1abfc0b58470a415ce3cd961cc6`,
+  backup save
+  `e4476b2d18d2a0e9d9c484d8ab9c0cb5fb9bcf8bec6694188acdff900b79b13b`,
+  and preferences/custom phone layout
+  `12e163bce76605fb852efc0d38a31d38aecbdbd7d6ef5da7d6fffa55d9d73ffd`.
+  The strengthened ARM64 Simulator host verifier, contamination gate, source
+  license manifest and diff-whitespace gate all pass. The newly aligned menu
+  and opacity control still require the tester's final hands-on acceptance.
+
 ## Preserved evidence
 
 - User screenshot: `Screenshot 2026-08-21 at 1.00.22 AM.png` (kept outside the
