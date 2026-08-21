@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 2 is the current coordinated release candidate. It is a
+GoldenPad 0.1.0 Preview 2 is the current coordinated release. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 
@@ -21,8 +21,10 @@ Preview 1 release record:
 - [x] Preview 2 source has a first-launch in-app retail conversion flow with
   exact retail/output validation, common N64 byte-order normalization, atomic
   replacement, and preservation of a valid Preview 1 Documents ROM.
-- [ ] Physically accept the Preview 2 importer on both an iPhone and iPad before
-  publishing the Preview 2 IPA.
+- [x] Obtain user approval to publish the exact Preview 2 build after in-place
+  install, preserved-data readback, launch and hands-on review on iPhone/iPad.
+  The full first-install and importer negative-path matrix remains open in
+  `PREVIEW_2_ROM_IMPORT.md`.
 - [ ] Remove the six disclosed anonymous `/private/tmp/goldenpad-recomp.*`
   compiler source literals from a future build. Preview 1 rejects `/Users/` and
   any unexpected temporary path; the six literals contain no ROM or user name.
@@ -32,9 +34,9 @@ Keep source publication, binary publication, signing and rights clearance as
 separate decisions. Preview publication does not imply App Store or commercial
 clearance.
 
-## Next coordinated update
+## Coordinated Preview 2 update
 
-The next update is one reviewed source baseline with platform-appropriate
+This update is one reviewed source baseline with platform-appropriate
 artifacts. It is not one universal package: iPhone/iPad use an `.ipa`, while
 native Apple-Silicon macOS uses a separate `GoldenPad.app`.
 

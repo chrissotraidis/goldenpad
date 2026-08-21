@@ -6,6 +6,10 @@
   physical multiplayer depth-alias repair, the in-app retail-ROM importer, and
   the isolated native Mac Alpha without copying retail data or generated AOT
   source into the tracked tree.
+- Received user approval to merge and publish the exact audited Preview 2
+  mobile build and separate Apple-Silicon Mac Alpha artifact. This promotes
+  macOS to official GoldenPad project support in Alpha status while preserving
+  the disclosed input, blue-edge and sustained-performance debt.
 - Found that the tracked mobile viewport patch had advanced while the ignored
   generated patch embedding was stale. Regenerated the matched MIPS patch and
   both C embeddings, then added configure-time guards that require the current
@@ -17,8 +21,8 @@
   app-data UUIDs `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
   `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`; independent pre/post hashes on both
   devices matched the Documents ROM, runtime ROM, active save, backup save and
-  preferences. Launch succeeded on both. Hands-on gameplay approval of this
-  exact rebuild remains the publication gate.
+  preferences. Launch succeeded on both, and the user approved this exact
+  rebuild for publication after hands-on review.
 - Packaged and audited the 18-member ROM-free unsigned mobile archive
   `GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
   `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.

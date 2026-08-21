@@ -11,7 +11,7 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-The Preview 2 signed iPhone/iPad candidate launches real GoldenEye gameplay,
+The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
 installation, and has bounded single-player presentation/audio evidence. Touch
 and Xbox/MFi Player 1 control paths, separate phone/tablet touch layouts with a
@@ -41,9 +41,11 @@ Freeze this executable as the Preview 2 stable experimental multiplayer
 baseline. Multiplayer is not yet bug-free or fully accepted pending the residual
 flicker investigation and real three/four-controller routing.
 
-The native Apple-Silicon macOS app has reached **Alpha**. The current arm64
-Release product is `GoldenPad.app`; its product, display name and executable are
-all `GoldenPad`, and the final packaged-source executable SHA-256 is
+GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
+the project's support status, not an official or commercial affiliation. The
+current arm64 Release product is `GoldenPad.app`; its product, display name and
+executable are all `GoldenPad`, and the final packaged-source executable
+SHA-256 is
 `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
 Hands-on review reached authentic gameplay with working keyboard and mouse
 input, and the user intentionally quit after evaluating it. The build is stable
@@ -76,9 +78,8 @@ build `2` without changing app-data UUIDs
 `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
 `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. Independent pre/post readbacks on both
 devices matched the Documents ROM, runtime ROM, active save, backup save and
-preferences; the exact build launched successfully on both devices. Hands-on
-gameplay approval of this freshly rebuilt executable remains the last
-publication gate.
+preferences; the exact build launched successfully on both devices. The user
+approved this exact rebuilt executable for publication after hands-on review.
 
 The audited Preview 2 mobile artifact is
 `GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
@@ -594,8 +595,8 @@ evidence ledger below is preserved as historical validation for
 - Some maps can still expose original or renderer-specific geometry/clipping
   artifacts. Preview 1 does not claim complete stage/effect parity.
 - Preview 2 includes the bounded in-app retail-ROM importer. Exact physical
-  first-run acceptance on both iPhone and iPad remains an explicit release
-  checklist item; a valid Preview 1 TLB-free input is preserved and reused.
+  first-run and negative-path acceptance on both iPhone and iPad remains open
+  quality work; a valid Preview 1 TLB-free input is preserved and reused.
 - The packaged executable retains six anonymous `/private/tmp/goldenpad-recomp.*`
   compiler source literals from prebuilt runtime archives. The verifier allows
   only those exact patterns and rejects user-home paths or other temporary paths.
@@ -603,9 +604,9 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Complete the short hands-on gameplay check of the exact final Preview 2 iPhone
-build, then merge the reviewed source and publish the already audited mobile and
-Mac Alpha artifacts with their checksums. After publication, prioritize the
+Merge the reviewed source, confirm local and remote `main`, then publish and
+reverify the already audited mobile and Mac Alpha artifacts with their
+checksums. After publication, prioritize the
 documented lifecycle/audio, residual multiplayer flicker/routing and Mac Alpha
 input/edge/performance debt without changing the accepted single-player, touch,
 controller, save or settings baseline. Do not import matching-target SDK

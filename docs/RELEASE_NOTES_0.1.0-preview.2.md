@@ -18,8 +18,9 @@ is a separate Alpha artifact with explicitly lower acceptance.
   three-point filtering through RT64 Metal.
 - A frozen experimental local-multiplayer render repair that removes the former
   large black/checkerboard split-screen corruption on physical iPad.
-- A separate native arm64 macOS Alpha named `GoldenPad.app`, with the same app
-  icon and native Mac menus for settings and diagnostics.
+- Official GoldenPad project support for Apple Silicon macOS in Alpha status,
+  distributed as a separate native arm64 `GoldenPad.app` with the same app icon
+  and native Mac menus for settings and diagnostics.
 
 ## Downloads
 

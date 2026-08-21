@@ -180,7 +180,7 @@ The package audit is static/build evidence. The user's physical iPhone/iPad
 play provides the single-player interaction/acceptance evidence; neither is
 evidence of stable multiplayer.
 
-Preview 2 final-candidate evidence:
+Preview 2 release evidence:
 
 - the exact signed mobile executable SHA-256 is
   `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`;
@@ -190,8 +190,8 @@ Preview 2 final-candidate evidence:
   `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`;
 - independent pre/post readbacks on both devices matched the Documents ROM,
   runtime ROM, active save, backup save and preferences byte for byte;
-- the exact build launched successfully on both devices, but hands-on gameplay
-  approval of this freshly rebuilt executable remains the publication gate;
+- the exact build launched successfully on both devices, and the user approved
+  this freshly rebuilt executable for publication after hands-on review;
 - `scripts/verify-recomp-prototype-ipa.sh` passed the 18-member unsigned IPA;
 - IPA SHA-256 is
   `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`;
@@ -206,8 +206,8 @@ Preview 2 final-candidate evidence:
   `d07294bb9f9c1ca903ae7d9f84f5a75b1886796163fc2680b2a3730f38b3a342`.
 
 These package audits establish architecture and contamination boundaries, not
-hands-on gameplay quality. The mobile candidate still needs the user's final
-interaction check, and the Mac artifact remains Alpha with the input, blue-edge
+hands-on gameplay quality. The user separately supplied the final mobile
+interaction approval. The Mac artifact remains Alpha with the input, blue-edge
 and sustained-performance debt defined above.
 
 ## Desktop baseline
