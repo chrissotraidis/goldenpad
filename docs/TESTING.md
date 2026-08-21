@@ -10,7 +10,7 @@
 
 A lower level never substitutes for a higher one.
 
-## Primary RT64/AOT candidate — 2026-08-21
+## Primary RT64/AOT candidate — 2026-08-22
 
 The primary runtime is the internal `GoldenPadRecompPrototype` target installed
 as `GoldenPad`. Its current evidence ledger is
@@ -68,8 +68,98 @@ Hands-on acceptance for the newest signed build must cover:
 
 Multiplayer is not an initial single-player preview gate. The former RT64
 `0x0000000320000000` crash has a targeted KSEG1 address-mask repair and the
-Simulator can enter a live two-player match, but visible viewport flashing must
-be fixed before multiplayer is described as accepted.
+Preview 2 candidate now scopes full-frame clears/fades to the active player
+viewport. A real two-player Temple match remained visually stable on ARM64 iPad
+Simulator for more than 11,000 presented VI updates, with controller Player 1
+movement and touch Player 2 FIRE registered independently. This is Simulator
+evidence only. The first physical iPad follow-up failed: Player 2 still flashed
+in horizontal split, and four-player mode corrupted lower views plus the
+upper-right view. A subsequent 81.69-second physical capture showed corruption
+recovering and migrating between lower quadrants despite healthy presentation
+logs. The current candidate makes each lower-player depth clear use the exact
+shifted image address and viewport Y range used for rendering; a 43.87-second
+four-player Simulator recording stayed clean. Physical four-player testing of
+the exact candidate then kept all views coherent and did not reproduce the old
+black/checkerboard corruption. A 59.33-second device recording stayed coherent
+across 3,336 consecutive frame comparisons, and its paired log reached 54,652
+presented VI updates with zero audio drops or underruns. This is sufficient to
+freeze the exact executable as the stable experimental Preview 2 baseline, with
+slight residual lighting flicker recorded as known debt; it is not a claim of
+bug-free or complete multiplayer acceptance.
+
+For the focused physical multiplayer retest:
+
+1. Run horizontal two-player Temple for at least 30 seconds. Move and fire with
+   Player 1 and touch Player 2; reject any black/checkerboard flash in either
+   half.
+2. Run the neutral four-player Temple diagnostic for at least 30 seconds. Watch
+   all four quadrants continuously; reject corruption even if it recovers or
+   moves to another player view.
+3. If any flash occurs, leave the match running and capture video plus one
+   bounded post-run application-log readback. A clean still screenshot is not
+   sufficient evidence for this temporal fault.
+
+### Native macOS regression gate
+
+Before promoting a native `GoldenPad.app`, test without a recorder, live log
+stream, profiler, or background Simulator control:
+
+1. In file/mission menus, W/S and A/D navigate all four directions. Deliberate
+   mouse movement follows the same directions; moving the pointer up must never
+   move the selection down.
+2. Start Dam and verify the pointer is captured automatically when live play
+   begins. Horizontal and vertical look must remain responsive while moving
+   with WASD. Escape must release the pointer. Crouching must not pull the
+   camera downward without mouse input. If live play receives no mouse motion,
+   first verify generated `RecompiledPatches/patches.c` calls both
+   `recomp_get_camera_inputs` and `goldenpad_recomp_consume_crouch_toggle`.
+   Active stage 33 with repeated `p1look=(0,0)` can mean the generated game-side
+   consumer is missing; it does not by itself prove an AppKit delivery defect.
+   The accepted baseline uses the Metal view's mouse callbacks and must not be
+   replaced with an app-local event monitor without a separate failing test.
+3. Compare Dam and Surface against an accepted high-resolution capture. Reject
+   any blue edge, large blue/black background region, missing cliff/road/room
+   geometry, or culling change after an input-only patch.
+4. Enable **Unlock all missions**, return to mission select, and confirm later
+   missions are available immediately. Disable it and confirm the current save
+   remains unchanged; the setting must not write completion times to EEPROM.
+5. Confirm mouse sensitivity and every keyboard binding persist after relaunch,
+   and that wheel up/down produces distinct previous/next weapon changes.
+6. Keep one mission active long enough to reject a delayed freeze. Read the
+   bounded session log only after the run: any rising audio-underrun count or
+   uneven VI/present progress is a failure even if launch and input initially
+   work. Do not record, stream logs, or profile during this acceptance run.
+7. While the mission remains active, confirm mouse and keyboard events stay
+   responsive for the entire interval. The embedded Plume bridge must coalesce
+   render-thread window/refresh queries so no more than one of each update is
+   pending on AppKit's main queue. A build that renders or plays audio but lets
+   event latency grow is a failure.
+
+The 2026-08-21 builds that directly wrote player camera fields, used a generated
+patch pair without the modern camera/crouch consumer, or used the Metal drawable
+as the Plume swap-chain window size failed items 1–4. The retained 21:16:44 app
+is the accepted input/render control; it disproved the later app-local event
+monitor diagnosis. These are recorded rejected baselines, not release
+candidates.
+
+The first 349-function compact candidate also failed item 6 during hands-on
+testing. The replacement Release candidate must be tested with QuickTime and
+other capture tools closed; build/signature success alone is not acceptance.
+
+The focused Preview 2 multiplayer gate is documented in
+[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md). It requires a sustained real
+match with both horizontal viewports continuously visible, controller Player 1
+and touch Player 2 operating independently, and no single-player regression.
+Three/four-player, enhanced-visual and network tests are later gates.
+
+For the four-player render-only probe, enable **Experimental two-player input
+test**, then **Experimental four-player render test**, and fully quit/relaunch
+GoldenPad before entering Multiplayer. Require the Multiplayer Options page to
+show four players and a live match to show four stable quadrants. Controller
+Player 1 and touch Player 2 must remain independent; Players 3/4 must stay
+neutral. Pause Player 1 and require its watch UI to remain confined to the
+upper-left quadrant without erasing the other three views. This probe does not
+establish real four-controller support.
 
 Preview 1 release evidence:
 
@@ -89,6 +179,35 @@ Preview 1 release evidence:
 The package audit is static/build evidence. The user's physical iPhone/iPad
 play provides the single-player interaction/acceptance evidence; neither is
 evidence of stable multiplayer.
+
+Preview 2 final-candidate evidence:
+
+- the exact signed mobile executable SHA-256 is
+  `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`;
+- it was installed in place on the connected iPhone as version `0.1.0` build
+  `2` without changing app-data UUID
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`;
+- independent pre/post readbacks matched the Documents ROM, runtime ROM,
+  active save, backup save and preferences byte for byte;
+- the exact build launched successfully, but hands-on gameplay approval of
+  this freshly rebuilt executable remains the publication gate;
+- `scripts/verify-recomp-prototype-ipa.sh` passed the 18-member unsigned IPA;
+- IPA SHA-256 is
+  `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`;
+- unsigned mobile app-content SHA-256 is
+  `bce1606fb88cf5a2a423875073871a8417d66f7b1462568bbbae390b72d1a5ec`;
+- the final native Mac executable SHA-256 is
+  `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`;
+- `scripts/verify-recomp-macos-alpha.sh` passed the 20-member arm64 Alpha
+  archive at SHA-256
+  `7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`,
+  with sorted app-content SHA-256
+  `d07294bb9f9c1ca903ae7d9f84f5a75b1886796163fc2680b2a3730f38b3a342`.
+
+These package audits establish architecture and contamination boundaries, not
+hands-on gameplay quality. The mobile candidate still needs the user's final
+interaction check, and the Mac artifact remains Alpha with the input, blue-edge
+and sustained-performance debt defined above.
 
 ## Desktop baseline
 

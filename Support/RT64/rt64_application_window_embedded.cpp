@@ -35,7 +35,7 @@ namespace RT64 {
     }
 
     void ApplicationWindow::makeResizable() {
-        // UIKit owns resizing and device rotation.
+        // The UIKit/AppKit host owns resizing, rotation, and window lifetime.
     }
 
     void ApplicationWindow::detectRefreshRate() {

@@ -1,5 +1,166 @@
 # Worklog
 
+## 2026-08-22 — reconcile and audit the Preview 2 coordinated release
+
+- Reconciled the accepted mobile single-player/touch/controller baseline, the
+  physical multiplayer depth-alias repair, the in-app retail-ROM importer, and
+  the isolated native Mac Alpha without copying retail data or generated AOT
+  source into the tracked tree.
+- Found that the tracked mobile viewport patch had advanced while the ignored
+  generated patch embedding was stale. Regenerated the matched MIPS patch and
+  both C embeddings, then added configure-time guards that require the current
+  depth-alias markers and reject generated files older than their sources. The
+  Mac build intentionally retains its isolated compact patch set.
+- Rebuilt the exact signed mobile product. Its executable SHA-256 is
+  `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`.
+  Installed build 2 in place on the connected iPhone without changing app-data
+  UUID `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`; independent pre/post hashes
+  matched the Documents ROM, runtime ROM, active save, backup save and
+  preferences. Launch succeeded. Hands-on gameplay approval of this exact
+  rebuild remains the publication gate.
+- Packaged and audited the 18-member ROM-free unsigned mobile archive
+  `GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
+  `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
+  Its sorted unsigned app-content SHA-256 is
+  `bce1606fb88cf5a2a423875073871a8417d66f7b1462568bbbae390b72d1a5ec`.
+- Rebuilt the native arm64 `GoldenPad.app` at executable SHA-256
+  `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`
+  and added a separate deterministic Alpha packager/verifier. The 20-member
+  `GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip` passed architecture,
+  platform, signature, dependency, icon, notices, private-path and game-data
+  audits at SHA-256
+  `7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`.
+  It remains Alpha because mouse tuning, the thin far-right blue edge and
+  sustained performance are still open.
+
+## 2026-08-21 — trace physical split-screen corruption to the lower depth alias
+
+- Rejected the first physical-iPad follow-up candidate. Restoring the current
+  color framebuffer after both sky fill paths did not improve two-player mode:
+  Player 1 remained clean while Player 2 still flashed. Four-player mode still
+  corrupted lower views and also showed corruption in the upper-right view.
+- Captured 81.69 seconds of the live four-player iPad output while collecting a
+  bounded application log. A lower quadrant switched between a clean room and
+  large black/checkerboard regions, later recovered, and the corruption moved
+  from the lower-right to the lower-left view. The game loop continued to
+  present and reported four distinct players without dropped-frame or renderer
+  errors, making a fixed screen-layout fault or game-loop stall unlikely.
+- Compared GoldenEye's original depth-buffer setup with RT64's framebuffer
+  tracking. GoldenEye renders lower players through a depth-image address one
+  logical screen below the shared allocation, relying on RDP address/Y aliasing.
+  RT64 recognizes a fill-only depth clear only when the clear color-image
+  address exactly equals the next depth-image address. The prior patch cleared
+  lower players through the unshifted address, so RT64 treated the clear and
+  render as different resources even though the N64 byte ranges alias.
+- Changed the per-player depth clear to use the same shifted image address and
+  original viewport Y range as `zbufInit` for Player 2 in horizontal split and
+  Players 3/4 in four-player mode. Added a stored-patch regression guard and
+  verified the complete patch applies cleanly to a fresh upstream checkout.
+- Regenerated the matched MIPS patch payload in an isolated source copy so the
+  concurrent native Mac experiment's generated artifacts were not overwritten.
+  A 43.87-second ARM64 iPad Simulator recording kept all four Temple quadrants
+  intact while Player 1 input registered. This remains a regression check, not
+  hardware acceptance.
+- Built and signed the exact ARM64 iPad candidate for team `VKDH2T9UTF` at
+  executable SHA-256
+  `0976dcdfd17de60beda8e8e60ccff3fc81da7da0b2ef43f159cdea061149677d`.
+  Installed it in place on the paired iPad Pro after backing up `Documents` and
+  `Library`. Both ROM copies, the active save, backup save and preferences were
+  byte-identical before/after; launch succeeded as PID `7124`.
+- Hands-on four-player testing found this to be the best physical build so far:
+  all four views remained coherent and the former black/checkerboard corruption
+  did not return. A slight lighting shimmer remains, so this is the stable
+  experimental Preview 2 baseline rather than a claim of bug-free multiplayer.
+- Preserved a 59.33-second 1600x1200 H.264 device recording with 48 kHz AAC
+  audio. Across 3,336 consecutive frame comparisons, the largest whole-quadrant
+  average luminance change was 1.02/255. The paired device log progressed through
+  54,652 presented VI updates with zero audio drops or underruns. Freeze this
+  exact build and track the residual shimmer as a separate lower-severity issue.
+
+## 2026-08-21 — isolate native Mac mouse/Crouch regression
+
+- Compared the broken `GoldenPad.app` with the retained 21:16:44
+  `GoldenPadMac.app`. Hands-on testing confirmed the retained executable still
+  accepted mouse look and C Crouch and did not exhibit the later large blue or
+  duplicated geometry regression; its remaining renderer symptom was the thin
+  far-right blue edge.
+- Found that `patches.c` and `patches_bin.c` had been regenerated seconds after
+  that retained executable without the tracked modern-controls patch. The host
+  still produced camera and crouch input, but the embedded game patch no longer
+  called `recomp_get_camera_inputs` or
+  `goldenpad_recomp_consume_crouch_toggle`.
+- Reapplied `goldeneye64recomp-ios-modern-controls.patch`, rebuilt the MIPS
+  patch, regenerated both embedded patch halves, restored the retained
+  Metal-view event architecture, and rebuilt the product as `GoldenPad.app`.
+- Added a regeneration gate to verify both bridge calls before linking. The
+  rebuilt app remains pending hands-on mouse, Crouch, WASD and renderer
+  acceptance; build success is not gameplay acceptance.
+- Rejected that rebuild after visible staggering and 46,323 audio-underrun
+  frames across 396 callbacks. The retained comparison initially produced zero
+  underruns but later froze, so it remains evidence rather than a fallback.
+- Isolated the Mac candidate from the later multiplayer viewport patch without
+  changing the iPhone/iPad source. The isolated patch output contains 349
+  functions versus 356 in the staggering build and retains both required input
+  bridge calls. Built, signed and launched it as `GoldenPad`; sustained
+  hands-on acceptance remains open.
+- Rejected the first compact candidate after it became staggered and effectively
+  uncontrollable. QuickTime was not running at the subsequent process check.
+  The native log showed initial render/audio progress, while the prior session
+  later collapsed to only a few VI presentations per interval and accumulated
+  underruns.
+- Traced a host-side starvation path to Plume scheduling background window-size
+  and refresh-rate reads onto AppKit's main queue for every presentation. Added
+  a Mac-only coalescing patch that bounds each class to one pending update,
+  rebuilt the pinned RT64/Plume archives with the standalone Metal toolchain,
+  and produced a newly linked, ad-hoc-signed Release `GoldenPad.app` at
+  executable SHA-256
+  `0e73a74da8866f9f3784afedf78ff87a0ca18916e363e63fb33083747b149d00`.
+  A later clean launch reached authentic gameplay without recording or
+  continuous profiling. Hands-on review retained it as the Mac alpha baseline
+  and then intentionally quit the app. Mouse look remains too slow, controls
+  remain less polished than mobile, and the thin far-right blue strip persists.
+  The renderer/input path is frozen for the coordinated update rather than
+  risking a return of the much larger rejected geometry regressions.
+
+## 2026-08-21 — repair two-player viewport ownership
+
+- Traced the flashing split-screen failure to recomp patches that selected or
+  cleared the full framebuffer during each player render pass. GoldenEye renders
+  players sequentially and shuffles their order, so those operations could erase
+  the other player's completed view.
+- Scoped sky fills, background scissor, depth clears and fades to the current
+  player viewport while retaining extended horizontal output for a full-width
+  two-player view.
+- Recompiled the MIPS patch payload, regenerated its C embedding, built the full
+  ARM64 Simulator app and installed it in place. The existing user-supplied ROM,
+  save and backup remained byte-identical.
+- Entered a real two-player Temple match using controller Player 1 plus touch
+  Player 2. Both horizontal views remained stable through more than 11,000
+  presented VI updates; Player 1 camera input and Player 2 FIRE registered on
+  their separate ports. Physical iPhone/iPad acceptance remains open.
+- Moved three/four-player layout, neutral four-port diagnostics, enhanced
+  multiplayer visuals and networking into `MULTIPLAYER_ROADMAP.md` so they do
+  not expand the Preview 2 repair.
+- Added a subordinate iOS/iPadOS four-player render diagnostic that advertises
+  neutral Players 3/4 only when explicitly enabled. A real four-player Temple
+  match opened on ARM64 iPad Simulator with four correctly placed quadrants;
+  controller Player 1 and touch Player 2 registered independently while Players
+  3/4 remained neutral.
+- Exercised Player 1 movement and its pause/watch screen. The watch remained
+  confined to the upper-left quadrant and did not erase the other three views.
+  All four views remained intact through 10,773 presented VI updates. Physical
+  iPad validation and real four-controller routing are not claimed.
+- Fixed the iPhone utility menu crop by anchoring the three-dot button to the
+  saved START control's horizontal position in the same full-screen geometry.
+  The corrected circle was fully visible and centered above START on the iPhone
+  Simulator; the independent iPad touch layout remains unchanged.
+- Built the resulting app as signed ARM64 for team `VKDH2T9UTF`, executable
+  SHA-256 `b6c5bd38ca911fe437e7378c1e451b193d11a987e08f94540c89250ce649c4d2`,
+  and installed it in place on the paired iPad Pro. The user-supplied ROM,
+  active save, backup save and preferences were byte-identical before/after.
+  Launch succeeded as PID 7013; physical multiplayer gameplay is awaiting the
+  user's hands-on acceptance.
+
 ## 2026-08-21 — finalize GoldenPad Preview 1
 
 - Promoted the GoldenEye64Recomp/N64Recomp/RT64 build to the primary GoldenPad

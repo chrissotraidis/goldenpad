@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 
+#if !defined(GOLDENPAD_RECOMP_RT64_INIT_EXTERNAL)
 extern "C" const char *goldenpad_recomp_rt64_initialize(void *window, void *view) {
     (void)window;
     (void)view;
@@ -8,6 +9,7 @@ extern "C" const char *goldenpad_recomp_rt64_initialize(void *window, void *view
 }
 
 extern "C" void goldenpad_recomp_rt64_shutdown() {}
+#endif
 
 extern "C" void goldenpad_recomp_set_msaa_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_resolution_mode(int32_t) {}
@@ -16,6 +18,7 @@ extern "C" void goldenpad_recomp_set_controller_state(int32_t, uint32_t, int32_t
 extern "C" void goldenpad_recomp_set_right_analog(int32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_set_controller_connected(int32_t) {}
 extern "C" void goldenpad_recomp_set_two_player_test_mode(int32_t) {}
+extern "C" void goldenpad_recomp_set_four_player_test_mode(int32_t) {}
 extern "C" void goldenpad_recomp_set_app_active(int32_t) {}
 extern "C" void goldenpad_recomp_note_transient_inactive() {}
 extern "C" void goldenpad_recomp_queue_touch_look(int32_t, int32_t, int32_t) {}

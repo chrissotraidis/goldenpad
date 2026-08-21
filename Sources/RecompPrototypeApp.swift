@@ -54,6 +54,7 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.threePointFiltering") private var threePointFiltering = true
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
     @AppStorage("recomp.twoPlayerTestMode") private var twoPlayerTestMode = false
+    @AppStorage("recomp.fourPlayerTestMode") private var fourPlayerTestMode = false
     @State private var presentedSheet: RecompPrototypeSheet?
     @State private var showReturnToMenuConfirmation = false
     @State private var isEditingTouchLayout = false
@@ -104,10 +105,14 @@ struct GoldenPadApp: App {
                     )
                         .ignoresSafeArea()
                 }
-                utilityMenu
-                    .padding(.top, 26)
-                    .padding(.trailing, touchDeviceClass == .phone ? 4 : 20)
-                    .offset(x: touchDeviceClass == .phone ? 61 : 0)
+                GeometryReader { geometry in
+                    utilityMenu
+                        .position(
+                            x: utilityMenuX(in: geometry.size),
+                            y: 48
+                        )
+                }
+                .ignoresSafeArea()
             }
             .onAppear {
                 input.configureLookSensitivity(lookSensitivity)
@@ -117,6 +122,7 @@ struct GoldenPadApp: App {
                 input.configureInvertAimY(invertAimY)
                 input.configureUnlockAllMissions(unlockAllMissions)
                 input.configureTwoPlayerTestMode(twoPlayerTestMode)
+                input.configureFourPlayerTestMode(fourPlayerTestMode)
                 surface.setAppActive(true)
                 audio.activate()
             }
@@ -140,6 +146,9 @@ struct GoldenPadApp: App {
             }
             .onChange(of: twoPlayerTestMode) { _, value in
                 input.configureTwoPlayerTestMode(value)
+            }
+            .onChange(of: fourPlayerTestMode) { _, value in
+                input.configureFourPlayerTestMode(value)
             }
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
@@ -187,6 +196,7 @@ struct GoldenPadApp: App {
                         threePointFiltering: $threePointFiltering,
                         unlockAllMissions: $unlockAllMissions,
                         twoPlayerTestMode: $twoPlayerTestMode,
+                        fourPlayerTestMode: $fourPlayerTestMode,
                         touchLayoutStore: touchLayout,
                         touchDeviceClass: touchDeviceClass,
                         onEditTouchLayout: beginTouchLayoutEditing,
@@ -258,7 +268,8 @@ struct GoldenPadApp: App {
                     resolutionMode: resolutionMode,
                     threePointFiltering: threePointFiltering,
                     unlockAllMissions: unlockAllMissions,
-                    twoPlayerTestMode: twoPlayerTestMode
+                    twoPlayerTestMode: twoPlayerTestMode,
+                    fourPlayerTestMode: fourPlayerTestMode
                 )
                 presentedSheet = RecompPrototypeSheet(content: .share(url))
             }
@@ -275,6 +286,12 @@ struct GoldenPadApp: App {
 
     private var touchDeviceClass: RecompTouchDeviceClass {
         RecompTouchDeviceClass.current
+    }
+
+    private func utilityMenuX(in canvas: CGSize) -> CGFloat {
+        let pause = touchLayout.placements(for: touchDeviceClass)
+            .first(where: { $0.id == .pause })
+        return canvas.width * (pause?.sanitized().x ?? 0.95)
     }
 
     private func beginTouchLayoutEditing() {
@@ -332,6 +349,7 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var threePointFiltering: Bool
     @Binding var unlockAllMissions: Bool
     @Binding var twoPlayerTestMode: Bool
+    @Binding var fourPlayerTestMode: Bool
     @ObservedObject var touchLayoutStore: RecompTouchLayoutStore
     let touchDeviceClass: RecompTouchDeviceClass
     let onEditTouchLayout: () -> Void
@@ -439,6 +457,11 @@ private struct RecompPrototypeSettingsView: View {
                         : "The connected controller remains Player 1 and touch controls become Player 2. Turn this off to hide touch controls and restore normal controller-only play.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    Toggle("Experimental four-player render test", isOn: $fourPlayerTestMode)
+                        .disabled(!twoPlayerTestMode || controllerName == nil)
+                    Text("Advertises neutral Players 3 and 4 while keeping controller Player 1 and touch Player 2. This tests four-way rendering only, not four independent inputs.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 Section("Runtime") {
                     LabeledContent("Game", value: runtimeStatus)
@@ -537,7 +560,8 @@ private enum RecompPrototypeDiagnostics {
         resolutionMode: String,
         threePointFiltering: Bool,
         unlockAllMissions: Bool,
-        twoPlayerTestMode: Bool
+        twoPlayerTestMode: Bool,
+        fourPlayerTestMode: Bool
     ) -> URL {
         let manager = FileManager.default
         let support = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -563,6 +587,7 @@ private enum RecompPrototypeDiagnostics {
         Center reticle: \(reticleEnabled ? "On" : "Off")
         Unlock all missions: \(unlockAllMissions ? "On (mission select only; EEPROM unchanged)" : "Off")
         Two-player input test: \(twoPlayerTestMode ? "Requested (external P1 + touch P2)" : "Off")
+        Four-player render test: \(fourPlayerTestMode ? "Requested (neutral P3/P4)" : "Off")
         Graphics: RT64 Metal, \((RecompPrototypeResolutionMode(rawValue: resolutionMode) ?? .automatic).title), \(msaaEnabled ? "2x MSAA" : "MSAA off"), \(threePointFiltering ? "three-point filtering" : "linear filtering"), original presentation rate
         Device: \(UIDevice.current.model) / iOS \(UIDevice.current.systemVersion)
 

@@ -5,13 +5,14 @@
 </p>
 
 <p align="center">
-  <strong>GoldenEye 007, rebuilt as a native app for iPhone and iPad.</strong><br>
+  <strong>GoldenEye 007, rebuilt for iPhone, iPad, and Apple Silicon Mac.</strong><br>
   Apple ARM64 game code, Metal rendering, user-supplied retail data, touch
   controls, game controllers, saves, audio, and local multiplayer foundations.
 </p>
 
 <p align="center">
   <img alt="iOS and iPadOS 17 or later" src="https://img.shields.io/badge/iOS%20%2F%20iPadOS-17%2B-0A84FF?logo=apple">
+  <img alt="Apple Silicon macOS alpha" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20Alpha-8E8E93?logo=apple">
   <img alt="Metal renderer" src="https://img.shields.io/badge/renderer-Metal-5E5CE6">
   <img alt="Native ARM64" src="https://img.shields.io/badge/runtime-native%20ARM64-30D158">
   <img alt="Developer preview" src="https://img.shields.io/badge/status-developer%20preview-FF9F0A">
@@ -28,6 +29,13 @@ code, N64ModernRuntime and RT64's Metal renderer. It is not a general Nintendo
 64 emulator and it does not contain the game, a ROM, or extracted game assets.
 The supported retail data remains user-supplied and private.
 
+The same runtime now has a native Apple-Silicon `GoldenPad.app` in alpha. It
+reaches authentic gameplay, but its mouse/keyboard experience and performance
+remain below the accepted mobile builds, and a thin blue strip remains at the
+far-right render edge. See the
+[Mac feasibility and implementation record](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md)
+and [Technical Debt](docs/TECH_DEBT.md) before treating it as release parity.
+
 The primary RT64 build reaches the original title sequence, menus and multiple
 missions on a physical iPad with native audio, the tuned GoldenPad touch layout
 and Xbox/MFi controller support. The earlier MGB64/Fast3D app is retained as
@@ -35,7 +43,8 @@ and Xbox/MFi controller support. The earlier MGB64/Fast3D app is retained as
 the primary development version.
 
 > **Development boundary:** generated AOT source and retail-derived data are
-> never committed. Preview 1 distributes a compiled runtime only; it contains
+> never committed. GoldenPad preview artifacts distribute a compiled runtime
+> only; they contain
 > no ROM, save, extracted retail media, provisioning profile, or signing
 > identity. No official, commercial, or App Store clearance is claimed.
 
@@ -67,15 +76,22 @@ the repository or application package.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Physically accepted** | The final Preview 1 candidate runs on iPhone 14 and iPad Pro; follow the signed-device workflow in [Building](docs/BUILDING.md). |
-| Unsigned `.ipa` | **Audited Preview 1** | [Download the public unsigned IPA](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.1/GoldenPad-0.1.0-preview.1-unsigned.ipa), verify its checksum, then re-sign it for your own device. |
-| GitHub release | **Preview 1** | [Release notes and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.1). |
+| Local iPhone/iPad build | **Preview 2 candidate** | The exact build is installed on iPhone with its ROM, saves and preferences preserved; hands-on approval of this final rebuild remains the publication gate. |
+| Native Apple-Silicon Mac build | **Audited Alpha** | [Download the separate arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip); mouse tuning, the thin far-right blue edge and sustained performance remain open. |
+| Unsigned `.ipa` | **Audited Preview 2** | [Download the public unsigned IPA](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa), verify its checksum, then re-sign it for your own device. |
+| GitHub release | **Preview 2 candidate** | [Release notes and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.2) will become public after the final hands-on check. |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
-The release candidate was accepted through normal single-player gameplay on a
+The mobile baseline was accepted through normal single-player gameplay on a
 physical iPhone and iPad, including the editable touch layout and Xbox/MFi
-controller path. Longer thermal/route sweeps and stable multiplayer remain
-open. This developer preview must not be described as App Store-ready.
+controller path. Preview 2 adds the bounded in-app ROM importer and the frozen
+experimental multiplayer render repair. The exact final rebuild still needs a
+short hands-on iPhone check before publication. Longer thermal/route sweeps and
+complete multiplayer acceptance remain open. This developer preview must not
+be described as App Store-ready.
+
+The Mac app is a separate alpha artifact, not part of the `.ipa` and not yet a
+mobile-parity or notarized Mac release.
 
 ## What works
 
@@ -83,21 +99,23 @@ open. This developer preview must not be described as App Store-ready.
 |---|---|
 | Native runtime | Statically recompiled game code runs as Apple ARM64; no JIT or emulator wrapper |
 | Rendering | RT64 presents high-resolution Metal output on physical iPad hardware |
-| Setup | Preview 1 uses a user-derived NTSC-U `GoldenEye_TLBFREE.z64` copied into the app's Documents folder; no game data is included |
+| Setup | Preview 2 imports the user's original NTSC-U retail dump from Files and converts it privately on device; no game data is included |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls |
 | Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity and hold/toggle aim |
 | Controllers | `GCController` with accepted Player 1 movement, right-stick look, buttons, and automatic touch-overlay hiding |
-| Multiplayer | Experimental only; the Player 1 controller + touch Player 2 path can enter a match, but split-screen flashing and instability remain work in progress |
+| Multiplayer | Experimental; the frozen Preview 2 render baseline removes the former large black/checkerboard corruption on physical iPad, while slight lighting flicker and real three/four-controller routing remain open |
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
 | Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
 | Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
+| macOS | Native arm64 `GoldenPad.app` reaches gameplay; currently Alpha with disclosed input, edge-rendering and performance debt |
 | Legacy fallback | MGB64/Fast3D remains buildable as `GoldenPad Legacy` |
 
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
 ledger and remaining physical-device gates. [Technical debt and upstream
 watch](docs/TECH_DEBT.md) records when decompilation, MGB64, and renderer changes
-are safe to evaluate or adopt.
+are safe to evaluate or adopt. The focused two-player repair and deferred local/
+online enhancements are tracked in the [multiplayer roadmap](docs/MULTIPLAYER_ROADMAP.md).
 
 ## Supported game
 
@@ -112,21 +130,28 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Get started
 
-### Preview 2 development status
+### Preview 2
 
-Preview 2 is now being built around an in-app first-launch importer. In the
-current Preview 2 source, a new user chooses their own original NTSC-U retail
-ROM from Files; GoldenPad recognizes `.z64`, `.v64`, `.n64`, and `.rom` byte
-orders, performs the required TLB-free transformation privately on the device,
-verifies the exact output, and starts the existing runtime automatically. A
-valid Preview 1 `GoldenEye_TLBFREE.z64` is reused unchanged during an in-place
-update.
+Download
+[`GoldenPad-0.1.0-preview.2-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa)
+and its adjacent `.sha256` file. The IPA is intentionally unsigned: re-sign it
+with your own Apple development identity or trusted sideloading workflow, then
+install it on iOS/iPadOS 17 or later.
 
-There is not yet a published or physically accepted Preview 2 IPA. The public
-Preview 1 download still uses the manual instructions below. See the
-[Preview 2 ROM import plan and acceptance gates](docs/PREVIEW_2_ROM_IMPORT.md).
+On first launch, choose your own original NTSC-U retail ROM from Files.
+GoldenPad recognizes `.z64`, `.v64`, `.n64`, and `.rom` byte orders, performs
+the required TLB-free transformation privately on the device, verifies the
+exact output, and starts the native runtime automatically. A valid Preview 1
+`GoldenEye_TLBFREE.z64` is reused unchanged during an in-place update. See the
+[Preview 2 ROM import design and acceptance record](docs/PREVIEW_2_ROM_IMPORT.md).
 
-### Preview 1
+The separate Apple-Silicon Mac Alpha is
+[`GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip).
+It is an ad-hoc-signed, non-notarized arm64 app and remains below mobile release
+quality. It uses the same user-supplied-data boundary and must not be described
+as mobile parity.
+
+### Preview 1 manual setup (legacy)
 
 > **Using the IPA does not require building GoldenPad from source.** Install and
 > re-sign the IPA, generate the required game-data file once from your own retail
@@ -197,7 +222,7 @@ retail input and generated output remain yours and must not be redistributed.
 > currently be reproduced from the public checkout alone because its generated
 > game-code inputs are private and intentionally untracked. The public build
 > commands below produce the older `GoldenPad Legacy` fallback. To use the
-> current primary release, follow **Preview 1** and **First launch** instead.
+> current primary release, follow **Preview 2** and **First launch** instead.
 
 You need:
 
@@ -260,13 +285,13 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Re-sign and install the unsigned Preview 1 IPA.
-2. Generate `GoldenEye_TLBFREE.z64` from your own legally acquired US retail
-   dump using **Create the required TLB-free file** above.
-3. In Finder, select the device, open **Files**, and copy the generated file to
-   `GoldenPad/GoldenEye_TLBFREE.z64`.
-4. Launch GoldenPad. The original logos, front end, file selection and missions
-   should follow after the native runtime initializes.
+1. Re-sign and install the unsigned Preview 2 IPA.
+2. Launch GoldenPad and choose your own supported original NTSC-U retail ROM
+   from Files. The importer accepts `.z64`, `.v64`, `.n64`, and `.rom` byte
+   orders and validates the exact retail revision before conversion.
+3. Keep GoldenPad open while it privately converts and verifies the runtime
+   input. The original logos, front end, file selection and missions follow
+   after the native runtime initializes.
 
 The file remains in the app's private Documents container. It is not in the
 IPA, repository, release checksum, or diagnostics export. Removing the app can
@@ -321,9 +346,11 @@ buttons, bumpers, and triggers; sticks, D-pad, and Menu/Start retain their
 standard roles. For hardware-limited testing, **Cheats & Testing → Two-player input
 test** keeps the attached controller as Player 1 and exposes touch controls as
 Player 2. Turning it off hides touch and keeps the controller as Player 1. The
-former multiplayer process crash has a targeted repair, but physical and
-Simulator split-screen viewports have shown visible flashing and instability.
-Treat multiplayer as an experimental diagnostic path, not a Preview 1 feature.
+former multiplayer process crash and large split-screen corruption have
+targeted repairs. A physical four-player render test kept all quadrants coherent
+without the former black/checkerboard failure, but slight lighting flicker and
+real Player 3/4 controller routing remain open. Treat multiplayer as an
+experimental Preview 2 path, not a fully accepted feature.
 
 ## Resolution and performance
 
@@ -351,11 +378,11 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 
 ## Current limitations
 
-- Multiplayer is unstable and unfinished; split-screen flashing and match
-  instability are known Preview 1 issues.
-- The published Preview 1 IPA requires a compatible user-derived TLBFREE input
-  copied by file sharing. Preview 2's in-app retail-ROM conversion is implemented
-  in source but still needs physical iPhone/iPad acceptance and package audit.
+- Multiplayer has a stable experimental render baseline, not final acceptance.
+  Slight lighting flicker and real three/four-controller routing remain open.
+- Preview 2's in-app retail-ROM conversion is complete and package-audited. The
+  exact final rebuild remains gated on the user's hands-on iPhone check before
+  the release is made public.
 - Some stage-specific geometry glitches remain to be captured precisely.
 - Occasional audio static and multi-controller play remain open quality work.
 - The generated-input pipeline is not independently reproducible from the
@@ -384,10 +411,11 @@ retained only as the deprecated legacy fallback.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-Preview 1 is available from the
-[GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.1).
+Preview 2 is available from the
+[GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.2)
+after the final hands-on candidate check.
 It is an unsigned, ROM-free developer-preview IPA and must be re-signed. It does
-not include game data; see **First launch** for the current file-sharing setup.
+not include game data; see **First launch** for the in-app import flow.
 </details>
 
 <details>
@@ -434,6 +462,9 @@ the repository being publicly readable.
 | [`docs/BUILDING.md`](docs/BUILDING.md) | Full local build and signing workflow |
 | [`docs/TESTING.md`](docs/TESTING.md) | Reproducible verification procedures and hashes |
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Clean-checkout, package, signing, and publication gates |
+| [`docs/RELEASE_NOTES_0.1.0-preview.2.md`](docs/RELEASE_NOTES_0.1.0-preview.2.md) | Preview 2 downloads, checksums, changes and disclosed limitations |
+| [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Experimental render baseline and deferred controller/network work |
+| [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |
 | [`docs/ART.md`](docs/ART.md) | Original app-icon provenance |
 | [`docs/WORKLOG.md`](docs/WORKLOG.md) | Chronological production log |

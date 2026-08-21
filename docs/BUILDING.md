@@ -16,7 +16,7 @@ game core and native Metal renderer.
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
 
-## Primary Preview 1 package
+## Primary mobile preview package
 
 The complete primary target requires the ignored/generated AOT inputs and exact
 dependency archives described in
@@ -27,7 +27,7 @@ package with:
 ```sh
 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.1-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.2-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -35,14 +35,56 @@ its signature, provisioning profile and signing resources, enables Finder file
 sharing, stages the applicable upstream licenses, normalizes timestamps, and
 invokes the primary package verifier. It never edits the signed source app.
 
-Preview 1 expects a compatible user-derived `GoldenEye_TLBFREE.z64` in the
-installed app's Documents directory. No retail input, save, generated source,
-signing identity, or provisioning profile is placed in the IPA.
+Preview 2 replaces Preview 1's manual Finder file-sharing step with the bounded
+first-launch flow in [`PREVIEW_2_ROM_IMPORT.md`](PREVIEW_2_ROM_IMPORT.md). A new
+user chooses their supported original retail dump from Files; conversion and
+validation stay inside the app container. An in-place update reuses an existing
+valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
+identity, or provisioning profile is placed in the IPA.
 
-Preview 2 source replaces the manual installed-app step with the bounded
-first-launch flow in [`PREVIEW_2_ROM_IMPORT.md`](PREVIEW_2_ROM_IMPORT.md). The
-packager now defaults to an `0.1.0-preview.2` filename, but that artifact must
-not be published until the Preview 2 physical-device and package gates pass.
+The audited Preview 2 IPA SHA-256 is
+`704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
+It must not be published until the exact final signed rebuild receives the
+remaining hands-on gameplay approval.
+
+## Native Apple-Silicon Mac alpha
+
+The Mac app is a separate native arm64 artifact, not a Catalyst build and not
+part of the mobile `.ipa`. It is an Alpha below the accepted iPhone/iPad
+single-player quality bar. Mouse tuning, the thin far-right blue edge and
+sustained performance remain open; do not change the frozen renderer/input
+boundary while preparing the coordinated release.
+
+Build the exact pinned native dependencies first, then configure the app with
+the private generated AOT directory and the isolated matched Mac patch source:
+
+```sh
+GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR=/path/to/N64ModernRuntime \
+  ./scripts/build-recomp-macos-dependencies.sh
+
+cmake -S . -B build-recomp-macos -G Xcode \
+  -DGOLDENPAD_RECOMP_MAC=ON \
+  -DCMAKE_OSX_ARCHITECTURES=arm64 \
+  -DGOLDENPAD_RECOMP_AOT_DIR=/path/to/generated-aot \
+  -DGOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR=/path/to/N64ModernRuntime \
+  -DGOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR="$PWD/build-recomp-macos-deps/runtime" \
+  -DGOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR=/path/to/matched-mac-reference \
+  -DGOLDENPAD_RECOMP_RT64_SOURCE_DIR="$PWD/ref/rt64" \
+  -DGOLDENPAD_RECOMP_RT64_ARCHIVE_DIR="$PWD/build-recomp-macos-deps/rt64"
+
+cmake --build build-recomp-macos --config Release --target GoldenPadMac
+./scripts/package-recomp-macos-alpha.sh
+```
+
+The installed and packaged product is named `GoldenPad.app`; `GoldenPadMac` is
+only the internal CMake target. The packager adds notices, applies an ad-hoc
+signature, and runs the Mac artifact audit. No ROM, save, generated source or
+Apple signing identity is included.
+
+The audited Alpha archive is
+`dist/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip` at SHA-256
+`7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`.
+It is native arm64, ad-hoc signed and not notarized.
 
 The complete AOT build must have the maintained GoldenEye iOS context patch
 applied while compiling:

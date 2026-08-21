@@ -5,13 +5,15 @@ gate passes and evidence is recorded in `STATUS.md` and `WORKLOG.md`.
 
 ## Selected codebase
 
-Production-core candidate: MGB64's original-retail-N64 decompiled game and
-native port at the exact commit in `RESEARCH.md`. GoldenPad will consume only
-the audited native source surface; matching-target Nintendo/SGI/Rare SDK
-implementation sources remain excluded. GoldenRecomp/N64Recomp/N64ModernRuntime
-and the completed RT64 mobile renderer remain references and potential future
-replacement components, but GoldenRecomp cannot currently reproduce its
-generated code from a public checkout.
+Primary runtime: GoldenEye64Recomp's statically recompiled game code,
+N64ModernRuntime and RT64/Metal, with exact revisions and private generated-input
+boundaries recorded in `RT64_N64RECOMP_PROTOTYPE.md`. MGB64 remains the
+deprecated `GoldenPad Legacy` fallback. Matching-target Nintendo/SGI/Rare SDK
+implementation sources remain excluded.
+
+The native Apple-Silicon macOS extension is a separate gated product track. Its
+research decision, architecture and implementation gates are recorded in
+[`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
 ## Milestones
 
@@ -283,6 +285,13 @@ Player 2 enables the row, and the native Controllers page now explains that
 requirement and confirms when touch + gamepad is ready. Match setup and
 completion remain open.
 
+Preview 2 prioritizes M2 before M3. The immediate repair is limited to stable
+two-player controller Player 1 plus touch Player 2 rendering and input on iOS/
+iPadOS. The deferred four-port diagnostic, enhanced multiplayer visuals and
+network research are recorded in
+[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md) and must not expand the first
+repair.
+
 ### P — Package and publish
 
 - [x] P1: original neutral icon at every required size.
@@ -295,19 +304,20 @@ completion remain open.
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
 
-Preview 1 packages the primary GoldenEye64Recomp/N64Recomp/RT64 runtime as an
-unsigned, user-re-signable ARM64 IPA. The verifier requires primary-runtime
-symbols, rejects MGB64 symbols and scans for ROMs, saves, signatures, known
-retail headers and private paths. It also requires the complete third-party
-notice and license set. The audited archive is
-`GoldenPad-0.1.0-preview.1-unsigned.ipa`, SHA-256
-`a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
+Preview 2 packages the primary GoldenEye64Recomp/N64Recomp/RT64 runtime as an
+unsigned, user-re-signable ARM64 IPA. The verifier requires primary-runtime and
+in-app importer symbols, rejects MGB64 symbols, and scans for ROMs, saves,
+signatures, known retail headers and private paths. It also requires the complete
+third-party notice and license set. The audited archive is
+`GoldenPad-0.1.0-preview.2-unsigned.ipa`, SHA-256
+`704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
 
-The final signed candidate was installed in place and accepted for single-player
-use on physical iPhone and iPad hardware. The iPhone update preserved its app
-container and preferences while adopting the accepted clean-install touch
-defaults. Local multiplayer remains experimental and is explicitly outside the
-Preview 1 release gate.
+The exact signed candidate was installed in place on the connected iPhone as
+build 2 without changing its app container or any ROM, save or preference
+payload. It launched successfully; hands-on gameplay approval of this final
+rebuild is the remaining publication gate. Local multiplayer ships only as an
+experimental render baseline with residual flicker and real Player 3/4 routing
+disclosed. The native arm64 Mac app is packaged separately as Alpha.
 
 ## Test rhythm
 
