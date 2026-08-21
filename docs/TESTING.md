@@ -184,13 +184,14 @@ Preview 2 final-candidate evidence:
 
 - the exact signed mobile executable SHA-256 is
   `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`;
-- it was installed in place on the connected iPhone as version `0.1.0` build
-  `2` without changing app-data UUID
-  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`;
-- independent pre/post readbacks matched the Documents ROM, runtime ROM,
-  active save, backup save and preferences byte for byte;
-- the exact build launched successfully, but hands-on gameplay approval of
-  this freshly rebuilt executable remains the publication gate;
+- it was installed in place on the connected iPhone and iPad as version `0.1.0`
+  build `2` without changing app-data UUIDs
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+  `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`;
+- independent pre/post readbacks on both devices matched the Documents ROM,
+  runtime ROM, active save, backup save and preferences byte for byte;
+- the exact build launched successfully on both devices, but hands-on gameplay
+  approval of this freshly rebuilt executable remains the publication gate;
 - `scripts/verify-recomp-prototype-ipa.sh` passed the 18-member unsigned IPA;
 - IPA SHA-256 is
   `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`;

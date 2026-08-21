@@ -76,7 +76,7 @@ the repository or application package.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Preview 2 candidate** | The exact build is installed on iPhone with its ROM, saves and preferences preserved; hands-on approval of this final rebuild remains the publication gate. |
+| Local iPhone/iPad build | **Preview 2 candidate** | The exact build is installed on both devices with their ROMs, saves and preferences preserved; hands-on approval of this final rebuild remains the publication gate. |
 | Native Apple-Silicon Mac build | **Audited Alpha** | [Download the separate arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip); mouse tuning, the thin far-right blue edge and sustained performance remain open. |
 | Unsigned `.ipa` | **Audited Preview 2** | [Download the public unsigned IPA](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa), verify its checksum, then re-sign it for your own device. |
 | GitHub release | **Preview 2 candidate** | [Release notes and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.2) will become public after the final hands-on check. |

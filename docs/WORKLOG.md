@@ -13,11 +13,12 @@
   Mac build intentionally retains its isolated compact patch set.
 - Rebuilt the exact signed mobile product. Its executable SHA-256 is
   `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`.
-  Installed build 2 in place on the connected iPhone without changing app-data
-  UUID `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`; independent pre/post hashes
-  matched the Documents ROM, runtime ROM, active save, backup save and
-  preferences. Launch succeeded. Hands-on gameplay approval of this exact
-  rebuild remains the publication gate.
+  Installed build 2 in place on the connected iPhone and iPad without changing
+  app-data UUIDs `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+  `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`; independent pre/post hashes on both
+  devices matched the Documents ROM, runtime ROM, active save, backup save and
+  preferences. Launch succeeded on both. Hands-on gameplay approval of this
+  exact rebuild remains the publication gate.
 - Packaged and audited the 18-member ROM-free unsigned mobile archive
   `GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
   `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.

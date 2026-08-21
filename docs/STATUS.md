@@ -71,12 +71,14 @@ iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
 
 The exact final Preview 2 mobile executable SHA-256 is
 `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`.
-It was installed in place on the connected iPhone as version `0.1.0` build `2`
-without changing app-data UUID
-`3ACA6644-5550-4EEA-BDCA-D6F9D3827161`. Independent pre/post readbacks matched
-for the Documents ROM, runtime ROM, active save, backup save and preferences;
-the exact build launched successfully. Hands-on gameplay approval of this
-freshly rebuilt executable remains the last publication gate.
+It was installed in place on the connected iPhone and iPad as version `0.1.0`
+build `2` without changing app-data UUIDs
+`3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+`D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. Independent pre/post readbacks on both
+devices matched the Documents ROM, runtime ROM, active save, backup save and
+preferences; the exact build launched successfully on both devices. Hands-on
+gameplay approval of this freshly rebuilt executable remains the last
+publication gate.
 
 The audited Preview 2 mobile artifact is
 `GoldenPad-0.1.0-preview.2-unsigned.ipa` at SHA-256
