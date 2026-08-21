@@ -22,6 +22,9 @@ private func goldenPadRecompSetThreePointFiltering(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_set_app_active")
 private func goldenPadRecompSetAppActive(_ active: Int32)
 
+@_silgen_name("goldenpad_recomp_note_transient_inactive")
+private func goldenPadRecompNoteTransientInactive()
+
 #if GOLDENPAD_RECOMP_AOT_LINKED
 @_silgen_name("goldenpad_recomp_start_game")
 private func goldenPadRecompStartGame(
@@ -57,6 +60,10 @@ final class RecompPrototypeSurface: ObservableObject {
             view.setNeedsLayout()
             view.draw()
         }
+    }
+
+    func noteTransientInactive() {
+        goldenPadRecompNoteTransientInactive()
     }
 
     private func initializeRendererIfPossible(for view: MTKView) {

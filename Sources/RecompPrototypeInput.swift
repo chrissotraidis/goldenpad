@@ -5,28 +5,35 @@ import simd
 
 @_silgen_name("goldenpad_recomp_set_controller_state")
 private func goldenPadRecompSetControllerState(
+    _ controller: Int32,
     _ buttons: UInt32,
     _ stickX: Int32,
     _ stickY: Int32
 )
 
 @_silgen_name("goldenpad_recomp_set_right_analog")
-private func goldenPadRecompSetRightAnalog(_ x: Int32, _ y: Int32)
+private func goldenPadRecompSetRightAnalog(_ controller: Int32, _ x: Int32, _ y: Int32)
 
 @_silgen_name("goldenpad_recomp_set_controller_connected")
 private func goldenPadRecompSetControllerConnected(_ connected: Int32)
 
+@_silgen_name("goldenpad_recomp_set_two_player_test_mode")
+private func goldenPadRecompSetTwoPlayerTestMode(_ enabled: Int32)
+
 @_silgen_name("goldenpad_recomp_queue_touch_look")
-private func goldenPadRecompQueueTouchLook(_ x: Int32, _ y: Int32)
+private func goldenPadRecompQueueTouchLook(_ controller: Int32, _ x: Int32, _ y: Int32)
 
 @_silgen_name("goldenpad_recomp_request_crouch_toggle")
-private func goldenPadRecompRequestCrouchToggle()
+private func goldenPadRecompRequestCrouchToggle(_ controller: Int32)
 
 @_silgen_name("goldenpad_recomp_set_invert_aim_y")
 private func goldenPadRecompSetInvertAimY(_ enabled: Int32)
 
 @_silgen_name("goldenpad_recomp_set_unlock_all_missions")
 private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
+
+@_silgen_name("goldenpad_recomp_request_return_to_title")
+private func goldenPadRecompRequestReturnToTitle()
 
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
@@ -54,6 +61,62 @@ enum RecompPrototypeControllerLookMode: String, CaseIterable {
     }
 }
 
+enum RecompPrototypeControllerAction: String, CaseIterable {
+    case fire
+    case aim
+    case action
+    case weapon
+    case duck
+    case none
+
+    var title: String {
+        switch self {
+        case .fire: "Fire"
+        case .aim: "Aim"
+        case .action: "Action"
+        case .weapon: "Change weapon"
+        case .duck: "Duck"
+        case .none: "Unassigned"
+        }
+    }
+}
+
+enum RecompPrototypeControllerControl: String, CaseIterable, Identifiable {
+    case buttonA
+    case buttonB
+    case buttonX
+    case buttonY
+    case leftShoulder
+    case rightShoulder
+    case leftTrigger
+    case rightTrigger
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .buttonA: "A button"
+        case .buttonB: "B button"
+        case .buttonX: "X button"
+        case .buttonY: "Y button"
+        case .leftShoulder: "Left bumper"
+        case .rightShoulder: "Right bumper"
+        case .leftTrigger: "Left trigger"
+        case .rightTrigger: "Right trigger"
+        }
+    }
+
+    var defaultAction: RecompPrototypeControllerAction {
+        switch self {
+        case .buttonA, .buttonY, .rightShoulder: .weapon
+        case .buttonB, .buttonX: .action
+        case .leftShoulder: .duck
+        case .leftTrigger: .aim
+        case .rightTrigger: .fire
+        }
+    }
+}
+
 @MainActor
 final class RecompPrototypeInput: ObservableObject {
     private enum N64 {
@@ -77,15 +140,24 @@ final class RecompPrototypeInput: ObservableObject {
     @Published private(set) var touchAimActive = false
     @Published private(set) var aimBehavior = RecompPrototypeAimBehavior.toggle
     @Published private(set) var controllerLookMode = RecompPrototypeControllerLookMode.analog
+    @Published private(set) var twoPlayerTestModeActive = false
     private var touchButtons: UInt16 = 0
     private var touchMovement = SIMD2<Float>.zero
     private var touchLook = SIMD2<Float>.zero
     private var touchCrouchIsPressed = false
     private var controllerCrouchWasPressed = false
+    private var twoPlayerTestModeRequested = false
     private var lookSensitivity: Float = 4.0
     private var controller: GCController?
+    private var controllerMapping = Dictionary(
+        uniqueKeysWithValues: RecompPrototypeControllerControl.allCases.map { ($0, $0.defaultAction) }
+    )
     private var observers: [NSObjectProtocol] = []
     private var ticker: Timer?
+    #if targetEnvironment(simulator)
+    private var simulatorKeyboardHeldButtons: UInt16 = 0
+    private var simulatorKeyboardPulseFrames: [UInt16: Int] = [:]
+    #endif
 
     init() {
         refreshController()
@@ -96,6 +168,12 @@ final class RecompPrototypeInput: ObservableObject {
         observers.append(center.addObserver(forName: .GCControllerDidDisconnect, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.refreshController() }
         })
+        #if targetEnvironment(simulator)
+        observers.append(center.addObserver(forName: .GCKeyboardDidConnect, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.configureSimulatorKeyboard() }
+        })
+        configureSimulatorKeyboard()
+        #endif
         ticker = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.publish() }
         }
@@ -129,12 +207,45 @@ final class RecompPrototypeInput: ObservableObject {
         publish()
     }
 
+    func configureControllerMapping(_ rawValues: [RecompPrototypeControllerControl: String]) {
+        controllerMapping = Dictionary(
+            uniqueKeysWithValues: RecompPrototypeControllerControl.allCases.map { control in
+                let action = rawValues[control]
+                    .flatMap(RecompPrototypeControllerAction.init(rawValue:))
+                    ?? control.defaultAction
+                return (control, action)
+            }
+        )
+        publish()
+    }
+
     func configureInvertAimY(_ enabled: Bool) {
         goldenPadRecompSetInvertAimY(enabled ? 1 : 0)
     }
 
     func configureUnlockAllMissions(_ enabled: Bool) {
         goldenPadRecompSetUnlockAllMissions(enabled ? 1 : 0)
+    }
+
+    func configureTwoPlayerTestMode(_ enabled: Bool) {
+        twoPlayerTestModeRequested = enabled
+        let nextActive = enabled && controller != nil
+        guard twoPlayerTestModeActive != nextActive else {
+            goldenPadRecompSetTwoPlayerTestMode(nextActive ? 1 : 0)
+            return
+        }
+        twoPlayerTestModeActive = nextActive
+        goldenPadRecompSetTwoPlayerTestMode(nextActive ? 1 : 0)
+        if !nextActive && controller != nil {
+            releaseTouchInput()
+        } else {
+            publish()
+        }
+    }
+
+    func requestReturnToMainMenu() {
+        releaseTouchInput()
+        goldenPadRecompRequestReturnToTitle()
     }
 
     func setLook(_ value: SIMD2<Float>) {
@@ -146,7 +257,7 @@ final class RecompPrototypeInput: ObservableObject {
 
     func setCrouchPressed(_ pressed: Bool) {
         if pressed && !touchCrouchIsPressed {
-            goldenPadRecompRequestCrouchToggle()
+            goldenPadRecompRequestCrouchToggle(twoPlayerTestModeActive ? 1 : 0)
         }
         touchCrouchIsPressed = pressed
     }
@@ -183,54 +294,82 @@ final class RecompPrototypeInput: ObservableObject {
         controller = GCController.controllers().first(where: { $0.extendedGamepad != nil })
         controllerCrouchWasPressed = false
         externalControllerName = controller.map { $0.vendorName ?? "External controller" }
-        if controller != nil {
+        twoPlayerTestModeActive = twoPlayerTestModeRequested && controller != nil
+        if controller != nil && !twoPlayerTestModeActive {
             releaseTouchInput()
         }
         goldenPadRecompSetControllerConnected(controller == nil ? 0 : 1)
+        goldenPadRecompSetTwoPlayerTestMode(twoPlayerTestModeActive ? 1 : 0)
         publish()
     }
 
     private func publish() {
-        var buttons = touchButtons
-        var stick = touchMovement
         let queuedTouchLook = clamp(touchLook * lookSensitivity)
         touchLook = .zero
+        var externalButtons: UInt16 = 0
+        var externalStick = SIMD2<Float>.zero
         var controllerLook = SIMD2<Float>.zero
 
         if let gamepad = controller?.extendedGamepad {
-            stick = merge(stick, SIMD2(gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value))
+            externalStick = SIMD2(gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value)
             controllerLook = SIMD2(
                 gamepad.rightThumbstick.xAxis.value,
                 gamepad.rightThumbstick.yAxis.value
             )
                 .applyingRadialDeadZone(0.15)
                 .applyingResponseCurve(1.5)
-            if gamepad.rightTrigger.value > 0.25 { buttons |= N64.z }
-            if gamepad.leftTrigger.value > 0.25 { buttons |= N64.r }
-            if gamepad.buttonA.isPressed || gamepad.buttonY.isPressed { buttons |= N64.a }
-            if gamepad.buttonB.isPressed || gamepad.buttonX.isPressed { buttons |= N64.b }
-            if gamepad.rightShoulder.isPressed { buttons |= N64.a }
-            let controllerCrouchIsPressed = gamepad.leftShoulder.isPressed
+            var controllerCrouchIsPressed = false
+            let pressedControls: [(RecompPrototypeControllerControl, Bool)] = [
+                (.buttonA, gamepad.buttonA.isPressed),
+                (.buttonB, gamepad.buttonB.isPressed),
+                (.buttonX, gamepad.buttonX.isPressed),
+                (.buttonY, gamepad.buttonY.isPressed),
+                (.leftShoulder, gamepad.leftShoulder.isPressed),
+                (.rightShoulder, gamepad.rightShoulder.isPressed),
+                (.leftTrigger, gamepad.leftTrigger.value > 0.25),
+                (.rightTrigger, gamepad.rightTrigger.value > 0.25),
+            ]
+            for (control, isPressed) in pressedControls where isPressed {
+                switch controllerMapping[control] ?? control.defaultAction {
+                case .fire: externalButtons |= N64.z
+                case .aim: externalButtons |= N64.r
+                case .action: externalButtons |= N64.b
+                case .weapon: externalButtons |= N64.a
+                case .duck: controllerCrouchIsPressed = true
+                case .none: break
+                }
+            }
             if controllerCrouchIsPressed && !controllerCrouchWasPressed {
-                goldenPadRecompRequestCrouchToggle()
+                // The external controller remains Player 1 in both normal and
+                // two-player test modes. Touch is the only input routed to P2.
+                goldenPadRecompRequestCrouchToggle(0)
             }
             controllerCrouchWasPressed = controllerCrouchIsPressed
-            if gamepad.buttonMenu.isPressed { buttons |= N64.start }
-            if gamepad.dpad.up.isPressed { buttons |= N64.dpadUp }
-            if gamepad.dpad.down.isPressed { buttons |= N64.dpadDown }
-            if gamepad.dpad.left.isPressed { buttons |= N64.dpadLeft }
-            if gamepad.dpad.right.isPressed { buttons |= N64.dpadRight }
+            if gamepad.buttonMenu.isPressed { externalButtons |= N64.start }
+            if gamepad.dpad.up.isPressed { externalButtons |= N64.dpadUp }
+            if gamepad.dpad.down.isPressed { externalButtons |= N64.dpadDown }
+            if gamepad.dpad.left.isPressed { externalButtons |= N64.dpadLeft }
+            if gamepad.dpad.right.isPressed { externalButtons |= N64.dpadRight }
         }
+
+        #if targetEnvironment(simulator)
+        let simulatorButtons = consumeSimulatorKeyboardButtons()
+        externalButtons |= simulatorButtons
+        if simulatorButtons & N64.dpadUp != 0 { externalStick.y = 1 }
+        if simulatorButtons & N64.dpadDown != 0 { externalStick.y = -1 }
+        if simulatorButtons & N64.dpadLeft != 0 { externalStick.x = -1 }
+        if simulatorButtons & N64.dpadRight != 0 { externalStick.x = 1 }
+        #endif
 
         switch controllerLookMode {
         case .analog:
             break
         case .classic:
             let threshold: Float = 0.30
-            if controllerLook.y > threshold { buttons |= N64.cUp }
-            if controllerLook.y < -threshold { buttons |= N64.cDown }
-            if controllerLook.x < -threshold { buttons |= N64.cLeft }
-            if controllerLook.x > threshold { buttons |= N64.cRight }
+            if controllerLook.y > threshold { externalButtons |= N64.cUp }
+            if controllerLook.y < -threshold { externalButtons |= N64.cDown }
+            if controllerLook.x < -threshold { externalButtons |= N64.cLeft }
+            if controllerLook.x > threshold { externalButtons |= N64.cRight }
             controllerLook = .zero
         case .off:
             controllerLook = .zero
@@ -240,31 +379,99 @@ final class RecompPrototypeInput: ObservableObject {
         // right stick is an absolute value published every frame; multiplying
         // it by 4x saturated the camera at roughly one-quarter stick travel.
         // Keep the post-dead-zone controller value normalized instead.
-        goldenPadRecompSetControllerState(
-            UInt32(buttons),
-            Int32((clamp(stick).x * 80).rounded()),
-            Int32((clamp(stick).y * 80).rounded())
-        )
-        goldenPadRecompSetRightAnalog(
-            Int32((controllerLook.x * 32_767).rounded()),
-            Int32((controllerLook.y * 32_767).rounded())
-        )
-        if queuedTouchLook != .zero {
+        if twoPlayerTestModeActive {
+            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
+            publishController(port: 1, buttons: touchButtons, stick: touchMovement, look: .zero)
+        } else if controller != nil {
+            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
+            publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
+        } else {
+            publishController(port: 0, buttons: touchButtons, stick: touchMovement, look: .zero)
+            publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
+        }
+        if queuedTouchLook != .zero && (controller == nil || twoPlayerTestModeActive) {
             goldenPadRecompQueueTouchLook(
+                twoPlayerTestModeActive ? 1 : 0,
                 Int32((queuedTouchLook.x * 32_767).rounded()),
                 Int32((queuedTouchLook.y * 32_767).rounded())
             )
         }
     }
 
-    private func merge(_ lhs: SIMD2<Float>, _ rhs: SIMD2<Float>) -> SIMD2<Float> {
-        simd_length_squared(rhs) > simd_length_squared(lhs) ? rhs : lhs
+    private func publishController(
+        port: Int32,
+        buttons: UInt16,
+        stick: SIMD2<Float>,
+        look: SIMD2<Float>
+    ) {
+        let clampedStick = clamp(stick)
+        goldenPadRecompSetControllerState(
+            port,
+            UInt32(buttons),
+            Int32((clampedStick.x * 80).rounded()),
+            Int32((clampedStick.y * 80).rounded())
+        )
+        goldenPadRecompSetRightAnalog(
+            port,
+            Int32((look.x * 32_767).rounded()),
+            Int32((look.y * 32_767).rounded())
+        )
     }
 
     private func clamp(_ value: SIMD2<Float>) -> SIMD2<Float> {
         let magnitude = simd_length(value)
         return magnitude > 1 ? value / magnitude : value
     }
+
+    #if targetEnvironment(simulator)
+    private func configureSimulatorKeyboard() {
+        GCKeyboard.coalesced?.keyboardInput?.keyChangedHandler = { [weak self] _, _, keyCode, pressed in
+            Task { @MainActor in
+                self?.handleSimulatorKey(keyCode, pressed: pressed)
+            }
+        }
+    }
+
+    private func handleSimulatorKey(_ keyCode: GCKeyCode, pressed: Bool) {
+        guard let button = simulatorButton(for: keyCode) else { return }
+        if pressed {
+            simulatorKeyboardHeldButtons |= button
+            // Computer-driven taps can be shorter than one 60 Hz publication.
+            // Retain a short pulse so GoldenEye's 30 Hz poll sees the edge.
+            simulatorKeyboardPulseFrames[button] = 4
+        } else {
+            simulatorKeyboardHeldButtons &= ~button
+        }
+    }
+
+    private func consumeSimulatorKeyboardButtons() -> UInt16 {
+        var buttons = simulatorKeyboardHeldButtons
+        for (button, frames) in Array(simulatorKeyboardPulseFrames) {
+            buttons |= button
+            if frames <= 1 {
+                simulatorKeyboardPulseFrames.removeValue(forKey: button)
+            } else {
+                simulatorKeyboardPulseFrames[button] = frames - 1
+            }
+        }
+        return buttons
+    }
+
+    private func simulatorButton(for keyCode: GCKeyCode) -> UInt16? {
+        switch keyCode {
+        case .upArrow: N64.dpadUp
+        case .downArrow: N64.dpadDown
+        case .leftArrow: N64.dpadLeft
+        case .rightArrow: N64.dpadRight
+        case .keyA: N64.a
+        case .keyB: N64.b
+        case .keyS: N64.start
+        case .keyZ: N64.z
+        case .keyR: N64.r
+        default: nil
+        }
+    }
+    #endif
 }
 
 struct RecompPrototypeTouchControls: View {

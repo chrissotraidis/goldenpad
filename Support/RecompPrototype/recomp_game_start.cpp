@@ -37,28 +37,33 @@ constexpr uint64_t kGoldenEyeTlbFreeHash = 0xd49fb2a8d6d3bd65ULL;
 const std::u8string kGameID = u8"ge007.us";
 
 std::atomic<bool> runtimeStarted = false;
-std::atomic<uint32_t> controllerButtons = 0;
-std::atomic<int32_t> controllerStickX = 0;
-std::atomic<int32_t> controllerStickY = 0;
-std::atomic<int32_t> controllerLookX = 0;
-std::atomic<int32_t> controllerLookY = 0;
-std::atomic<uint32_t> controllerLookSamples = 0;
-std::atomic<int32_t> queuedTouchLookX = 0;
-std::atomic<int32_t> queuedTouchLookY = 0;
-std::atomic<bool> crouchToggleRequested = false;
+constexpr size_t kControllerPorts = 4;
+std::array<std::atomic<uint32_t>, kControllerPorts> controllerButtons{};
+std::array<std::atomic<int32_t>, kControllerPorts> controllerStickX{};
+std::array<std::atomic<int32_t>, kControllerPorts> controllerStickY{};
+std::array<std::atomic<int32_t>, kControllerPorts> controllerLookX{};
+std::array<std::atomic<int32_t>, kControllerPorts> controllerLookY{};
+std::array<std::atomic<uint32_t>, kControllerPorts> controllerLookSamples{};
+std::array<std::atomic<uint32_t>, kControllerPorts> controllerButtonTransitions{};
+std::array<std::atomic<uint32_t>, kControllerPorts> controllerRumbleTransitions{};
+std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookX{};
+std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookY{};
+std::array<std::atomic<bool>, kControllerPorts> crouchToggleRequested{};
 std::atomic<bool> prototypeMsaaEnabled = true;
 std::atomic<int32_t> prototypeResolutionMode = 2;
 std::atomic<bool> prototypeThreePointFiltering = true;
 std::atomic<bool> invertAimY = false;
 std::atomic<bool> unlockAllMissions = false;
+std::atomic<bool> returnToTitleRequested = false;
 std::atomic<bool> appActive = true;
 std::atomic<bool> controllerConnected = false;
+std::atomic<bool> twoPlayerTestMode = false;
 std::atomic<uint64_t> rt64DisplayListCount = 0;
 std::atomic<uint64_t> rt64ScreenUpdateCount = 0;
 std::atomic<uint64_t> rt64PresentedCount = 0;
-std::atomic<bool> controllerPortReported = false;
+std::atomic<uint8_t> controllerPortsReported = 0;
 std::atomic<bool> inputPollReported = false;
-std::atomic<bool> inputStateReported = false;
+std::atomic<uint8_t> inputStateReported = 0;
 std::atomic<bool> audioCallbackReported = false;
 std::atomic<bool> stateProbeStarted = false;
 std::atomic<uint8_t> invalidInputPortsReported = 0;
@@ -66,6 +71,8 @@ std::mutex statusMutex;
 std::mutex diagnosticsMutex;
 std::string runtimeStatus = "AOT runtime: waiting for imported user ROM";
 std::filesystem::path diagnosticsLogPath;
+std::filesystem::path diagnosticsSessionMarkerPath;
+std::atomic<bool> previousSessionEndedUnexpectedly = false;
 constexpr uintmax_t kDiagnosticsLogLimit = 4 * 1024 * 1024;
 
 // Match the working GoldenPad host: the game/audio thread is the sole producer
@@ -115,8 +122,12 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     const std::filesystem::path directory = configPath / "Logs";
     const std::filesystem::path latest = directory / "goldenpad-recomp-latest.log";
     const std::filesystem::path previous = directory / "goldenpad-recomp-previous.log";
+    diagnosticsSessionMarkerPath = directory / "active-session.marker";
     std::error_code error;
     std::filesystem::create_directories(directory, error);
+    const bool unexpectedPreviousEnd = std::filesystem::exists(diagnosticsSessionMarkerPath, error);
+    previousSessionEndedUnexpectedly.store(unexpectedPreviousEnd, std::memory_order_relaxed);
+    error.clear();
     std::filesystem::remove(previous, error);
     error.clear();
     if (std::filesystem::exists(latest, error)) {
@@ -125,6 +136,27 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     diagnosticsLogPath = latest;
     std::ofstream log(diagnosticsLogPath, std::ios::trunc);
     log << "[GoldenPadRecomp] diagnostics: private current-session log started\n";
+    if (unexpectedPreviousEnd) {
+        log << "[GoldenPadRecomp] diagnostics: previous foreground session ended unexpectedly; inspect the previous log and iPadOS crash report\n";
+    }
+    std::ofstream marker(diagnosticsSessionMarkerPath, std::ios::trunc);
+    marker << "GoldenPad foreground session active\n";
+}
+
+void markDiagnosticsSessionActive() {
+    std::lock_guard lock(diagnosticsMutex);
+    if (!diagnosticsSessionMarkerPath.empty()) {
+        std::ofstream marker(diagnosticsSessionMarkerPath, std::ios::trunc);
+        marker << "GoldenPad foreground session active\n";
+    }
+}
+
+void markDiagnosticsSessionClean() {
+    std::lock_guard lock(diagnosticsMutex);
+    if (!diagnosticsSessionMarkerPath.empty()) {
+        std::error_code error;
+        std::filesystem::remove(diagnosticsSessionMarkerPath, error);
+    }
 }
 
 void queueClampedAxis(std::atomic<int32_t> &axis, int32_t delta) {
@@ -250,7 +282,7 @@ void monitorGameState(uint8_t *rdram) {
                 upX = upY = upZ = 0.0f;
             }
             logEvent("health",
-                "app=%s dl=%llu vi=%llu presented=%llu audioQueued=%zu audioRendered=%llu audioDropped=%llu audioUnderrunFrames=%llu audioUnderrunCallbacks=%llu controller=%s look=(%d,%d) player=0x%08X pos=(%.2f,%.2f,%.2f) model=(%.2f,%.2f,%.2f) room=(%.2f,%.2f,%.2f) yaw=%.2f pitch=%.2f basis=%s view=(%.3f,%.3f,%.3f) up=(%.3f,%.3f,%.3f)",
+                "app=%s dl=%llu vi=%llu presented=%llu audioQueued=%zu audioRendered=%llu audioDropped=%llu audioUnderrunFrames=%llu audioUnderrunCallbacks=%llu input=%s p1look=(%d,%d) p2look=(%d,%d) player=0x%08X pos=(%.2f,%.2f,%.2f) model=(%.2f,%.2f,%.2f) room=(%.2f,%.2f,%.2f) yaw=%.2f pitch=%.2f basis=%s view=(%.3f,%.3f,%.3f) up=(%.3f,%.3f,%.3f)",
                 active ? "active" : "inactive",
                 static_cast<unsigned long long>(displayLists),
                 static_cast<unsigned long long>(screenUpdates),
@@ -260,9 +292,12 @@ void monitorGameState(uint8_t *rdram) {
                 static_cast<unsigned long long>(audioDroppedFrames.load(std::memory_order_relaxed)),
                 static_cast<unsigned long long>(audioUnderrunFrames.load(std::memory_order_relaxed)),
                 static_cast<unsigned long long>(audioUnderrunCallbacks.load(std::memory_order_relaxed)),
-                controllerConnected.load(std::memory_order_relaxed) ? "external" : "touch",
-                controllerLookX.load(std::memory_order_relaxed),
-                controllerLookY.load(std::memory_order_relaxed),
+                twoPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2" :
+                    (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" : "touch-p1"),
+                controllerLookX[0].load(std::memory_order_relaxed),
+                controllerLookY[0].load(std::memory_order_relaxed),
+                controllerLookX[1].load(std::memory_order_relaxed),
+                controllerLookY[1].load(std::memory_order_relaxed),
                 player,
                 playerValid ? readGameFloat(rdram, player + 0x04) : 0.0f,
                 playerValid ? readGameFloat(rdram, player + 0x08) : 0.0f,
@@ -375,7 +410,9 @@ void pollInput() {
     }
 }
 bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
-    if (controllerNum != 0 || buttons == nullptr || x == nullptr || y == nullptr) {
+    const bool portAvailable = controllerNum == 0 ||
+        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed));
+    if (!portAvailable || buttons == nullptr || x == nullptr || y == nullptr) {
         const uint8_t reportBit = controllerNum >= 0 && controllerNum < 4
             ? static_cast<uint8_t>(1u << controllerNum)
             : static_cast<uint8_t>(1u << 4);
@@ -384,23 +421,32 @@ bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
         }
         return false;
     }
-    *buttons = static_cast<uint16_t>(controllerButtons.load(std::memory_order_relaxed));
-    *x = static_cast<float>(controllerStickX.load(std::memory_order_relaxed)) / 80.0f;
-    *y = static_cast<float>(controllerStickY.load(std::memory_order_relaxed)) / 80.0f;
-    if (!inputStateReported.exchange(true)) {
-        logEvent("input", "controller 1 state is available (touch and GameController map)");
+    const size_t port = static_cast<size_t>(controllerNum);
+    *buttons = static_cast<uint16_t>(controllerButtons[port].load(std::memory_order_relaxed));
+    *x = static_cast<float>(controllerStickX[port].load(std::memory_order_relaxed)) / 80.0f;
+    *y = static_cast<float>(controllerStickY[port].load(std::memory_order_relaxed)) / 80.0f;
+    const uint8_t reportBit = static_cast<uint8_t>(1u << controllerNum);
+    if ((inputStateReported.fetch_or(reportBit) & reportBit) == 0) {
+        logEvent("input", "controller port %d state is available", controllerNum + 1);
     }
     return true;
 }
 void setRumble(int controllerNum, bool enabled) {
-    if (controllerNum == 0) {
-        logEvent("input", "controller 1 rumble %s (not implemented in prototype)", enabled ? "requested" : "stopped");
+    if (controllerNum >= 0 && controllerNum < static_cast<int>(kControllerPorts)) {
+        const uint32_t transition = controllerRumbleTransitions[controllerNum].fetch_add(1) + 1;
+        if (transition <= 4 || transition % 60 == 0) {
+            logEvent("input", "controller %d rumble %s (not implemented; sampled transition %u)",
+                controllerNum + 1, enabled ? "requested" : "stopped", transition);
+        }
     }
 }
 ultramodern::input::connected_device_info_t getConnectedDeviceInfo(int controllerNum) {
-    if (controllerNum == 0) {
-        if (!controllerPortReported.exchange(true)) {
-            logEvent("input", "advertising a normal controller in port 1");
+    const bool portAvailable = controllerNum == 0 ||
+        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed));
+    if (portAvailable) {
+        const uint8_t reportBit = static_cast<uint8_t>(1u << controllerNum);
+        if ((controllerPortsReported.fetch_or(reportBit) & reportBit) == 0) {
+            logEvent("input", "advertising a normal controller in port %d", controllerNum + 1);
         }
         return {ultramodern::input::Device::Controller, ultramodern::input::Pak::None};
     }
@@ -520,39 +566,68 @@ extern "C" const char *goldenpad_recomp_game_status() {
     return statusSnapshot.c_str();
 }
 
-extern "C" void goldenpad_recomp_set_controller_state(uint32_t buttons, int32_t stickX, int32_t stickY) {
-    const uint32_t normalizedButtons = buttons & 0xFFFFu;
-    const uint32_t previousButtons = controllerButtons.exchange(normalizedButtons, std::memory_order_relaxed);
-    if (previousButtons != normalizedButtons) {
-        logEvent("input", "published controller 1 buttons 0x%04X", normalizedButtons);
+extern "C" void goldenpad_recomp_set_controller_state(int32_t controllerNum, uint32_t buttons, int32_t stickX, int32_t stickY) {
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        return;
     }
-    controllerStickX.store(std::clamp(stickX, -80, 80), std::memory_order_relaxed);
-    controllerStickY.store(std::clamp(stickY, -80, 80), std::memory_order_relaxed);
+    const size_t port = static_cast<size_t>(controllerNum);
+    const uint32_t normalizedButtons = buttons & 0xFFFFu;
+    const uint32_t previousButtons = controllerButtons[port].exchange(normalizedButtons, std::memory_order_relaxed);
+    if (previousButtons != normalizedButtons) {
+        const uint32_t transition = controllerButtonTransitions[port].fetch_add(1) + 1;
+        if (transition <= 12 || transition % 120 == 0) {
+            logEvent("input", "controller %d buttons 0x%04X (sampled transition %u)",
+                controllerNum + 1, normalizedButtons, transition);
+        }
+    }
+    controllerStickX[port].store(std::clamp(stickX, -80, 80), std::memory_order_relaxed);
+    controllerStickY[port].store(std::clamp(stickY, -80, 80), std::memory_order_relaxed);
 }
 
-extern "C" void goldenpad_recomp_set_right_analog(int32_t lookX, int32_t lookY) {
+extern "C" void goldenpad_recomp_set_right_analog(int32_t controllerNum, int32_t lookX, int32_t lookY) {
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        return;
+    }
+    const size_t port = static_cast<size_t>(controllerNum);
     const int32_t normalizedX = std::clamp(lookX, -32'767, 32'767);
     const int32_t normalizedY = std::clamp(lookY, -32'767, 32'767);
-    const int32_t previousX = controllerLookX.exchange(normalizedX, std::memory_order_relaxed);
-    const int32_t previousY = controllerLookY.exchange(normalizedY, std::memory_order_relaxed);
+    const int32_t previousX = controllerLookX[port].exchange(normalizedX, std::memory_order_relaxed);
+    const int32_t previousY = controllerLookY[port].exchange(normalizedY, std::memory_order_relaxed);
     const bool wasActive = std::abs(previousX) > 2'048 || std::abs(previousY) > 2'048;
     const bool isActive = std::abs(normalizedX) > 2'048 || std::abs(normalizedY) > 2'048;
     if (wasActive != isActive) {
-        logEvent("input", "controller right stick %s at (%d,%d)",
-            isActive ? "active" : "neutral", normalizedX, normalizedY);
+        logEvent("input", "controller %d right stick %s at (%d,%d)",
+            controllerNum + 1, isActive ? "active" : "neutral", normalizedX, normalizedY);
     }
-    const uint32_t sample = controllerLookSamples.fetch_add(1, std::memory_order_relaxed) + 1;
-    if (isActive && sample % 30 == 1) {
-        logEvent("input", "controller right stick sample (%d,%d)", normalizedX, normalizedY);
+    const uint32_t sample = controllerLookSamples[port].fetch_add(1, std::memory_order_relaxed) + 1;
+    if (isActive && sample % 600 == 1) {
+        logEvent("input", "controller %d right stick sample (%d,%d)",
+            controllerNum + 1, normalizedX, normalizedY);
     }
 }
 
 extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
     const bool next = connected != 0;
     const bool previous = controllerConnected.exchange(next, std::memory_order_relaxed);
+    if (!next) {
+        twoPlayerTestMode.store(false, std::memory_order_relaxed);
+    }
     if (previous != next) {
         logEvent("input", "external controller %s; touch overlay %s",
-            next ? "connected" : "disconnected", next ? "hidden" : "restored");
+            next ? "connected" : "disconnected",
+            next && !twoPlayerTestMode.load(std::memory_order_relaxed) ? "hidden" : "visible");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_two_player_test_mode(int32_t enabled) {
+    const bool next = enabled != 0 && controllerConnected.load(std::memory_order_relaxed);
+    const bool previous = twoPlayerTestMode.exchange(next, std::memory_order_relaxed);
+    if (previous != next) {
+        controllerPortsReported.store(0, std::memory_order_relaxed);
+        inputStateReported.store(0, std::memory_order_relaxed);
+        invalidInputPortsReported.store(0, std::memory_order_relaxed);
+        logEvent("input", "two-player test mode %s; external=P1 touch=P2",
+            next ? "enabled" : "disabled");
     }
 }
 
@@ -570,13 +645,23 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t active) {
             audioLastLeft = 0.0f;
             audioLastRight = 0.0f;
         }
+        if (next) {
+            markDiagnosticsSessionActive();
+        }
         logEvent("lifecycle", "host became %s; RT64 presentation %s",
             next ? "active" : "inactive", next ? "resumed" : "suspended");
+        if (!next) {
+            markDiagnosticsSessionClean();
+        }
         if (discardedAudioFrames != 0) {
             logEvent("audio", "discarded %llu stale queued frames after foregrounding",
                 static_cast<unsigned long long>(discardedAudioFrames));
         }
     }
+}
+
+extern "C" void goldenpad_recomp_note_transient_inactive() {
+    logEvent("lifecycle", "transient inactive state observed; RT64 presentation kept active");
 }
 
 extern "C" int32_t goldenpad_recomp_is_app_active() {
@@ -592,13 +677,23 @@ extern "C" void goldenpad_recomp_note_screen_progress(uint64_t updates, uint64_t
     rt64PresentedCount.store(presented, std::memory_order_relaxed);
 }
 
-extern "C" void goldenpad_recomp_queue_touch_look(int32_t lookX, int32_t lookY) {
-    queueClampedAxis(queuedTouchLookX, lookX);
-    queueClampedAxis(queuedTouchLookY, lookY);
+extern "C" void goldenpad_recomp_queue_touch_look(int32_t controllerNum, int32_t lookX, int32_t lookY) {
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        return;
+    }
+    const size_t port = static_cast<size_t>(controllerNum);
+    queueClampedAxis(queuedTouchLookX[port], lookX);
+    queueClampedAxis(queuedTouchLookY[port], lookY);
 }
 
-extern "C" void goldenpad_recomp_request_crouch_toggle() {
-    crouchToggleRequested.store(true, std::memory_order_release);
+extern "C" int32_t goldenpad_recomp_previous_session_ended_unexpectedly() {
+    return previousSessionEndedUnexpectedly.load(std::memory_order_relaxed) ? 1 : 0;
+}
+
+extern "C" void goldenpad_recomp_request_crouch_toggle(int32_t controllerNum) {
+    if (controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts)) {
+        crouchToggleRequested[controllerNum].store(true, std::memory_order_release);
+    }
 }
 
 extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t enabled) {
@@ -613,21 +708,33 @@ extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t enabled) {
     }
 }
 
+extern "C" void goldenpad_recomp_request_return_to_title() {
+    returnToTitleRequested.store(true, std::memory_order_release);
+    logEvent("navigation", "return to main menu requested");
+}
+
 extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
-    float *xOut = _arg<0, float *>(rdram, ctx);
-    float *yOut = _arg<1, float *>(rdram, ctx);
-    const bool aiming = (controllerButtons.load(std::memory_order_relaxed) & 0x0010u) != 0;
+    const int32_t controllerNum = _arg<0, int32_t>(rdram, ctx);
+    float *xOut = _arg<1, float *>(rdram, ctx);
+    float *yOut = _arg<2, float *>(rdram, ctx);
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        *xOut = 0.0f;
+        *yOut = 0.0f;
+        return;
+    }
+    const size_t port = static_cast<size_t>(controllerNum);
+    const bool aiming = (controllerButtons[port].load(std::memory_order_relaxed) & 0x0010u) != 0;
     // Port the working MGB64 controller rate exactly while leaving the tuned
     // relative-touch path unchanged. MGB64 resolves to 1.2 degrees/frame at
     // full hip-fire deflection and about 0.133 degrees/frame while aiming;
     // the recomp gameplay patch applies 3 and 1 degrees respectively.
     const float controllerScale = aiming ? (0.13333334f / 1.0f) : (1.2f / 3.0f);
-    float x = static_cast<float>(controllerLookX.load(std::memory_order_relaxed)) /
+    float x = static_cast<float>(controllerLookX[port].load(std::memory_order_relaxed)) /
             32'767.0f * controllerScale +
-        static_cast<float>(queuedTouchLookX.exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
-    float y = static_cast<float>(controllerLookY.load(std::memory_order_relaxed)) /
+        static_cast<float>(queuedTouchLookX[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
+    float y = static_cast<float>(controllerLookY[port].load(std::memory_order_relaxed)) /
             32'767.0f * controllerScale +
-        static_cast<float>(queuedTouchLookY.exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
+        static_cast<float>(queuedTouchLookY[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
     x = std::clamp(x, -1.0f, 1.0f);
     y = std::clamp(y, -1.0f, 1.0f);
     // GoldenEye's sight-aim camera applies the opposite vertical convention
@@ -640,12 +747,25 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
     *yOut = y;
 }
 
-extern "C" void goldenpad_recomp_consume_crouch_toggle(uint8_t *, recomp_context *ctx) {
-    ctx->r2 = crouchToggleRequested.exchange(false, std::memory_order_acq_rel) ? 1 : 0;
+extern "C" void goldenpad_recomp_consume_crouch_toggle(uint8_t *rdram, recomp_context *ctx) {
+    const int32_t controllerNum = _arg<0, int32_t>(rdram, ctx);
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        ctx->r2 = 0;
+        return;
+    }
+    ctx->r2 = crouchToggleRequested[controllerNum].exchange(false, std::memory_order_acq_rel) ? 1 : 0;
 }
 
 extern "C" void goldenpad_recomp_unlock_all_missions_enabled(uint8_t *, recomp_context *ctx) {
     ctx->r2 = unlockAllMissions.load(std::memory_order_relaxed) ? 1 : 0;
+}
+
+extern "C" void goldenpad_recomp_consume_return_to_title(uint8_t *, recomp_context *ctx) {
+    const bool requested = returnToTitleRequested.exchange(false, std::memory_order_acq_rel);
+    if (requested) {
+        logEvent("navigation", "return to main menu consumed on game thread");
+    }
+    ctx->r2 = requested ? 1 : 0;
 }
 
 extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uint32_t frames) {

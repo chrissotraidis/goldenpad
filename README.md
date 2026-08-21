@@ -18,34 +18,48 @@
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
 </p>
 
-GoldenPad is a native iOS/iPadOS integration of the reconstructed GoldenEye 007
-game code from [MGB64](https://github.com/akratch/mgb64). It is not a general
-Nintendo 64 emulator and it does not contain the game, a ROM, or extracted game
-assets. A supported, legally acquired retail dump is selected locally through
-Files and retained only in private volatile memory while the game runs.
+<p align="center">
+  <img src="docs/images/goldenpad-rt64-jungle-ipad.jpg" width="960" alt="GoldenPad RT64 gameplay on a physical iPad in the Jungle mission">
+</p>
+<p align="center"><em>Native RT64/Metal gameplay on a physical iPad Pro.</em></p>
 
-The current build reaches the original title sequence, menus, and missions on
-iPhone and iPad Simulator through MGB64's Fast3D Metal renderer. It has native
-audio, persistent EEPROM saves, modern and classic touch layouts, physical
-controller support, controller assignment for Players 1–4, and a reproducible
-ROM-free unsigned IPA build.
+GoldenPad's primary iPhone/iPad runtime uses statically recompiled GoldenEye 007
+code, N64ModernRuntime and RT64's Metal renderer. It is not a general Nintendo
+64 emulator and it does not contain the game, a ROM, or extracted game assets.
+The supported retail data remains user-supplied and private.
+
+The primary RT64 build reaches the original title sequence, menus and multiple
+missions on a physical iPad with native audio, the tuned GoldenPad touch layout
+and Xbox/MFi controller support. The earlier MGB64/Fast3D app is retained as
+`GoldenPad Legacy` for regression comparison and fallback only; it is no longer
+the primary development version.
+
+> **Development boundary:** the public repository records the integration and
+> reproducible patch chain, but generated AOT game code and retail-derived data
+> remain private and are never committed or distributed.
 
 ## Current screenshots
 
 <table>
   <tr>
-    <td width="60%"><img src="docs/images/goldenpad-setup-iphone.png" alt="GoldenPad retail-ROM setup on iPhone"></td>
-    <td width="40%"><img src="docs/images/goldenpad-setup-ipad.png" alt="GoldenPad retail-ROM setup and control preview on iPad"></td>
+    <td width="50%"><img src="docs/images/goldenpad-rt64-bunker-ipad.jpg" alt="GoldenPad RT64 gameplay in Bunker on a physical iPad"></td>
+    <td width="50%"><img src="docs/images/goldenpad-rt64-bunker-action-ipad.jpg" alt="GoldenPad RT64 combat in Bunker on a physical iPad"></td>
   </tr>
   <tr>
-    <td align="center"><strong>Bring your own retail data</strong><br>The app validates a supported dump through Files.</td>
-    <td align="center"><strong>Built for both device classes</strong><br>Phone and tablet layouts are independent.</td>
+    <td align="center"><strong>Bunker</strong><br>Automatic high resolution with RT64 Metal.</td>
+    <td align="center"><strong>Live gameplay</strong><br>Native ARM64 game code and controller input.</td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/images/goldenpad-rt64-file-select-ipad.jpg" alt="GoldenEye file-select menu rendered by GoldenPad on a physical iPad"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><strong>Original front end</strong><br>GoldenEye menus, saves, missions, and gameplay run in the primary RT64 build.</td>
   </tr>
 </table>
 
-These ROM-free Simulator captures show only GoldenPad's project-owned setup and
-control-preview surfaces. No copyrighted game image or extracted asset is
-included.
+These user-approved captures were taken from the signed GoldenPad build on a
+physical iPad. No ROM, save, extracted asset file, or game data is included in
+the repository or application package.
 
 ## Install status
 
@@ -67,18 +81,18 @@ release.
 
 | Area | Current result |
 |---|---|
-| Native runtime | MGB64 game code links and runs as Apple ARM64; no emulator wrapper |
-| Rendering | Native Fast3D path presents through Metal on iPhone and iPad |
-| Setup | Files picker validates the supported US retail revision and starts the game |
+| Native runtime | Statically recompiled game code runs as Apple ARM64; no JIT or emulator wrapper |
+| Rendering | RT64 presents high-resolution Metal output on physical iPad hardware |
+| Setup | The private developer build validates a user-derived NTSC-U TLBFREE input staged only in its app container; a public in-app retail-ROM import/conversion flow remains a release gate |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
-| Touch | Modern, Southpaw, and complete N64 layouts with independent phone/tablet profiles |
-| Customization | Global opacity/size plus per-control move, resize, hide/show, and reset |
-| Controllers | `GCController`, isolated face-button mapping, four visible player assignments |
-| Multiplayer | Native desktop split-screen baseline and touch + Player 2 gamepad preparation path |
-| Audio | MGB64 sequence/SFX synthesis feeds `AVAudioEngine` through a bounded PCM ring |
-| Saves | 2 KiB EEPROM restores and persists atomically in Application Support |
-| Display | Persisted 1×, 2×, 3×, and 4× scene resolution plus an opt-in game-FPS HUD |
-| Packaging | ROM-free unsigned ARM64 IPA with source-license and third-party-notice audits |
+| Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls |
+| Customization | Touch look sensitivity, hold/toggle aim, shared vertical inversion and optional centered reticle |
+| Controllers | `GCController` with accepted Player 1 movement, right-stick look, buttons, and automatic touch-overlay hiding |
+| Multiplayer | Opt-in physical-controller Player 1 + touch Player 2 test path; the crash repair is under test and flashing split-screen presentation remains work in progress |
+| Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
+| Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
+| Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
+| Legacy fallback | MGB64/Fast3D remains buildable as `GoldenPad Legacy` |
 
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
 ledger and remaining physical-device gates. [Technical debt and upstream
@@ -206,71 +220,49 @@ real-finger acceptance on physical hardware.
 
 ## Controllers and multiplayer
 
-Open **Game Settings → Physical Controllers** to see Players 1–4. Touch always
-belongs to Player 1. A connected controller can be moved to any slot, and moving
-into an occupied slot swaps the two controllers.
-
-For two-player touch + gamepad play, move the gamepad to Player 2. The settings
-page shows a green readiness confirmation, and the original GoldenEye
-**Multiplayer** menu becomes available once the game sees two connected players.
-Native split-screen startup is proven, but a complete human-played mobile match
-remains an open acceptance gate.
+The primary build automatically uses the first Xbox/MFi extended gamepad for
+Player 1 and hides the touch overlay while it is connected. Movement, modern
+right-stick look, aim, fire, action, weapon, crouch and Start are physically
+accepted. **Settings → Controller → Button mapping** can reassign the face
+buttons, bumpers, and triggers; sticks, D-pad, and Menu/Start retain their
+standard roles. For hardware-limited testing, **Cheats & Testing → Two-player input
+test** keeps the attached controller as Player 1 and exposes touch controls as
+Player 2. Turning it off hides touch and keeps the controller as Player 1. The
+former multiplayer process crash has a targeted repair, but the Simulator
+viewports have shown visible flashing. A complete, visually stable,
+human-played mobile match remains an acceptance gate.
 
 ## Resolution and performance
 
-Open **Game Settings → Display** to choose the scene render scale:
-
-| Setting | iPhone 16 Pro target | iPad Pro 11-inch target | Intended use |
-|---|---:|---:|---|
-| **1×** | 874×402 | 1210×834 | Performance-first default |
-| **2×** | 1748×804 | 2420×1668 | Sharper scene rendering |
-| **3×** | 2622×1206 | 3630×2502 | High supersampling |
-| **4×** | 3496×1608 | 4840×3336 | Maximum quality; 16× the pixels of 1× |
-
-Only the game scene scales; native SwiftUI controls remain at display
-resolution. Higher levels are optional supersampling, not a frame-rate promise.
-The opt-in Performance HUD reports actual MGB64 game display-list submissions,
-frame time, and 1% low rather than the device's 60 Hz UI callback rate.
+Open the three-dot menu and choose **Settings** to select Native N64, 2× or
+Automatic high resolution, plus 2× MSAA and N64 three-point filtering. These
+settings are saved immediately and apply after quitting and reopening GoldenPad;
+the active RT64 session is not rebuilt in place. They alter how the original
+ROM assets are rendered; no HD texture pack is bundled. To restore the original
+N64 look, select Native N64, disable both 2× anti-aliasing and three-point
+filtering, then fully quit and reopen the app.
 
 ## Reproducible and ROM-free
 
-```mermaid
-flowchart LR
-    A["GoldenPad source"] --> B["Pinned MGB64 checkout"]
-    B --> C["Temporary maintained iOS patches"]
-    C --> D["Native ARM64 app or unsigned IPA"]
-    E["Your supported retail dump"] --> F["Files picker and exact validation"]
-    F --> G["Private volatile runtime memory"]
-    D --> H["Native gameplay"]
-    G --> H
-```
-
-The compile and package steps never read your ROM. To produce the complete
-unsigned developer artifact:
-
-```sh
-./scripts/verify-mgb64-ios-renderer.sh
-./scripts/verify-source-license-manifest.sh
-./scripts/package-unsigned-ipa.sh
-./scripts/verify-unsigned-ipa.sh --game-core \
-  dist/GoldenPad-0.1.0-unsigned.ipa
-```
-
-The package audit requires ARM64, no signature or provisioning profile, MGB64's
-game entry point, native Metal/Fast3D entry points, third-party notices, no
-private checkout paths, and no ROM headers, hashes, filenames, or extracted
-media. Exact current hashes and clean-checkout reproduction evidence live in
-[Testing](docs/TESTING.md).
+The primary integration, dependency pins and reversible patches are public.
+Retail data, converted ROM derivatives and generated AOT game sources remain
+private and ignored. The ARM64 host and RT64 archive closure have ROM-free
+verification scripts, while the complete playable app requires the developer's
+private generated inputs. The older MGB64 unsigned-IPA workflow is retained for
+legacy fallback builds and must not be presented as the primary release path.
 
 ## Current limitations
 
-- Signed physical-iPhone/iPad touch, audio-route, controller, lifecycle,
-  performance, and thermal acceptance is not complete on this Mac.
+- Screenshot/system-overlay resume is under renewed physical-iPad validation.
 - Human touch-only mission completion and human-completed local multiplayer
   remain open.
-- Scene cadence is workload-dependent, especially in Simulator and at 3×/4×.
-- GoldenRecomp remains a reference because its public generated-input pipeline
-  cannot currently be reproduced; MGB64 is the selected production core.
+- The primary AOT build does not yet provide an end-user retail-ROM
+  import/conversion flow; current playable builds use private developer-staged
+  inputs and must not distribute ROM or generated retail-derived data.
+- Some stage-specific geometry glitches remain to be captured precisely.
+- Physical-speaker static and multi-controller play remain acceptance gates.
+- The generated-input pipeline is not independently reproducible from the
+  public repository; private retail-derived inputs are never distributed.
 - This source-available developer preview is not an official or commercially
   licensed GoldenEye distribution.
 
@@ -287,24 +279,27 @@ Do not open issues requesting game data or download links.
 <details>
 <summary><strong>Is GoldenPad an N64 emulator?</strong></summary>
 
-No. Reconstructed GoldenEye game code is compiled into a native Apple ARM64
-application. The selected Fast3D path renders through Metal.
+No. Statically recompiled GoldenEye code runs as a native Apple ARM64
+application, and RT64 renders through Metal. The separate MGB64/Fast3D app is
+retained only as the deprecated legacy fallback.
 </details>
 
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-There is no advertised public release asset yet. The repository can build a
-ROM-free unsigned IPA locally. It must be re-signed for your own device and
-still requires your own retail dump after installation.
+There is no advertised public primary-runtime release asset yet. The repository
+can reproduce a ROM-free unsigned `GoldenPad Legacy` IPA, but the current RT64
+primary app still depends on private generated AOT inputs and a developer-staged
+retail-derived ROM. A distributable, data-free primary package and end-user
+import flow remain release gates.
 </details>
 
 <details>
-<summary><strong>Will 4× make the game run faster?</strong></summary>
+<summary><strong>Do the high-resolution settings make the game run faster?</strong></summary>
 
-No. It makes the game scene sharper by drawing sixteen times as many pixels as
-1×. Start at 1× and raise the setting only when your device has performance
-headroom.
+No. Native N64, 2× and Automatic high resolution change render quality, not game
+speed. Higher internal resolution and 2× anti-aliasing can cost performance;
+changes apply after fully quitting and reopening GoldenPad.
 </details>
 
 <details>
@@ -332,8 +327,9 @@ the repository being publicly readable.
 | Path | Purpose |
 |---|---|
 | [`Sources/`](Sources/) | Native SwiftUI, Metal host, input, audio/save services, and ROM validation |
-| [`Support/MGB64/`](Support/MGB64/) | Thin SDL-free Apple adapters around the pinned portable core |
-| [`patches/`](patches/) | Maintained, reversible MGB64 and renderer changes |
+| [`Support/RecompPrototype/`](Support/RecompPrototype/) | Primary AOT runtime, RT64, diagnostics and Apple bridges |
+| [`Support/MGB64/`](Support/MGB64/) | Deprecated legacy fallback adapters |
+| [`patches/`](patches/) | Maintained, reversible recomp, RT64 and legacy changes |
 | [`scripts/`](scripts/) | Fetch, build, test, audit, and unsigned-IPA packaging gates |
 | [`docs/PLAN.md`](docs/PLAN.md) | Milestones and definition-of-done gates |
 | [`docs/STATUS.md`](docs/STATUS.md) | Current evidence and remaining work |
@@ -365,7 +361,8 @@ affiliated with or endorsed by Nintendo, Rare, Microsoft, MGM, Danjaq, EON
 Productions, or any other rights holder. GoldenEye 007 and all related names,
 characters, imagery, and game content belong to their respective owners.
 
-GoldenPad builds on MGB64, the GoldenEye decompilation community, n64-fast3d,
-Metal support work, and their contributors. Each upstream component retains its
-own copyright and license. No ROM, extracted game media, leaked XBLA material,
-or proprietary matching-target SDK implementation source is included here.
+GoldenPad builds on GoldenEye64Recomp, N64Recomp, N64ModernRuntime, RT64, MGB64,
+the GoldenEye decompilation community, Metal support work, and their
+contributors. Each upstream component retains its own copyright and license.
+No ROM, extracted game media, leaked XBLA material, or proprietary
+matching-target SDK implementation source is included here.

@@ -4,14 +4,16 @@ The accepted physical-iPad baseline and its bounded next-day worklist are
 recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md).
 
-## Objective and isolation
+## Primary GoldenPad runtime and isolation
 
-This branch evaluates a **separate**, non-production `GoldenPadRecompPrototype`
-iOS/iPadOS app for the original Nintendo 64 release of GoldenEye 007. It does
-not alter the `GoldenPad` MGB64 target, bundle identifier, container, saves, or
-renderer. The prototype identifier is
+The accepted recomp/RT64 app is now GoldenPad's **primary development runtime**
+for the original Nintendo 64 release of GoldenEye 007. The internal CMake target
+name remains `GoldenPadRecompPrototype` to avoid a risky build-system rename,
+while its user-facing app name is `GoldenPad`. The earlier MGB64 app is displayed
+as `GoldenPad Legacy` and remains available as a deprecated fallback. The primary
+runtime identifier is
 `com.chrissotraidis.goldenpad.recomp-prototype`, so it can coexist with
-production in Simulator or on hardware.
+the legacy app in Simulator or on hardware without changing either container.
 
 The intended execution route is AOT/static N64Recomp output from a user-owned
 US retail ROM, N64ModernRuntime's libultra replacement, and RT64's Metal
@@ -141,6 +143,12 @@ be separate from game-frame evidence. It must install via `simctl` without
 removing `com.chrissotraidis.goldenpad`; capture intro, menu and Dam privately;
 and retain console/PID/liveness logs independently.
 
+For repeatable Simulator-only menu testing, enable Simulator's **Capture
+Keyboard** control. Arrow keys map to the left stick and N64 D-pad, A/B map to the N64 face
+buttons, S maps to Start, Z maps to fire, and R maps to aim. This shim is
+compiled only for Simulator and does not alter physical-device controller or
+touch behavior.
+
 ## Current AOT result — 2026-08-20
 
 The isolated target now links private generated AOT sources, the AOT-only
@@ -164,7 +172,9 @@ weapon and Start. AIM supports toggle or hold and has a distinct yellow active
 state; DUCK is a yellow C-button-style action. Look uses the production 1.5x
 swipe accumulation, 4x default sensitivity and one-third-speed precision while
 aiming. Settings include aim behavior, optional aim-only vertical inversion,
-an optional centered reticle and persisted 2x MSAA. A prototype-only
+an optional centered reticle, resolution, 2x MSAA, and three-point filtering.
+Renderer-quality changes are persisted for the next app launch instead of
+rebuilding the active RT64 session. A prototype-only
 `Unlock all missions` setting uses GoldenEye's existing mission-availability
 predicate without marking missions complete or writing EEPROM. It is intended
 for later-stage rendering tests and leaves the user's real save progression
@@ -176,11 +186,39 @@ was verified in the native log as button bit `0x8000` followed by release. The
 bridge is prototype-local and does not use or change the production MGB64 input
 system.
 
-The native GameController map supports Xbox/MFi-style hardware: left stick
-moves, right stick supplies modern analog look, LT aims, RT fires, A/Y changes
-weapon, B/X acts, LB toggles duck, RB changes weapon, Menu is Start and the
-d-pad maps directly. Code-path and connection reporting are verified; a full
-physical Bluetooth controller playthrough is still an acceptance gate.
+The native GameController map supports Xbox/MFi-style hardware. Its default is:
+left stick moves, right stick supplies modern analog look, LT aims, RT fires,
+A/Y changes weapon, B/X acts, LB toggles duck, RB changes weapon, Menu is Start
+and the d-pad maps directly. A dedicated Button Mapping screen can reassign the
+face buttons, bumpers, and triggers without rewiring the fixed sticks, d-pad or
+Menu/Start path. An opt-in test mode keeps the connected controller on port 1
+and advertises touch as port 2, with independent look and crouch state; turning
+it off hides touch and keeps the physical controller on port 1. The full ARM64
+Simulator build has entered and sustained an authentic two-player split-screen
+match with both ports active. Physical controller-plus-touch multiplayer is
+still an acceptance gate.
+
+The 2026-08-21 10:04 multiplayer start failure produced an iPadOS crash report,
+incident `E40A1ADE-AD85-45A8-ACE3-814507E93D03`: `EXC_BAD_ACCESS`/`SIGBUS` at
+`0x0000000320000000` on RT64's display-list thread. The stack ended in
+`RT64::Interpreter::processDisplayLists` through `RT64Context::send_dl`.
+GoldenEye supplied a KSEG1 `0xA...` address while the newer standalone RT64
+revision interpreted any address with bit 31 set as extended RDRAM, subtracting
+`0x80000000` and producing the invalid `0x20000000` offset. The embedded RT64
+patch now matches GoldenEye64Recomp's pinned behavior: only the `0x8...`
+extended region bypasses normal 29-bit physical-address masking. This is a
+targeted compatibility repair; the stable single-player presentation path is
+otherwise unchanged.
+
+The repaired build was then exercised in a dedicated iPad Simulator through
+GoldenEye's main menu, multiplayer options and a live horizontal split-screen
+Temple match. Bounded diagnostics recorded independent Player 1 and Player 2
+button transitions and advanced past 31,000 display-list, VI and presentation
+updates without the former fault. The user nevertheless observed the two
+Simulator viewports flashing back and forth, so multiplayer remains work in
+progress and is not part of the initial single-player release-acceptance claim.
+This closes the deterministic crash reproduction but does not replace
+hands-on physical-iPad multiplayer, presentation or performance acceptance.
 
 Patch regeneration produces a matched `RecompiledPatches/patches.c` and
 embedded `patches_bin.c`; rebuilding or installing with only one half updated
@@ -192,7 +230,9 @@ look was also rejected: it reduced physical-iPad gameplay presentation to about
 The bridge writes bounded `[GoldenPadRecomp]` unified-log events for ROM
 validation, runtime/overlay setup, the active game loop, controller presence,
 first polling/input state, button transitions, audio submission, rumble
-requests, stop, and errors. It intentionally emits no per-frame port warnings.
+requests, stop, and errors. High-frequency button, right-stick, and rumble
+transitions are sampled so diagnostics cannot become a gameplay workload. It intentionally
+emits no per-frame port warnings.
 Audio is consumed by a 22,050 Hz stereo `AVAudioSourceNode` and converted by
 AVAudioEngine to the current device route. Diagnostics separately report the
 real queued, rendered, non-zero, producer-dropped and consumer-underrun frame
@@ -220,10 +260,18 @@ AOT runtime patch now canonicalizes all RDRAM accesses to the 29-bit physical
 address range.
 
 The host explicitly fills and clips the Metal surface over an edge-to-edge
-black background. A former two-physical-pixel blue strip at the right edge is
-no longer visible in the latest QuickTime hardware frame. This is visible-seam
-evidence, not yet a claim that every UIKit/CAMetalLayer drawable dimension has
-been proven across all device sizes and orientations.
+black background. Pixel inspection of the 10:07 hardware screenshot confirmed
+that the reported far-right blue strip is exactly two physical pixels wide on
+the 2× iPad display. A one-point opaque host overlay now masks only that sampling
+seam without changing RT64's drawable or viewport. Physical visual acceptance
+of the new mask remains open across device sizes and orientations.
+
+Shared diagnostics retain bounded current and previous session logs. A tiny
+foreground-session marker is removed on a real background transition and left
+behind by a process crash; the next launch reports that the previous foreground
+session ended unexpectedly and directs the tester to the previous log and the
+iPadOS crash report. This adds crash visibility without streaming a console or
+recording gameplay.
 
 An in-place hardware update on 2026-08-20 preserved prototype database UUID
 `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. A subsequent 34.7-second QuickTime
@@ -241,15 +289,12 @@ The RT64 static-archive verifier works with the downloaded Metal component via
 `TOOLCHAINS=metal-2600.50.6.1` and
 `GOLDENPAD_METAL_TOOLCHAIN=metal-2600.50.6.1`.
 
-## Migration gates and current recommendation
+## Primary-runtime decision and remaining gates
 
-Do not replace production based on build/install/liveness evidence alone. The
-prototype now has AOT game execution, real intro/menu/gameplay RT64 frames,
-native audio and the production touch schema, so it is the stronger path for
-high-resolution rendering and continued stabilization. Migration still
-requires physical controller acceptance, physical-speaker audio acceptance,
-longer mission/lifecycle soaks, later-stage/effect comparison, save
-compatibility and a clean ROM/generated-code audit. Until those pass, the
-recommendation remains **continue both temporarily**: production MGB64 is the
-known fallback while the isolated recomp prototype is brought to replacement
-quality.
+The 2026-08-21 physical-iPad acceptance run established the recomp/RT64 app as
+GoldenPad's primary development runtime. MGB64 remains buildable only as the
+deprecated `GoldenPad Legacy` fallback. This product decision does not erase
+the remaining release gates: screenshot/background lifecycle recovery,
+physical-speaker audio, longer mission soaks, stage/effect comparison,
+multi-controller multiplayer, save compatibility and a clean
+ROM/generated-code audit still require explicit evidence.

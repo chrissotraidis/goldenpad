@@ -75,6 +75,7 @@ for binary in \
 do
     test -f "$binary"
     info_plist=$(dirname "$binary")/Info.plist
+    test "$(plutil -extract CFBundleDisplayName raw -o - "$info_plist")" = "GoldenPad Legacy"
     test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw -o - "$info_plist")" = "true"
     document_types=$(plutil -extract CFBundleDocumentTypes json -o - "$info_plist")
     imported_types=$(plutil -extract UTImportedTypeDeclarations json -o - "$info_plist")

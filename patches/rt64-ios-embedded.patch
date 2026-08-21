@@ -299,3 +299,41 @@
 
  // Remove macros defined by x11 from a header included by SDL_syswm.h.
  #undef None
+--- a/src/hle/rt64_rsp.cpp
++++ b/src/hle/rt64_rsp.cpp
+@@ -95,10 +95,11 @@
+     }
+ 
+     constexpr uint32_t ExtendedMask = 0x80000000U;
++    constexpr uint32_t ExtendedRegionMask = 0xF0000000U;
+ 
+     // Masks addresses as the RSP DMA hardware would.
+     template<uint32_t mask> uint32_t RSP::maskPhysicalAddress(uint32_t address) {
+-        if (state->extended.extendRDRAM && ((address & ExtendedMask) == ExtendedMask)) {
++        if (state->extended.extendRDRAM && ((address & ExtendedRegionMask) == ExtendedMask)) {
+             return address - ExtendedMask;
+         }
+         else {
+@@ -108,7 +109,7 @@
+ 
+     // Performs a lookup in the segment table to convert the given address.
+     uint32_t RSP::fromSegmented(uint32_t segAddress) {
+-        if (state->extended.extendRDRAM && ((segAddress & ExtendedMask) == ExtendedMask)) {
++        if (state->extended.extendRDRAM && ((segAddress & ExtendedRegionMask) == ExtendedMask)) {
+             return segAddress;
+         }
+         else {
+--- a/src/hle/rt64_rdp.cpp
++++ b/src/hle/rt64_rdp.cpp
+@@ -237,9 +237,10 @@
+     };
+ 
+     constexpr uint32_t ExtendedMask = 0x80000000U;
++    constexpr uint32_t ExtendedRegionMask = 0xF0000000U;
+ 
+     uint32_t RDP::maskAddress(uint32_t address) {
+-        if (state->extended.extendRDRAM && ((address & ExtendedMask) == ExtendedMask)) {
++        if (state->extended.extendRDRAM && ((address & ExtendedRegionMask) == ExtendedMask)) {
+             return address - ExtendedMask;
+         }
+         else {

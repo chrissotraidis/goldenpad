@@ -1,8 +1,36 @@
 # Release checklist
 
-GoldenPad's current public deliverable is the source repository and its
-reproducible ROM-free unsigned IPA recipe. No downloadable IPA, App Store build,
-or TestFlight is advertised.
+GoldenPad's current public deliverable is the source repository. No primary
+runtime IPA, App Store build, or TestFlight is advertised.
+
+The reproducible ROM-free unsigned IPA recipe below builds `GoldenPad Legacy`;
+it is retained as a fallback artifact and must not be presented as the primary
+RT64 release. The playable primary app currently depends on private generated
+AOT inputs and a developer-staged retail-derived TLBFREE ROM. A public primary
+binary requires both an end-user retail-ROM import/conversion flow and a
+data-free package audit that proves no ROM, generated retail-derived code,
+saves, signing material or private paths are shipped.
+
+## Primary RT64 preview gate
+
+Before publishing any primary-runtime preview:
+
+- Complete the current signed-iPad hands-on matrix in `docs/TESTING.md` and
+  record the exact accepted executable hash.
+- Keep multiplayer explicitly work in progress until split-screen flashing and
+  a complete physical match are accepted.
+- Choose non-prototype public version metadata while preserving the existing
+  internal target and bundle identifier only if migration has been audited.
+- Define and verify the end-user game-data import/conversion path; developer
+  staging is not a public installation workflow.
+- Build the public artifact from a clean checkout, enumerate every packaged
+  member, and run `scripts/check-no-rom-data.sh` plus a package-specific binary
+  contamination audit.
+- Keep source publication, binary publication, signing and rights clearance as
+  separate decisions.
+
+The remaining sections are the `GoldenPad Legacy` clean-checkout and packaging
+procedure.
 
 ## Clean checkout
 

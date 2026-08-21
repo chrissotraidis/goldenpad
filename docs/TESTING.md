@@ -10,6 +10,56 @@
 
 A lower level never substitutes for a higher one.
 
+## Primary RT64/AOT candidate — 2026-08-21
+
+The primary runtime is the internal `GoldenPadRecompPrototype` target installed
+as `GoldenPad`. Its current evidence ledger is
+[`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md).
+The MGB64 procedures later in this file now validate `GoldenPad Legacy`; they do
+not establish acceptance for the primary app.
+
+Current automated gates:
+
+```sh
+./scripts/check-no-rom-data.sh
+./scripts/verify-recomp-prototype-host.sh
+./scripts/verify-rt64-ios-metal.sh
+GOLDENPAD_RT64_ARTIFACT_DIR="$PWD/build-rt64-static" \
+  ./scripts/verify-rt64-ios-static.sh
+git diff --check -- ':!patches/*.patch'
+```
+
+The complete private AOT build additionally requires ignored generated game
+objects, N64ModernRuntime archives, RT64 archives and the user's own validated
+TLBFREE ROM. Apply and reverse the tracked RT64 SDK, embedded-host, Plume and
+GoldenEye trace patches around the Xcode build as documented in
+[`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). Both ignored
+upstream checkouts must be clean afterward.
+
+For a physical update, build/sign the ARM64 `iphoneos` target and install it in
+place with `devicectl device install app`. Never uninstall the existing app.
+Before and after installation, independently read back and hash the Documents
+ROM, runtime ROM copy, active save and backup save. Confirm the installation
+database UUID is unchanged, then launch without a live console, QuickTime,
+Simulator control or profiler. Use one bounded application-log readback for PID,
+ROM validation, display-list/VI/presentation progress, and audio drop/underrun
+counters.
+
+Hands-on acceptance for the newest signed build must cover:
+
+1. Touch movement/look/buttons and Xbox/MFi movement/right-stick/buttons.
+2. Normal-speed single-player gameplay through at least one mission segment.
+3. Physical-speaker audio without persistent static.
+4. Screenshot/system-overlay return without freeze or presentation stall.
+5. Three-dot menu placement, Settings, Return to Main Menu, centered reticle,
+   and no visible far-right seam.
+6. Graphics changes only after fully quitting and reopening GoldenPad.
+
+Multiplayer is not an initial single-player preview gate. The former RT64
+`0x0000000320000000` crash has a targeted KSEG1 address-mask repair and the
+Simulator can enter a live two-player match, but visible viewport flashing must
+be fixed before multiplayer is described as accepted.
+
 ## Desktop baseline
 
 ```sh
@@ -70,7 +120,9 @@ find `embedded.mobileprovision`, and confirm the requested bundle identifier.
 Installation must use the resulting `build-mgb64-renderer-device-signed` app;
 the reproducible `build-mgb64-renderer-device` app remains unsigned by design.
 
-Do not publish screenshots containing copyrighted game imagery.
+Keep raw diagnostic gameplay captures private. Only user-approved,
+downsampled promotional screenshots may be tracked, and they must remain
+separate from app/IPA package contents.
 
 ### Current foundation evidence
 

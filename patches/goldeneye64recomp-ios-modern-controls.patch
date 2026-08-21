@@ -11,24 +11,25 @@ index 609e348..a6dfd75 100644
  extern s32 cameraFrameCounter2;
  extern s32 cameraBufferToggle;
 diff --git a/patches/patches.h b/patches/patches.h
-index 77b502e..c55b224 100644
+index 77b502e..f952ae0 100644
 --- a/patches/patches.h
 +++ b/patches/patches.h
-@@ -117,6 +117,9 @@ int recomp_printf(const char* fmt, ...);
+@@ -117,6 +117,10 @@ int recomp_printf(const char* fmt, ...);
      extern u8 identifier[]
  
  float recomp_get_aspect_ratio(float);
-+void recomp_get_camera_inputs(float* x, float* y);
-+s32 goldenpad_recomp_consume_crouch_toggle(void);
++void recomp_get_camera_inputs(s32 controllernum, float* x, float* y);
++s32 goldenpad_recomp_consume_crouch_toggle(s32 controllernum);
 +s32 goldenpad_recomp_unlock_all_missions_enabled(void);
++s32 goldenpad_recomp_consume_return_to_title(void);
  void recomp_crash(const char* err);
  
  #endif
 diff --git a/patches/syms.ld b/patches/syms.ld
-index 31e51b1..8aec43d 100644
+index 31e51b1..b028f61 100644
 --- a/patches/syms.ld
 +++ b/patches/syms.ld
-@@ -76,4 +76,6 @@ boot_osPiRawStartDma = 0x8F000100;
+@@ -76,4 +76,7 @@ boot_osPiRawStartDma = 0x8F000100;
  osGetCount_recomp = 0x8F000104;
  sprintf_recomp = 0x8F000108;
  osPfsInit_recomp = 0x8F00010C;
@@ -37,11 +38,12 @@ index 31e51b1..8aec43d 100644
 +osMotorInit_recomp = 0x8F000110;
 +goldenpad_recomp_consume_crouch_toggle = 0x8F000114;
 +goldenpad_recomp_unlock_all_missions_enabled = 0x8F000118;
++goldenpad_recomp_consume_return_to_title = 0x8F00011C;
 diff --git a/patches/workbench_theboy.c b/patches/workbench_theboy.c
-index d4424c7..bf55d78 100644
+index d4424c7..64f6206 100644
 --- a/patches/workbench_theboy.c
 +++ b/patches/workbench_theboy.c
-@@ -473,6 +473,61 @@ void InitFrameRateControl(void)
+@@ -473,6 +473,75 @@ void InitFrameRateControl(void)
  extern s32 g_DebugMode;
  extern s32 g_DebugHighlightedOption;
  
@@ -52,19 +54,33 @@ index d4424c7..bf55d78 100644
 +
 +static void goldenpadApplyModernTouchControls(void)
 +{
-+    static s32 crouched = FALSE;
++    static s32 crouched[4] = {FALSE, FALSE, FALSE, FALSE};
++    s32 playernum = get_cur_playernum();
 +    f32 lookX = 0.0f;
 +    f32 lookY = 0.0f;
 +    f32 degreesPerFrame;
 +
-+    if (g_StageNum == LEVELID_TITLE || g_CurrentPlayer == NULL ||
-+        g_CurrentPlayer->prop == NULL || g_CurrentPlayer->bonddead) {
-+        crouched = FALSE;
-+        goldenpad_recomp_consume_crouch_toggle();
++    if (goldenpad_recomp_consume_return_to_title()) {
++        crouched[0] = FALSE;
++        crouched[1] = FALSE;
++        crouched[2] = FALSE;
++        crouched[3] = FALSE;
++        if (g_StageNum != LEVELID_TITLE) {
++            bossRunTitleStage();
++        }
 +        return;
 +    }
 +
-+    recomp_get_camera_inputs(&lookX, &lookY);
++    if (playernum < 0 || playernum >= 4 || g_StageNum == LEVELID_TITLE || g_CurrentPlayer == NULL ||
++        g_CurrentPlayer->prop == NULL || g_CurrentPlayer->bonddead) {
++        if (playernum >= 0 && playernum < 4) {
++            crouched[playernum] = FALSE;
++            goldenpad_recomp_consume_crouch_toggle(playernum);
++        }
++        return;
++    }
++
++    recomp_get_camera_inputs(playernum, &lookX, &lookY);
 +    if (lookX != 0.0f || lookY != 0.0f) {
 +        /* GoldenPad's tuned MGB64 path resolves to 3 degrees per frame at
 +         * full deflection, and one third of that while aiming. */
@@ -93,17 +109,17 @@ index d4424c7..bf55d78 100644
 +        bondviewApplyVertaTheta();
 +    }
 +
-+    if (goldenpad_recomp_consume_crouch_toggle()) {
-+        crouched = !crouched;
++    if (goldenpad_recomp_consume_crouch_toggle(playernum)) {
++        crouched[playernum] = !crouched[playernum];
 +        /* GoldenEye's native crouch enum is squat=0, half=1, stand=2. */
-+        g_CurrentPlayer->crouchpos = crouched ? 0 : 2;
++        g_CurrentPlayer->crouchpos = crouched[playernum] ? 0 : 2;
 +    }
 +}
 +
  RECOMP_PATCH void bossMainloop(void) {
      // declarations
  
-@@ -702,6 +757,7 @@ RECOMP_PATCH void bossMainloop(void) {
+@@ -702,6 +771,7 @@ RECOMP_PATCH void bossMainloop(void) {
                                      viSetViewPosition(localPlayer->viewleft, localPlayer->viewtop);
  
                                      lvlViewMoveTick();

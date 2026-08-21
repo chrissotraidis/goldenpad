@@ -10,7 +10,10 @@ Productions, or any other rights holder. No trademark license is claimed.
 - Never use the leaked/unreleased XBLA build, leaked source, proprietary SDK
   source, or dependencies with unclear/incompatible provenance.
 - Never commit, push, package, publish, document, or capture a ROM or extracted
-  copyrighted assets in screenshots.
+  asset file. A small set of user-approved, downsampled in-game promotional
+  screenshots may be tracked separately from the app/package; they do not grant
+  rights in the depicted game content and must retain the project's unofficial
+  developer-preview attribution.
 - Never bundle or prepopulate a ROM or ROM-derived media in an app, IPA,
   archive, test fixture, CI cache, app container, or release. A user-supplied
   source may exist temporarily in that user's private Files storage for import;

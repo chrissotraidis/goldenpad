@@ -1,8 +1,17 @@
 # Building
 
-GoldenPad has a native ROM-free iPhone/iPad target. It validates a user-selected
-retail dump, derives runtime assets inside the app container, and links the
-audited MGB64 game core and native Metal renderer.
+GoldenPad's primary iPhone/iPad runtime is the recomp/RT64 target documented in
+[`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). Its internal target
+name remains `GoldenPadRecompPrototype`, but the installed product is
+user-facing `GoldenPad`.
+
+The instructions below describe the older MGB64/Fast3D target. It remains
+buildable as the deprecated `GoldenPad Legacy` fallback for regression
+comparison; it is not the primary release path.
+
+The legacy target is ROM-free. It validates a user-selected retail dump,
+derives runtime assets inside the app container, and links the audited MGB64
+game core and native Metal renderer.
 
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.

@@ -30,8 +30,37 @@ binary="$app/GoldenPadRecompPrototype"
 test -f "$binary"
 file "$binary" | grep -q 'Mach-O 64-bit executable arm64'
 test "$(plutil -extract CFBundleIdentifier raw -o - "$app/Info.plist")" = "$bundle_identifier"
-nm -gU "$binary" | grep -q _goldenpad_recomp_rt64_initialize
-nm -gU "$binary" | grep -q _goldenpad_recomp_rt64_shutdown
+test "$(plutil -extract CFBundleDisplayName raw -o - "$app/Info.plist")" = "GoldenPad"
+test -f "$app/ThirdPartyNotices.txt"
+for required_symbol in \
+    goldenpad_recomp_rt64_initialize \
+    goldenpad_recomp_rt64_shutdown \
+    goldenpad_recomp_set_msaa_enabled \
+    goldenpad_recomp_set_resolution_mode \
+    goldenpad_recomp_set_three_point_filtering \
+    goldenpad_recomp_set_controller_state \
+    goldenpad_recomp_set_right_analog \
+    goldenpad_recomp_set_controller_connected \
+    goldenpad_recomp_set_two_player_test_mode \
+    goldenpad_recomp_queue_touch_look \
+    goldenpad_recomp_request_crouch_toggle \
+    goldenpad_recomp_request_return_to_title \
+    goldenpad_recomp_note_transient_inactive \
+    goldenpad_recomp_previous_session_ended_unexpectedly
+do
+    nm -gU "$binary" | grep -q "_$required_symbol"
+done
+if find "$app" -type f \( \
+    -iname '*.z64' -o -iname '*.v64' -o -iname '*.n64' -o \
+    -iname '*.rom' -o -iname '*.eep' -o -iname '*.sav' \
+\) | grep -q .; then
+    echo "Retail ROM or save data entered the isolated host app." >&2
+    exit 1
+fi
+if strings "$binary" | grep -Eq '/Users/|/private/tmp'; then
+    echo "A private local path entered the isolated host binary." >&2
+    exit 1
+fi
 if nm -gU "$binary" | grep -q '_goldenpad_mgb64_'; then
     echo "Production MGB64 symbols entered the isolated prototype." >&2
     exit 1

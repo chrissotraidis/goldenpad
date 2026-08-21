@@ -1,15 +1,31 @@
 # Status
 
-Updated: 2026-08-16
+Updated: 2026-08-21
 
 ## Summary
 
-Research, Apple Silicon gameplay feasibility, a ROM-free native mobile
-foundation, and the complete RT64 mobile Metal linkage/surface gate are
-established. MGB64 is now the selected production-core candidate under the
-documented community decomp/recomp legal boundary. GoldenRecomp remains a
-reference because its public input-generation path is incomplete; that no
-longer blocks MGB64 integration.
+The statically recompiled GoldenEye + N64ModernRuntime + RT64/Metal app is now
+GoldenPad's primary development runtime. The earlier MGB64/Fast3D app remains
+buildable as `GoldenPad Legacy` for regression comparison and fallback. The
+detailed current evidence and unresolved physical gates are recorded in
+[`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
+and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
+
+The current signed iPad candidate launches real GoldenEye gameplay, preserves
+its private ROM and save payloads across in-place installation, and has bounded
+single-player presentation/audio evidence. Touch and Xbox/MFi Player 1 control
+paths, settings, diagnostics, return-to-menu plumbing, lifecycle handling, and
+the targeted multiplayer address-mask crash repair are integrated. Final
+hands-on acceptance remains open for the newest candidate, including speaker
+listening, screenshot/resume, the right-edge seam mask, and controller/touch
+behavior. Multiplayer presentation is work in progress because the two
+Simulator viewports visibly flash.
+
+There is no distributable primary-runtime package yet. The playable AOT app
+uses private generated inputs and a developer-staged retail-derived TLBFREE ROM;
+an end-user retail-ROM import/conversion flow plus a data-free package audit are
+required before advertising a public binary. The long MGB64 evidence ledger
+below is preserved as historical validation for `GoldenPad Legacy`.
 
 ## Passed
 
