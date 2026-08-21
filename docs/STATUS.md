@@ -604,9 +604,9 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Merge the reviewed source, confirm local and remote `main`, then publish and
-reverify the already audited mobile and Mac Alpha artifacts with their
-checksums. After publication, prioritize the
+Preview 2 is published as a prerelease with separately audited mobile and Mac
+Alpha artifacts. The hosted downloads matched their published checksums and
+passed the same package verifiers as the local artifacts. Next, prioritize the
 documented lifecycle/audio, residual multiplayer flicker/routing and Mac Alpha
 input/edge/performance debt without changing the accepted single-player, touch,
 controller, save or settings baseline. Do not import matching-target SDK

@@ -64,6 +64,9 @@ native Apple-Silicon macOS uses a separate `GoldenPad.app`.
   notes against the exact final artifacts before publishing.
 - [x] Confirm local `main`, `origin/main` and GitHub's default branch match only
   after the reviewed source and both artifact records are complete.
+- [x] Publish `v0.1.0-preview.2` as a GitHub prerelease, download all four
+  hosted assets, verify both checksum manifests, and rerun both package audits
+  against the hosted archives.
 
 Do not reopen Mac renderer/input surgery for this update. The current Mac alpha
 is intentionally frozen with its disclosed limitations because the rejected

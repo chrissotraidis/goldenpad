@@ -12,6 +12,10 @@
   the disclosed input, blue-edge and sustained-performance debt.
 - Merged PR #10 into `main` as `b3d4cc4`; local `main`, `origin/main` and the
   GitHub default-branch ref matched before release publication.
+- Published `v0.1.0-preview.2` with the audited unsigned IPA, Apple-Silicon Mac
+  Alpha archive and both checksum manifests. Fresh hosted downloads matched the
+  recorded SHA-256 values and passed the 18-member mobile and 20-member Mac
+  package verifiers.
 - Found that the tracked mobile viewport patch had advanced while the ignored
   generated patch embedding was stale. Regenerated the matched MIPS patch and
   both C embeddings, then added configure-time guards that require the current
