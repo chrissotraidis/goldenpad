@@ -319,11 +319,11 @@ The RT64 static-archive verifier works with the downloaded Metal component via
 
 ## Primary-runtime decision and remaining gates
 
-The 2026-08-21 physical-iPad acceptance run established the recomp/RT64 app as
-GoldenPad's primary development runtime. MGB64 remains buildable only as the
-deprecated `GoldenPad Legacy` fallback. This product decision does not erase
-the remaining release gates: screenshot/background lifecycle recovery,
-physical-speaker audio, longer mission soaks, stage/effect comparison,
-multi-controller multiplayer, save compatibility, end-user retail-ROM
-conversion/import and a clean distributable ROM/generated-code audit still
-require explicit evidence.
+The 2026-08-21 physical iPhone/iPad acceptance runs established the recomp/RT64
+app as GoldenPad's primary runtime. MGB64 remains buildable only as the deprecated
+`GoldenPad Legacy` fallback. Preview 1 closes the single-player build, touch,
+controller, graphics, package-contamination and physical-install gates with an
+audited unsigned IPA. Screenshot/background lifecycle recovery, residual audio
+static, longer mission soaks, stage/effect comparison, multi-controller
+multiplayer, save compatibility and an end-user retail-ROM conversion/import
+flow remain explicit post-preview work.

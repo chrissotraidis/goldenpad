@@ -11,31 +11,38 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-The current signed iPhone/iPad candidate launches real GoldenEye gameplay,
+The Preview 1 signed iPhone/iPad candidate launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
 installation, and has bounded single-player presentation/audio evidence. Touch
 and Xbox/MFi Player 1 control paths, separate phone/tablet touch layouts with a
 move/resize/opacity/reset editor, settings, diagnostics, return-to-menu plumbing,
 lifecycle handling, and the targeted multiplayer address-mask crash repair are
-integrated. Final hands-on acceptance remains open for the newest candidate,
-including touch-layout editing/persistence, speaker listening,
-screenshot/resume, the right-edge seam mask, and controller/touch behavior.
-Multiplayer presentation is work in progress because the two Simulator
-viewports visibly flash.
+integrated. The final iPhone touch editor, opacity control, accepted phone
+defaults, menu alignment, single-player gameplay and controller path received
+hands-on acceptance. Multiplayer remains explicitly experimental because the
+split-screen viewports visibly flash and the mode is not stable.
 
-Exact final-polish executable
-`f0072a6dddd53ab6cc7fb061877aea2aed7717625340c4fd5f355a24077abc32`
-is installed in place on both the physical iPhone 14 and iPad Pro. Their
+Exact Preview 1 signed executable
+`c0aee770a84482ee73e26042774ffd4119a09c73df20ff985327fc8ca08bea6f`
+is installed in place on the physical iPhone 14. Its accepted layout was read
+back and promoted to the clean-install phone defaults. The iPhone app-data UUID
+remained `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`, its preference file remained
+byte-identical at
+`12e163bce76605fb852efc0d38a31d38aecbdbd7d6ef5da7d6fffa55d9d73ffd`,
+and the unrecorded corrected launch remained alive as PID `4987`. The prior
+exact executable was also accepted on both physical devices. Their
 app-data UUIDs remained `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
 `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`; independent pre/post readbacks matched
 for both ROMs, both saves and each device's preferences. Normal unrecorded
 launches remained alive as iPhone PID `4732` and iPad PID `6696`.
 
-There is no distributable primary-runtime package yet. The playable AOT app
-uses private generated inputs and a developer-staged retail-derived TLBFREE ROM;
-an end-user retail-ROM import/conversion flow plus a data-free package audit are
-required before advertising a public binary. The long MGB64 evidence ledger
-below is preserved as historical validation for `GoldenPad Legacy`.
+The audited unsigned Preview 1 package is
+`GoldenPad-0.1.0-preview.1-unsigned.ipa` at SHA-256
+`a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
+It contains no ROM/save/signing material and requires re-signing plus a
+user-derived TLBFREE file copied through Finder file sharing. The long MGB64
+evidence ledger below is preserved as historical validation for
+`GoldenPad Legacy`.
 
 ## Passed
 
@@ -495,77 +502,25 @@ below is preserved as historical validation for `GoldenPad Legacy`.
 
 ## Failed or blocked
 
-- MGB64 GL/Metal-only fallback fails to link: unresolved `gfx_webgpu_api`.
-- GoldenRecomp's `lib/ge` submodule URL is unavailable.
-- GoldenRecomp generated function directories are absent from clean checkout.
-- Hands-on control feel is not yet accepted: v4 fixes the continuous-turn look
-  defect and separates the action rail from most of the swipe region, but
-  sensitivity and button placement still need real finger playtesting and tuning.
-  `xcrun devicectl list devices`
-  currently reports `No devices found` on this Mac, so this pass could not run
-  signed physical-touch acceptance.
-- The physical build path is now actionable without editing generated Xcode
-  files: `GOLDENPAD_DEVELOPMENT_TEAM` enables automatic signing and
-  `GOLDENPAD_BUNDLE_IDENTIFIER` supplies a caller-owned identifier inside the
-  maintained renderer verifier's patch window. Generated-project probes proved
-  the default stays `CODE_SIGNING_ALLOWED/REQUIRED=NO/NO`, while an opt-in probe
-  produced `YES/YES`, the requested team and the requested bundle ID. The full
-  unsigned closure then rebuilt to the unchanged Simulator/device executable
-  hashes `818f1733...91a0` and `43bfe1b5...f389`. This Mac currently has zero
-  valid signing identities and `devicectl` still reports `No devices found`, so
-  signature/provisioning/install acceptance remains external.
-- Performance is not accepted. Resolution scaling proves that pixel workload is
-  controllable, but produced-game cadence remains scene- and host-load-sensitive.
-  Profiling showed the reported 4.9 FPS phone and 7.8 FPS iPad startup windows
-  overlapped synchronous runtime Metal shader compilation. A warm baseline then
-  found repeated upload-texture allocation as the first sustained bottleneck:
-  811 of 3,217 game-thread samples reached `newTextureWithDescriptor`. The
-  bounded, three-frame-safe recycler reduced that to 76 of 3,662 samples while
-  3,141 samples returned to normal retrace sleep. This removes the first measured
-  bottleneck; it is not a final FPS result. On immediate relaunch, Metal's
-  automatic cache reduced synchronous shader creation to 2 of 3,702 game-thread
-  samples. Remaining Simulator time was dominated by XPC-backed texture upload,
-  which is not evidence of a physical-device bottleneck. First-install startup,
-  sustained scene cadence and physical-device performance remain open.
-- Organic mission completion, traversal from upper Dam node 179 into the lower
-  bungee graph and a real objective, deeper Facility progression,
-  crouch/objectives flow, physical-controller/gyro acceptance, touch-only
-  mission completion and human-completed multiplayer remain open. Simulator UI automation proved the
-  editor's accessible nudge path; direct finger drag remains a physical-device
-  interaction gate.
+- Local multiplayer remains experimental. The earlier crash was repaired, but
+  split-screen flashing and physical multi-controller completion are not accepted.
+- Screenshot/background resume has previously frozen gameplay and needs a
+  dedicated physical lifecycle pass.
+- A small amount of audible static has been reported during otherwise working
+  audio; long-session speaker and route-change acceptance remains open.
+- Some maps can still expose original or renderer-specific geometry/clipping
+  artifacts. Preview 1 does not claim complete stage/effect parity.
+- Preview 1 has no in-app retail-ROM conversion or importer. It requires a
+  compatible user-derived `GoldenEye_TLBFREE.z64` copied through file sharing.
+- The packaged executable retains six anonymous `/private/tmp/goldenpad-recomp.*`
+  compiler source literals from prebuilt runtime archives. The verifier allows
+  only those exact patterns and rejects user-home paths or other temporary paths.
+  Removing them requires rebuilding the archives and is tracked as hardening debt.
 
 ## Next gate
 
-The Apple shell, native game boot, renderer, audio, save path and menu schema are
-substantially integrated, but the complete port is not at definition of done.
-The GoldenEye decompilation's 99.5% milestone does not require an architecture
-change: MGB64 remains pinned at `cd9b58f` until a newer public engine revision
-passes the isolated comparison and adoption gates in [Technical debt and
-upstream watch](TECH_DEBT.md).
-The remaining product gates are human touch/controller mission completion,
-scene-specific performance profiling, organic save progression, local
-multiplayer completion and physical lifecycle/audio/controller acceptance. The
-source-level license manifest, audited notice-bearing IPA and current byte
-reproducibility are closed. The sequential Simulator acceptance and publication
-ledger are also closed: PR #1 merged as
-`4ed057ecd926c4b9f66e53544411986b1b4e37e8`, local and remote `main` matched,
-and a clean iPhone-first/iPad-second no-ROM pass produced the two public setup
-screenshots before both app containers were removed and both simulators shut
-down. Those captures contain only project-owned UI.
-The final public-facing handoff also passed from a `--no-local` clone of commit
-`f6d33ee25d5abc05900c02ab5b483d643b085f31`: GitHub fetched the exact MGB64
-pin, both SDK closures built, the package reproduced its exact hashes, every
-tracked documentation link/image resolved, the upstream checkout was clean and
-the clone had no tracked changes. The README now exposes the signed iPad command
-directly and links concise contribution, security and release-checklist entry
-points. Repository visibility remains a separate owner decision.
-
-With no physical device attached, the first scene-specific warm bottleneck is
-removed and Metal's automatic cache makes shader compilation negligible after
-the first launch. Do not build a custom shader cache or optimize Simulator-only
-XPC texture transport without device evidence. When hardware is available,
-profile a first install and warm mission, hands-on playtest v4 on iPhone, tune
-swipe sensitivity/action placement, then repeat the accepted layout unchanged
-on iPad. Keep diagnostics as bounded smoke coverage only; do not extend bot
-navigation as a product gate.
-Do not import matching-target SDK implementation sources or Xbox/XBLA material.
+Publish and verify the audited Preview 1 IPA and checksum, then use hands-on
+reports to prioritize lifecycle/audio fixes and multiplayer stabilization. Keep
+single-player behavior, accepted touch defaults, controller mapping, saves and
+user settings stable while addressing those items. Do not import matching-target
+SDK implementation sources or Xbox/XBLA material.

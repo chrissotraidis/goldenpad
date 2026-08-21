@@ -236,12 +236,12 @@ and `f41072a93ef4b78c8de7e54aeab26bdf801c2c168cc48e7271456f9e4b550d74`.
 | Primary static-recomp + RT64/Metal runtime | Full private ARM64 Simulator/device builds, real GoldenEye display-list/VI/presentation progress, user-facing `GoldenPad` metadata | Proven for the current build |
 | User-supplied data boundary | Tracked contamination gate passes; no ROM/save/signing files or known retail bytes are tracked; both ROM and save readbacks survived the in-place update byte-for-byte | Proven for repository and installed container |
 | Older implementation preserved | `GoldenPad Legacy` remains a separate bundle/target and its complete Simulator/device MGB64 renderer verifier passes | Proven |
-| Stable single-player presentation/audio | Current iPad launch reached 3,494 matched display-list/VI/presented updates and 1.53 million rendered audio frames with no drops/underruns | Bounded runtime proven; newest hands-on mission/audio listening pending |
-| Touch and controller input | Tuned touch path, remappable Xbox/MFi map, right-stick normalization, automatic overlay hiding and P1/P2 routing are linked; earlier physical controller/touch sessions were accepted | Integrated; newest candidate hands-on pending |
-| Clear settings and utility menu | Restart-only graphics copy, touch/controller/shared sections, button mapping, reticle and confirmed Return to Main Menu are present and Simulator-inspected | Integrated; newest physical interaction pending |
+| Stable single-player presentation/audio | Current iPad launch reached 3,494 matched display-list/VI/presented updates and 1.53 million rendered audio frames with no drops/underruns; the final candidate was then accepted in physical iPhone/iPad single-player sessions | Accepted for Preview 1; long audio/static soak remains open |
+| Touch and controller input | Tuned touch path, remappable Xbox/MFi map, right-stick normalization, automatic overlay hiding and P1/P2 routing are linked; final touch and controller sessions were accepted on physical iPhone/iPad | Accepted for Preview 1 single player |
+| Clear settings and utility menu | Restart-only graphics copy, touch/controller/shared sections, button mapping, reticle and Return to Main Menu are present and physically exercised | Accepted for Preview 1 |
 | Bounded diagnostics/lifecycle | Current/previous bounded logs, sampled high-frequency input, clean/background marker, transient-inactive handling and share sheet are linked and emitting | Proven at runtime; screenshot/resume hands-on pending |
 | Multiplayer crash repair | RT64 KSEG1 mask fix is in the reversible patch; Simulator entered and sustained a two-player match beyond 31,000 presentations without the former fault | Crash reproduction fixed in Simulator; flashing presentation and physical match pending |
-| Signed physical deployment | Team-signed ARM64 app installed in place, database UUID preserved, PID alive, private payloads preserved | Proven |
+| Signed physical deployment | Team-signed ARM64 app installed in place, database UUID preserved, PID alive, preferences preserved and final iPhone build hands-on accepted | Proven |
 | Evidence-backed documentation | README, status, testing, release checklist, prototype record and this handoff distinguish primary/legacy, automated/physical, and accepted/open gates | Proven |
 
 The strengthened ROM-free host verifier now requires all graphics, input,
@@ -418,6 +418,35 @@ diff-whitespace gates also pass.
   the AOT/runtime inputs with deterministic source-prefix mapping and reject all
   `/Users/` or `/private/tmp` strings before distribution.
 
+## Preview 1 finalization
+
+- The tester accepted normal single-player gameplay, controller behavior, the
+  full-screen touch editor and its opacity control on physical iPhone. The
+  accepted `recomp.touchLayout.phone.v1` placements were read back from the
+  iPhone and promoted to clean-install phone defaults; the established missing-
+  field opacity remains 72%. Clean installs keep **Unlock all missions** off.
+- The iPhone utility menu center is aligned with the accepted START control by
+  moving only the phone overlay offset. Tablet placement and all renderer,
+  audio, input-mapping, save and multiplayer code remain unchanged.
+- A clean rebuild exposed that the previously accepted cached
+  `rt64_render_context.cpp` object had been produced with the maintained iOS
+  trace/path patch applied. Without it, RT64 tried to create data under a
+  non-writable container root and generated two startup `.ips` reports. The
+  final build reapplied the existing tracked patch, restored the ignored
+  reference checkout clean, and remained alive as PID `4987` after install.
+- Final signed executable SHA-256:
+  `c0aee770a84482ee73e26042774ffd4119a09c73df20ff985327fc8ca08bea6f`.
+  The iPhone data UUID and accepted preferences remained unchanged at
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161` and
+  `12e163bce76605fb852efc0d38a31d38aecbdbd7d6ef5da7d6fffa55d9d73ffd`.
+- The new primary-runtime packager strips developer signing/provisioning,
+  enables Finder file sharing, stages exact GPL/MIT/BSD license texts, and runs
+  a package-specific verifier. The verifier passed the 17-member unsigned IPA:
+  `GoldenPad-0.1.0-preview.1-unsigned.ipa`, SHA-256
+  `a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
+- Multiplayer is intentionally documented but not fixed for Preview 1. Visible
+  split-screen flashing and instability remain work in progress.
+
 ## Preserved evidence
 
 - User screenshot: `Screenshot 2026-08-21 at 1.00.22 AM.png` (kept outside the
@@ -437,7 +466,7 @@ diff-whitespace gates also pass.
 
 ## Release boundary
 
-The final run is strong physical evidence for a public tech-demo baseline, not
-proof that every mission, multiplayer, screenshot/resume path or audio route is
-release-complete. Tomorrow's first gate is the screenshot/background-return
-freeze; the other work should remain small and independently verifiable.
+The final run is strong physical evidence for the public Preview 1 single-player
+baseline, not proof that every mission, multiplayer, screenshot/resume path or
+audio route is complete. Future fixes should remain small, preserve the accepted
+speed/controls/rendering baseline, and be independently verifiable.

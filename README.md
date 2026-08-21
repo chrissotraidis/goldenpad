@@ -34,9 +34,10 @@ and Xbox/MFi controller support. The earlier MGB64/Fast3D app is retained as
 `GoldenPad Legacy` for regression comparison and fallback only; it is no longer
 the primary development version.
 
-> **Development boundary:** the public repository records the integration and
-> reproducible patch chain, but generated AOT game code and retail-derived data
-> remain private and are never committed or distributed.
+> **Development boundary:** generated AOT source and retail-derived data are
+> never committed. Preview 1 distributes a compiled runtime only; it contains
+> no ROM, save, extracted retail media, provisioning profile, or signing
+> identity. No official, commercial, or App Store clearance is claimed.
 
 ## Current screenshots
 
@@ -66,16 +67,15 @@ the repository or application package.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Builds for ARM64** | Follow the opt-in signed-device workflow in [Building](docs/BUILDING.md#signed-physical-device-build). |
-| Unsigned `.ipa` | **Buildable locally** | Run `scripts/package-unsigned-ipa.sh`, then re-sign the result for your own device. |
-| GitHub release | **Not published** | No downloadable GoldenPad IPA is currently advertised. |
+| Local iPhone/iPad build | **Physically accepted** | The final Preview 1 candidate runs on iPhone 14 and iPad Pro; follow the signed-device workflow in [Building](docs/BUILDING.md). |
+| Unsigned `.ipa` | **Audited Preview 1** | [Download the public unsigned IPA](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.1/GoldenPad-0.1.0-preview.1-unsigned.ipa), verify its checksum, then re-sign it for your own device. |
+| GitHub release | **Preview 1** | [Release notes and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.1). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
-Simulator gameplay and UI are extensively exercised. A final signed physical
-iPhone/iPad pass is still required for touch feel, sustained performance,
-speaker and route behavior, controller hardware, thermals, and lifecycle
-acceptance. The developer preview should not be described as an App Store-ready
-release.
+The release candidate was accepted through normal single-player gameplay on a
+physical iPhone and iPad, including the editable touch layout and Xbox/MFi
+controller path. Longer thermal/route sweeps and stable multiplayer remain
+open. This developer preview must not be described as App Store-ready.
 
 ## What works
 
@@ -83,12 +83,12 @@ release.
 |---|---|
 | Native runtime | Statically recompiled game code runs as Apple ARM64; no JIT or emulator wrapper |
 | Rendering | RT64 presents high-resolution Metal output on physical iPad hardware |
-| Setup | The private developer build validates a user-derived NTSC-U TLBFREE input staged only in its app container; a public in-app retail-ROM import/conversion flow remains a release gate |
+| Setup | Preview 1 uses a user-derived NTSC-U `GoldenEye_TLBFREE.z64` copied into the app's Documents folder; no game data is included |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls |
 | Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity and hold/toggle aim |
 | Controllers | `GCController` with accepted Player 1 movement, right-stick look, buttons, and automatic touch-overlay hiding |
-| Multiplayer | Opt-in physical-controller Player 1 + touch Player 2 test path; the crash repair is under test and flashing split-screen presentation remains work in progress |
+| Multiplayer | Experimental only; the Player 1 controller + touch Player 2 path can enter a match, but split-screen flashing and instability remain work in progress |
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
 | Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
 | Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
@@ -112,6 +112,21 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Get started
 
+### Preview 1
+
+Download
+[`GoldenPad-0.1.0-preview.1-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.1/GoldenPad-0.1.0-preview.1-unsigned.ipa)
+and its adjacent `.sha256` file. The IPA is intentionally unsigned: re-sign it
+with your own Apple development identity or trusted sideloading workflow, then
+install it on iOS/iPadOS 17 or later.
+
+GoldenPad does not include or download GoldenEye. Preview 1 expects a supported,
+user-derived `GoldenEye_TLBFREE.z64` in the app's Documents folder. Use Finder
+file sharing after installation to copy that file. The current preview does not
+convert a retail dump in-app and the project does not provide game data.
+
+### Build from source
+
 You need:
 
 - an Apple Silicon Mac with Xcode and its command-line tools;
@@ -127,8 +142,10 @@ git clone https://github.com/chrissotraidis/goldenpad.git
 cd goldenpad
 ```
 
-For Simulator development and the reproducible unsigned device app, build the
-complete native game/Metal closure:
+The public repository contains the Apple integration and maintained patch chain.
+The complete primary build additionally requires locally generated AOT inputs;
+those generated sources and retail-derived inputs are ignored. The deprecated
+legacy fallback remains reproducible from the public source tree:
 
 ```sh
 ./scripts/verify-mgb64-ios-renderer.sh
@@ -146,8 +163,8 @@ build-mgb64-renderer-simulator/Release-iphonesimulator/GoldenPad.app
 build-mgb64-renderer-device/Release-iphoneos/GoldenPad.app
 ```
 
-For a physical iPad, add your Apple ID under **Xcode → Settings → Accounts**,
-connect and trust the iPad, then use your 10-character team ID and a bundle
+For a physical device, add your Apple ID under **Xcode → Settings → Accounts**,
+connect and trust the iPhone or iPad, then use your 10-character team ID and a bundle
 identifier owned by that team:
 
 ```sh
@@ -171,16 +188,15 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Launch GoldenPad.
-2. Select **Select retail ROM**.
-3. Choose your supported `.z64`, `.v64`, `.n64`, or `.rom` file in Files.
-4. Wait for exact size, header, title, byte-order, and SHA-1 validation.
-5. The setup shell yields to the original game once the private runtime handoff
-   and native scheduler are ready.
+1. Re-sign and install the unsigned Preview 1 IPA.
+2. In Finder, select the device, open **Files**, and copy your compatible,
+   user-derived file to `GoldenPad/GoldenEye_TLBFREE.z64`.
+3. Launch GoldenPad. The original logos, front end, file selection and missions
+   should follow after the native runtime initializes.
 
-The source file is not copied into the app bundle, IPA, repository, or a
-publishable cache. GoldenPad closes the Files security scope after validation
-and keeps normalized retail bytes in core-owned volatile memory.
+The file remains in the app's private Documents container. It is not in the
+IPA, repository, release checksum, or diagnostics export. Removing the app can
+remove that container, so preserve your own source and saves before uninstalling.
 
 ## Touch controls
 
@@ -215,11 +231,11 @@ from 55–160%; the opacity slider adjusts that selected control from 20–100%.
 draft, and **Done** saves it. Button labels stay on one line and scale down with
 smaller controls. Phone and tablet layouts use separate persisted profiles.
 
-The phone defaults use a height-aware reference canvas so MOVE remains inside
-the left edge, the LOOK region clears the action rail, and AIM/FIRE/ACTION plus
-WEAPON/DUCK fit above the bottom edge. LOOK preserves GoldenPad's tuned relative
-swipe accumulation. Final placement and touch feel still require hands-on
-acceptance on each physical device class.
+The phone defaults are the physically accepted iPhone 14 layout: MOVE remains
+inside the left edge, LOOK clears the action rail, and AIM/FIRE/ACTION plus
+WEAPON/DUCK fit above the bottom edge at the established 72% opacity. LOOK
+preserves GoldenPad's tuned relative swipe accumulation. iPad keeps its separate
+accepted tablet profile.
 
 ## Controllers and multiplayer
 
@@ -231,9 +247,9 @@ buttons, bumpers, and triggers; sticks, D-pad, and Menu/Start retain their
 standard roles. For hardware-limited testing, **Cheats & Testing → Two-player input
 test** keeps the attached controller as Player 1 and exposes touch controls as
 Player 2. Turning it off hides touch and keeps the controller as Player 1. The
-former multiplayer process crash has a targeted repair, but the Simulator
-viewports have shown visible flashing. A complete, visually stable,
-human-played mobile match remains an acceptance gate.
+former multiplayer process crash has a targeted repair, but physical and
+Simulator split-screen viewports have shown visible flashing and instability.
+Treat multiplayer as an experimental diagnostic path, not a Preview 1 feature.
 
 ## Resolution and performance
 
@@ -245,25 +261,29 @@ ROM assets are rendered; no HD texture pack is bundled. To restore the original
 N64 look, select Native N64, disable both 2× anti-aliasing and three-point
 filtering, then fully quit and reopen the app.
 
+**Cheats & Testing → Unlock all missions** defaults to **Off** on a clean
+install. It is a testing convenience only and any explicit user choice is
+preserved during an in-place update.
+
 ## Reproducible and ROM-free
 
 The primary integration, dependency pins and reversible patches are public.
 Retail data, converted ROM derivatives and generated AOT game sources remain
-private and ignored. The ARM64 host and RT64 archive closure have ROM-free
-verification scripts, while the complete playable app requires the developer's
-private generated inputs. The older MGB64 unsigned-IPA workflow is retained for
-legacy fallback builds and must not be presented as the primary release path.
+private and ignored. `scripts/package-recomp-prototype-ipa.sh` strips the
+developer signature/provisioning profile, adds the applicable dependency
+licenses, and invokes `scripts/verify-recomp-prototype-ipa.sh`; that verifier
+rejects ROM/save/signing members, N64 ROM headers, private user paths and legacy
+MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 
 ## Current limitations
 
-- Screenshot/system-overlay resume is under renewed physical-iPad validation.
-- Human touch-only mission completion and human-completed local multiplayer
-  remain open.
-- The primary AOT build does not yet provide an end-user retail-ROM
-  import/conversion flow; current playable builds use private developer-staged
-  inputs and must not distribute ROM or generated retail-derived data.
+- Multiplayer is unstable and unfinished; split-screen flashing and match
+  instability are known Preview 1 issues.
+- The primary AOT build does not yet provide an in-app retail-ROM conversion
+  flow; Preview 1 requires a compatible user-derived TLBFREE input copied by
+  file sharing.
 - Some stage-specific geometry glitches remain to be captured precisely.
-- Physical-speaker static and multi-controller play remain acceptance gates.
+- Occasional audio static and multi-controller play remain open quality work.
 - The generated-input pipeline is not independently reproducible from the
   public repository; private retail-derived inputs are never distributed.
 - This source-available developer preview is not an official or commercially
@@ -290,11 +310,10 @@ retained only as the deprecated legacy fallback.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-There is no advertised public primary-runtime release asset yet. The repository
-can reproduce a ROM-free unsigned `GoldenPad Legacy` IPA, but the current RT64
-primary app still depends on private generated AOT inputs and a developer-staged
-retail-derived ROM. A distributable, data-free primary package and end-user
-import flow remain release gates.
+Preview 1 is available from the
+[GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.1).
+It is an unsigned, ROM-free developer-preview IPA and must be re-signed. It does
+not include game data; see **First launch** for the current file-sharing setup.
 </details>
 
 <details>

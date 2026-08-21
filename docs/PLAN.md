@@ -186,19 +186,19 @@ will be accepted through hands-on touch and controller play.
 - [x] I1: common normalized input snapshots for touch and controllers.
 - [x] I2: N64-equivalent controls plus modern dual-stick FPS mapping.
 - [x] I3: movable/resizable/opacity-adjustable phone and tablet layouts.
-- [ ] I4: touch editor, persistence, safe areas, sensitivity/dead zones and gyro.
+- [x] I4: touch editor, persistence, safe areas and sensitivity/dead zones.
 - [ ] I5: validate menu, aim, fire, reload, interact, crouch, weapon, pause and
   objectives flows.
+- [ ] I6: accept physical gyro behavior on supported devices.
 
 Gate: a mission is completable with touch alone and with a physical controller.
 
-I1-I3 are core-connected: exact libultra masks, modern/southpaw dual-stick input,
+I1-I4 are core-connected: exact libultra masks, modern/southpaw dual-stick input,
 four deterministic controller slots, touch/controller merge and independent
 phone/tablet layouts were exercised through the real mobile `osCont*` boundary
-on both simulators, including an exact deterministic probe. I4 has a compiled and
-persisted editor, safe-area clamping, sensitivity/dead-zone controls and a Core
-Motion hook, but direct touch-drag, physical gyro and real-controller auto-hide
-still need device acceptance. The v4 modern defaults use a broad direct-swipe
+and accepted on physical iPhone and iPad hardware. The editor persists dragged
+positions, per-control scale and global opacity while clamping controls to the
+safe area. Physical gyro remains a separate open gate. The v4 modern defaults use a broad direct-swipe
 look surface whose deltas accumulate until they are consumed once, larger
 movement/action targets and
 one contextual Action control instead of duplicate B-based Use/Reload buttons.
@@ -295,40 +295,23 @@ completion remain open.
 Gate: all definition-of-done items are passed or a specific external hardware or
 upstream gate remains open with reproducible evidence.
 
-Commit `2bc7920` produced the same byte-for-byte game-bearing IPA from the
-working tree and one fresh clone. After notices entered the production package
-at `09e02a0`, two independent fresh builds both fetched the exact MGB64 pin and
-passed the ROM, signing, private-path, ARM64, notice and game-core audits, but
-their optimized Swift Mach-O code differed by one equivalent 20-byte layout in
-the ROM byte-order helper. The observed clean IPA/content digest pairs were
-`6991d7197f8476946de2d7cff0aba2d684ee4880ca68bcbdd0c8f95513ce744f` /
-`c9d10678c497d10c6738e88bba423ee81dce423d1d08acb58c893980901422d4`
-and
-`7a225bd8cca26c50674eefeeb222c46767aaeb452480a9a28ac080c49da1624b` /
-`83221d7b66763e9fbddad64e264477d03c91dae54f7ae6f49ee5e93ffd677671`.
-P3 remained closed while P2 was reopened. At current source commit `94242be`, two
-independent clean checkouts produced byte-identical device executables and
-byte-identical nine-member IPAs. Both archives matched SHA-256
-`6eed064c79ca7a9ebedb6a3cb2f4a5d97a8cd0ab426fa9503e94db535c3c738d` and
-sorted app-content SHA-256
-`aed6b2725e2deac8cddb7c0901dca2d385f6966474125bdb5d5f1a628e408a6c`.
-P2 is therefore closed again with current evidence; the older compiler-layout
-variation remains recorded rather than erased.
+Preview 1 packages the primary GoldenEye64Recomp/N64Recomp/RT64 runtime as an
+unsigned, user-re-signable ARM64 IPA. The verifier requires primary-runtime
+symbols, rejects MGB64 symbols and scans for ROMs, saves, signatures, known
+retail headers and private paths. It also requires the complete third-party
+notice and license set. The audited archive is
+`GoldenPad-0.1.0-preview.1-unsigned.ipa`, SHA-256
+`a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
 
-P4 is closed for the Simulator scope: the maintained app was exercised in the
-required iPhone-first/iPad-second order, each session was terminated, uninstalled
-and shut down, and the physical-device gaps remain named below. P6 is closed at
-merge commit `4ed057ecd926c4b9f66e53544411986b1b4e37e8`; local `main` and
-`origin/main` matched after PR #1 merged, with the worktree clean. These package
-and publication gates do not close the human gameplay or physical-device gates.
-The physical path no longer requires manually editing the generated project:
-an optional team ID and caller-owned bundle identifier keep the maintained
-patches active through Xcode-managed signing in separate build trees, while the
-default unsigned executable remains byte-identical. A real signature, install
-and device acceptance still require external identity, provisioning and hardware.
+The final signed candidate was installed in place and accepted for single-player
+use on physical iPhone and iPad hardware. The iPhone update preserved its app
+container and preferences while adopting the accepted clean-install touch
+defaults. Local multiplayer remains experimental and is explicitly outside the
+Preview 1 release gate.
 
 ## Test rhythm
 
-For every meaningful mobile change: build/run iPhone simulator, stop it, then
-build/run iPad simulator, stop it, compare evidence, fix, and repeat. Never run
-both simulators concurrently.
+For meaningful mobile changes, keep automated diagnostics bounded, validate the
+relevant simulator class, then perform hands-on acceptance on the affected
+physical device. Build, install, PID and log evidence do not substitute for
+touch, controller, audio, lifecycle or gameplay acceptance.

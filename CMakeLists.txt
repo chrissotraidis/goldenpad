@@ -107,8 +107,9 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp")
         set_source_files_properties(
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
-            PROPERTIES COMPILE_OPTIONS
-            "-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/rt64_namespace_compat.hpp")
+            PROPERTIES
+            COMPILE_OPTIONS
+            "-DSDL_PROTOTYPES_ONLY=1;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/rt64_namespace_compat.hpp")
         set(goldenpad_recomp_runtime_archives
             "${GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR}/ultramodern/libultramodern.a"
             "${GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR}/librecomp/liblibrecomp.a"
@@ -138,7 +139,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.0.1"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
         MACOSX_BUNDLE_BUNDLE_VERSION "1"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"

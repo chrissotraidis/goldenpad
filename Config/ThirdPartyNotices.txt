@@ -7,6 +7,16 @@ components; they do not grant rights in GoldenEye 007, its decompiled code,
 assets, characters, music, or trademarks. The app contains no ROM or extracted
 retail assets and requires a user-supplied legally obtained retail dump.
 
+Primary static-recompilation runtime
+------------------------------------
+
+The GoldenPad Preview 1 package incorporates GoldenEye64Recomp and
+N64ModernRuntime under GPL-3.0, N64Recomp and RT64 under the MIT License, and
+RT64's Plume, re-spirv, Zstandard, fmt and Rabbitizer dependencies under their
+respective included licenses. The public package carries the complete license
+files alongside this notice. Exact source revisions and GoldenPad's maintained
+iOS patches are listed in docs/RT64_N64RECOMP_PROTOTYPE.md.
+
 MGB64 first-party port code — MIT License
 ------------------------------------------
 

@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-21 — finalize GoldenPad Preview 1
+
+- Promoted the GoldenEye64Recomp/N64Recomp/RT64 build to the primary GoldenPad
+  runtime while retaining the older MGB64 app as deprecated Legacy fallback.
+- Accepted the final single-player candidate on physical iPhone and iPad with
+  touch and Xbox/MFi controller input. The iPhone 14 layout selected during
+  hands-on testing is now the clean-install phone default; saved user layouts,
+  opacity and other preferences remain preserved across in-place updates.
+- Kept unlock-all-missions disabled by default. Existing tester preferences are
+  not reset when an updated build is installed.
+- Documented multiplayer as experimental: split-screen flashing and physical
+  multi-controller completion remain open and do not block Preview 1.
+- Added deterministic unsigned-IPA packaging and an archive verifier that
+  rejects ROM/save/signing data, known retail headers, MGB64 symbols and private
+  paths while requiring primary-runtime symbols and dependency licenses.
+- Built and audited `GoldenPad-0.1.0-preview.1-unsigned.ipa` at SHA-256
+  `a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
+
 ## 2026-08-04 — prove the public another-Mac handoff
 
 - Compared GoldenPad directly with HarkinianPad's public README and aligned the

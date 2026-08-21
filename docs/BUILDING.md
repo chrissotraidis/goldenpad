@@ -16,6 +16,29 @@ game core and native Metal renderer.
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
 
+## Primary Preview 1 package
+
+The complete primary target requires the ignored/generated AOT inputs and exact
+dependency archives described in
+[`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). After the signed
+device app has been built and physically accepted, create the public unsigned
+package with:
+
+```sh
+./scripts/package-recomp-prototype-ipa.sh
+./scripts/verify-recomp-prototype-ipa.sh \
+  dist/GoldenPad-0.1.0-preview.1-unsigned.ipa
+```
+
+The packager copies the signed app into a temporary staging directory, removes
+its signature, provisioning profile and signing resources, enables Finder file
+sharing, stages the applicable upstream licenses, normalizes timestamps, and
+invokes the primary package verifier. It never edits the signed source app.
+
+Preview 1 expects a compatible user-derived `GoldenEye_TLBFREE.z64` in the
+installed app's Documents directory. No retail input, save, generated source,
+signing identity, or provisioning profile is placed in the IPA.
+
 ## iPhone/iPad foundation
 
 Configure and build the ARM64 simulator target:

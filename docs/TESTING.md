@@ -71,6 +71,25 @@ Multiplayer is not an initial single-player preview gate. The former RT64
 Simulator can enter a live two-player match, but visible viewport flashing must
 be fixed before multiplayer is described as accepted.
 
+Preview 1 release evidence:
+
+- the final signed executable is
+  `c0aee770a84482ee73e26042774ffd4119a09c73df20ff985327fc8ca08bea6f`;
+- it was installed in place on iPhone 14 without changing app-data UUID
+  `3ACA6644-5550-4EEA-BDCA-D6F9D3827161`;
+- the accepted preference/layout file remained byte-identical at
+  `12e163bce76605fb852efc0d38a31d38aecbdbd7d6ef5da7d6fffa55d9d73ffd`;
+- an unrecorded corrected launch remained alive as PID `4987`;
+- `scripts/verify-recomp-prototype-ipa.sh` passed the 17-member unsigned IPA;
+- IPA SHA-256 is
+  `a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`;
+- unsigned app-content SHA-256 is
+  `33c590f8d3f849614dacb267972b2a7e65b69a544b3744a7b7624825a80b5cb8`.
+
+The package audit is static/build evidence. The user's physical iPhone/iPad
+play provides the single-player interaction/acceptance evidence; neither is
+evidence of stable multiplayer.
+
 ## Desktop baseline
 
 ```sh

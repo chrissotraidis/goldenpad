@@ -133,14 +133,16 @@ enum RecompTouchLayoutDefaults {
             ]
         case .phone:
             return [
-                placement(.move, 0.16, 0.72),
-                placement(.look, 0.65, 0.61, 0.85),
-                placement(.fire, 0.88, 0.56, 1.02),
-                placement(.aim, 0.88, 0.36, 0.88),
-                placement(.action, 0.88, 0.77, 0.90),
-                placement(.crouch, 0.79, 0.88, 0.78),
-                placement(.weapon, 0.70, 0.88, 0.78),
-                placement(.pause, 0.84, 0.16, 0.76),
+                // Accepted on a physical iPhone 14 in landscape. Keep these
+                // as the clean-install foundation; user edits remain separate.
+                placement(.move, 0.188389, 0.726667),
+                placement(.look, 0.781991, 0.687179, 0.70),
+                placement(.fire, 0.938389, 0.573504, 1.10),
+                placement(.aim, 0.942733, 0.408547, 0.95),
+                placement(.action, 0.932070, 0.744444, 0.90),
+                placement(.crouch, 0.909953, 0.898291, 0.78),
+                placement(.weapon, 0.845182, 0.940171, 0.78),
+                placement(.pause, 0.946288, 0.240171, 0.85),
             ]
         }
     }

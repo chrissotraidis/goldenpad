@@ -103,7 +103,7 @@ struct GoldenPadApp: App {
                 utilityMenu
                     .padding(.top, 26)
                     .padding(.trailing, touchDeviceClass == .phone ? 4 : 20)
-                    .offset(x: touchDeviceClass == .phone ? 18 : 0)
+                    .offset(x: touchDeviceClass == .phone ? 61 : 0)
             }
             .onAppear {
                 input.configureLookSensitivity(lookSensitivity)

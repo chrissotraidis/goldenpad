@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-17
+Updated: 2026-08-21
 
 This document records upstream changes that can materially improve GoldenPad,
 the evidence required before adopting them, and the known debt that should be
@@ -9,9 +9,29 @@ replace working foundations whenever an upstream percentage changes.
 
 ## Current decision
 
-Keep GoldenPad on the exact MGB64 pin
-`cd9b58f5f91291579b8e551aa925aab000d311cf` until a newer, public MGB64 commit
-can be inspected and passes the gates below.
+Keep the statically recompiled GoldenEye + N64ModernRuntime + RT64/Metal target
+as GoldenPad's primary iPhone/iPad runtime. Keep exact MGB64 pin
+`cd9b58f5f91291579b8e551aa925aab000d311cf` buildable as `GoldenPad Legacy` for
+regression comparison and fallback, not as the release product.
+
+Preview 1 deliberately leaves the following primary-runtime debt visible:
+
+- local multiplayer is experimental and unstable, with split-screen flashing;
+- the public setup requires a user-derived TLBFREE input copied through Finder
+  file sharing instead of an in-app retail conversion flow;
+- occasional audio static and stage-specific geometry faults need precise
+  reproduction and bounded fixes;
+- six anonymous `/private/tmp/goldenpad-recomp.*` compiler source literals
+  remain in the executable; the package verifier rejects private `/Users/`
+  paths and any unexpected temporary path;
+- longer thermal, audio-route, screenshot/resume and multi-controller sweeps
+  remain post-preview quality work.
+
+Do not regress the accepted single-player speed, high-resolution renderer,
+touch tuning, controller mapping, save compatibility, or clean-install defaults
+while addressing that debt.
+
+## Historical decomp/MGB64 watch
 
 The matching GoldenEye decompilation reached **100%** at
 [`c73a8531e05a7584dc857405d5b91fe9bc95f9e3`](https://gitlab.com/kholdfuzion/goldeneye_src/-/commit/c73a8531e05a7584dc857405d5b91fe9bc95f9e3)
@@ -21,16 +41,16 @@ It does **not** make the raw decompilation a replacement for MGB64: the decomp
 reconstructs the N64 game, while MGB64 supplies the native renderer, ROM loader,
 audio, input, save, portability, and platform layers that GoldenPad integrates.
 
-The practical change is sequencing:
+The legacy-watch sequencing remains:
 
-1. preserve the current known GoldenPad baseline;
+1. preserve the current known `GoldenPad Legacy` baseline;
 2. use the final decomp as a targeted oracle for known MGB64 divergences;
 3. watch for and evaluate the next public MGB64 engine/source update;
 4. rebase GoldenPad only after texture, performance, build, legal, and package
    evidence is better than the current pin.
 
-Do not bulk-import the final decomp, switch to GoldenRecomp, rewrite Fast3D/TMEM,
-or migrate to RT64 solely because matching reached 100%.
+Do not bulk-import new decomp/MGB64 changes, rewrite Fast3D/TMEM, or modify the
+primary RT64 runtime solely because an upstream matching percentage changes.
 
 ## 2026-08-17 upstream snapshot
 

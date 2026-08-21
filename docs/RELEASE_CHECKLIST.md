@@ -1,40 +1,32 @@
 # Release checklist
 
-GoldenPad's current public deliverable is the source repository. No primary
-runtime IPA, App Store build, or TestFlight is advertised.
-
-The reproducible ROM-free unsigned IPA recipe below builds `GoldenPad Legacy`;
-it is retained as a fallback artifact and must not be presented as the primary
-RT64 release. The playable primary app currently depends on private generated
-AOT inputs and a developer-staged retail-derived TLBFREE ROM. A public primary
-binary requires both an end-user retail-ROM import/conversion flow and a
-data-free package audit that proves no ROM, generated retail-derived code,
-saves, signing material or private paths are shipped.
+GoldenPad 0.1.0 Preview 1 is the first public primary-runtime unsigned IPA.
+It is a developer preview, not an App Store/TestFlight release. `GoldenPad
+Legacy` remains a fallback artifact and must not be presented as primary.
 
 ## Primary RT64 preview gate
 
-Before publishing any primary-runtime preview:
+Preview 1 release record:
 
-- Complete the current signed-iPad hands-on matrix in `docs/TESTING.md` and
-  record the exact accepted executable hash.
-- Accept the separate touch-layout defaults and move/resize/opacity/reset editor
-  on one physical iPhone and one physical iPad, including persistence after
-  relaunch.
-- Keep multiplayer explicitly work in progress until split-screen flashing and
-  a complete physical match are accepted.
-- Choose non-prototype public version metadata while preserving the existing
-  internal target and bundle identifier only if migration has been audited.
-- Define and verify the end-user game-data import/conversion path; developer
-  staging is not a public installation workflow.
-- Build the public artifact from a clean checkout, enumerate every packaged
-  member, and run `scripts/check-no-rom-data.sh` plus a package-specific binary
-  contamination audit.
-- Rebuild private AOT/runtime inputs with deterministic source-prefix mapping.
-  The current signed developer executable contains six `/private/tmp` compile
-  source strings from `aspMain.cpp` and prebuilt N64ModernRuntime objects; a
-  public package must reject both `/Users/` and `/private/tmp` strings.
-- Keep source publication, binary publication, signing and rights clearance as
-  separate decisions.
+- [x] Physical iPhone/iPad single-player and controller baseline accepted.
+- [x] iPhone/iPad touch editor supports move, resize, per-control opacity and
+  reset; the accepted iPhone 14 layout is the clean-install phone default.
+- [x] Clean installs default **Unlock all missions** to off.
+- [x] `scripts/package-recomp-prototype-ipa.sh` strips signing/provisioning and
+  stages the exact dependency licenses.
+- [x] `scripts/verify-recomp-prototype-ipa.sh` extracts the IPA and rejects ROM,
+  save, signing, private-user-path and legacy-core contamination.
+- [x] Preview 1 IPA SHA-256:
+  `a3aa37003a56a498820d07e84de89660d309c2cde40d0911fb3826086caca3e9`.
+- [ ] Replace Finder-staged TLBFREE setup with an in-app retail conversion flow.
+- [ ] Remove the six disclosed anonymous `/private/tmp/goldenpad-recomp.*`
+  compiler source literals from a future build. Preview 1 rejects `/Users/` and
+  any unexpected temporary path; the six literals contain no ROM or user name.
+- [ ] Accept stable multiplayer before advertising it as a feature.
+
+Keep source publication, binary publication, signing and rights clearance as
+separate decisions. Preview publication does not imply App Store or commercial
+clearance.
 
 The remaining sections are the `GoldenPad Legacy` clean-checkout and packaging
 procedure.
@@ -54,7 +46,7 @@ The clone must fetch MGB64 at the documented commit, build the complete ARM64
 Simulator and device apps, pass the linked game/Metal/audio checks, restore the
 ignored upstream checkout to clean state, and leave tracked source unchanged.
 
-## Repository and package
+## Legacy repository and package
 
 ```sh
 ./scripts/check-no-rom-data.sh
@@ -83,6 +75,14 @@ speaker and route changes, background/foreground recovery, and first-install
 plus warm performance checks on the target hardware.
 
 ## Publication
+
+- Build and audit the primary preview with:
+
+  ```sh
+  ./scripts/package-recomp-prototype-ipa.sh
+  ./scripts/verify-recomp-prototype-ipa.sh \
+    dist/GoldenPad-0.1.0-preview.1-unsigned.ipa
+  ```
 
 - Keep the README's install table and limitations accurate.
 - Keep repository visibility, source publication, and binary distribution as
