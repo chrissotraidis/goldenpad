@@ -24,7 +24,8 @@ For a long-running unattended implementation session, follow
 | Human acceptance lane | **TD-02 modern sidestep candidate** | Code and Simulator gates pass. Require hands-on iPhone/iPad touch feel plus Modern/Original/Off physical-controller acceptance before merge, issue closure, or release promotion. |
 | 1 | **TD-07 physical lifecycle acceptance** | Code and Simulator gates now pass on an isolated candidate. Test held-input disconnect, reconnect/reorder, background/foreground, and confirm touch never leaks to Player 1. Do not confuse this with real P3/P4 routing. |
 | 2 | **TD-04 physical lifecycle classification** | The opt-in bounded discriminator and an intermittent Simulator freeze reproduction are complete. Run the physical matrix; route all-flat counters to runtime resume and presentation-only stalls to matched RT64/Plume timing instrumentation. No repair is selected yet. |
-| 3 | **TD-05/TD-06 discriminators** | Add only audio-rate/discontinuity and matched depth-rebuild evidence needed to select or reject a repair. Keep each debt item independently revertible. |
+| 3 | **TD-05 physical audio classification** | Synthetic rate/ring checks pass; Simulator underruns remain without detected jumps. Listen on speaker/Bluetooth through route/interruption/lifecycle before selecting cadence, reserve, or reset ownership work. |
+| 4 | **TD-06 depth-rebuild discriminator** | Add only the matched single-/multiplayer `formatChanged` rebuild evidence needed to select or reject the aliased-depth hypothesis. |
 | Blocked timing lane | **Finish TD-01 sustained fire-rate baseline** | The probe and three guard windows pass (13/17/18 events per 100 ticks). Three player tap-response windows also pass ammo/event agreement but are not sustained. Resume only with a repeatable ordinary setup providing at least 34 KF7 rounds; do not inject inventory. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
@@ -44,7 +45,8 @@ independently.
 1. **TD-04, TD-05, and TD-06 discriminators**
    - Lifecycle: the host-level classifier is implemented; run the physical
      matrix before deciding whether archive-level drawable/fence timing is needed.
-   - Audio: requested-rate readback plus a ROM-free discontinuity signal.
+   - Audio: the synthetic signal rejects rate mismatch/ring corruption in
+     Simulator; physical listening and lifecycle/route evidence remain.
    - Flicker: matched single-/multiplayer depth-rebuild counters before any
      RT64 repair.
 2. **TD-01 authenticity repair only after its blocker clears**

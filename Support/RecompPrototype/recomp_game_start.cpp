@@ -76,6 +76,14 @@ std::atomic<uint8_t> invalidInputPortsReported = 0;
 std::atomic<bool> fireRateProbeEnabled = false;
 std::atomic<bool> sidestepProbeEnabled = false;
 std::atomic<bool> lifecycleProbeEnabled = false;
+std::atomic<bool> audioProbeEnabled = false;
+std::atomic<uint32_t> audioRequestedFrequency = 0;
+std::atomic<uint32_t> audioHostSourceFrequency = 0;
+std::atomic<uint32_t> audioHostSessionFrequency = 0;
+std::atomic<uint32_t> audioHostMixerFrequency = 0;
+std::atomic<uint64_t> audioProbeObservedFrames = 0;
+std::atomic<uint64_t> audioProbeLargeJumps = 0;
+std::atomic<uint64_t> audioProbeSequenceErrors = 0;
 std::atomic<uint64_t> lifecycleProgressSequence = 0;
 std::atomic<uint64_t> lifecycleProgressStartedMs = 0;
 std::atomic<uint64_t> lifecycleProgressBaselineDisplayLists = 0;
@@ -111,6 +119,51 @@ bool audioPlaybackPrimed = false;
 uint32_t audioFadeInFramesRemaining = 0;
 float audioLastLeft = 0.0f;
 float audioLastRight = 0.0f;
+bool audioProbeHasLastOutput = false;
+float audioProbeLastLeft = 0.0f;
+float audioProbeLastRight = 0.0f;
+
+constexpr float kAudioProbeJumpThreshold = 0.05f;
+
+int16_t audioProbeSample(uint64_t frame) {
+    // A 200-frame triangle stays continuous across its wrap and is cheap
+    // enough not to perturb the producer/consumer timing being measured.
+    constexpr uint64_t period = 200;
+    constexpr uint64_t halfPeriod = period / 2;
+    constexpr int32_t amplitude = 16'000;
+    constexpr int32_t step = amplitude * 2 / static_cast<int32_t>(halfPeriod);
+    const uint64_t phase = frame % period;
+    const int32_t value = phase < halfPeriod
+        ? -amplitude + static_cast<int32_t>(phase) * step
+        : amplitude - static_cast<int32_t>(phase - halfPeriod) * step;
+    return static_cast<int16_t>(value);
+}
+
+bool audioProbeStepIsLarge(float previous, float current) {
+    return std::abs(current - previous) > kAudioProbeJumpThreshold;
+}
+
+bool audioProbeDetectorSelfTestPasses() {
+    return !audioProbeStepIsLarge(0.10f, 0.12f) &&
+        audioProbeStepIsLarge(-0.45f, 0.45f);
+}
+
+void observeAudioProbeOutput(const float *left, const float *right, uint32_t frames) {
+    if (!audioProbeEnabled.load(std::memory_order_relaxed)) { return; }
+    uint64_t jumps = 0;
+    for (uint32_t frame = 0; frame < frames; ++frame) {
+        if (audioProbeHasLastOutput &&
+            (audioProbeStepIsLarge(audioProbeLastLeft, left[frame]) ||
+                audioProbeStepIsLarge(audioProbeLastRight, right[frame]))) {
+            ++jumps;
+        }
+        audioProbeHasLastOutput = true;
+        audioProbeLastLeft = left[frame];
+        audioProbeLastRight = right[frame];
+    }
+    audioProbeObservedFrames.fetch_add(frames, std::memory_order_relaxed);
+    audioProbeLargeJumps.fetch_add(jumps, std::memory_order_relaxed);
+}
 
 enum class LifecycleProgressState {
     noRuntimeProgress,
@@ -203,6 +256,10 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     if (lifecycleProbeEnabled.load(std::memory_order_relaxed)) {
         log << "[GoldenPadRecomp] lifecycle-probe: classifier="
             << (lifecycleProgressClassifierProbePasses() ? "PASS" : "FAIL") << '\n';
+    }
+    if (audioProbeEnabled.load(std::memory_order_relaxed)) {
+        log << "[GoldenPadRecomp] audio-probe: detector="
+            << (audioProbeDetectorSelfTestPasses() ? "PASS" : "FAIL") << '\n';
     }
 }
 
@@ -498,6 +555,16 @@ void monitorGameState(uint8_t *rdram) {
                 playerValid ? readGameFloat(rdram, player + 0x158) : 0.0f,
                 basisValid ? "valid" : "unavailable",
                 viewX, viewY, viewZ, upX, upY, upZ);
+            if (audioProbeEnabled.load(std::memory_order_relaxed)) {
+                logEvent("audio-probe",
+                    "observedFrames=%llu largeJumps=%llu sequenceErrors=%llu",
+                    static_cast<unsigned long long>(
+                        audioProbeObservedFrames.load(std::memory_order_relaxed)),
+                    static_cast<unsigned long long>(
+                        audioProbeLargeJumps.load(std::memory_order_relaxed)),
+                    static_cast<unsigned long long>(
+                        audioProbeSequenceErrors.load(std::memory_order_relaxed)));
+            }
         }
         const bool rendererHadStarted = displayLists != 0 || screenUpdates != 0;
         const bool rendererAdvanced = displayLists != previousDisplayLists ||
@@ -570,6 +637,7 @@ void queueSamples(int16_t *samples, size_t sampleCount) {
 
     const uint64_t readFrame = audioReadFrame.load(std::memory_order_acquire);
     uint64_t writeFrame = audioWriteFrame.load(std::memory_order_relaxed);
+    const bool probeEnabled = audioProbeEnabled.load(std::memory_order_relaxed);
     const uint64_t queuedFrames = std::min(writeFrame - std::min(writeFrame, readFrame), kAudioRingFrames);
     const uint64_t availableFrames = kAudioRingFrames - queuedFrames;
     if (incomingFrames > availableFrames) {
@@ -582,8 +650,14 @@ void queueSamples(int16_t *samples, size_t sampleCount) {
         const uint64_t destination = ((writeFrame + frame) % kAudioRingFrames) * 2;
         // Match GoldenEye64Recomp's reference host: N64ModernRuntime's RDRAM
         // address XOR leaves each interleaved stereo pair in reversed order.
-        audioRing[destination] = samples[frame * 2 + 1];
-        audioRing[destination + 1] = samples[frame * 2];
+        if (probeEnabled) {
+            const int16_t probeSample = audioProbeSample(writeFrame + frame);
+            audioRing[destination] = probeSample;
+            audioRing[destination + 1] = static_cast<int16_t>(-probeSample);
+        } else {
+            audioRing[destination] = samples[frame * 2 + 1];
+            audioRing[destination + 1] = samples[frame * 2];
+        }
     }
     audioWriteFrame.store(writeFrame + incomingFrames, std::memory_order_release);
 }
@@ -600,7 +674,15 @@ size_t getFramesRemaining() {
     return queued > kAudioPrebufferFrames ? queued - kAudioPrebufferFrames : 0;
 }
 void setFrequency(uint32_t frequency) {
+    audioRequestedFrequency.store(frequency, std::memory_order_relaxed);
     logEvent("audio", "game requested %u Hz output", frequency);
+    const uint32_t source = audioHostSourceFrequency.load(std::memory_order_relaxed);
+    if (source != 0) {
+        logEvent("audio-rates", "requested=%u source=%u session=%u mixer=%u",
+            frequency, source,
+            audioHostSessionFrequency.load(std::memory_order_relaxed),
+            audioHostMixerFrequency.load(std::memory_order_relaxed));
+    }
 }
 void pollInput() {
     if (!inputPollReported.exchange(true)) {
@@ -1075,6 +1157,20 @@ extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t enabled) {
     lifecycleProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
 }
 
+extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t enabled) {
+    audioProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_note_audio_host_rates(
+    uint32_t source, uint32_t session, uint32_t mixer
+) {
+    audioHostSourceFrequency.store(source, std::memory_order_relaxed);
+    audioHostSessionFrequency.store(session, std::memory_order_relaxed);
+    audioHostMixerFrequency.store(mixer, std::memory_order_relaxed);
+    logEvent("audio-rates", "requested=%u source=%u session=%u mixer=%u",
+        audioRequestedFrequency.load(std::memory_order_relaxed), source, session, mixer);
+}
+
 extern "C" int32_t goldenpad_recomp_is_app_active() {
     return appActive.load(std::memory_order_relaxed) ? 1 : 0;
 }
@@ -1264,12 +1360,14 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
     }
     const uint64_t readFrame = audioReadFrame.load(std::memory_order_relaxed);
     const uint64_t writeFrame = audioWriteFrame.load(std::memory_order_acquire);
+    const bool probeEnabled = audioProbeEnabled.load(std::memory_order_relaxed);
     const uint64_t queued = std::min(
         writeFrame - std::min(writeFrame, readFrame), kAudioRingFrames);
     if (!audioPlaybackPrimed) {
         if (queued < kAudioPrebufferFrames) {
             std::fill(left, left + frames, 0.0f);
             std::fill(right, right + frames, 0.0f);
+            observeAudioProbeOutput(left, right, frames);
             return 0;
         }
         audioPlaybackPrimed = true;
@@ -1293,6 +1391,7 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
         audioLastLeft = 0.0f;
         audioLastRight = 0.0f;
         audioPlaybackPrimed = false;
+        observeAudioProbeOutput(left, right, frames);
         return 0;
     }
 
@@ -1310,13 +1409,35 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
         right[frame] = static_cast<float>(audioRing[source + 1]) / 32768.0f * gain;
         nonzero += audioRing[source] != 0;
         nonzero += audioRing[source + 1] != 0;
+        if (probeEnabled) {
+            const int16_t expected = audioProbeSample(readFrame + frame);
+            if (audioRing[source] != expected ||
+                audioRing[source + 1] != static_cast<int16_t>(-expected)) {
+                audioProbeSequenceErrors.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
     }
     audioLastLeft = left[produced - 1];
     audioLastRight = right[produced - 1];
     audioReadFrame.store(readFrame + produced, std::memory_order_release);
     audioRenderedFrames.fetch_add(produced, std::memory_order_relaxed);
     audioNonzeroSamples.fetch_add(nonzero, std::memory_order_relaxed);
+    observeAudioProbeOutput(left, right, produced);
     return produced;
+}
+
+extern "C" void goldenpad_recomp_audio_probe_stats(
+    uint64_t *observedFrames, uint64_t *largeJumps, uint64_t *sequenceErrors
+) {
+    if (observedFrames != nullptr) {
+        *observedFrames = audioProbeObservedFrames.load(std::memory_order_relaxed);
+    }
+    if (largeJumps != nullptr) {
+        *largeJumps = audioProbeLargeJumps.load(std::memory_order_relaxed);
+    }
+    if (sequenceErrors != nullptr) {
+        *sequenceErrors = audioProbeSequenceErrors.load(std::memory_order_relaxed);
+    }
 }
 
 extern "C" void goldenpad_recomp_audio_stats(

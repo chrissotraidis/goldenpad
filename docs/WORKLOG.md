@@ -1,5 +1,27 @@
 # Worklog
 
+## 2026-08-22 — TD-05 synthetic audio discrimination
+
+- Verified that the game requests 48 kHz during startup and then settles at
+  22.05 kHz. GoldenPad's source is 22.05 kHz and AVAudioEngine's Simulator
+  session/mixer are 48 kHz, so output-rate conversion is expected rather than
+  evidence that the final requested rate is ignored.
+- Added opt-in `--audio-probe`: project-generated continuous stereo replaces
+  game sample values before the actual ring, while the real consumer checks
+  absolute sequence and output steps. The prior no-classifier baseline failed;
+  the unchanged detector test passes at a 0.05 threshold.
+- Rejected a sine-wave candidate because per-frame trigonometry perturbed the
+  cadence under test. The final continuous triangle uses integer arithmetic and
+  adds no per-sample probe work to normal launches.
+- The final Simulator run observed 1,110,144 output frames with zero ring errors,
+  zero >0.05 jumps, and zero producer drops. It recorded 4,480 underrun frames
+  across 37 callbacks. This rejects steady-state rate mismatch/ring corruption
+  for the run and selects cadence/reserve for physical discrimination; it does
+  not prove the reported static or authorize a buffer change.
+- A matched normal-mode control reached 3,335 underrun frames/26 callbacks at
+  608,931 rendered frames, compared with synthetic 3,195/27 at 604,702. This
+  confirms the Simulator cadence issue is not caused by probe overhead.
+
 ## 2026-08-22 — TD-04 bounded lifecycle discrimination
 
 - Audited the existing lifecycle path and found that the ten-second watchdog

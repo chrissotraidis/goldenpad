@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 17:12 CEST
+Updated: 2026-08-22 17:34 CEST
 
 ## Session identity
 
@@ -8,14 +8,48 @@ Updated: 2026-08-22 17:12 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td04-lifecycle-discriminator` |
+| Branch | `codex/td05-audio-discriminator` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-04 bounded lifecycle discriminator implemented; intermittent same-process Simulator resume freeze reproduced; no repair selected |
-| Phase | L9 complete: TD-04 evidence review unit committed and pushed |
+| Active debt | TD-05 synthetic continuity discriminator implemented; Simulator rate/ring corruption hypotheses rejected; underrun cadence remains |
+| Phase | L8/L9: finish TD-05 validation, documentation, commit, and branch push |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-05 now has an opt-in, non-game-audio discriminator. `--audio-probe` replaces
+incoming game samples with a cheap project-generated continuous stereo triangle
+before they enter the real PCM ring. The real AVAudioSourceNode consumer then
+checks exact ring sequence and output-step continuity. Normal launches never
+replace game samples and avoid per-sample probe work.
+
+The prior host had no discontinuity classifier; the unchanged normal-step/jump
+table first reported `audio-probe: detector=FAIL`, then `PASS` after the 0.05
+step detector was implemented. A sine-wave candidate was rejected because its
+per-frame trigonometry perturbed the timing being measured; none of its underrun
+counts are acceptance evidence. The final integer triangle probe is continuous
+across ring wrap and has a normal step below 0.01.
+
+The final Simulator run observed 1,110,144 output frames with zero ring-sequence
+errors, zero output steps above 0.05, and zero producer drops. It did accumulate
+4,480 underrun frames across 37 callbacks. The final rate chain was
+`requested=22050 source=22050 session=48000 mixer=48000`: GoldenPad matches the
+game's final requested source rate and AVAudioEngine performs the output-rate
+conversion. This rejects steady-state rate mismatch and ring corruption for
+this run. It makes producer/consumer cadence or buffer-reserve policy the next
+test seam, but Simulator underruns do not authorize a production buffer change.
+
+A matched normal-mode control produced the same trajectory without any sample
+replacement or per-sample continuity work: at 608,931 rendered frames it had
+3,335 underrun frames across 26 callbacks, versus 3,195/27 at 604,702 rendered
+frames in the synthetic run. The probe is therefore not the source of the
+Simulator underruns. Cadence/reserve is a reproducible normal-path Simulator
+seam, but its audible consequence and latency tradeoff remain physical gates.
+
+A Home/foreground attempt started a new PID, so it is process-restart evidence,
+not lifecycle continuity. TD-05 remains open for physical listening, route
+change, interruption, retained-process lifecycle, and a matched failing-session
+log. No audio behavior repair is selected.
 
 TD-04 now has a bounded, opt-in lifecycle discriminator. On transient-inactive
 or foreground-resume, it snapshots display-list, VI-update, and presented-frame
@@ -117,6 +151,16 @@ control.
 | QuickTime | OFF | It was never started |
 | TD-07 commit/push | PASS | Implementation commit `38f0c6b` is pushed on `origin/codex/td07-controller-ownership`; `main` was not changed |
 | TD-04 commit/push | PASS | Evidence commit `a24c226` is pushed on `origin/codex/td04-lifecycle-discriminator`; `main` was not changed |
+| TD-05 isolated branch | PASS | TD-05 is stacked on the pushed TD-04 checkpoint and isolated on `codex/td05-audio-discriminator` |
+| TD-05 red detector | PASS | The first opt-in build reported `audio-probe: detector=FAIL` against the prior no-classifier baseline |
+| TD-05 green detector | PASS | The unchanged small-step/large-jump table reports `audio-probe: detector=PASS` at the final 0.05 threshold |
+| TD-05 focused ARM64 Simulator build | PASS | Release target rebuilt successfully; executable SHA-256 `f1de4a316a1da9db2e8b4693523de634c10c3810552e0229af43c06be4c238b3` |
+| Final audio-rate relationship | PASS | Persistent log ends at `requested=22050 source=22050 session=48000 mixer=48000` |
+| Synthetic ring integrity | PASS (Simulator) | 1,110,144 observed output frames; zero sequence errors, zero >0.05 jumps, zero producer drops |
+| Synthetic underrun trajectory | OBSERVED (Simulator) | 4,480 underrun frames across 37 callbacks; the continuity detector remained zero because the fade path smoothed those boundaries |
+| Matched normal-mode underruns | REPRODUCED (Simulator) | Normal path reached 3,335/26 at 608,931 rendered frames versus synthetic 3,195/27 at 604,702; the probe did not create the cadence defect |
+| TD-05 physical listening/routes | NOT RUN | Simulator cannot establish audible static, speaker/Bluetooth behavior, interruptions, or retained-process lifecycle continuity |
+| TD-05 commit/push | PENDING | Finish static/preservation/normal-mode gates, commit, and push only the TD-05 topic branch |
 
 ## Blocker ledger
 
@@ -126,6 +170,7 @@ control.
 | TD-02 physical acceptance | WAITING FOR HUMAN/DEVICE INPUT | Code and Simulator gates pass; no physical touch or controller feel can be inferred | Test modern MOVE/LOOK on iPhone and iPad, then test Modern, Original C-buttons, and Off with a physical controller |
 | TD-07 physical lifecycle | WAITING FOR HUMAN/DEVICE INPUT | Synthetic lifecycle and Simulator integration pass; no real disconnect/reconnect or multi-controller timing was exercised | Test controller loss while held, reconnect, reorder, background/foreground, then design real P2-P4 slots separately |
 | TD-04 physical classification | WAITING FOR HUMAN/DEVICE INPUT | Intermittent same-process Simulator freeze is real, but the physical failure has not been classified | Run the opt-in physical transition matrix and select scheduler/runtime or renderer wait instrumentation from the observed counter pattern |
+| TD-05 physical audio | WAITING FOR HUMAN/DEVICE INPUT | Simulator rejects rate mismatch/ring corruption but observes underruns without detected jumps | Listen to the synthetic probe on speaker and Bluetooth across route/interruption/lifecycle; retain the same-session counters when static is heard |
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
@@ -172,6 +217,12 @@ network transport.
   exits early on recovery, and stops on the first existing monitor tick at or
   beyond ten seconds. It does not add sleeps or locks to the game, render,
   audio, or main threads.
+- TD-05 replaces sample values only under `--audio-probe`; it preserves the
+  actual producer callback cadence, ring indices, prebuffer, underrun fade,
+  AVAudioSourceNode consumer, and AVAudioEngine conversion path.
+- The final triangle-wave candidate uses integer arithmetic. The earlier sine
+  candidate was rejected after its computational cost confounded underrun
+  evidence.
 - Final Simulator data hashes remained:
   - both ROM copies: `7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959`;
   - active save: `36d67fe002913ae2b8ba1b1d9fd45c236d6de0b0e4dc11ee90cde23816216fe9`;
@@ -195,6 +246,9 @@ network transport.
   owns the opt-in bounded lifecycle classifier.
 - `Sources/RecompPrototypeMetalCanvas.swift`: enables the TD-04 diagnostic only
   for the explicit `--lifecycle-probe` launch argument.
+- `Sources/RecompPrototypeAudio.swift`: enables TD-05 only for
+  `--audio-probe`, records source/session/mixer rates, and polls bounded probe
+  counters off the render thread.
 - `scripts/verify-recomp-prototype-host.sh` and
   `scripts/verify-recomp-prototype-ipa.sh`: require the new runtime symbols.
 - `docs/GOAL_STATE.md`, `docs/NEXT_STEPS.md`, `docs/STATUS.md`,
@@ -208,10 +262,9 @@ the saved two-player preference.
 
 ## Exact next action
 
-Keep TD-04 unmerged and do not choose a freeze repair until the physical matrix
-yields the counter pattern. Start the next independent evidence-only unit at
-TD-05: inventory requested versus active audio rate, existing ring ownership,
-and discontinuity visibility; add only a ROM-free discriminator that can reject
-or select those seams. Keep TD-01 formally blocked, retain TD-02/TD-07 for
-physical acceptance, and keep networking gated behind stable local ownership
-and deterministic state.
+Finish the TD-05 static, preservation, normal-launch, and clean-session gates;
+commit and push `codex/td05-audio-discriminator` without merging it. Do not tune
+the production ring from Simulator evidence. The next independent unattended
+unit is TD-06's matched single-/multiplayer depth-rebuild discriminator. Keep
+TD-01 formally blocked, retain TD-02/TD-04/TD-07 for physical acceptance, and
+keep networking gated behind stable local ownership and deterministic state.

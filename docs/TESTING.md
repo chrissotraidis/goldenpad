@@ -279,11 +279,40 @@ select a repair.
 
 First read the existing `audio: game requested ... Hz output` line and the
 drop/underrun trajectories from the same session in which static was heard.
-Then feed a project-generated continuous sine or ramp through the ring and use
-an output tap to locate sample discontinuities. This test must contain no game
-audio. It should cover cold start, route change, interruption,
-background/foreground, and ring wrap. Zero underrun counters alone do not pass
-audible quality.
+Launch the isolated candidate with `--audio-probe` and require:
+
+```text
+[GoldenPadRecomp] audio-probe: detector=PASS
+[GoldenPadRecomp] audio-rates: requested=22050 source=22050 session=... mixer=...
+[GoldenPadRecomp] audio-probe: observedFrames=... largeJumps=0 sequenceErrors=0
+```
+
+The probe replaces game sample values with a project-generated continuous
+stereo triangle before the real ring. It preserves producer cadence, absolute
+ring indices/wrap, prebuffer, underrun fade, AVAudioSourceNode consumption, and
+AVAudioEngine rate conversion. The triangle's adjacent step is below 0.01; the
+detector reports output steps above 0.05. This test contains no game audio.
+
+Record observed frames, sequence errors, jumps, drops, underrun frames, and
+underrun callbacks from the same interval. Then repeat with listening on
+physical speaker and Bluetooth through route change, interruption,
+background/foreground, and ring wrap. A new PID is process restart, not
+lifecycle continuity. Zero jumps does not close audible quality, and non-zero
+Simulator underruns alone do not authorize buffer tuning.
+
+The 2026-08-22 final Simulator run ended at requested/source 22.05 kHz with a
+48 kHz AVAudioEngine session/mixer. Across 1,110,144 observed output frames it
+recorded zero ring-sequence errors, zero >0.05 jumps, and zero producer drops,
+but 4,480 underrun frames in 37 callbacks. This rejects steady-state rate
+mismatch and ring corruption for that run and selects cadence/reserve as the
+next physical discriminator. It does not establish the reported audible static.
+
+The normal-mode control reproduced essentially the same Simulator cadence:
+3,335 underrun frames in 26 callbacks at 608,931 rendered frames, versus
+3,195/27 at 604,702 rendered frames in the synthetic run. This rules out probe
+overhead as the source of the measured underruns. It still does not prove that
+smoothly faded Simulator underruns are the physical static report or that a
+larger reserve is acceptable; correlate listening and latency before tuning.
 
 #### Residual flicker gate
 

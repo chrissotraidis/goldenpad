@@ -34,7 +34,7 @@ service.
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Code/Simulator pass; physical notification timing remains |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
-| TD-04/TD-05/TD-06 discriminators | S each | TD-04 host classifier is implemented; physical classification and TD-05/06 evidence remain |
+| TD-04/TD-05/TD-06 discriminators | S each | TD-04/TD-05 host probes are implemented; physical classification and TD-06 depth evidence remain |
 | TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
 | Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
@@ -81,10 +81,11 @@ changing accepted controls.
    Simulator reproduction. Run the physical transition matrix before deciding
    whether the next bounded seam is runtime resume or matched RT64/Plume
    drawable/present/fence timing.
-4. **TD-05 audio evidence:** read requested frequency and counters from a failing
-   session, then run the ROM-free synthetic discontinuity test. Move ring reset
-   to consumer ownership or honor the requested rate only if the test implicates
-   that seam.
+4. **TD-05 audio evidence:** the final Simulator rate matches requested/source
+   22.05 kHz through AVAudioEngine's 48 kHz conversion; synthetic ring sequence
+   and >0.05 jump checks pass while underruns remain. Run matched physical
+   listening/route/lifecycle gates before changing cadence, reserve, or reset
+   ownership.
 5. **TD-06 flicker discriminator:** count matched single-/multiplayer depth
    rebuilds. Do not modify the frozen depth alias repair. Renderer surgery is a
    go only if the counter and physical video establish the perceptual link.

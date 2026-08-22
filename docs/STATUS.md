@@ -13,7 +13,7 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Physically accept TD-02/TD-07 and classify TD-04 with the new bounded lifecycle probe; independently collect TD-05/06 discriminators. |
+| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, and listen to the new TD-05 synthetic probe; TD-06 matched-depth evidence remains independent. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
@@ -658,7 +658,11 @@ evidence ledger below is preserved as historical validation for
   while diagnostics/input stayed live. No repair is selected from Simulator
   evidence alone.
 - A small amount of audible static has been reported during otherwise working
-  audio; long-session speaker and route-change acceptance remains open.
+  audio. An isolated synthetic probe now rejects steady-state rate mismatch and
+  ring corruption in Simulator. A matched normal-mode control reproduces the
+  same non-zero underrun cadence with no detected >0.05 probe jump, making
+  cadence/reserve the leading test seam. Physical speaker/Bluetooth listening, route
+  change, interruption, lifecycle, and a matched failing-session log remain.
 - Some maps can still expose original or renderer-specific geometry/clipping
   artifacts. Preview 1 does not claim complete stage/effect parity.
 - Preview 2 includes the bounded in-app retail-ROM importer. Exact physical
