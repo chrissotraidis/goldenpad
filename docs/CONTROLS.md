@@ -256,7 +256,7 @@ Its useful finding is narrower: C-left/C-right is the correct native Honey
 semantic, but wholesale replacement of the established movement axis is not an
 acceptable default.
 
-### Current Mac adapter
+### Preview 2 / main Mac adapter
 
 `Sources/Mac/RecompMacInput.swift` currently assumes Honey:
 
@@ -422,6 +422,37 @@ before documenting an exact stand command. The GoldenPad one-key toggle is a
 host convenience that bypasses the native crouch path. It must be labelled as
 such and tested for synchronization, weapon zoom conflicts, death/restart,
 mission transitions, and player-port changes.
+
+### Preview 3 candidate status
+
+Branch `codex/preview3-controls` starts at `origin/main`/Preview 2 and contains a
+narrow control-only candidate:
+
+- mobile **Movement adapter** defaults to **Preview 2 movement**;
+- opt-in **Sidestep with left/right** preserves analog Y, converts horizontal
+  touch/controller movement to C-left/C-right with 0.30 press and 0.20 release
+  thresholds, and activates only in live single-player 1.1 Honey gameplay;
+- switching movement modes publishes one neutral movement frame before the new
+  mapping resumes;
+- experimental two-player mode retains Preview 2 input because native styles
+  are per player and the current host getter cannot safely classify both ports;
+- the host reads the live style from the current GoldenEye player record and
+  displays it without changing GoldenEye's saved option;
+- Mac Control is bindable and is the new-install crouch default; an existing
+  saved C binding remains C;
+- keyboard movement wins over idle controller drift;
+- automatic mouse capture reclaims keyboard focus once on its rising edge;
+- the Mac gameplay predicate now rejects GoldenEye control-lock and multiplayer
+  menu states in addition to watch transitions;
+- Mac mouse input has a separate wide relative accumulator, so fast sweeps are
+  not collapsed to one normalized sample, and aimed sensitivity no longer
+  inherits an unexplained threefold slowdown.
+
+The isolated ARM64 Simulator host and native ARM64 Mac target compile. These are
+implementation checks, not hands-on control acceptance. Crouch still uses the
+host convenience hook, native Look Ahead can still interact with direct mouse
+pitch, and issue #8 remains open until the physical touch/controller matrix
+below passes.
 
 **Multiplayer:** Every translation is per port and per active player. A P1
 controller success does not validate touch P2. Preview 3 may retain the existing

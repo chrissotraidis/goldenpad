@@ -88,6 +88,7 @@ for required_symbol in \
   _goldenpad_recomp_set_controller_state \
   _goldenpad_recomp_set_right_analog \
   _goldenpad_recomp_request_crouch_toggle \
+  _goldenpad_recomp_queue_mouse_look \
   _goldenpad_recomp_desktop_gameplay_active
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then

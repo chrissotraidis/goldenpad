@@ -204,7 +204,7 @@ private struct RecompMacSettingsView: View {
     @AppStorage("recomp.macKey.aim") private var aimKey = Int(RecompMacBindableKey.shift.rawValue)
     @AppStorage("recomp.macKey.action") private var actionKey = Int(RecompMacBindableKey.e.rawValue)
     @AppStorage("recomp.macKey.changeWeapon") private var changeWeaponKey = Int(RecompMacBindableKey.q.rawValue)
-    @AppStorage("recomp.macKey.crouch") private var crouchKey = Int(RecompMacBindableKey.c.rawValue)
+    @AppStorage("recomp.macKey.crouch") private var crouchKey = Int(RecompMacBindableKey.control.rawValue)
     @AppStorage("recomp.macKey.start") private var startKey = Int(RecompMacBindableKey.escape.rawValue)
 
     var body: some View {

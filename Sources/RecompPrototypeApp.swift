@@ -39,6 +39,7 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.lookSensitivity") private var lookSensitivity = 4.0
     @AppStorage("recomp.aimBehavior") private var aimBehavior = RecompPrototypeAimBehavior.toggle.rawValue
     @AppStorage("recomp.controllerLookMode") private var controllerLookMode = RecompPrototypeControllerLookMode.analog.rawValue
+    @AppStorage("recomp.movementMode") private var movementMode = RecompPrototypeMovementMode.previewTwo.rawValue
     @AppStorage("recomp.controllerMap.buttonA") private var controllerButtonA = RecompPrototypeControllerControl.buttonA.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonB") private var controllerButtonB = RecompPrototypeControllerControl.buttonB.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonX") private var controllerButtonX = RecompPrototypeControllerControl.buttonX.defaultAction.rawValue
@@ -118,6 +119,7 @@ struct GoldenPadApp: App {
                 input.configureLookSensitivity(lookSensitivity)
                 input.configureAimBehavior(aimBehavior)
                 input.configureControllerLookMode(controllerLookMode)
+                input.configureMovementMode(movementMode)
                 input.configureControllerMapping(controllerMapping)
                 input.configureInvertAimY(invertAimY)
                 input.configureUnlockAllMissions(unlockAllMissions)
@@ -134,6 +136,9 @@ struct GoldenPadApp: App {
             }
             .onChange(of: controllerLookMode) { _, value in
                 input.configureControllerLookMode(value)
+            }
+            .onChange(of: movementMode) { _, value in
+                input.configureMovementMode(value)
             }
             .onChange(of: controllerMappingRawValues) { _, _ in
                 input.configureControllerMapping(controllerMapping)
@@ -181,6 +186,7 @@ struct GoldenPadApp: App {
                         ),
                         aimBehavior: $aimBehavior,
                         controllerLookMode: $controllerLookMode,
+                        movementMode: $movementMode,
                         controllerButtonA: $controllerButtonA,
                         controllerButtonB: $controllerButtonB,
                         controllerButtonX: $controllerButtonX,
@@ -202,7 +208,8 @@ struct GoldenPadApp: App {
                         onEditTouchLayout: beginTouchLayoutEditing,
                         runtimeStatus: surface.status,
                         audioStatus: audio.status,
-                        controllerName: input.externalControllerName
+                        controllerName: input.externalControllerName,
+                        activeControlStyle: input.activeControlStyle
                     )
                 case let .share(url):
                     RecompPrototypeShareSheet(items: [url])
@@ -261,6 +268,8 @@ struct GoldenPadApp: App {
                     lookSensitivity: lookSensitivity,
                     aimBehavior: aimBehavior,
                     controllerLookMode: controllerLookMode,
+                    movementMode: movementMode,
+                    activeControlStyle: input.activeControlStyle,
                     controllerMapping: controllerMapping,
                     invertAimY: invertAimY,
                     reticleEnabled: reticleEnabled,
@@ -334,6 +343,7 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var lookSensitivity: Double
     @Binding var aimBehavior: String
     @Binding var controllerLookMode: String
+    @Binding var movementMode: String
     @Binding var controllerButtonA: String
     @Binding var controllerButtonB: String
     @Binding var controllerButtonX: String
@@ -356,6 +366,7 @@ private struct RecompPrototypeSettingsView: View {
     let runtimeStatus: String
     let audioStatus: String
     let controllerName: String?
+    let activeControlStyle: Int32
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -388,12 +399,12 @@ private struct RecompPrototypeSettingsView: View {
                     Text("GoldenPad keeps the tuned 1.5× swipe accumulation and 4.0× default sensitivity from the original touch build.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Picker("Aim button", selection: $aimBehavior) {
+                    Picker("Touch aim button behavior", selection: $aimBehavior) {
                         ForEach(RecompPrototypeAimBehavior.allCases, id: \.rawValue) { behavior in
                             Text(behavior.title).tag(behavior.rawValue)
                         }
                     }
-                    LabeledContent("Duck button", value: "Toggle")
+                    LabeledContent("GoldenPad crouch toggle", value: "Toggle")
                     Button {
                         dismiss()
                         DispatchQueue.main.async { onEditTouchLayout() }
@@ -409,6 +420,20 @@ private struct RecompPrototypeSettingsView: View {
                     }
                     .foregroundStyle(.primary)
                     Text("Move and resize every touch control. iPhone and iPad layouts are saved separately.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Section("GoldenEye Controls") {
+                    LabeledContent("Active in-game style", value: controlStyleTitle(activeControlStyle))
+                    Picker("Movement adapter", selection: $movementMode) {
+                        ForEach(RecompPrototypeMovementMode.allCases, id: \.rawValue) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    Text("Sidestep mode maps horizontal movement to GoldenEye's C-left and C-right actions for both touch and connected controllers. It activates only during single-player gameplay with 1.1 Honey. Preview 2 movement remains the default and is unchanged.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Text("GoldenEye's own control style and aim options are changed inside the watch menu. GoldenPad does not replace those game settings.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -437,8 +462,8 @@ private struct RecompPrototypeSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Section("Shared Controls") {
-                    Toggle("Invert vertical aim", isOn: $invertAimY)
-                    Toggle("Center reticle", isOn: $reticleEnabled)
+                    Toggle("Invert GoldenPad direct aim", isOn: $invertAimY)
+                    Toggle("GoldenPad center marker", isOn: $reticleEnabled)
                     Text("These options apply to both touch controls and connected controllers.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -553,6 +578,8 @@ private enum RecompPrototypeDiagnostics {
         lookSensitivity: Double,
         aimBehavior: String,
         controllerLookMode: String,
+        movementMode: String,
+        activeControlStyle: Int32,
         controllerMapping: [RecompPrototypeControllerControl: String],
         invertAimY: Bool,
         reticleEnabled: Bool,
@@ -582,6 +609,8 @@ private enum RecompPrototypeDiagnostics {
         Look sensitivity: \(String(format: "%.2f", lookSensitivity))x
         Aim behavior: \(aimBehavior)
         Controller right stick: \((RecompPrototypeControllerLookMode(rawValue: controllerLookMode) ?? .analog).title)
+        Movement adapter: \((RecompPrototypeMovementMode(rawValue: movementMode) ?? .previewTwo).title)
+        Active GoldenEye control style: \(controlStyleTitle(activeControlStyle))
         Controller mapping: \(controllerMappingSummary(controllerMapping))
         Invert vertical while aiming: \(invertAimY ? "On" : "Off")
         Center reticle: \(reticleEnabled ? "On" : "Off")
@@ -631,6 +660,21 @@ private enum RecompPrototypeDiagnostics {
         return String(decoding: data, as: UTF8.self)
             .replacingOccurrences(of: home, with: "<HOME>")
             .replacingOccurrences(of: NSTemporaryDirectory(), with: "<TEMP>/")
+    }
+}
+
+private func controlStyleTitle(_ style: Int32) -> String {
+    switch style {
+    case -2: "Per-player styles; adapter paused"
+    case 0: "1.1 Honey"
+    case 1: "1.2 Solitaire"
+    case 2: "1.3 Kissy"
+    case 3: "1.4 Goodnight"
+    case 4: "2.1 Plenty"
+    case 5: "2.2 Galore"
+    case 6: "2.3 Domino"
+    case 7: "2.4 Goodhead"
+    default: "Unavailable outside a mission"
     }
 }
 

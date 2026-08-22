@@ -52,6 +52,8 @@ std::array<std::atomic<uint32_t>, kControllerPorts> controllerButtonTransitions{
 std::array<std::atomic<uint32_t>, kControllerPorts> controllerRumbleTransitions{};
 std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookX{};
 std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookY{};
+std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookX{};
+std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookY{};
 std::array<std::atomic<bool>, kControllerPorts> crouchToggleRequested{};
 std::atomic<bool> prototypeMsaaEnabled = true;
 std::atomic<int32_t> prototypeResolutionMode = 2;
@@ -748,6 +750,15 @@ extern "C" void goldenpad_recomp_queue_touch_look(int32_t controllerNum, int32_t
     queueClampedAxis(queuedTouchLookY[port], lookY);
 }
 
+extern "C" void goldenpad_recomp_queue_mouse_look(int32_t controllerNum, int64_t lookX, int64_t lookY) {
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        return;
+    }
+    const size_t port = static_cast<size_t>(controllerNum);
+    queuedMouseLookX[port].fetch_add(lookX, std::memory_order_relaxed);
+    queuedMouseLookY[port].fetch_add(lookY, std::memory_order_relaxed);
+}
+
 extern "C" int32_t goldenpad_recomp_previous_session_ended_unexpectedly() {
     return previousSessionEndedUnexpectedly.load(std::memory_order_relaxed) ? 1 : 0;
 }
@@ -778,29 +789,67 @@ extern "C" void goldenpad_recomp_request_return_to_title() {
     logEvent("navigation", "return to main menu requested");
 }
 
-extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() {
-#if defined(GOLDENPAD_RECOMP_MAC)
-    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+namespace {
+uint32_t currentPlayerAddress(uint8_t *rdram) {
+    const uint32_t player = static_cast<uint32_t>(readGameWord(rdram, 0x80079EB0));
+    return player >= 0x80000000 && player <= 0x9FFFFFFF ? player : 0;
+}
+
+bool gameplayInputActive(uint8_t *rdram) {
     if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
-        return 0;
+        return false;
     }
 
     constexpr int32_t kTitleStage = 90;
-    const int32_t stage = readGameWord(rdram, 0x80023FA8);
-    if (stage == kTitleStage) {
-        return 0;
+    if (readGameWord(rdram, 0x80023FA8) == kTitleStage) {
+        return false;
     }
 
-    const int32_t player = readGameWord(rdram, 0x80079EB0);
-    const uint32_t playerAddress = static_cast<uint32_t>(player);
-    if (playerAddress < 0x80000000 || playerAddress > 0x9FFFFFFF) {
-        return 0;
+    const uint32_t playerAddress = currentPlayerAddress(rdram);
+    if (playerAddress == 0) {
+        return false;
     }
 
-    const int32_t watchLeft = readGameWord(rdram, playerAddress + 0x1C8);
-    const int32_t watchOutside = readGameWord(rdram, playerAddress + 0x1CC);
-    const int32_t watchRight = readGameWord(rdram, playerAddress + 0x1D0);
-    return watchLeft != 0 || watchOutside != 0 || watchRight != 0 ? 1 : 0;
+    const int32_t watchAnimationState = readGameWord(rdram, playerAddress + 0x1C8);
+    const int32_t outsideWatchMenu = readGameWord(rdram, playerAddress + 0x1CC);
+    const int32_t openCloseSoloWatchMenu = readGameWord(rdram, playerAddress + 0x1D0);
+    const int32_t controlsLocked = readGameWord(rdram, 0x80048170);
+    const int32_t multiplayerMenuOpen = readGameWord(rdram, playerAddress + 0x29C4);
+    return watchAnimationState == 0 && outsideWatchMenu != 0 && openCloseSoloWatchMenu == 0 &&
+        controlsLocked == 0 && multiplayerMenuOpen == 0;
+}
+} // namespace
+
+extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
+    const bool active = gameplayInputActive(activeRdram.load(std::memory_order_acquire));
+    if (!active) {
+        for (size_t port = 0; port < kControllerPorts; port++) {
+            queuedTouchLookX[port].store(0, std::memory_order_relaxed);
+            queuedTouchLookY[port].store(0, std::memory_order_relaxed);
+            queuedMouseLookX[port].store(0, std::memory_order_relaxed);
+            queuedMouseLookY[port].store(0, std::memory_order_relaxed);
+            crouchToggleRequested[port].store(false, std::memory_order_relaxed);
+        }
+    }
+    return active ? 1 : 0;
+}
+
+extern "C" int32_t goldenpad_recomp_current_control_style() {
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
+        return -1;
+    }
+    const uint32_t playerAddress = currentPlayerAddress(rdram);
+    if (playerAddress == 0) {
+        return -1;
+    }
+    const int32_t style = readGameWord(rdram, playerAddress + 0x2A58);
+    return style >= 0 && style <= 7 ? style : -1;
+}
+
+extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() {
+#if defined(GOLDENPAD_RECOMP_MAC)
+    return goldenpad_recomp_gameplay_input_active();
 #else
     return 1;
 #endif
@@ -830,6 +879,17 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
         static_cast<float>(queuedTouchLookY[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
     x = std::clamp(x, -1.0f, 1.0f);
     y = std::clamp(y, -1.0f, 1.0f);
+#if defined(GOLDENPAD_RECOMP_MAC)
+    // Mouse movement is relative, so preserve every queued unit instead of
+    // collapsing fast sweeps to the same normalized maximum. Compensate for
+    // the game patch's 3 degrees hip-fire / 1 degree aimed multiplier so the
+    // selected mouse sensitivity stays consistent while aiming.
+    const float mouseAimCompensation = aiming ? 3.0f : 1.0f;
+    x += static_cast<float>(queuedMouseLookX[port].exchange(0, std::memory_order_acq_rel)) /
+        32'767.0f * mouseAimCompensation;
+    y += static_cast<float>(queuedMouseLookY[port].exchange(0, std::memory_order_acq_rel)) /
+        32'767.0f * mouseAimCompensation;
+#endif
     // GoldenEye's sight-aim camera applies the opposite vertical convention
     // from normal free look. Normalize that by default, while retaining an
     // explicit setting for players who prefer inverted aiming.

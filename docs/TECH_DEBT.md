@@ -109,13 +109,13 @@ bundle unrelated changes. Every repair must be independently revertible.
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Confirmed** from the public report and input/game patch trace | C-button controller mode can strafe; modern MOVE horizontal still follows original turn behavior and touch has no equivalent C-left/right mapping | Gameplay-only synthetic input test, then physical touch + modern controller acceptance with menus unchanged |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Candidate implemented; not accepted** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; physical behavior is unproved | Physical touch + modern controller acceptance with menus, watch, aim/lean, styles, lifecycle, and Preview 2 default unchanged |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
-| TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Confirmed** arithmetically from both clamps | Queue saturation and the `[-1, 1]` consumer clamp cap turn rate and discard faster deltas; sensitivity cannot solve the structural loss | Measure host delta versus consumed look, then widen both clamps behind `GOLDENPAD_RECOMP_MAC` and run the Mac input/render gate |
+| TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Candidate implemented; not accepted** | Preview 3 uses a wide Mac-only relative accumulator and explicit aimed-rate compensation; compile/link passes but proportional physical motion is unproved | Compare slow/medium/fast hip-fire and aimed sweeps, moving and stationary, then run the full Mac input/render gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
@@ -172,15 +172,15 @@ probe**. It is small, cannot change player data or accepted feel, turns a
 source-confirmed global gameplay defect into a GoldenPad-specific number, and
 becomes the objective gate for the actual repair.
 
-The smartest next user-facing repair is **TD-02 modern sidestepping**. It is a
-current public issue with a traced ownership seam and can be fixed independently
-while the timing probe is built. TD-03 crash-artifact collection and A12-family
-reproduction also run from the first step as an evidence-only lane; no A12 code
-change is selected without that evidence. The next landing sequence is:
+The smartest next user-facing action is **physical acceptance of the isolated
+TD-02 sidestep candidate**. It is a current public issue with a traced ownership
+seam, but a successful build does not close it. TD-03 crash-artifact collection
+and A12-family reproduction can run as an evidence-only lane; no A12 code change
+is selected without that evidence. The next landing sequence is:
 
 1. land the fire-rate probe and record player plus guard cadence;
-2. repair modern sidestep semantics with menu and original-C-button regression
-   tests;
+2. run modern sidestep physical acceptance with menu, watch, aim/lean, native
+   styles, and original-C-button regression tests;
 3. apply the fire-rate authenticity patch only after the probe proves the
    current and expected numbers, then obtain hands-on combat acceptance;
 4. add the controller-lifecycle probe and neutralize the TD-07 disconnect leak;
