@@ -6,6 +6,11 @@ report were modified; no build, deployment, profiler, or game run was
 performed. All claims are traced to tracked source, tracked patches, project
 documentation, or the exact pinned public upstream revisions.
 
+This is the second-pass revision: after the first pass, the pinned upstream
+sources (GoldenEye64Recomp, RT64, Plume) were read in depth and several
+findings were upgraded, corrected, or replaced. The **Revision log** at the
+end records exactly what changed and why.
+
 ---
 
 ## 1. Repository baseline
@@ -42,11 +47,24 @@ for the public `v0.1.0-preview.2` release and for HEAD.
 repositories, raw file fetches):
 
 - RT64 `rt64/rt64` @ `5473732a822a4423b5696e7cb18fecc425a59875`:
-  `src/hle/rt64_present_queue.cpp` (present loop, acquire-failure and resize
-  recovery), `.gitmodules`.
+  `src/hle/rt64_present_queue.cpp` (present loop, cursor barrier,
+  acquire-failure and resize recovery), `src/hle/rt64_state.cpp`
+  (`updateScreen`, `submitFramebufferPair`, the `clearDepthOnly` fast path,
+  depth `formatChanged` handling and RAM write-back),
+  `src/hle/rt64_rdp.cpp` (image tracking, scissor/rect extended alignment,
+  overlap detection), `src/hle/rt64_framebuffer.cpp`,
+  `src/hle/rt64_framebuffer_manager.cpp` (`changeRAM` mutual invalidation),
+  `src/hle/rt64_workload_queue.cpp`, `src/hle/rt64_application.cpp`,
+  `.gitmodules`.
 - Plume `renderbag/plume` @ `d890ac899e505fb30040e037a4037cdeca68f033`:
   `plume_metal.cpp` (`MetalSwapChain::acquireTexture`, `present`, `resize`,
-  `MetalCommandSemaphore` value accounting).
+  `wait`, `MetalCommandSemaphore` value accounting, command-fence waits).
+- GoldenEye64Recomp `cblock85/GoldenEye64Recomp` @
+  `a787fe0d95e8278fcba5ba2d768fa6a606e75f55`: `patches/widescreen.c` and
+  `patches/skybox.c` (full pre-GoldenPad-patch bodies), `patches/externs.h`
+  (`z_buffer` typing), `patches/workbench_theboy.c` (`bossMainloop`, frame
+  rate control, `shuffle_player_ids` seam), `src/main/main.cpp` (reference
+  host audio: `queue_samples`, `set_frequency`, `get_frames_remaining`).
 
 **Important evidence that was unavailable:**
 
@@ -56,8 +74,9 @@ repositories, raw file fetches):
 - The private generated AOT sources (`RecompiledPatches/patches.c`,
   `patches_bin.c`) are intentionally untracked; only the CMake content-marker
   guards (`CMakeLists.txt:279-330`) and the tracked patch inputs are
-  inspectable. The full pre-patch body of GoldenEye64Recomp's `widescreen.c`
-  and `skybox.c` is visible only through the tracked diff hunks.
+  inspectable. The pre-patch bodies of `widescreen.c`, `skybox.c` and
+  `workbench_theboy.c` were recovered from the pinned public
+  GoldenEye64Recomp revision instead.
 - No device session logs, crash reports, videos, or frame captures exist in
   the repository (correctly, per the data boundary). Every temporal claim
   (flicker, freeze, static) therefore rests on the documented evidence ledger,
@@ -71,14 +90,22 @@ repositories, raw file fetches):
 
 Findings (source-verified unless marked otherwise):
 
-1. **The Mac "slow mouse" has a structural, source-confirmed ceiling.** The
-   relative mouse path is clamped twice — to ±32,767 in the host queue
-   (`recomp_game_start.cpp:167-173,742-749`) and to `[-1, 1]` in
-   `recomp_get_camera_inputs` (`recomp_game_start.cpp:831-832`) — before the
+1. **The Mac "slow mouse" has a structural, source-confirmed ceiling — worse
+   than a gain problem, it discards fast motion.** The relative mouse path is
+   clamped twice — the accumulated queue itself saturates at ±32,767 = one
+   frame of full deflection (`recomp_game_start.cpp:167-173,742-749`), and the
+   consumed value is clamped to `[-1, 1]`
+   (`recomp_get_camera_inputs`, `recomp_game_start.cpp:831-832`) — before the
    game-side patch multiplies by a fixed 3°/frame (1°/frame while aiming)
-   (`patches/goldeneye64recomp-ios-modern-controls.patch:86-89`). No
-   sensitivity slider value can turn the camera faster than ~3° per game
-   frame. This is a gain ceiling, not an event-delivery defect.
+   (`patches/goldeneye64recomp-ios-modern-controls.patch:86-89`). The recomp
+   game loop targets **30 FPS** (`desiredFPS = 30`, upstream
+   `workbench_theboy.c:455-469` at the pin), so the hard ceiling is
+   **~90°/s hip-fire and ~30°/s aiming**. Because the *queue* saturates (it is
+   clamped, not drained proportionally), any mouse travel beyond ~1 frame of
+   deflection per game frame is **discarded**, and raising the sensitivity
+   slider *lowers* the physical speed at which discarding begins — which is
+   precisely why the slider "doesn't help". This is arithmetic entailed by
+   the inspected code, not a latency defect.
 2. **The primary runtime has no multi-controller model at all.** It binds
    exactly one controller (`GCController.controllers().first`,
    `Sources/RecompPrototypeInput.swift:305-317`); ports 2–4 exist only as
@@ -93,30 +120,67 @@ Findings (source-verified unless marked otherwise):
    touch input, previously Player 2, is published to port 0
    (`Sources/RecompPrototypeInput.swift:403-416`). This is a concrete,
    source-confirmed touch-ownership leak.
-4. **The screenshot-freeze mitigations already in the tree are individually
-   sound, and the pinned upstream present path is designed to recover from a
-   failed drawable acquisition.** RT64's present loop sets
-   `swapChainValid = false` on failure and routes through resize/retry
-   (`rt64_present_queue.cpp:300-306,451-487` at the pin), and Plume's
-   signal-before-acquire ordering is value-idempotent on failure
-   (`plume_metal.cpp:2046-2085,3694-3695`). The remaining exposure is
-   verification (no lifecycle matrix has been run against the current build),
-   not a currently identified stuck-wait in tracked code.
-5. **Audio has one identified cross-thread mutation window and one unchecked
-   assumption.** `goldenpad_recomp_set_app_active` mutates consumer-thread-only
-   fields and the read cursor from the lifecycle thread
-   (`recomp_game_start.cpp:696-723`); it is safe in the normal
+4. **The screenshot-freeze exposure is now precisely characterized: bounded
+   multi-second stalls are an expected mechanism; a hard freeze requires one
+   specific unbounded wait.** RT64's present loop recovers from a failed
+   drawable acquisition (`swapChainValid = false` → resize/retry,
+   `rt64_present_queue.cpp:300-306,466-487` at the pin) and **always advances
+   the queue barrier** for a non-paused present even when acquisition fails
+   (`:514-529`). But the game/VI thread pushes presents through
+   `PresentQueue::advanceToNextPresent`, an **unbounded busy-wait spin**
+   (`rt64_present_queue.cpp:38-55`): while iOS throttles drawables (screenshot
+   or overlay), each acquire costs up to ~1 s (`nextDrawable` timeout), the
+   small present ring fills, and the game thread spins hot — freezing
+   simulation *and* audio production together for seconds, then recovering.
+   That matches the reported symptom without any bug in tracked code. The only
+   truly unbounded wait found on the present path is the command-fence
+   `dispatch_semaphore_wait(..., DISPATCH_TIME_FOREVER)`
+   (`plume_metal.cpp:3733`) — a hard freeze requires a Metal completed-handler
+   that never fires. Plume's signal-before-acquire semaphore ordering is
+   value-idempotent on failure (`plume_metal.cpp:2046-2085,3694-3695`), and
+   `MetalSwapChain::wait` is 1-second-bounded (`:1982-1992`), so neither can
+   deadlock. Remaining work is the physical lifecycle matrix plus two bounded
+   breadcrumbs (nil-drawable counter, fence-wait duration).
+5. **Audio has one identified cross-thread mutation window and one confirmed
+   divergence from the reference host.** `goldenpad_recomp_set_app_active`
+   mutates consumer-thread-only fields and the read cursor from the lifecycle
+   thread (`recomp_game_start.cpp:696-723`); it is safe in the normal
    background→foreground order (engine paused) but races if an
    interruption/route-change `activate()` restarts the engine while the app is
    backgrounded. Separately, the game's requested output rate is logged and
    ignored (`setFrequency`, `recomp_game_start.cpp:426-428`) while the host
-   hard-codes 22,050 Hz (`Sources/RecompPrototypeAudio.swift:82-89`); no
-   repository evidence confirms these match.
-6. **The residual multiplayer flicker is most consistent with per-player
-   RDP/render state whose visibility depends on the shuffled player order**,
-   with an RT64 framebuffer-interpretation transient as the main competitor.
-   The shuffle itself is the cheapest causal probe. Nothing in the evidence
-   justifies touching the depth-alias repair.
+   hard-codes 22,050 Hz (`Sources/RecompPrototypeAudio.swift:82-89`). The
+   pinned reference host **honors** that callback — it stores the requested
+   rate and rebuilds its resampler from it (upstream `src/main/main.cpp:289-293`)
+   — so ignoring it is a real divergence, not a shared convention. (In
+   GoldenPad's favor: its continuous-ring design avoids the per-chunk
+   resampling seams the reference host must patch over with duplicated
+   boundary frames, `main.cpp:182-227`.)
+6. **A complete, source-verified mechanism now exists for the residual
+   multiplayer flicker — and it does not implicate the depth-alias repair.**
+   GoldenEye aliases every player's depth writes onto the same physical rows
+   by shifting the lower players' depth-image base 120 rows (76,800 bytes)
+   upward — `z_buffer` is an address in an `s32`
+   (upstream `patches/externs.h:415`), and the patch's
+   `SCREEN_WIDTH * SCREEN_HEIGHT` shift equals exactly 120 rows of 16-bit
+   depth at 640 bytes/row. RT64's framebuffer manager therefore tracks **two
+   overlapping depth framebuffers** (base, and base − 76,800), and
+   `FramebufferManager::changeRAM` marks *every* overlapping framebuffer
+   `rdramChanged` on each write (`rt64_framebuffer_manager.cpp:905-916`).
+   Each player pass thus invalidates the sibling row-group's depth framebuffer
+   **every multiplayer frame**; `rdramChanged` feeds
+   `depthImg.formatChanged` (`rt64_state.cpp:564`), which **discards the
+   GPU-side depth, clears the depth target, and re-reads it from quantized
+   16-bit RAM** (`rt64_state.cpp:1405-1435`), RAM that is itself a per-pass
+   write-back (`:1458-1479`). Single player has one depth framebuffer and
+   never takes this path — matching the symptom's confinement to multiplayer,
+   its slightness (precision-level, fog/depth-derived), and its migration
+   with the shuffled pass order. The final perceptual link (that this
+   round-trip is what the eye sees as lighting flicker) is the one unverified
+   step; a one-line counter at the `formatChanged` consumer discriminates it.
+   The `clearDepthOnly` fast path (`rt64_state.cpp:571-576`) also exactly
+   confirms why the depth-alias repair was necessary and correct — the
+   fill-only pair's color address must equal the next pair's depth address.
 7. **The Mac thin blue edge already has an accepted iOS-precedented fix
    shape.** iOS measured its own far-edge artifact as an exactly
    two-physical-pixel sampling seam and masks it with a one-point opaque host
@@ -144,16 +208,26 @@ Findings (source-verified unless marked otherwise):
 
 **Three highest-value next actions:**
 
-1. Read the *existing* bounded session logs on the paired devices for the
+1. Add a one-line bounded counter where `depthImg.formatChanged` forces the
+   depth re-read (`rt64_state.cpp:1405-1435` region of the embedded RT64
+   build) and read it during a multiplayer session — it directly tests the
+   new leading flicker mechanism (fires every multiplayer frame if true, zero
+   in single player) without touching the frozen repair (Issue 1).
+2. Read the *existing* bounded session logs on the paired devices for the
    `audio: game requested %u Hz output` line and the underrun/drop counters
    coincident with reported static — zero new code, directly discriminates
    the audio hypotheses (Issue 4).
-2. Build one diagnostic multiplayer candidate with the player render order
-   fixed (shuffle disabled) and repeat the 30-second four-player physical
-   video gate — the single cheapest causal probe for the flicker (Issue 1).
 3. Add the iOS-precedented one-point right-edge mask to the Mac host and run
    the existing Dam/Surface scene comparison — XS change, precedented, and it
    retires the most visible Mac defect without touching RT64 (Issue 5).
+
+(The fixed-render-order probe remains valuable as the *second* Issue 1 step:
+the exact seam is `shuffle_player_ids()` /
+`get_nth_player_from_shuffled(i)` inside the already-patched `bossMainloop`,
+upstream `workbench_theboy.c:692-696` — a one-line diagnostic change. Under
+the new leading mechanism it predicts the flicker becomes *position-stable*
+rather than disappearing; disappearance would instead implicate
+order-dependent state leakage.)
 
 **Issues that should remain frozen rather than changed:**
 
@@ -173,12 +247,12 @@ Findings (source-verified unless marked otherwise):
 
 | Issue | Evidence status | Leading diagnosis | Diagnosis confidence | Safest repair seam | Fix confidence | Best next test | Regression risk |
 |---|---|---|---:|---|---:|---|---|
-| 1. Multiplayer lighting flicker | Physical video evidence exists but is not in repo; patches fully readable | Order-dependent per-player render-state visibility (fog/fade/scissor family), not the depth-alias repair | 40% (Moderate–Low; competing RT64-interpretation hypothesis at 30%) | Game-side patch family in `widescreen.c`/`skybox.c` only, after the order probe localizes it | 45% | Fixed (non-shuffled) player render order build + 30 s four-player physical video | Medium — any change to the patched clear/fade family can reopen the repaired corruption; gate on the existing video protocol |
+| 1. Multiplayer lighting flicker | Physical video evidence exists but is not in repo; patches and pinned RT64 framebuffer code fully readable | Aliased overlapping depth framebuffers mutually invalidating each other every multiplayer frame → forced quantized depth re-read from RAM → fog/depth precision jitter; order-dependent state leak is the fallback | 50% (Moderate; complete source-verified chain except the final perceptual link; state-leak fallback at 25%) | One-line diagnostic counter at the depth `formatChanged` consumer first; any repair is RT64-side aliased-depth recognition and is **not** small | 35% (repair is nontrivial; instrument confidence is high) | Depth-resync counter in one multiplayer session (predicts: fires every MP frame, zero in SP), then fixed-render-order build | Medium — instrument is safe; a repair touches RT64 framebuffer tracking and must pass the frozen video protocol |
 | 2. Real 3/4-controller routing | Confirmed by source; no physical multi-controller evidence exists | Ownership layer absent in primary runtime; single-controller `first()` binding plus flag-gated ports; disconnect leaks touch to P1 | 95% (Confirmed — this is a design gap, not a hidden bug) | New slot model at the `RecompPrototypeInput` → `goldenpad_recomp_set_controller_state` seam, modeled on `InputCoordinator` | 70% | Synthetic `GCVirtualController` connect/disconnect probe asserting port ownership invariants | Medium — touches accepted P1 controller path; guard with existing `--input-probe` plus the new probe |
-| 3. Screenshot/resume freeze | Historical symptom; current mitigations in tree; upstream recovery path verified at pin; no matrix run yet | Previously observed freezes predate or bypass the three current mitigations; current tree has no identified stuck wait; residual risk is unverified recovery + host main-thread stalls | 55% (Moderate) that current build no longer freezes; mechanism of past freezes: unknown | Bounded counters at the Plume acquire-failure branch + physical lifecycle matrix; no behavior change first | n/a (verification first) | Scripted physical matrix: screenshot ×10, Control Center, app switcher, camera overlay, with post-run log readback | Low — instrumentation-only first step |
-| 4. Audible audio static | Counters healthy in accepted runs; static reports anecdotal; ring code fully readable | Intermittent real jitter/underrun events outside logged runs, plus two counter-invisible candidates (lifecycle-thread mutation race; unverified sample-rate assumption) | 45% (Moderate–Low; genuinely multi-candidate) | (a) Move foreground ring reset onto the render thread via a flag; (b) honor/verify `setFrequency` | 55% | Read existing logs for requested Hz; then synthetic-sine + output-tap discontinuity detector | Low for (a)/(b); both are small and platform-shared |
+| 3. Screenshot/resume freeze | Historical symptom; mitigations in tree; upstream present path read in full at pin | Bounded stall by design: game thread busy-spins in `advanceToNextPresent` while drawable acquires time out (~1 s each) during system overlays; audio stalls with it; hard freeze requires a never-firing Metal completion handler (the one unbounded fence wait) | 65% (Moderate–High) for the stall mechanism; hard-freeze cause remains unknown | Bounded counters (nil-drawable count, fence-wait duration) + physical lifecycle matrix; optionally convert the spin to a condvar wait upstream | n/a (verification first) | Scripted physical matrix: screenshot ×10, Control Center, app switcher, camera overlay, with post-run log readback | Low — instrumentation-only first step |
+| 4. Audible audio static | Counters healthy in accepted runs; static reports anecdotal; ring and reference host fully readable | Intermittent real jitter/underrun events outside logged runs, plus two counter-invisible candidates (lifecycle-thread mutation race; ignored `setFrequency`, which the reference host honors) | 45% (Moderate–Low; genuinely multi-candidate) | (a) Move foreground ring reset onto the render thread via a flag; (b) honor/verify `setFrequency` | 55% | Read existing logs for requested Hz; then synthetic-sine + output-tap discontinuity detector | Low for (a)/(b); both are small and platform-shared |
 | 5. Geometry faults & blue edge | iOS seam measured (2 px) and masked; Mac unmasked; rejected experiment documented | Mac edge: host presentation-boundary coverage/rounding seam, same family as the masked iOS seam; stage geometry: separate lanes (original culling vs unvalidated RT64 effects) | 70% (High–Moderate) for the edge; geometry faults individually unknown | One-point opaque trailing-edge overlay in `GoldenPadMacApp` ZStack (iOS precedent) | 75% | Screenshot Dam/Surface at fixed camera before/after mask; settings matrix for geometry reports | Very low — additive host overlay, no RT64 change |
-| 6. Mac mouse feel & performance | Full input path readable; gain ceiling arithmetically confirmed | Camera-gain saturation at the double-clamped relative-delta seam (3°/frame cap), not event delivery | 85% (High) | Widen/re-scale the queued-delta term in `recomp_get_camera_inputs` (Mac-gated), leaving player structs and view callbacks untouched | 70% | Log consumed look per frame vs pending host delta; verify flick saturation at max sensitivity | Low if Mac-gated; must not alter the iOS touch tuning path |
+| 6. Mac mouse feel & performance | Full input path and upstream game loop readable; ceiling and truncation arithmetically confirmed | Double-clamped relative-delta seam at 30 FPS game frames: ~90°/s hip / ~30°/s aim ceiling, with fast motion discarded at queue saturation; not event delivery | 92% (High — entailed by inspected code) | Widen/re-scale the queued-delta term in `recomp_get_camera_inputs` (Mac-gated), leaving player structs and view callbacks untouched | 70% | Log consumed look per frame vs pending host delta; verify flick truncation at max sensitivity | Low if Mac-gated; must not alter the iOS touch tuning path |
 | 7. Secondary gaps | Documented in STATUS/TECH_DEBT/PREVIEW_2_ROM_IMPORT | Classification below | — | — | — | — | — |
 
 ---
@@ -216,103 +290,159 @@ Findings (source-verified unless marked otherwise):
 - Slight lighting flicker remains, not yet isolated to player, room,
   transition, display-list state, or pass (`docs/STATUS.md:37-42`).
 
+**Additional facts established from the pinned upstreams (second pass)**
+
+- The alias arithmetic is coherent: `z_buffer` is a runtime address held in
+  an `s32` (upstream `patches/externs.h:413-415`), so the patch's
+  `SCREEN_WIDTH * SCREEN_HEIGHT` (76,800-byte) shift equals exactly **120
+  rows** of 16-bit depth at 640 bytes/row — one split-screen viewport height.
+  All players' depth writes therefore land in the *same physical rows*
+  (`[z_buffer, z_buffer + 76,800)`), which is legal because players render
+  sequentially and depth is only needed within one pass.
+- RT64's `clearDepthOnly` fast path requires the fill-only pair's color-image
+  address to **exactly equal** the next pair's depth-image address
+  (`rt64_state.cpp:571-576` at the pin) — confirming both why the upstream
+  full-frame clear failed for shifted lower players and why the GoldenPad
+  repair (clear through the shifted address) is correct. Because each
+  player's clear immediately precedes that player's own draw pair, the
+  pairing works in any shuffled order.
+- **RT64 tracks two overlapping depth framebuffers in multiplayer** — one at
+  `z_buffer` (top row-group, range `[base, base+76,800)` for a 120-row pass)
+  and one at `z_buffer − 76,800` (bottom row-group, range
+  `[base−76,800, base+76,800)` for a 240-row image). Every depth write calls
+  `FramebufferManager::changeRAM`, which sets `rdramChanged = true` on
+  **every other framebuffer overlapping the written range**
+  (`rt64_framebuffer_manager.cpp:905-916`). Since both depth framebuffers'
+  ranges cover the same physical rows, **each player pass invalidates the
+  sibling row-group's depth framebuffer, every frame**.
+- `rdramChanged` flows into `depthImg.formatChanged`
+  (`rt64_state.cpp:564`), which (a) discards the GPU-side last write,
+  (b) clears the depth render target and resets `readHeight`, and (c)
+  re-reads the entire depth target from RDRAM
+  (`rt64_state.cpp:1405-1435`) — RDRAM whose contents are themselves a
+  quantized 16-bit per-pass write-back (`rt64_state.cpp:1458-1479`).
+  Single player has one depth framebuffer, no overlap, and never takes this
+  path.
+- The player-order shuffle seam is exact and already inside a patched
+  function: `shuffle_player_ids()` and
+  `set_cur_player(get_nth_player_from_shuffled(i))` in `bossMainloop`
+  (upstream `workbench_theboy.c:692-696`) — a fixed-order diagnostic is a
+  one-line change in the existing patch-regeneration workflow.
+- No `gEXSetRectAlign`/`gEXSetScissorAlign` exists anywhere in the patch
+  sources, so RT64's *global* rect/scissor alignment state stays at defaults
+  — the "global alignment leaked across passes" sub-hypothesis is ruled out.
+  The per-draw scissor origin stack still persists across pass boundaries.
+
 **Unknowns**
 
+- Whether the depth RAM round-trip is what the eye perceives as lighting
+  flicker (fog and depth-derived blending are the plausible visible carriers)
+  — the one unverified link in the otherwise source-verified chain.
 - Whether the flicker exists on original hardware in the same scenes
   (GoldenEye multiplayer genuinely reduces fog/effects;
   `docs/MULTIPLAYER_ROADMAP.md:92-96`). No reference-capture comparison
   exists.
-- Whether the flicker frequency correlates with player render order — the
-  single most diagnostic unknown.
-- The full pre-patch bodies of the patched functions (only diff hunks are
-  tracked), so the complete set of RDP state each pass leaves behind cannot
-  be enumerated from this repository alone.
+- Whether the flicker's *location* correlates with player render order.
 
-**Ranked hypotheses**
+**Ranked hypotheses (revised)**
 
-1. *Order-dependent per-player state visibility* — a fog/fade/prim-color/
-   scissor value established by one player's pass being briefly visible in
-   another's, exposed by the shuffled order. **Moderate–Low, 40%.**
-   The patch family sets fill colors from a global environment record and
-   per-view scissors; correctness requires each pass to fully re-establish
-   state, and shuffling changes which stale state is live at each boundary.
-2. *RT64 render-target/framebuffer interpretation transient* under the
-   depth-address alias — the clear writes through a color-image binding
-   aimed at the shifted depth address; a transient misclassification of the
-   aliased region could change how RT64 reconstructs a view for one frame.
-   **Low–Moderate, 30%.** It would also be order-migrating (matches the
-   observed migration of the former corruption), but the accepted repair
-   specifically aligned addresses with RT64's tracking, and the 3,336-frame
-   comparison saw no structural fault.
-3. *Original GoldenEye multiplayer behavior* (authentic per-view lighting/fog
-   pops). **Low, 15%.** Cheap to check against any reference footage; if
-   true, no repair is owed.
-4. *Host presentation artifact* (MTKView/CAMetalLayer/VI blit). **Speculative,
-   5%.** The same presentation path is rock-solid in single player at higher
-   load.
-
-(These are intended to be roughly exhaustive and sum to ~90%; the remainder
-covers compound causes.)
+1. *Aliased-depth framebuffer churn* — the mutual `rdramChanged`
+   invalidation forces each row-group's depth through a
+   GPU → 16-bit RAM → GPU round-trip every multiplayer frame; frames where
+   the round-trip is not value-identical (precision loss, write-back
+   ordering across the shuffled passes) show as slight fog/lighting
+   differences in the affected views. **Moderate, 50%.** Every link is
+   verified in the pinned code except the final perceptual attribution;
+   the mechanism is multiplayer-only, slight, and order-migrating —
+   matching all three observed properties.
+2. *Order-dependent per-player RDP state visibility* (fog/fade/prim-color/
+   scissor-origin-stack staleness across shuffled pass boundaries).
+   **Low–Moderate, 25%.** Still plausible; the patched family sets state
+   that persists into the next pass, and the scissor origin stack survives
+   pass boundaries. Weakened relative to the first pass because the
+   global-alignment variant is ruled out and because H1 now explains the
+   symptom profile more specifically.
+3. *Original GoldenEye multiplayer behavior*. **Low, 15%.**
+4. *Host presentation artifact*. **Speculative, 5%.**
 
 **Evidence for and against**
 
-- For 1: the entire corruption family so far (crash, black regions,
-  migration between views) has been game-patch/state-scoping territory, and
-  each fix was in this patch family. Against 1: the same family was just
-  carefully scoped, and the accepted run shows no structural leak.
-- For 2: the former corruption "recovered and migrated between lower views"
-  (`docs/STATUS.md:26-30`) — an RT64-side reinterpretation signature. Against
-  2: the alias repair specifically satisfied RT64's exact-address contract,
-  and physical acceptance followed immediately.
-- For 3: GoldenEye's own multiplayer reductions change lighting/fog per view.
-  Against 3: testers familiar with the game called it out as a defect.
+- For 1: complete code chain at the pin (citations above); explains
+  multiplayer-only, slightness, and migration; also predicts a measurable
+  multiplayer performance tax (a full depth re-read per pass per frame).
+  Against 1: if RT64's depth write-back and re-read are exactly
+  value-preserving in practice, the churn would be invisible and only the
+  performance cost would remain.
+- For 2: the corruption family history lived in this patch family. Against
+  2: the family was just carefully viewport-scoped, the accepted run shows
+  no structural leak, and the specific global-alignment variant is now
+  excluded by source.
+- For 3: GoldenEye's own multiplayer reductions change lighting/fog per
+  view. Against 3: testers familiar with the game called it out as a defect.
 
-**Discriminating test**
+**Discriminating test (revised, two stages)**
 
-Build one diagnostic candidate that pins the player render order (disable the
-shuffle at its game-side site; a few lines, diagnostic-only, never shipped).
-Repeat the existing 30-second four-player physical video gate
-(`docs/TESTING.md:90-101`).
+*Stage 1 — depth-resync counter (cheapest, highest information).* One atomic
+counter incremented where `depthImg.formatChanged` forces the depth
+clear-and-re-read (`rt64_state.cpp:1405-1435` region), surfaced through the
+existing `goldenpad_recomp_note_*` pattern and the 10 s health line.
+Predictions: H1 → fires on essentially every multiplayer frame and never in
+single player; if it does *not* fire per frame, H1 is dead and H2 is
+promoted. If it fires, correlate a bounded per-fire timestamp with flicker
+timestamps in the standard 30 s video (`docs/TESTING.md:90-101`).
 
-- If flicker becomes fixed-position or disappears → order-dependent state
-  (H1); the follow-up per-player trace localizes which state.
-- If flicker is unchanged → H2/H3; then compare Native N64 vs Automatic
-  resolution and MSAA on/off (RT64 interpretation issues are typically
-  scale-sensitive; original behavior is not).
-- A second cheap probe with zero code: run the same map two-player vs
-  four-player — H2 predicts flicker only where the alias shift applies
-  (lower/bottom views); H1 and H3 predict any view.
+*Stage 2 — fixed player render order.* One-line diagnostic at
+`workbench_theboy.c:692-696` (never shipped). Predictions now differ by
+hypothesis: H1 → churn continues (order-independent) but the flicker's
+*location* becomes stable; H2 → flicker disappears or becomes strictly
+reproducible at specific pass transitions; H3 → unchanged.
 
-**Minimal per-player trace** (only if H1 is implicated): tag each `send_dl`
+A third zero-code probe: two-player vs four-player on the same map — H1
+predicts flicker wherever aliasing exists (any split mode, any view);
+resolution/MSAA changes should modulate H1 (precision-dependent) but not H3.
+
+**Smallest repair seam (revised)**
+
+If Stage 1 confirms H1, the honest finding is that **no small repair
+exists**: the mutual invalidation is inherent to GoldenEye's aliased depth
+images plus RT64's overlap semantics at this pin, and any fix (teaching
+`changeRAM`/the framebuffer manager to recognize depth siblings aliasing the
+same physical rows, or un-shifting the game's depth images) is RT64-side or
+game-render-side surgery of exactly the class the do-not-do list guards.
+The correct sequencing is: confirm with the counter, measure the performance
+tax, then decide whether the slight flicker justifies an upstream
+conversation/patch against RT64's framebuffer manager — with the frozen
+video protocol as the gate. If Stage 1 refutes H1, the repair returns to the
+patched `skybox.c`/`widescreen.c` family via the per-player trace below.
+Either way the depth-alias *clear* repair in `zbufClearCurrentPlayer`
+remains untouched — under H1 the churn exists independent of it (it is
+created by the game's shifted depth-image binding, not by the clear), and
+under H2 it is unrelated.
+
+**Minimal per-player trace** (only if H2 is promoted): tag each `send_dl`
 with the current player number — the game already exposes the current-player
 pointer the monitor thread reads (`recomp_game_start.cpp:276-277`), and the
 trace seam already exists in `send_dl`
 (`patches/goldeneye64recomp-ios-prototype-render-trace.patch:71-83`). Record
-(frame, player, sky-fill color) and log only when a player's fill color
-changes between consecutive frames. Bounded, change-triggered, no per-frame
-logging cost.
-
-**Smallest repair seam**
-
-Whatever the probe localizes inside the already-patched
-`skybox.c`/`widescreen.c` family — e.g., re-latching the environment record
-per pass or adding one missing state reset. Explicitly **not** the depth
-clear: the evidence bar for touching `zbufClearCurrentPlayer` is (a) the trace
-shows flicker frames coinciding with depth-clear address transitions **and**
-(b) the large corruption returns. Neither holds today; default answer remains
-**do not touch it**.
+(frame, player, sky-fill color) and log only on change. Bounded,
+change-triggered, no per-frame logging cost.
 
 **Regression gates** — the frozen baseline protocol verbatim:
 `docs/TESTING.md:90-101` (30 s two-player + 30 s four-player physical video,
 rejection on any flash even if it recovers), plus unchanged single-player
-acceptance. Diagnosis confidence 40%; repair-seam-resolves-symptom confidence
-45% (cannot exceed diagnosis certainty until the probe runs).
+acceptance. Diagnosis confidence 50%; confidence that the eventual repair
+seam resolves the symptom without regressing the baseline: 35% (the H1
+repair is nontrivial; the instrument itself is near-risk-free).
 
 **Files and lines inspected**:
 `patches/goldeneye64recomp-ios-prototype-render-trace.patch:108-267`;
 `CMakeLists.txt:279-330`; `docs/TECH_DEBT.md:145-181`;
 `docs/MULTIPLAYER_ROADMAP.md:1-125`; `docs/TESTING.md:69-101`;
-`docs/STATUS.md:26-42,576-590`.
+`docs/STATUS.md:26-42,576-590`; upstream at pins: `patches/widescreen.c`
+(full), `patches/skybox.c`, `patches/externs.h:395-415`,
+`patches/workbench_theboy.c:600-760`, `rt64_state.cpp:535-615,1350-1480`,
+`rt64_rdp.cpp:100-280,970-1240`, `rt64_framebuffer_manager.cpp:895-925`,
+`rt64_framebuffer.cpp:40-185`.
 
 ### Issue 2 — Real three/four-controller routing and lifecycle
 
@@ -442,11 +572,31 @@ hot-plug behavior is the untested half of the risk.
   a nil drawable (`plume_metal.cpp:2060-2064` @ `d890ac89`), RT64's present
   loop marks the swap chain invalid and routes through
   `presentGraphicsWorker->wait()` → `resize()` → retry
-  (`rt64_present_queue.cpp:300-306,468-487` @ `5473732a`). The Plume
+  (`rt64_present_queue.cpp:300-306,466-487` @ `5473732a`), and — critically —
+  the present thread **advances the queue barrier for every non-paused
+  present even when acquisition fails or the present is skipped**
+  (`threadAdvanceBarrier`, `rt64_present_queue.cpp:514-529`). The Plume
   semaphore accounting survives a failed acquire: the signal side writes the
   *current* value without incrementing (`plume_metal.cpp:2055-2057`), and
   only the wait side increments (`:3694-3695`), so a signal with no matching
   wait is value-idempotent, not a desync.
+- **The game/VI thread pushes presents through an unbounded busy-wait spin.**
+  `PresentQueue::advanceToNextPresent` loops taking a mutex until the barrier
+  cursor moves (`rt64_present_queue.cpp:38-55`; no condition variable, no
+  sleep). `State::updateScreen` calls it on the game-side thread
+  (`rt64_state.cpp:1954-1956`). While iOS throttles drawables (screenshot,
+  system overlay), each present-thread acquire costs up to ~1 s
+  (`nextDrawable` timeout), the small present ring fills, and the game thread
+  spins hot until the barrier lifts — freezing simulation **and audio
+  production** together for seconds, then recovering. This is a complete,
+  bounded mechanism for the reported symptom that involves no bug in tracked
+  code and burns a core (thermal/scheduling cost) while it lasts.
+- The only genuinely unbounded wait found on the present path is the
+  command-fence `dispatch_semaphore_wait(..., DISPATCH_TIME_FOREVER)` in
+  Plume's `RenderCommandFence` wait (`plume_metal.cpp:3733`), reached via
+  `presentGraphicsWorker->wait()`. A *permanent* freeze therefore requires a
+  Metal command buffer whose completed handler never fires.
+  `MetalSwapChain::wait` is bounded to 1 s (`plume_metal.cpp:1982-1992`).
 - Ordering on background is: release touch → `audio.deactivate()`
   (`engine.pause`) → `setAppActive(false)` (`RecompPrototypeApp.swift:164-167`);
   on foreground: `setAppActive(true)` (which discards stale ring audio and
@@ -474,19 +624,30 @@ hot-plug behavior is the untested half of the risk.
   reachable only through a code path I did not find — recorded as a residual
   unknown, not a diagnosis.
 
-**Ranked hypotheses for the historical freezes**
+**Ranked hypotheses for the freezes (revised)**
 
-1. Pre-mitigation drawable stall (blocking `nextDrawable` without timeout,
-   and/or suspending RT64 on `.inactive` in an earlier build) — now
-   addressed. **Moderate, 55%** that the symptom is already fixed.
-2. Presentation-only stall while simulation continues (appears frozen,
-   audio/game continue) — the health log can already distinguish this
-   (presented counter flat, menu/stage advancing). **Low–Moderate, 20%.**
-3. Host main-thread stall (SwiftUI/timer starvation freezing input publish
-   and status, game alive) — both input publish and touch handling are
-   main-thread (`Sources/RecompPrototypeInput.swift:182-185`). **Low, 15%.**
-4. Audio/main queue interaction or an untracked RT64 wait. **Speculative,
-   10%.**
+1. *Bounded backpressure stall (by design):* drawable throttling during a
+   screenshot/overlay slows the present thread to ~1 acquire-timeout per
+   second; the full present ring makes the game thread busy-spin in
+   `advanceToNextPresent`, stalling simulation and audio together for
+   seconds; recovery when drawables return. Perceived as a freeze, sometimes
+   ended by the user killing the app before recovery. **Moderate–High, 65%**
+   as the mechanism of the historical reports.
+2. *Hard freeze via a never-firing Metal completion handler* (the one
+   unbounded fence wait, `plume_metal.cpp:3733`) — possible if a command
+   buffer submitted around a lifecycle edge is neither executed nor errored.
+   **Low, 15%.** Metal normally completes backgrounded buffers with errors,
+   which still fires handlers.
+3. *Host main-thread stall* (SwiftUI/timer starvation freezing input publish
+   and status, game alive) — input publish and touch handling are main-thread
+   (`Sources/RecompPrototypeInput.swift:182-185`). **Low, 10%.**
+4. *Other untracked wait.* **Speculative, 10%.**
+
+Note the observable difference: under H1 the health log shows `presented`
+flat **and** `menu/stage` flat (game thread spinning, not simulating) with
+audio queued frames frozen; under H3 the game-side counters keep advancing.
+The existing 10 s health line already captures all three signals
+(`recomp_game_start.cpp:293-324`).
 
 **Discriminating test**
 
@@ -497,22 +658,31 @@ screenshot ×10; (2) Control Center pull-down and dismiss ×5; (3) app switcher
 round-trip ×5; (4) full Home → relaunch ×3; (5) screenshot immediately
 followed by backgrounding (the compound case most likely to catch an
 in-flight acquisition). After each block, one bounded log readback. Expected
-outcomes: a real freeze with flat `presented` but advancing `menu/stage` →
-H2; flat everything → game-thread stall (new information); no freeze in
-40+ transitions → promote H1 to Confirmed and close with the matrix as
+outcomes: a stall with `presented`, `menu/stage`, **and** audio-queued all
+flat that recovers within seconds → H1 confirmed (spin backpressure — decide
+whether the transient hitch is acceptable or worth an upstream condvar);
+the same signature that never recovers → H2 (capture the fence-wait
+breadcrumb below); game counters advancing while UI/input are dead → H3;
+no stall in 40+ transitions → the mitigations hold and the matrix is the
 acceptance evidence.
 
 **Bounded instrumentation that would sharpen it** (only if the matrix
 reproduces): a counter at Plume's nil-drawable branch (that `fprintf` at
 `plume_metal.cpp:2062` goes to stderr, not the session log — route it through
-the existing `goldenpad_recomp_note_*` pattern), and a last-present monotonic
-timestamp readable by the monitor thread. Both are change-triggered, no
-per-frame cost.
+the existing `goldenpad_recomp_note_*` pattern), and a
+before/after-timestamp breadcrumb around the command-fence wait
+(`plume_metal.cpp:3733`) so a permanently stuck fence is distinguishable
+from repeated 1 s acquire timeouts. Both are change-triggered, no per-frame
+cost.
 
 **Smallest repair seam**: none proposed until the matrix produces a
 reproduction; the tree's current posture (`.inactive` keeps presenting,
-timeout-bounded acquisition, recover-by-resize upstream) is the correct
-default.
+timeout-bounded acquisition, recover-by-resize upstream, barrier always
+advancing) is the correct default. If H1's multi-second hitch is judged
+unacceptable, the seam is upstream: converting `advanceToNextPresent`'s
+busy-wait to a condition-variable wait (the barrier side already holds
+`cursorMutex`) — a small, contained RT64 patch, but one that touches the
+frozen present path and therefore needs the full multiplayer video gate.
 
 **Regression gates**: `docs/TESTING.md:48-56` items 3–4 (screenshot/overlay
 return without freeze), audio-session cycle acceptance
@@ -524,7 +694,9 @@ return without freeze), audio-session cycle acceptance
 `Sources/RecompPrototypeAudio.swift:30-78,142-156`;
 `Support/RecompPrototype/recomp_game_start.cpp:246-353,696-731`;
 `patches/goldeneye64recomp-ios-prototype-render-trace.patch:84-107`; upstream
-`rt64_present_queue.cpp` and `plume_metal.cpp` at the pins (URLs in §1).
+at pins: `rt64_present_queue.cpp:25-105,295-410,440-535`,
+`rt64_state.cpp:1838-1960` (`State::updateScreen`),
+`rt64_application.cpp:512-516`, `plume_metal.cpp:1940-2090,3630-3740`.
 
 ### Issue 4 — Audible audio static
 
@@ -554,12 +726,28 @@ return without freeze), audio-session cycle acceptance
 - The game's requested output rate is **ignored**: `setFrequency` only logs
   (`recomp_game_start.cpp:426-428`) while both hosts hard-code a 22,050 Hz
   source format (`Sources/RecompPrototypeAudio.swift:82-89`,
-  `Sources/Mac/RecompMacAudio.swift:66-73`). The system self-clocks (the game
-  schedules audio from `getFramesRemaining`), so a mismatch cannot drift
-  unboundedly — but the actual requested value is not recorded anywhere in
-  the repo, and prior diagnosis history (the stereo-swap defect,
-  `docs/RT64_N64RECOMP_PROTOTYPE.md:272-277`) shows queue health cannot
-  detect format-class defects.
+  `Sources/Mac/RecompMacAudio.swift:66-73`). The pinned reference host does
+  the opposite: `set_frequency` stores the requested rate and rebuilds the
+  SDL resampler from it (`sample_rate = freq; update_audio_converter()`,
+  upstream `src/main/main.cpp:289-293`), and `get_frames_remaining` scales by
+  that dynamic rate (`:255-278`). So ignoring the callback is a genuine
+  divergence from the reference implementation, not a shared convention. The
+  system self-clocks (the game schedules audio from `getFramesRemaining`), so
+  a mismatch cannot drift unboundedly — the exposure is a constant small
+  rate/pitch error, not accumulating gaps — but the actual requested value is
+  not recorded anywhere in the repo, and prior diagnosis history (the
+  stereo-swap defect, `docs/RT64_N64RECOMP_PROTOTYPE.md:272-277`) shows queue
+  health cannot detect format-class defects.
+- Two reference-host comparisons in GoldenPad's favor, established this pass:
+  the reference host resamples **per chunk** and must duplicate four boundary
+  frames per chunk to hide interpolation seams (`main.cpp:182-227`), a seam
+  class GoldenPad's continuous ring + AVAudioEngine stream conversion avoids
+  entirely; and the reference host's latency control decimates audio crudely
+  under backlog (`skip_factor`, `main.cpp:236-249`), which GoldenPad replaces
+  with counted ring-full drops. The stereo-pair swap is identical in both
+  (`main.cpp:208-212` vs `recomp_game_start.cpp:405-411`). GoldenPad's
+  1,024-frame reserve also exceeds the reference's ~2-VI (~735-frame)
+  offset (`main.cpp:255-270`).
 - The documented static diagnosis so far: consumer cadence jitter, mitigated
   by the reserve/prebuffer/fade design; final soak: 2.3 M+ frames, zero
   underruns (`docs/RT64_N64RECOMP_PROTOTYPE.md:264-274`). Mac's historical
@@ -586,7 +774,10 @@ return without freeze), audio-session cycle acceptance
    fade-out + ≥46 ms silence + fade-in) perceived as "static" when frequent.
    **Low, 20%.** Would correlate with `audioUnderrunCallbacks` when counted.
 4. Sample-rate/format mismatch against the hard-coded 22,050 Hz. **Low,
-   10%** — self-clocking bounds it, but it is the one unchecked assumption.
+   10%** — self-clocking bounds it to a constant pitch error rather than
+   static, but the reference host honors the callback and GoldenPad does
+   not, so it remains the one unchecked assumption worth one log line to
+   retire.
 5. Integer-to-float or channel-layout defect. **Speculative, 5%** — the code
    is straightforward (`:919-921`) and channel order was already fixed.
 
@@ -626,7 +817,9 @@ regressing the baseline: 55%.
 `Support/RecompPrototype/recomp_game_start.cpp:83-100,382-428,696-723,871-954`;
 `Sources/RecompPrototypeAudio.swift` (complete);
 `Sources/Mac/RecompMacAudio.swift` (complete);
-`docs/RT64_N64RECOMP_PROTOTYPE.md:262-277`; `docs/TECH_DEBT.md:122-143`.
+`docs/RT64_N64RECOMP_PROTOTYPE.md:262-277`; `docs/TECH_DEBT.md:122-143`;
+upstream reference host `src/main/main.cpp:180-320` at the
+GoldenEye64Recomp pin.
 
 ### Issue 5 — Stage-specific geometry faults and the thin blue render edge
 
@@ -733,12 +926,23 @@ capture, unchanged iOS mask behavior.
   (`patches/goldeneye64recomp-ios-modern-controls.patch:86-89,109`).
 - Therefore the maximum camera rate is ~3°/game-frame hip-fire and
   1°/game-frame aiming, **regardless of physical mouse speed or the
-  sensitivity setting**. At 60 game fps that is 180°/s; at lower frame rates
-  proportionally slower (frame-rate coupling is inherent to the per-frame
-  application). At default sensitivity the per-tick saturation point is
-  ≈ 7.8 event-pixels (32,767 / 4,200) — i.e., moderate mouse motion is
-  already pegged at the ceiling, which is exactly the reported feel:
-  "adjusting sensitivity doesn't make it fast."
+  sensitivity setting**. The recomp game loop targets **30 FPS**
+  (`static int desiredFPS = 30`, `frameSkipInterval = 60/30`, upstream
+  `workbench_theboy.c:455-469`; `InitFrameRateControl()` called at
+  `bossMainloop` start, `:534`), so the ceiling is **~90°/s hip-fire and
+  ~30°/s aiming** — an order of magnitude below ordinary desktop FPS turn
+  rates, and frame-rate-coupled by construction.
+- Worse than a ceiling: because the *queue itself* clamps its accumulated
+  value to ±32,767 (`queueClampedAxis`, `recomp_game_start.cpp:167-173`) —
+  exactly one game frame of full deflection — mouse travel beyond the
+  saturation point between game-frame consumptions is **discarded, not
+  deferred**. A fast flick loses most of its rotation. And since the host
+  multiplies deltas by `1_680 × sensitivity` *before* queueing
+  (`Sources/Mac/RecompMacInput.swift:496-506`), raising the sensitivity
+  slider lowers the physical speed at which discarding begins: at the 2.5
+  default, saturation is ≈ 7.8 event-pixels per game frame (~235 px/s); at
+  the 6.0 maximum, ≈ 3.3 pixels (~98 px/s). This precisely reproduces the
+  reported feel — slow, and the slider does not fix it.
 - Additional clamps/dead zones on this path: none for the mouse (the 0.15
   radial dead zone and 1.5 response curve apply only to a physical right
   stick, `:406-408`; the controller-vs-touch scale split is core-side,
@@ -756,20 +960,22 @@ capture, unchanged iOS mask behavior.
 
 **Unknowns**
 
-- The game frame rate during Mac play (affects the effective °/s at the
-  fixed °/frame cap).
 - Whether GoldenEye applies any additional smoothing to `vv_theta` deltas of
   this size (the patch writes angles directly then calls
   `bondviewApplyVertaTheta`; behavior for larger per-frame steps is untested).
+- The *achieved* Mac frame rate under load (the 30 FPS target is by
+  construction; sustained dips would lower the ceiling further).
 
 **Ranked hypotheses (why mouse feels slow)**
 
-1. Camera-gain saturation at the double-clamped seam (arithmetic above).
-   **High, 85% — effectively entailed by the inspected code.**
-2. Event-delivery latency (main-queue congestion). **Low, 10%** — the
+1. Camera-rate saturation plus fast-motion truncation at the double-clamped
+   seam, at 30 game-frames/s (arithmetic above). **High, 92% — entailed by
+   the inspected code**; the residual covers only perceptual factors beyond
+   the rate cap.
+2. Event-delivery latency (main-queue congestion). **Low, 5%** — the
    coalescing patch removed the congestion source, and delivery latency
    cannot explain a *rate* ceiling.
-3. Game-side consumption smoothing. **Speculative, 5%.**
+3. Game-side consumption smoothing. **Speculative, 3%.**
 
 **Measurement separating delivery latency from gain**: log, per publish tick,
 the host's pending-delta magnitude before queueing, and (sampled, e.g. every
@@ -780,19 +986,27 @@ carries the absolute right-stick values (`:307-310`) but **not** the queued
 relative look — that one sampled log line is the missing instrument.
 
 **Can sensitivity be improved solely at the accepted relative-delta seam?**
-Yes. `recomp_get_camera_inputs` is project-owned host code (not generated),
-inside the accepted boundary (no player-struct writes, no event monitor).
-Smallest repair: for the queued-delta term only, widen the clamp (e.g. allow
-the combined value into ±3 under `GOLDENPAD_RECOMP_MAC`) or convert queued
-deltas to degrees directly, so a fast flick yields proportionally more
-rotation per frame while a physical stick's behavior is untouched
-(`recomp_game_start.cpp:824-832` is the exact edit site). The game patch's
-3°/frame multiplier then acts on a >1 magnitude. Risk: verify GoldenEye
-tolerates larger per-frame `vv_theta` steps (interpolation/aim-assist
-artifacts); the prototype notes RT64 interpolation guards for teleport
-rotations exist (`docs/RT64_N64RECOMP_PROTOTYPE.md:96-99`). Diagnosis 85%;
+Yes, but the repair must widen **both** clamps, and both live in
+project-owned host code (not generated), inside the accepted boundary (no
+player-struct writes, no event monitor):
+
+1. the queue accumulation clamp in `queueClampedAxis`
+   (`recomp_game_start.cpp:167-173`) — otherwise the queue can never hold
+   more than one frame of deflection and fast motion keeps being discarded;
+2. the consume-side `[-1, 1]` clamp for the queued-delta term in
+   `recomp_get_camera_inputs` (`recomp_game_start.cpp:824-832`) — e.g. allow
+   the queued component into ±3 under `GOLDENPAD_RECOMP_MAC`, so the game
+   patch's 3°/frame multiplier acts on a >1 magnitude and a fast flick
+   yields proportionally more rotation per frame while a physical stick's
+   behavior is untouched.
+
+Risk: verify GoldenEye tolerates larger per-frame `vv_theta` steps
+(interpolation/aim-assist artifacts); the prototype notes RT64 interpolation
+guards for teleport rotations exist
+(`docs/RT64_N64RECOMP_PROTOTYPE.md:96-99`). Diagnosis 92%;
 fix-resolves-feel-without-regression 70%. iPhone/iPad must be excluded from
-the change — the same function serves the accepted touch tuning.
+the change — the same two functions serve the accepted touch tuning, whose
+1.5× swipe gain and 4× sensitivity were tuned against these exact clamps.
 
 **Coalescing verification with low observer effect**: add one atomic counter
 incremented when the CAS in each coalesced path finds an update already
@@ -818,7 +1032,9 @@ persistence; the do-not-do list below.
 `Support/RecompPrototype/recomp_game_start.cpp:167-173,742-749,781-848`;
 `patches/goldeneye64recomp-ios-modern-controls.patch` (complete);
 `patches/plume-macos-main-queue-coalescing.patch` (complete);
-`docs/TECH_DEBT.md:75-143`; `docs/TESTING.md:102-148`.
+`docs/TECH_DEBT.md:75-143`; `docs/TESTING.md:102-148`; upstream
+`patches/workbench_theboy.c:455-540` (frame-rate control) at the
+GoldenEye64Recomp pin.
 
 ### Issue 7 — Secondary completeness gaps
 
@@ -861,9 +1077,17 @@ coupling as its secondary suspect — the Issue 3 matrix separates them
 (presented-counter flat vs input-timer starved leave different log
 signatures).
 
-**Renderer timing vs audio:** on iOS, presentation and audio share no thread
-or lock (`update_screen` gate vs `AVAudioSourceNode` render thread); zero
-audio drops during the 54,652-VI multiplayer soak supports independence.
+**Renderer timing vs audio (revised):** the audio *consumer* is independent
+of presentation (`AVAudioSourceNode` render thread vs the `update_screen`
+gate), but the audio *producer* is not — audio chunks are generated on the
+game-side thread cadence, and that thread busy-spins in
+`PresentQueue::advanceToNextPresent` when the present ring backs up
+(`rt64_present_queue.cpp:38-55`). So drawable throttling stalls video and
+audio **together through the game thread**, which is a second legitimate
+coupling point alongside the host main-thread timers. Zero audio drops during
+the 54,652-VI multiplayer soak shows this coupling is quiescent in normal
+play; it activates only under presentation backpressure (screenshot/overlay
+windows), which is exactly when the freeze symptom was reported.
 
 ---
 
@@ -885,20 +1109,40 @@ audio drops during the 54,652-VI multiplayer soak supports independence.
    gain: high (either closes the freeze or yields the first current-build
    reproduction). Size **XS** (procedure only). Risk: none. Acceptance: the
    matrix log, per `docs/TESTING.md:48-56` item 4.
-4. **Fixed-render-order multiplayer probe build** (Issue 1): disable the
-   player-order shuffle in a diagnostic-only candidate; repeat the 30 s
-   two- and four-player physical video gate. Info gain: high (splits the
-   hypothesis space in half). Size **S**. Risk: low (diagnostic build, never
-   shipped; frozen baseline untouched). Rollback: discard the candidate.
-   Acceptance: video per `docs/TESTING.md:90-101` plus a flicker-position
-   verdict.
-5. **Audio consumer-owned reset + frequency assert** (Issue 4 seams a+b):
+4. **Depth-resync counter build** (Issue 1, Stage 1): one atomic counter
+   where `depthImg.formatChanged` forces the depth clear-and-re-read
+   (`rt64_state.cpp:1405-1435` region of the embedded RT64 build), surfaced
+   through the existing `goldenpad_recomp_note_*` pattern and the 10 s
+   health line; run one multiplayer and one single-player session. Info
+   gain: very high (a per-frame nonzero count in multiplayer with zero in
+   single player confirms the aliased-depth churn as real; zero kills the
+   leading hypothesis outright). Size **S** (RT64-side one-liner in the
+   embedded archive rebuild; no game-patch regeneration). Risk: low —
+   counting only, frozen repair untouched. Rollback: rebuild without the
+   counter. Acceptance: the counter values plus the standard 30 s video for
+   timestamp correlation.
+5. **Fixed-render-order multiplayer probe build** (Issue 1, Stage 2):
+   one-line diagnostic at the `shuffle_player_ids()` /
+   `get_nth_player_from_shuffled(i)` seam (upstream
+   `workbench_theboy.c:692-696`, already inside the patched `bossMainloop`);
+   repeat the 30 s two- and four-player physical video gate. Info gain: high
+   (under H1, flicker becomes position-stable; disappearance promotes the
+   state-leak hypothesis instead — then follow with the player-tagged
+   `send_dl` trace at the existing seam,
+   `patches/goldeneye64recomp-ios-prototype-render-trace.patch:71-83`).
+   Size **S** (requires the matched patch-pair regeneration; the CMake
+   marker/timestamp guards cover the known failure mode). Risk: low
+   (diagnostic build, never shipped). Rollback: rebuild from the frozen
+   patch pair. Acceptance: video per `docs/TESTING.md:90-101` plus a
+   flicker-position verdict.
+6. **Audio consumer-owned reset + frequency assert** (Issue 4 seams a+b):
    atomic reset flag consumed in `goldenpad_recomp_audio_render`; record and
-   assert the `setFrequency` value. Info gain: medium (removes a race class;
-   verifies an assumption). Size **S**. Risk: low; platform-shared. Rollback:
-   revert two small hunks. Acceptance: soak with zero counters + unchanged
-   cold-start PCM probe (`docs/TESTING.md:699-711`).
-6. **Touch-ownership leak fix + synthetic controller lifecycle probe**
+   assert the `setFrequency` value (the reference host honors it — parity
+   argument, upstream `main.cpp:289-293`). Info gain: medium (removes a race
+   class; verifies an assumption). Size **S**. Risk: low; platform-shared.
+   Rollback: revert two small hunks. Acceptance: soak with zero counters +
+   unchanged cold-start PCM probe (`docs/TESTING.md:699-711`).
+7. **Touch-ownership leak fix + synthetic controller lifecycle probe**
    (Issue 2): on test-mode collapse from disconnect, publish neutral to
    port 0 instead of falling through to the touch branch until the user
    re-confirms; land the `GCVirtualController` probe with the five-step
@@ -906,25 +1150,20 @@ audio drops during the 54,652-VI multiplayer soak supports independence.
    gate). Size **S**. Risk: medium-low (touches the accepted P1 path; gated
    by existing `--input-probe`). Rollback: revert the publish-branch change.
    Acceptance: probe PASS lines + unchanged single-controller physical feel.
-7. **Mac mouse-gain widening at `recomp_get_camera_inputs`** (Issue 6),
-   Mac-gated, after the sampled consumed-look instrument confirms
-   saturation. Info gain: medium (the instrument is itself the confirmation).
-   Size **S**. Risk: medium (per-frame angle steps larger than tuned values);
-   gated by the full macOS input/render gate (`docs/TESTING.md:104-131`) with
-   Dam/Surface capture comparison. Rollback: the change is behind
-   `GOLDENPAD_RECOMP_MAC` and one constant. Acceptance: hands-on feel pass +
-   unchanged geometry captures + no aim-assist artifacts.
-8. **Per-player display-list trace** (Issue 1 follow-up, only if step 4
-   implicates order-dependent state): player-tagged `send_dl` with
-   change-triggered fill-color logging. Info gain: high conditional. Size
-   **S/M** (touches the trace patch + regeneration workflow — the pairing
-   guards make this the riskiest build step in the list). Risk: medium
-   (patch regeneration; mitigated by the CMake marker/timestamp guards).
-   Rollback: rebuild from the frozen patch pair. Acceptance: trace localizes
-   a specific state transition coincident with flicker frames.
+8. **Mac mouse widening at both relative-delta clamps** (Issue 6),
+   Mac-gated: widen the queue accumulation clamp
+   (`recomp_game_start.cpp:167-173`) and the consume-side queued-delta clamp
+   (`:824-832`) together, after the sampled consumed-look instrument
+   confirms saturation. Info gain: medium (the instrument is itself the
+   confirmation). Size **S**. Risk: medium (per-frame angle steps larger
+   than tuned values); gated by the full macOS input/render gate
+   (`docs/TESTING.md:104-131`) with Dam/Surface capture comparison.
+   Rollback: both changes behind `GOLDENPAD_RECOMP_MAC`. Acceptance:
+   hands-on feel pass + unchanged geometry captures + no aim-assist
+   artifacts.
 
 Real three/four-controller *implementation* (the slot model) is deliberately
-after this list: it is the largest change, it depends on step 6's probe
+after this list: it is the largest change, it depends on step 7's probe
 existing first, and nothing in the frozen baseline degrades while it waits.
 
 ---
@@ -979,11 +1218,11 @@ source-level reason each stays rejected:
 
 **Fixable with high confidence now:**
 
-- The Mac mouse-look ceiling — the double-clamp arithmetic is entailed by
-  the inspected code (diagnosis ~85%), and a Mac-gated widening at the
-  project-owned `recomp_get_camera_inputs` seam is a contained change
-  (fix ~70%, the residual being GoldenEye's tolerance of larger per-frame
-  angle steps).
+- The Mac mouse-look defect — the 30 FPS × 3°/frame ceiling and the
+  queue-saturation truncation are entailed by the inspected code (diagnosis
+  ~92%), and a Mac-gated widening of the two project-owned clamps is a
+  contained change (fix ~70%, the residual being GoldenEye's tolerance of
+  larger per-frame angle steps).
 - The touch-to-Player-1 leak on controller disconnect during the two-player
   test — confirmed from source; the neutral-fallback fix is small and
   probe-gated.
@@ -991,32 +1230,97 @@ source-level reason each stays rejected:
   precedent and adds no renderer risk (~75%), while honestly leaving the
   underlying rounding seam diagnosed-but-unrepaired, exactly as iOS does.
 
-**Likely fixable, needing one discriminating test first:**
+**Likely explainable, needing one discriminating test first:**
 
-- The residual multiplayer flicker — the fixed-render-order probe splits the
-  hypothesis space cheaply; until it runs, no repair should be attempted and
-  the depth-alias repair must stay frozen.
+- The residual multiplayer flicker — the aliased-depth churn chain is now
+  fully source-verified except its final perceptual link, and the one-line
+  depth-resync counter settles that link cheaply. Note the asymmetry: this
+  is "likely *diagnosable*", not "likely quickly fixable" — if confirmed,
+  the repair is RT64-side aliased-depth recognition, which is real surgery
+  and should be weighed against the symptom's low severity. The depth-alias
+  clear repair stays frozen under every branch.
+- The screenshot/resume "freeze" — the busy-spin backpressure mechanism
+  explains a recoverable multi-second stall entirely from pinned code; the
+  lifecycle matrix plus two breadcrumbs distinguish it from the (much less
+  likely) permanent fence-wait freeze.
 - Audible static — the requested-Hz log readback plus the synthetic-sine tap
   will either implicate the two identified counter-blind classes (both have
   small, safe seams) or redirect the investigation upstream of the ring.
 
 **Genuinely unknown:**
 
-- Whether the screenshot/resume freeze still exists in the current build.
-  The three shipped mitigations are individually sound and the pinned
-  upstream recovery path is real, but zero lifecycle-matrix evidence exists
-  for this binary; the mechanism of the *historical* freezes is unrecoverable
-  from the repository.
+- Whether the depth RAM round-trip is visually perceptible as the reported
+  flicker (versus being only a hidden performance tax with the flicker
+  living elsewhere) — the single most leveraged unknown in the review, and
+  the cheapest to resolve.
 - Whether any reported stage-geometry fault is a GoldenPad defect at all, as
   opposed to original culling/portal behavior or a documented unvalidated
   RT64 effect — no report is currently reproducible.
 - GoldenEye's in-match behavior when advertised controller ports vanish —
   the key unknown gating the multi-controller design.
+- Whether a hard (non-recovering) freeze exists at all in the current build,
+  as opposed to the recoverable stall — only the physical matrix can say.
 
 **Most valuable next artifact:** the bounded application-log readback from a
 physical session in which a user actually hears static or hits a freeze —
 the counters, requested-Hz line, and lifecycle breadcrumbs needed to close
 Issues 3 and 4 already exist in the shipped binary and have simply never been
-collected from a failing session. Second: a 30-second four-player video from
-the fixed-render-order probe build. Both cost near-zero engineering and each
-resolves the largest open branch of its issue.
+collected from a failing session. Second: one multiplayer session's
+depth-resync counter reading, which either confirms or kills the leading
+flicker mechanism. Both cost near-zero engineering and each resolves the
+largest open branch of its issue.
+
+---
+
+## 9. Revision log (second pass)
+
+Changes from the first pass of this review, after reading the pinned
+GoldenEye64Recomp, RT64 and Plume sources in depth:
+
+1. **Issue 1 — leading diagnosis replaced.** First pass ranked an
+   order-dependent render-state leak (40%) above an RT64 framebuffer
+   transient (30%) on circumstantial grounds. Second pass established a
+   complete code chain for a specific RT64-side mechanism — overlapping
+   aliased depth framebuffers, mutual `rdramChanged` invalidation
+   (`rt64_framebuffer_manager.cpp:905-916`), and a forced per-frame
+   quantized depth re-read (`rt64_state.cpp:1405-1435,1458-1479`) — that
+   uniquely matches all three observed properties (multiplayer-only, slight,
+   order-migrating). It is now leading at 50%, with the state leak demoted
+   to 25% (its global-alignment variant is affirmatively ruled out: no
+   `gEXSetRectAlign`/`gEXSetScissorAlign` exists in any patch source). The
+   recommended first probe changed from the fixed-order build to a one-line
+   depth-resync counter; the fixed-order build became Stage 2 with revised
+   predictions. The repair-seam assessment worsened honestly: if confirmed,
+   no small fix exists. The `clearDepthOnly` fast-path source
+   (`rt64_state.cpp:571-576`) also upgraded the depth-alias repair's
+   correctness from documented to source-confirmed, and the alias
+   arithmetic (120 rows × 640 bytes) was verified against `externs.h`.
+2. **Issue 3 — from "no identified mechanism" to a specific bounded one.**
+   First pass said the current tree has no identified stuck wait. Second
+   pass found `PresentQueue::advanceToNextPresent` is an unbounded
+   busy-spin on the game thread (`rt64_present_queue.cpp:38-55`), which
+   under drawable throttling produces a recoverable multi-second
+   simulation+audio stall — a mechanism for the reported symptom requiring
+   no bug anywhere. The barrier was also verified to advance on failed
+   acquires (`:514-529`), and the single truly unbounded wait was isolated
+   to the command-fence `dispatch_semaphore_wait(FOREVER)`
+   (`plume_metal.cpp:3733`). Hypotheses, expected matrix outcomes, and the
+   instrumentation plan were rewritten accordingly; the cross-issue causal
+   map's "presentation and audio are independent" claim was corrected (they
+   couple through the game thread under backpressure).
+3. **Issue 6 — strengthened and corrected.** First pass assumed up to 60
+   game fps (ceiling "180°/s"). The pinned `bossMainloop` targets 30 FPS
+   (`workbench_theboy.c:455-469`), halving the ceiling to ~90°/s hip /
+   ~30°/s aim. Second pass also established that the *queue* clamp discards
+   (rather than defers) fast motion and that raising sensitivity lowers the
+   discard threshold — explaining why the slider does not help. Diagnosis
+   85% → 92%; the repair seam was corrected to require widening **both**
+   clamps, not just the consume-side one.
+4. **Issue 4 — one assumption hardened into a divergence.** The pinned
+   reference host honors `set_frequency` and rebuilds its resampler from it
+   (`main.cpp:289-293`); GoldenPad ignores it. Also recorded two points
+   where GoldenPad's ring design is stronger than the reference host
+   (no per-chunk resampling seams; counted drops instead of crude
+   decimation), which narrows the plausible static causes.
+5. **Issues 2, 5, 7 — unchanged** by the second pass; no new evidence
+   contradicted them.
