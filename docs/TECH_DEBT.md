@@ -108,7 +108,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages and reached by GoldenPad's opt-in primary-runtime probe; one Dam KF7 guard produced 13/17/18 committed events per 100 ticks | Primary runtime lacks the authenticity repair; the guard result confirms the counter/gate mechanism, while three fixed player KF7 windows remain required | Complete the player baseline, then port the two source-level MGB64 seams as a separate review unit and re-accept gameplay feel |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages and reached by GoldenPad's opt-in primary-runtime probe; one Dam KF7 guard produced 13/17/18 committed events per 100 ticks. Three player tap-response windows matched three events to three rounds but are not sustained-fire evidence | Primary runtime lacks the authenticity repair; the guard mechanism is confirmed, while the sustained player baseline is formally blocked on a repeatable ordinary setup with at least 34 KF7 rounds | Resume the sustained player baseline without inventory injection, then port the two source-level MGB64 seams as a separate review unit and re-accept gameplay feel |
 | TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Confirmed** from the public report and input/game patch trace | C-button controller mode can strafe; modern MOVE horizontal still follows original turn behavior and touch has no equivalent C-left/right mapping | Gameplay-only synthetic input test, then physical touch + modern controller acceptance with menus unchanged |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
@@ -167,23 +167,24 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **finish the player half of the
-TD-01 fire-rate baseline**. The launch-controlled probe, matched game patch,
-build/preservation gates, and three guard windows now pass. GoldenEye's attract
-input reached weapon 8 at 30 rounds but changed state before tick 100, so that
-partial window is not a baseline and the authenticity repair remains gated.
+TD-01's player baseline remains the first timing prerequisite, but it is now
+**formally blocked**. The probe and guard windows pass, and three player
+tap-response windows qualify ammo/event agreement, but the sustained ordinary
+setup did not provide enough ammunition for the 34-shot discrimination ceiling
+before combat ended repeated runs. The authenticity repair remains gated.
 
-The smartest next user-facing repair is **TD-02 modern sidestepping**. It is a
-current public issue with a traced ownership seam and can be fixed independently
-while the timing probe is built. TD-03 crash-artifact collection and A12-family
-reproduction also run from the first step as an evidence-only lane; no A12 code
-change is selected without that evidence. The next landing sequence is:
+The smartest active repair is therefore **TD-02 modern sidestepping** on a
+separate branch/review unit. It is a current public issue with a traced ownership
+seam and is independent of combat timing. TD-03 crash-artifact collection and
+A12-family reproduction remain an evidence-only lane; no A12 code change is
+selected without that evidence. The next landing sequence is:
 
-1. land the fire-rate probe and record player plus guard cadence;
+1. preserve the fire-rate probe and formal sustained-player blocker;
 2. repair modern sidestep semantics with menu and original-C-button regression
    tests;
-3. apply the fire-rate authenticity patch only after the probe proves the
-   current and expected numbers, then obtain hands-on combat acceptance;
+3. resume the sustained player baseline only with at least 34 ordinary-input
+   KF7 rounds, then apply the authenticity patch only if the probe proves the
+   current and expected numbers and obtain hands-on combat acceptance;
 4. add the controller-lifecycle probe and neutralize the TD-07 disconnect leak;
 5. collect the existing failing-session audio/lifecycle evidence and add only
    the bounded counters needed to discriminate TD-04 through TD-06;

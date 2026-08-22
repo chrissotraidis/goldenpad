@@ -134,8 +134,18 @@ One ordinary Dam run recorded the same KF7 guard for three 100-tick windows:
 42→90, and 93→144). This confirms the guard counter and every-third-count gate,
 but AI burst/line-of-sight variance means it is not a sustained-player
 substitute. Attract input separately began a player window at weapon 8,
-30 rounds, counter 8, then changed state before tick 100. TD-01 stays open until
-three complete ordinary-input player windows are recorded.
+30 rounds, counter 8, then changed state before tick 100. TD-01 remains
+unresolved until three sustained ordinary-input player windows are recorded.
+
+Later ordinary Dam input completed three 100-tick player windows with three
+events apiece, matching three-round ammo deltas (30→27, 27→24, and 24→21) and
+the same 0→76 counter change. These qualify the callback and ammo/event
+agreement only. They are not a fire-rate baseline because a short trigger pulse
+was followed by idle ticks. A separate ordinary run collected and selected a
+dropped KF7 but began with only 20 rounds, below the 34-round ceiling required
+to distinguish roughly 33 from 11 events. TD-01 is formally blocked until a
+repeatable, non-injected setup provides enough ammunition and survives the full
+sustained-input window.
 
 #### Modern sidestep gate
 

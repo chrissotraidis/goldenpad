@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 14:33 CEST
+Updated: 2026-08-22 15:55 CEST
 
 ## Session identity
 
@@ -11,8 +11,8 @@ Updated: 2026-08-22 14:33 CEST
 | Branch | `codex/autonomous-repair-loop` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-01 fire-rate measurement probe |
-| Phase | L9: partial TD-01 review unit pushed; fixed player window remains open |
+| Active debt | TD-01 formally blocked after measurement qualification; TD-02 is next |
+| Phase | L9 checkpoint: preserve the TD-01 blocker, then branch for TD-02 |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -24,12 +24,22 @@ windows produced 13, 17, and 18 committed events. The observed spread remains
 setup/AI variance to control in a future fixed-line-of-sight rerun; the current
 evidence does not assign it to a single cause.
 
-The player seam is also reached: GoldenEye's own attract input began a KF7
-window at 30 rounds and counter 8. That recorded segment ended or changed
-weapon before 100 ticks, so it is not a completed baseline. TD-01 therefore
-remains open. Do not apply the authenticity repair or begin TD-02 on this branch
-until three fixed 100-tick player runs exist or the user explicitly changes the
-gate.
+The player seam is also reached through ordinary Dam input. Three complete
+100-tick KF7 windows each recorded three fire events, a 30→27, 27→24, and
+24→21 ammo change, and a 0→76 counter change. Those runs qualify the callback
+and ammo/event agreement, but they are rejected as the fire-rate baseline: each
+used one short trigger pulse followed by idle ticks, while the documented gate
+requires sustained fire.
+
+The sustained setup was then reproduced without inventory or save mutation. A
+Dam guard was defeated, the dropped KF7 was collected, and the player selected
+it through ordinary input. The first pickup supplied 20 rounds, below the
+34-shot ceiling needed to distinguish the two expected cadence families. A
+second-ammo acquisition attempt ended in ordinary combat before a fixed
+100-tick hold could begin. After three setup failures with the same ammunition
+and survivability root condition, TD-01 is formally blocked under the anti-stall
+rule. Do not apply the authenticity repair. TD-02 may proceed only as a separate
+branch/review unit.
 
 ## Gate ledger
 
@@ -46,7 +56,7 @@ gate.
 | TD-01 measurement implementation | PASS | Opt-in `--fire-rate-probe`; three-run caps; no timing, inventory, mission, transform, player, or guard writes |
 | ARM64 Simulator build | PASS | Debug ARM64 Simulator candidate built successfully; executable SHA-256 `6afa14ef47531acb19b663d0f9a8ff036493726ed8b72241c1540cc9cbb7f1d6` |
 | In-place preservation | PASS | Both ROM copies, the active save, and the backup save matched their preinstall SHA-256 values after every candidate install |
-| Simulator runtime/log evidence | PARTIAL PASS | Three guard windows complete; player callback reached but its attract segment did not complete 100 ticks |
+| Simulator runtime/log evidence | PARTIAL PASS | Guard windows complete; three player tap-response windows completed with matching three-round ammo deltas, but no sustained player baseline exists |
 | Visual comparison | PASS FOR PROBE SCOPE | Nintendo/title, mission UI, Dam intro, live gameplay, KF7 guards, and attract gameplay rendered without a new static-layout regression |
 | Normal launch | PASS | Relaunch without `--fire-rate-probe` produced no probe marker or samples; normal runtime, graphics, input, and audio startup remained live |
 | Physical iPad escalation | NOT RUN | Simulator proves the measurement seam; no gameplay repair exists to justify touching the attached iPad |
@@ -57,11 +67,12 @@ gate.
 
 | Item | Status | Evidence | Next discriminating action |
 | --- | --- | --- | --- |
-| Fixed player KF7 100-tick run | OPEN | Two ordinary Dam acquisition attempts killed KF7 guards but did not reliably collect the drops before later combat ended the run; attract input reached weapon 8 but changed state before tick 100 | Use a repeatable ordinary-input loadout route or a longer recorded automatic segment; do not inject inventory or mutate saves |
+| Fixed sustained player KF7 100-tick run | FORMALLY BLOCKED | Ordinary input reached and selected a dropped KF7; the first pickup held only 20 rounds, and attempts to acquire enough ammunition for the 34-shot discrimination ceiling ended in combat. Three short-pulse windows completed but are not sustained-fire evidence | Resume only with a repeatable ordinary setup that starts with at least 34 KF7 rounds and protects the player for 100 fixed ticks; do not inject inventory or weaken the sustained-fire gate |
 
-This is a gate blocker, not a tooling blocker. The probe, build, Simulator, and
-guard route work. Anti-stall policy rejects repeating the same unreliable pickup
-route or weakening the 100-tick requirement.
+This is a gate blocker, not a tooling blocker. The probe, build, Simulator,
+ordinary pickup route, and guard sampling work. Anti-stall policy rejects more
+unattended combat retries, inventory injection, or weakening the sustained
+100-tick requirement. Independent TD-02 work is now permitted on a new branch.
 
 ## Evidence ledger
 
@@ -83,6 +94,20 @@ route or weakening the 100-tick requirement.
   mean 16.0, range 13–18. Counters were 3→39, 42→90, and 93→144.
 - Player partial: attract input began `weapon=8`, `ammo=30`, `counter=8`; no
   complete player window was recorded.
+- Player tap-response qualification: three ordinary-input windows completed at
+  exactly 100 ticks with `events=3`, ammo deltas `30→27`, `27→24`, and `24→21`,
+  and `counter=0→76` in every run. Ammo and event counts agree. These are
+  explicitly rejected as cadence baselines because the trigger was not held.
+- Sustained-route qualification: ordinary Dam input defeated a guard, collected
+  and selected `KF7 SOVIET`, and displayed 20 rounds. That proves the player
+  loadout path without state injection, but 20 rounds cannot distinguish a
+  roughly 33-shot result from ammunition exhaustion.
+- A one-publication Simulator analog-pulse experiment made isolated movement
+  taps unreliable and did not consistently single-step the watch. It was
+  reverted completely; no diagnostic input behavior change remains.
+- Two Simulator reinstall experiments reassigned the app data-container UUID,
+  but both ROM copies, active save, backup save, and preferences retained their
+  exact preinstall SHA-256 values.
 - Preserved private evidence outside the repository:
   `/private/tmp/goldenpad-td01-guard-measurement.log` (SHA-256
   `119172ff381e436477a211b9b99a01c3f4c065ee7b07b4b31a1c0e91b3a39d93`),
@@ -122,7 +147,8 @@ Preview 2 tag or user-owned runtime data.
 
 ## Exact next action
 
-Obtain three ordinary-input player KF7 runs of exactly 100 simulation ticks,
-record ammo delta plus shot events, and reconcile their mean/range beside the
-guard result. Extend the existing measurement review unit with that evidence;
-do not combine the authenticity repair with this baseline or begin TD-02 first.
+Commit and push this TD-01 blocker checkpoint without behavior changes. Create
+a separate TD-02 branch, add the gameplay-only modern-sidestep discriminator,
+and repair MOVE-horizontal strafe semantics while preserving menus, LOOK
+turning, and Original N64 C-button mode. Resume TD-01 only when a repeatable
+ordinary setup can provide at least 34 KF7 rounds for each sustained window.
