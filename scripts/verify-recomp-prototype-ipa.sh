@@ -86,8 +86,6 @@ for required_symbol in \
   _goldenpad_recomp_set_lifecycle_probe_enabled \
   _goldenpad_recomp_set_audio_probe_enabled \
   _goldenpad_recomp_set_depth_rebuild_probe_enabled \
-  _goldenpad_recomp_set_render_order_probe_mode \
-  _goldenpad_recomp_render_order_probe \
   _goldenpad_rt64_depth_format_rebuild_stats \
   _goldenpad_recomp_note_audio_host_rates \
   _goldenpad_recomp_audio_probe_stats \

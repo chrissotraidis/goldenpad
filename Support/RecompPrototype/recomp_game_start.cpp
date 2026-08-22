@@ -86,12 +86,6 @@ std::atomic<bool> sidestepProbeEnabled = false;
 std::atomic<bool> lifecycleProbeEnabled = false;
 std::atomic<bool> audioProbeEnabled = false;
 std::atomic<bool> depthRebuildProbeEnabled = false;
-std::atomic<int32_t> renderOrderProbeMode = 0;
-std::atomic<uint64_t> renderOrderSamples = 0;
-std::atomic<uint64_t> renderOrderChanges = 0;
-std::atomic<uint64_t> renderOrderInvalidSamples = 0;
-std::atomic<uint32_t> renderOrderLatest = UINT32_MAX;
-std::array<std::atomic<uint64_t>, 24> renderOrderPermutationCounts{};
 std::atomic<uint32_t> audioRequestedFrequency = 0;
 std::atomic<uint32_t> audioHostSourceFrequency = 0;
 std::atomic<uint32_t> audioHostSessionFrequency = 0;
@@ -115,32 +109,6 @@ std::filesystem::path diagnosticsLogPath;
 std::filesystem::path diagnosticsSessionMarkerPath;
 std::atomic<bool> previousSessionEndedUnexpectedly = false;
 constexpr uintmax_t kDiagnosticsLogLimit = 4 * 1024 * 1024;
-
-int32_t renderOrderPermutationIndex(const std::array<int32_t, 4> &order) {
-    constexpr int32_t factors[] = {6, 2, 1, 1};
-    uint8_t seen = 0;
-    int32_t index = 0;
-    for (size_t i = 0; i < order.size(); ++i) {
-        const int32_t player = order[i];
-        if (player < 0 || player >= 4 || (seen & (1u << player)) != 0) {
-            return -1;
-        }
-        seen |= static_cast<uint8_t>(1u << player);
-        int32_t smaller = 0;
-        for (size_t j = i + 1; j < order.size(); ++j) {
-            smaller += order[j] < player ? 1 : 0;
-        }
-        index += smaller * factors[i];
-    }
-    return index;
-}
-
-uint32_t packRenderOrder(const std::array<int32_t, 4> &order) {
-    return static_cast<uint32_t>(order[0]) |
-        (static_cast<uint32_t>(order[1]) << 8) |
-        (static_cast<uint32_t>(order[2]) << 16) |
-        (static_cast<uint32_t>(order[3]) << 24);
-}
 
 // Match the working GoldenPad host: the game/audio thread is the sole producer
 // and AVAudioEngine is the sole consumer of a bounded stereo PCM ring.
@@ -332,17 +300,6 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
             << " size=" << sizeChanges
             << " rdram=" << rdramChanges << ')'
             << " latest=0x" << std::hex << latestAddress << std::dec << '\n';
-    }
-    const int32_t orderProbeMode = renderOrderProbeMode.load(std::memory_order_relaxed);
-    if (orderProbeMode != 0) {
-        const bool detectorPasses =
-            renderOrderPermutationIndex({0, 1, 2, 3}) == 0 &&
-            renderOrderPermutationIndex({3, 2, 1, 0}) == 23 &&
-            renderOrderPermutationIndex({0, 0, 2, 3}) == -1;
-        log << "[GoldenPadRecomp] render-order-probe: detector="
-            << (detectorPasses ? "PASS" : "FAIL")
-            << " mode=" << (orderProbeMode == 2 ? "fixed-lvlRender" : "observe")
-            << " scope=lvlRender-only" << '\n';
     }
 }
 
@@ -661,28 +618,6 @@ void monitorGameState(uint8_t *rdram) {
                     static_cast<unsigned long long>(widthChanges),
                     static_cast<unsigned long long>(sizeChanges),
                     static_cast<unsigned long long>(rdramChanges), latestAddress);
-            }
-            const int32_t orderProbeMode = renderOrderProbeMode.load(std::memory_order_relaxed);
-            if (orderProbeMode != 0) {
-                const uint32_t latest = renderOrderLatest.load(std::memory_order_relaxed);
-                uint32_t uniquePermutations = 0;
-                for (const auto &count : renderOrderPermutationCounts) {
-                    uniquePermutations += count.load(std::memory_order_relaxed) != 0 ? 1 : 0;
-                }
-                logEvent("render-order-probe",
-                    "mode=%s samples=%llu changes=%llu invalid=%llu unique=%u/24 latest=%u,%u,%u,%u identity=%llu",
-                    orderProbeMode == 2 ? "fixed-lvlRender" : "observe",
-                    static_cast<unsigned long long>(
-                        renderOrderSamples.load(std::memory_order_relaxed)),
-                    static_cast<unsigned long long>(
-                        renderOrderChanges.load(std::memory_order_relaxed)),
-                    static_cast<unsigned long long>(
-                        renderOrderInvalidSamples.load(std::memory_order_relaxed)),
-                    uniquePermutations,
-                    latest & 0xFFu, (latest >> 8) & 0xFFu,
-                    (latest >> 16) & 0xFFu, (latest >> 24) & 0xFFu,
-                    static_cast<unsigned long long>(
-                        renderOrderPermutationCounts[0].load(std::memory_order_relaxed)));
             }
         }
         const bool rendererHadStarted = displayLists != 0 || screenUpdates != 0;
@@ -1082,35 +1017,6 @@ extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t enabled) {
     sidestepProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
 }
 
-extern "C" void goldenpad_recomp_render_order_probe(
-    uint8_t *rdram, recomp_context *ctx) {
-    const int32_t mode = renderOrderProbeMode.load(std::memory_order_acquire);
-    if (mode == 0) {
-        ctx->r2 = 0;
-        return;
-    }
-    const std::array<int32_t, 4> order = {
-        _arg<0, int32_t>(rdram, ctx),
-        _arg<1, int32_t>(rdram, ctx),
-        _arg<2, int32_t>(rdram, ctx),
-        _arg<3, int32_t>(rdram, ctx),
-    };
-    const int32_t permutation = renderOrderPermutationIndex(order);
-    renderOrderSamples.fetch_add(1, std::memory_order_relaxed);
-    if (permutation < 0) {
-        renderOrderInvalidSamples.fetch_add(1, std::memory_order_relaxed);
-    } else {
-        renderOrderPermutationCounts[static_cast<size_t>(permutation)].fetch_add(
-            1, std::memory_order_relaxed);
-    }
-    const uint32_t packed = packRenderOrder(order);
-    const uint32_t previous = renderOrderLatest.exchange(packed, std::memory_order_relaxed);
-    if (previous != UINT32_MAX && previous != packed) {
-        renderOrderChanges.fetch_add(1, std::memory_order_relaxed);
-    }
-    ctx->r2 = mode == 2 ? 1 : 0;
-}
-
 extern "C" void goldenpad_recomp_fire_rate_player_sample(
     uint8_t *rdram, recomp_context *ctx) {
     if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {
@@ -1311,18 +1217,6 @@ extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t enabled) {
 
 extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t enabled) {
     depthRebuildProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
-}
-
-extern "C" void goldenpad_recomp_set_render_order_probe_mode(int32_t mode) {
-    const int32_t normalized = mode == 2 ? 2 : (mode == 1 ? 1 : 0);
-    renderOrderProbeMode.store(normalized, std::memory_order_release);
-    renderOrderSamples.store(0, std::memory_order_relaxed);
-    renderOrderChanges.store(0, std::memory_order_relaxed);
-    renderOrderInvalidSamples.store(0, std::memory_order_relaxed);
-    renderOrderLatest.store(UINT32_MAX, std::memory_order_relaxed);
-    for (auto &count : renderOrderPermutationCounts) {
-        count.store(0, std::memory_order_relaxed);
-    }
 }
 
 extern "C" void goldenpad_recomp_note_audio_host_rates(
