@@ -12,7 +12,7 @@ Updated: 2026-08-22 16:52 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-07 disconnect/lifecycle containment passes code and Simulator gates; physical reconnect and real P3/P4 routing remain |
-| Phase | L9 checkpoint: document, commit, and push TD-07 as an isolated review unit |
+| Phase | L9 complete: TD-07 implementation review unit committed and pushed |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -76,7 +76,7 @@ control.
 | Clean session end | PASS | Simulator Home removed `active-session.marker`; no app session or recording was left active |
 | Physical touch/controller feel | NOT RUN | Simulator and synthetic evidence cannot establish touch ergonomics or physical-controller feel |
 | QuickTime | OFF | It was never started |
-| Commit/push | PENDING | Run static checks, commit this isolated TD-07 review unit, and push only its topic branch |
+| Commit/push | PASS | Implementation commit `38f0c6b` is pushed on `origin/codex/td07-controller-ownership`; `main` was not changed |
 
 ## Blocker ledger
 
@@ -158,7 +158,10 @@ the saved two-player preference.
 
 ## Exact next action
 
-Run the repository/static checks, commit and push TD-07 on
-`codex/td07-controller-ownership`, and do not merge it. Keep TD-01 formally
-blocked, retain TD-02 for physical acceptance, and keep networking gated behind
-physical lifecycle acceptance plus a separate real P2-P4 ownership design.
+Keep TD-07 unmerged pending physical lifecycle acceptance. Start the next
+independent evidence-only review unit with the TD-04 lifecycle discriminator:
+inventory the existing drawable/present/fence/VI breadcrumbs, add only the
+missing bounded timing evidence, and reject any repair until the physical
+transition matrix identifies a failing boundary. Keep TD-01 formally blocked,
+retain TD-02 for physical acceptance, and keep networking gated behind physical
+lifecycle acceptance plus a separate real P2-P4 ownership design.
