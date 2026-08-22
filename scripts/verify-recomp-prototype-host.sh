@@ -7,6 +7,7 @@ bundle_identifier=${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER:-com.chrissotraidis.golde
 rt64_archive_dir=${GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR:-}
 rt64_source_dir=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-}
 render_patch="$repo_root/patches/goldeneye64recomp-ios-prototype-render-trace.patch"
+render_order_patch="$repo_root/patches/goldeneye64recomp-ios-render-order-probe.patch"
 
 if [ "$(grep -Fc 'gDPSetColorImage(gdl++, G_IM_FMT_RGBA, G_IM_SIZ_16b, viGetX(), osViGetCurrentFramebuffer());' "$render_patch")" -ne 2 ]; then
     echo "The GoldenEye skybox patch must restore the current framebuffer in both fill paths." >&2
@@ -17,6 +18,17 @@ if ! grep -Fq 'clear_buffer -= SCREEN_WIDTH * SCREEN_HEIGHT;' "$render_patch"; t
     echo "The GoldenEye multiplayer depth clear must use the lower-view depth-image alias." >&2
     exit 1
 fi
+
+for required_order_marker in \
+    'goldenpad_recomp_render_order_probe' \
+    'array_PLAYER_IDs[i] = i;' \
+    'array_PLAYER_IDs[i] = savedRenderOrder[i];'
+do
+    if ! grep -Fq "$required_order_marker" "$render_order_patch"; then
+        echo "The tracked render-order discriminator is incomplete: $required_order_marker" >&2
+        exit 1
+    fi
+done
 
 if [ -n "$rt64_archive_dir" ] && [ -z "$rt64_source_dir" ]; then
     echo "GOLDENPAD_RECOMP_RT64_SOURCE_DIR is required with prototype RT64 archives." >&2
@@ -60,6 +72,7 @@ for required_symbol in \
     goldenpad_recomp_set_lifecycle_probe_enabled \
     goldenpad_recomp_set_audio_probe_enabled \
     goldenpad_recomp_set_depth_rebuild_probe_enabled \
+    goldenpad_recomp_set_render_order_probe_mode \
     goldenpad_recomp_note_audio_host_rates \
     goldenpad_recomp_audio_probe_stats \
     goldenpad_recomp_gameplay_input_active \
