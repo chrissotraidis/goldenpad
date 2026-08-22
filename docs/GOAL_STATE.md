@@ -253,6 +253,7 @@ control.
 | TD-09 accepted-control reachability | BASELINE FAILED | Exact `7c78b72f...` Mac Alpha rendered through the mission menu, then remained alive with no accessible window on the first click attempt |
 | TD-09 Dam/Surface capture | NOT RUN | Baselines did not reach stable gameplay; menu frames cannot establish the reported strip or accept a mask |
 | TD-09 preservation | PASS | ROMs `7ec491ee...`, save `36d67fe...`, and backup `c01d4013...` remained exact; no source behavior was changed |
+| TD-09 commit/push | PASS | Documentation-only evidence commit `bcb2823` is pushed on `origin/codex/td09-edge-measurement`; `main` was not changed |
 
 ## Blocker ledger
 
