@@ -51,9 +51,10 @@ ROM, save, and preference readbacks before publication approval.
 
 The Mac app is a separate native arm64 artifact, not a Catalyst build and not
 part of the mobile `.ipa`. It is an Alpha below the accepted iPhone/iPad
-single-player quality bar. Mouse tuning, the thin far-right blue edge and
-sustained performance remain open; do not change the frozen renderer/input
-boundary while preparing the coordinated release.
+single-player quality bar. Preview 3's exact mouse/keyboard control build has
+hands-on acceptance. The thin far-right blue edge, older-OS coverage, and
+sustained-performance depth remain open; keep renderer work independent from
+the accepted input contract.
 
 Build the exact pinned native dependencies first, then configure the app with
 the private generated AOT directory and the isolated matched Mac patch source:

@@ -1,5 +1,25 @@
 # Worklog
 
+## 2026-08-23 — preserve revision-2 review and refresh current documentation
+
+- Preserved the supplied independent review with its source SHA-256 and a
+  maintained Preview 3 disposition. The frozen review body remains evidence
+  from baseline `788667e`, not repository instructions or current authority.
+- Reconciled all review corrections: Preview 2 Mac package-versus-hands-on
+  wording, audio causality, package-scan coverage, unreachable/stale references,
+  contributor gates, network frame identity, and ROM-copy disclosure.
+- Carried forward later isolated debt evidence without merging the stacked
+  runtime experiments: TD-01 guard windows, TD-04 classifier result, TD-05
+  synthetic result, TD-06 zero-rebuild caveat/fixed-order rejection, TD-07 containment
+  candidate, and TD-10 sky/water classification.
+- Added TD-12 for the runtime-managed converted-ROM copy and path-scan hygiene,
+  TD-13 for game-bearing build provenance, and TD-14 for the still-live modal/
+  run-loop input-neutralization gaps. No runtime code, private data, signing
+  material, package, save, or preference was changed.
+- Re-audited every Markdown document by authority versus historical-snapshot
+  role, refreshed current status/plan/test links, and retained release notes and
+  dated handoffs as historical evidence.
+
 ## 2026-08-22 — accept and publish the Preview 3 controls release
 
 - Kept Preview 2's accepted runtime, save, audio, ROM conversion, renderer, and

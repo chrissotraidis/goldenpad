@@ -28,6 +28,9 @@ Preview 1 release record:
 - [ ] Remove the six disclosed anonymous `/private/tmp/goldenpad-recomp.*`
   compiler source literals from a future build. Preview 1 rejects `/Users/` and
   any unexpected temporary path; the six literals contain no ROM or user name.
+- [ ] Give the runtime-managed Application Support ROM copy the same explicit
+  backup-exclusion and file-protection policy as the Documents copy, then prove
+  both copies, saves, and preferences byte-identical across an in-place update.
 - [ ] Accept stable multiplayer before advertising it as a feature.
 
 Keep source publication, binary publication, signing and rights clearance as
@@ -89,6 +92,9 @@ drawable-size and direct-camera experiments caused much larger regressions.
   `819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`.
 - [x] Keep issue #8 open for reporter verification, multiplayer experimental,
   online multiplayer unimplemented, and the remaining technical debt explicit.
+- [ ] Close TD-14/TD-07 modal, disconnect, and held-input neutralization before
+  claiming lifecycle-safe controller ownership; Preview 3 ordinary-control
+  acceptance does not close those transitions.
 - [x] Obtain user approval to merge and publish Preview 3.
 
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and

@@ -1,12 +1,12 @@
 # Next steps
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 This is the short operational queue for GoldenPad after Preview 3. It does not
 replace the authoritative documents:
 
 - [`TECH_DEBT.md`](TECH_DEBT.md) owns priority, evidence, and closure state;
-- [`PLAN.md`](PLAN.md#current-execution-plan-2026-08-22) owns detailed waves,
+- [`PLAN.md`](PLAN.md#current-execution-plan-2026-08-23) owns detailed waves,
   sizing, dependencies, and stop rules; and
 - [`TESTING.md`](TESTING.md#technical-debt-discrimination-gates) owns proof.
 
@@ -17,13 +17,14 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged Preview 3 baseline. No gameplay behavior change. |
+| 1 | **TD-01 sustained-player measurement** | Rebase the isolated read-only probe, retain the 13/17/18 guard windows, and obtain a repeatable ordinary-input setup with at least 34 rounds. No timing repair yet. |
 | Parallel user-facing lane | **TD-02 reporter confirmation** | Ask issue #8's reporter to verify the released opt-in sidestep adapter with touch and a connected controller; keep it opt-in until the full gate passes. |
-| Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
+| Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, A12-family reproduction, and diagnostic-only non-direct/Tier-1 Plume binding builds on accepted hardware. No speculative shipping patch. |
 
-Preview 3 is the accepted release baseline. Land the fire-rate probe separately;
-TD-02 reporter confirmation and A12 evidence collection can proceed without
-changing the released control defaults.
+Preview 3 is the accepted release baseline. The historical stacked debt branch
+is evidence only; rebase one bounded probe or repair at a time. TD-02 reporter
+confirmation and A12 evidence collection can proceed without changing released
+control defaults.
 
 ## Do immediately after
 
@@ -31,15 +32,27 @@ changing the released control defaults.
    - Use the probe's before/after numbers.
    - Patch player and guard cadence together as one timing decision.
    - Recheck semi-automatic behavior and obtain hands-on combat acceptance.
-2. **TD-07 disconnect neutralization and lifecycle probe**
+2. **TD-14 modal/run-loop neutralization**
+   - Fail first on held touch/controller input across Settings, Share, watch,
+     pause, and scroll tracking.
+   - Publish neutral before presentation and forbid replay on dismissal.
+3. **TD-07 disconnect neutralization and lifecycle probe**
    - Publish neutral when the active controller disappears.
    - Never move touch ownership implicitly.
    - Preserve normal touch/controller Player 1 behavior.
-3. **TD-04, TD-05, and TD-06 discriminators**
-   - Lifecycle: bounded drawable/present/fence/timer/audio breadcrumbs.
-   - Audio: requested-rate readback plus a ROM-free discontinuity signal.
-   - Flicker: matched single-/multiplayer depth-rebuild counters before any
-     RT64 repair.
+4. **TD-04, TD-05, and TD-06 discriminators**
+   - Lifecycle: run the physical matrix first, then instrument the observed wait
+     class; do not assume a drawable-only stall.
+   - Audio: correlate an audible physical event with counters; 22,050 Hz rate
+     mismatch is ruled out.
+   - Flicker: fixed player order is rejected; the uncalibrated zero
+     `formatChanged` signal is narrowing, not closure. Capture the first affected
+     physical frame before another RT64 experiment.
+5. **TD-12/TD-13 hygiene**
+   - Give the runtime-managed ROM copy the same backup/protection policy as the
+     Documents copy, with hash-preserving migration/readback.
+   - Script the private-input game-bearing build so two clean build directories
+     can reproduce the same shipped-source digest.
 
 Evidence for these items may be gathered concurrently. Behavioral fixes land
 one at a time against a freshly accepted baseline.
@@ -48,7 +61,8 @@ one at a time against a freshly accepted baseline.
 
 - Resolve or deliberately document the A12-family support floor from affected
   hardware evidence.
-- Take Mac mouse and edge-mask repairs independently.
+- Keep the accepted Preview 3 Mac input baseline; take only the edge-mask repair
+  independently if fixed-scene captures justify it.
 - Reduce stage/effect reports to deterministic reproductions.
 - Implement stable real two- to four-controller ownership.
 - Add deterministic frame numbers and state hashes.

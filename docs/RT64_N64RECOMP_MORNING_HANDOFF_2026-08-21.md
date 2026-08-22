@@ -1,5 +1,10 @@
 # GoldenPad recomp morning handoff — 2026-08-21
 
+Historical snapshot: this handoff preserves the 2026-08-21 bring-up evidence
+and does not override Preview 3 status, current technical debt, or the active
+execution order in [`STATUS.md`](STATUS.md), [`TECH_DEBT.md`](TECH_DEBT.md), and
+[`NEXT_STEPS.md`](NEXT_STEPS.md).
+
 ## Accepted baseline
 
 The installed `GoldenPadRecompPrototype` build is the accepted mainline

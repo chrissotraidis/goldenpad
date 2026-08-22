@@ -1,6 +1,6 @@
 # Status
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 ## Current at a glance
 
@@ -12,10 +12,12 @@ Updated: 2026-08-22
 | Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect; Preview 3 ships modern Honey sidestep as an opt-in adapter pending reporter confirmation. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
+| Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
 | Preview 3 controls release | Accepted input-only update from Preview 2: opt-in mobile Honey sidestep, clearer setup copy, and the hands-on accepted Mac control build. |
-| Immediate engineering gate | Record deterministic player/guard fire-rate cadence before changing native-60-Hz gameplay timing. |
+| Immediate engineering gate | Finish sustained-player fire-rate measurement on Preview 3; isolated guard windows already record 13/17/18 events per 100 ticks. |
 | Immediate user-facing follow-up | Ask the issue #8 reporter to verify touch and controller sidestep behavior; keep the opt-in adapter and Preview 2 default unchanged meanwhile. |
+| Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
 
@@ -27,6 +29,8 @@ Documentation ownership:
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) owns runtime and subsystem boundaries.
 - [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md) owns local/network scope and
   the network go/no-go decision.
+- [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md) preserves the
+  independent snapshot and current disposition; it is supporting evidence.
 
 ## Summary
 
@@ -37,15 +41,12 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-The 2026-08-22 source review has been reconciled into
-[`TECH_DEBT.md`](TECH_DEBT.md). It independently confirmed a global native-60-Hz
-automatic-fire timing defect, the absence of a primary-runtime multi-controller
-ownership layer, the modern sidestep mapping omission reported in issue #8, the
-source mechanisms that can stall presentation/audio during drawable
-backpressure, and two counter-invisible audio-risk classes. The exact priority,
-certainty, smallest next test, and acceptance gate for each item now live in the
-technical-debt ledger; the 1,668-line external review itself is supporting
-analysis, not a runtime acceptance artifact.
+The independent revision-2 review is retained at
+[`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md) and reconciled
+into [`TECH_DEBT.md`](TECH_DEBT.md). It inspected historical commit `788667e`,
+so its source analysis remains supporting evidence while current status comes
+from Preview 3 and later isolated debt experiments. It is not repository
+instructions or a runtime acceptance artifact.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -77,14 +78,21 @@ establishes the Preview 2 stable experimental multiplayer baseline. Multiplayer
 is not yet bug-free or fully accepted pending the residual
 flicker investigation and real three/four-controller routing.
 
+Later isolated TD-06 runs recorded zero depth-`formatChanged` rebuilds, but the
+counter was not calibrated against a known-active pre-repair path and did not
+count non-format uploads. A fixed-player-order diagnostic showed no systematic
+luminance improvement, looked worse to the user, and was reverted. The physical
+flicker remains open; the next evidence is fixed-scene physical capture.
+
 GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
 the project's support status, not an official or commercial affiliation. The
 Preview 2 arm64 Release product established `GoldenPad.app` as the product,
-display name and executable; its packaged-source executable SHA-256 was
-`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
-Hands-on review reached authentic gameplay, but that release retained slow,
-less-polished mouse/keyboard controls. Preview 3 supersedes those controls while
-preserving the same renderer boundary.
+display name and executable. Hands-on gameplay was recorded on executable
+`0e73a74da8866f9f3784afedf78ff87a0ca18916e363e63fb33083747b149d00`.
+The packaged-source executable
+`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`
+was a source-equivalent rebuild with package-audit evidence only. Preview 3
+supersedes those controls and received exact-binary hands-on acceptance.
 
 The Preview 3 Mac release retains that renderer boundary while reworking only
 controls. Its preceding hands-on pass was judged the best Mac control version
@@ -653,13 +661,13 @@ evidence ledger below is preserved as historical validation for
 
 - The primary runtime runs GoldenEye's simulation at native 60 Hz but does not
   carry MGB64's source-level player/guard automatic-fire authenticity repair.
-  The pinned lineages identify this as roughly a three-times-fast automatic
-  cadence. GoldenPad has not yet recorded its own deterministic shots-per-tick
-  number, so the next gate is the measurement probe before behavior changes.
-- Modern touch/controller movement does not provide modern-FPS sidestep
-  semantics. Original N64 C-button mode restores physical-controller sidestep,
-  but modern MOVE horizontal still turns and touch has no equivalent mapping.
-  This is the open, source-confirmed [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8).
+  The pinned source establishes the cadence mechanism. An isolated probe
+  recorded guard windows of 13/17/18 events per 100 ticks; sustained player
+  magnitude remains unmeasured, so no timing repair is authorized yet.
+- Preview 3 ships an opt-in 1.1 Honey sidestep adapter for touch and controller
+  while preserving Preview 2 movement as the default. Issue #8 remains open for
+  reporter confirmation and the wider physical style/lifecycle matrix; it is no
+  longer accurate to call sidestep wholly unimplemented.
 - The published Preview 1 artifact crashes deterministically at the first RT64
   rendered frame on a reported A12X iPad Pro. A12X meets the declared ARM64,
   Metal, device-family, and OS requirements; treat [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)
@@ -682,8 +690,14 @@ evidence ledger below is preserved as historical validation for
   not implemented or accepted.
 - Screenshot/background resume has previously frozen gameplay and needs a
   dedicated physical lifecycle pass.
+- Settings/share presentation does not explicitly release latched primary-host
+  touch, disconnect-to-none can collapse held diagnostic touch onto Player 1,
+  and the mobile publisher can pause in default run-loop tracking. These are
+  active TD-14/TD-07 gaps despite Preview 3's accepted ordinary controls.
 - A small amount of audible static has been reported during otherwise working
-  audio; long-session speaker and route-change acceptance remains open.
+  audio. Game, runtime, and host agree at 22,050 Hz, so rate mismatch is ruled
+  out; long-session speaker, route-change, reset-race, and discontinuity
+  classification remain open.
 - Some maps can still expose original or renderer-specific geometry/clipping
   artifacts. Preview 1 does not claim complete stage/effect parity.
 - Preview 2 includes the bounded in-app retail-ROM importer. Exact physical
@@ -693,17 +707,24 @@ evidence ledger below is preserved as historical validation for
   compiler source literals from prebuilt runtime archives. The verifier allows
   only those exact patterns and rejects user-home paths or other temporary paths.
   Removing them requires rebuilding the archives and is tracked as hardening debt.
+- The primary runtime writes a second converted-ROM copy under Application
+  Support. Unlike the protected Documents copy, its explicit backup-exclusion
+  and file-protection attributes are not established. TD-12 requires a
+  preservation-safe attribute/migration repair, not deletion.
+- Public automation builds the ROM-free host and audits package contents, but
+  the game-bearing executable still depends on private generated AOT inputs and
+  a private runtime reference. TD-13 tracks reproducible provenance proof.
 
 ## Next gate
 
-Preview 2 is published as a prerelease with separately audited mobile and Mac
+Preview 3 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
 passed the same package verifiers as the local artifacts. The next engineering
-gate is a deterministic player/guard fire-rate probe. In parallel, the next
-bounded user-facing repair is modern sidestep semantics with menu and original
-C-button regression tests, while issue #9 artifact/A12 reproduction proceeds as
-an evidence-only lane. After the probe, land and physically reaccept the
-fire-rate authenticity repair; then add controller-lifecycle ownership tests and
-collect failing-session lifecycle/audio/flicker evidence before broad
+gate is sustained-player fire-rate measurement using the isolated read-only
+probe; do not apply the timing repair until that baseline exists. In parallel,
+obtain issue #8 reporter confirmation and issue #9 `.ips`/A12 evidence. Then
+take TD-14 modal neutralization, TD-07 controller containment, physical
+lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
+proof as separate units before broad
 multiplayer or renderer changes. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

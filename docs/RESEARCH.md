@@ -219,15 +219,19 @@ renderer.
 
 ## Current unknowns
 
-1. What exact fire-rate cadence does GoldenPad's primary runtime measure for the
-   player and guards before/after an authenticity repair?
-2. Does RT64's aliased-depth rebuild path cause the observed residual
-   multiplayer lighting flicker, or only an invisible performance cost?
+1. What sustained player fire-rate cadence does GoldenPad measure before/after
+   an authenticity repair? Isolated guard windows already record 13/17/18
+   events per 100 ticks.
+2. What frame-local state causes the residual multiplayer lighting flicker?
+   Fixed player order is rejected; the zero depth-`formatChanged` signal still
+   needs known-active calibration and non-format upload coverage.
 3. Can the primary input host preserve stable ownership across two to four real
    controllers and every disconnect/reconnect/foreground order?
 4. Is the reported A12X first-frame crash repairable in RT64/Plume, or does the
    project need a deliberately tested minimum GPU generation?
 5. Which audio discontinuity class produces the intermittent static, and does a
    current-build hard lifecycle freeze exist apart from recoverable stalls?
-6. Can the public generated-input pipeline become reproducible without
-   distributing retail-derived data?
+6. Can the game-bearing private-input build become scripted and independently
+   reproducible without distributing retail-derived data?
+7. Can the runtime-managed Application Support ROM copy receive the Documents
+   copy's backup/protection policy without disturbing validation or saves?
