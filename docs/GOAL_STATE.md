@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 14:24 CEST
+Updated: 2026-08-22 14:33 CEST
 
 ## Session identity
 
@@ -12,7 +12,7 @@ Updated: 2026-08-22 14:24 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-01 fire-rate measurement probe |
-| Phase | L7: record partial result; fixed player window remains open |
+| Phase | L9: partial TD-01 review unit pushed; fixed player window remains open |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -51,7 +51,7 @@ gate.
 | Normal launch | PASS | Relaunch without `--fire-rate-probe` produced no probe marker or samples; normal runtime, graphics, input, and audio startup remained live |
 | Physical iPad escalation | NOT RUN | Simulator proves the measurement seam; no gameplay repair exists to justify touching the attached iPad |
 | QuickTime | OFF | It was never started; no recording can remain open |
-| Commit/push | PENDING | Commit after final static/build verification and documentation reconciliation |
+| Commit/push | PASS | Measurement implementation and evidence docs pushed in `313c909dd8bb136fbccc38223241996ef5619c3d` on `origin/codex/autonomous-repair-loop`; no merge to `main` |
 
 ## Blocker ledger
 
@@ -116,9 +116,13 @@ route or weakening the 100-tick requirement.
 Normal launches do not enable the probe. No retail data, generated dependency
 output, screenshots, or private logs are committed.
 
+The review unit can be rolled back on its topic branch with
+`git revert 313c909dd8bb136fbccc38223241996ef5619c3d`; this does not alter the
+Preview 2 tag or user-owned runtime data.
+
 ## Exact next action
 
 Obtain three ordinary-input player KF7 runs of exactly 100 simulation ticks,
 record ammo delta plus shot events, and reconcile their mean/range beside the
-guard result. If that gate passes, commit/push TD-01 as a measurement-only
-review unit. Do not combine the authenticity repair with this baseline.
+guard result. Extend the existing measurement review unit with that evidence;
+do not combine the authenticity repair with this baseline or begin TD-02 first.
