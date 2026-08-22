@@ -171,7 +171,9 @@ struct GoldenPadApp: App {
                     surface.setAppActive(false)
                 }
             }
-            .sheet(item: $presentedSheet) { sheet in
+            .sheet(item: $presentedSheet, onDismiss: {
+                input.setHostInputSuspended(false)
+            }) { sheet in
                 switch sheet.content {
                 case .settings:
                     RecompPrototypeSettingsView(
@@ -248,12 +250,14 @@ struct GoldenPadApp: App {
                 showReturnToMenuConfirmation = true
             }
             Button("Settings", systemImage: "gearshape") {
+                input.setHostInputSuspended(true)
                 presentedSheet = RecompPrototypeSheet(content: .settings)
             }
             Button("Edit Touch Controls", systemImage: "hand.draw") {
                 beginTouchLayoutEditing()
             }
             Button("Share Diagnostics & Logs…", systemImage: "square.and.arrow.up") {
+                input.setHostInputSuspended(true)
                 let url = RecompPrototypeDiagnostics.makeReport(
                     runtimeStatus: surface.status,
                     audioStatus: audio.status,

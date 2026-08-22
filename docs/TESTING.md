@@ -162,6 +162,34 @@ Test GoldenPad's modern and original modes separately in live gameplay:
 A code-level mapping test is required before device work; one successful
 controller preset does not establish touch behavior.
 
+The TD-02 topic-branch candidate adds an opt-in `--sidestep-probe`. Its
+table-driven mapper discriminator covers both horizontal directions, preserved
+MOVE-Y/action buttons, the centered dead zone, menu bypass, and Original-mode
+bypass. The unchanged expectations first reported `FAIL` against the identity
+mapping and report `PASS` after the repair.
+
+The same launch argument enables bounded live-publication evidence. In Dam,
+one right and one left MOVE sample must produce exactly:
+
+```text
+[GoldenPadRecomp] sidestep-probe: controller=1 buttons=0x0001 stick=(0,0)
+[GoldenPadRecomp] sidestep-probe: controller=1 buttons=0x0002 stick=(0,0)
+```
+
+The log must show `menu/watch stick` semantics at title, `live-gameplay strafe`
+semantics after player control begins, and `menu/watch stick` semantics as soon
+as a watch transition starts. Exercise horizontal navigation during watch
+opening and after the watch is fully visible; neither interval may add a
+sidestep-probe line. Opening the GoldenPad settings sheet during live gameplay
+must likewise leave the sidestep sample count unchanged because all host ports
+are neutral until dismissal.
+
+The 2026-08-22 Simulator candidate passes those code/runtime gates and the
+file-select, mission, watch, settings, layout, clean-background, and data-
+preservation checks. It is not physical acceptance. Touch feel on iPhone and
+iPad plus Modern/Original/Off behavior on a physical controller remain required
+before issue #8 can close or the change can enter a release build.
+
 #### Controller ownership lifecycle gate
 
 The synthetic probe must cover, in order: connect controller A; connect B;

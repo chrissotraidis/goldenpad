@@ -28,7 +28,8 @@ The current preview line deliberately leaves the following primary-runtime
 debt visible:
 
 - native-60-Hz player/guard automatic-fire cadence is not timing-authentic;
-- modern MOVE horizontal input does not yet provide FPS-style sidestepping;
+- a modern MOVE-horizontal sidestep candidate passes code and Simulator gates,
+  but still needs physical touch/controller acceptance;
 - A12-family RT64/Metal compatibility is unresolved after the deterministic
   issue #9 first-frame crash report;
 - local multiplayer has a physically coherent experimental baseline, but slight
@@ -57,8 +58,9 @@ original turn behavior and does not expose native sidestepping.
 
 Physical controllers have a separate **Original N64 C-buttons** right-stick
 configuration. It emits C-left/C-right and restores GoldenEye's native
-sidestepping, but it replaces the modern analog right-stick look path. Touch has
-no corresponding C-button or sidestep-capable template today.
+sidestepping, but it replaces the modern analog right-stick look path. The
+Preview 2 control has no corresponding touch C-button or sidestep-capable
+template.
 
 The verified product decision is to correct the existing modern semantics, not
 add four visible C buttons or another preset first: modern MOVE horizontal
@@ -66,6 +68,23 @@ strafes while LOOK horizontal turns. The explicit Original N64 C-button mode
 remains separate. The repair must keep menu navigation unchanged, avoid silently
 changing unrelated saved preferences, and pass hands-on iPhone, iPad, and
 physical-controller testing before becoming the default behavior.
+
+The isolated `codex/td02-modern-sidestep` candidate now implements that decision
+without changing the game-side camera patch. A pure host mapper converts modern
+live-gameplay MOVE-X to native C-left/C-right and zeros stick X; MOVE-Y and action
+buttons remain unchanged. Touch always takes this modern path. Controllers take
+it only in **Modern analog (experimental)** mode, so Original and Off retain
+their prior behavior. GoldenEye's own watch fields select gameplay versus
+menu/watch semantics, and GoldenPad settings/share sheets neutralize all host
+ports while presented.
+
+The table-driven probe failed before the implementation and passes afterward.
+The live Simulator probe records C-right `0x0001` and C-left `0x0002` with
+`stick=(0,0)`, then returns to ordinary watch navigation without an additional
+C-button sample. The first candidate leaked one C-right during watch opening;
+that candidate was rejected and the transition boundary was tightened. Physical
+touch/controller feel remains untested, so TD-02 is **candidate implemented,
+acceptance open**, not closed.
 
 ## Verified technical review — 2026-08-22
 
@@ -109,7 +128,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages and reached by GoldenPad's opt-in primary-runtime probe; one Dam KF7 guard produced 13/17/18 committed events per 100 ticks. Three player tap-response windows matched three events to three rounds but are not sustained-fire evidence | Primary runtime lacks the authenticity repair; the guard mechanism is confirmed, while the sustained player baseline is formally blocked on a repeatable ordinary setup with at least 34 KF7 rounds | Resume the sustained player baseline without inventory injection, then port the two source-level MGB64 seams as a separate review unit and re-accept gameplay feel |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Confirmed** from the public report and input/game patch trace | C-button controller mode can strafe; modern MOVE horizontal still follows original turn behavior and touch has no equivalent C-left/right mapping | Gameplay-only synthetic input test, then physical touch + modern controller acceptance with menus unchanged |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Candidate implemented; code + Simulator pass** | Modern live MOVE-X emits native C-left/C-right with stick X neutral; menus, watch transitions, settings, LOOK, and Original mode have bounded regression coverage | Hands-on iPhone/iPad touch feel plus Modern/Original/Off physical-controller acceptance; do not close the issue or promote before those pass |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
@@ -173,19 +192,22 @@ tap-response windows qualify ammo/event agreement, but the sustained ordinary
 setup did not provide enough ammunition for the 34-shot discrimination ceiling
 before combat ended repeated runs. The authenticity repair remains gated.
 
-The smartest active repair is therefore **TD-02 modern sidestepping** on a
-separate branch/review unit. It is a current public issue with a traced ownership
-seam and is independent of combat timing. TD-03 crash-artifact collection and
-A12-family reproduction remain an evidence-only lane; no A12 code change is
-selected without that evidence. The next landing sequence is:
+TD-02 now has an isolated implementation candidate whose code-level, live
+publication, menu, watch-transition, settings-isolation, layout, build, and
+preservation gates pass. It still needs human physical acceptance, so it must be
+pushed for review without merging or closing issue #8. While that human gate is
+pending, the smartest independent repair is **TD-07 controller ownership and
+disconnect neutralization** on a new review unit. TD-03 remains evidence-only;
+no A12 change is selected without a full artifact and reproduction. The next
+landing sequence is:
 
 1. preserve the fire-rate probe and formal sustained-player blocker;
-2. repair modern sidestep semantics with menu and original-C-button regression
-   tests;
-3. resume the sustained player baseline only with at least 34 ordinary-input
+2. push the TD-02 candidate and complete physical touch/controller acceptance;
+3. add the TD-07 synthetic lifecycle probe and neutral-on-disconnect repair on
+   a separate branch while TD-02 physical acceptance is pending;
+4. resume the sustained player baseline only with at least 34 ordinary-input
    KF7 rounds, then apply the authenticity patch only if the probe proves the
    current and expected numbers and obtain hands-on combat acceptance;
-4. add the controller-lifecycle probe and neutralize the TD-07 disconnect leak;
 5. collect the existing failing-session audio/lifecycle evidence and add only
    the bounded counters needed to discriminate TD-04 through TD-06;
 6. act on the A12X evidence with a bounded repair or tested support-floor

@@ -21,30 +21,34 @@ For a long-running unattended implementation session, follow
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-02 modern sidestep repair** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus and Original N64 C-button mode remain unchanged. Land on a separate branch/review unit. |
+| Human acceptance lane | **TD-02 modern sidestep candidate** | Code and Simulator gates pass. Require hands-on iPhone/iPad touch feel plus Modern/Original/Off physical-controller acceptance before merge, issue closure, or release promotion. |
+| 1 | **TD-07 disconnect neutralization and ownership probe** | On a new branch, prove connect/disconnect/reconnect/background ownership transitions, publish neutral before reassignment, and prevent touch from leaking to Player 1. |
 | Blocked timing lane | **Finish TD-01 sustained fire-rate baseline** | The probe and three guard windows pass (13/17/18 events per 100 ticks). Three player tap-response windows also pass ammo/event agreement but are not sustained. Resume only with a repeatable ordinary setup providing at least 34 KF7 rounds; do not inject inventory. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
-Land TD-01 and TD-02 as separate review units. TD-01's probe is implemented and
+TD-01 and TD-02 are separate review units. TD-01's probe is implemented and
 read-only, but its sustained player baseline is formally blocked and its timing
-repair remains prohibited. TD-02 now proceeds on a new branch. A12 evidence
-collection can proceed independently.
+repair remains prohibited. TD-02's isolated candidate now passes the red/green
+mapping probe, live C-left/C-right publication, menu/watch/settings, build,
+layout, clean-session, and preservation gates. It remains open only for physical
+acceptance. A12 evidence collection can proceed independently.
 
 ## Do immediately after
 
-1. **TD-01 fire-rate authenticity repair**
-   - Use the probe's before/after numbers.
-   - Patch player and guard cadence together as one timing decision.
-   - Recheck semi-automatic behavior and obtain hands-on combat acceptance.
-2. **TD-07 disconnect neutralization and lifecycle probe**
+1. **TD-07 disconnect neutralization and lifecycle probe**
    - Publish neutral when the active controller disappears.
    - Never move touch ownership implicitly.
    - Preserve normal touch/controller Player 1 behavior.
-3. **TD-04, TD-05, and TD-06 discriminators**
+2. **TD-04, TD-05, and TD-06 discriminators**
    - Lifecycle: bounded drawable/present/fence/timer/audio breadcrumbs.
    - Audio: requested-rate readback plus a ROM-free discontinuity signal.
    - Flicker: matched single-/multiplayer depth-rebuild counters before any
      RT64 repair.
+3. **TD-01 authenticity repair only after its blocker clears**
+   - Obtain the sustained 34-round baseline without state injection.
+   - Use the probe's before/after numbers.
+   - Patch player and guard cadence together, recheck semi-automatic behavior,
+     and obtain hands-on combat acceptance.
 
 Evidence for these items may be gathered concurrently. Behavioral fixes land
 one at a time against a freshly accepted baseline.

@@ -41,6 +41,12 @@ private func goldenPadRecompRequestReturnToTitle()
 @_silgen_name("goldenpad_recomp_set_fire_rate_probe_enabled")
 private func goldenPadRecompSetFireRateProbeEnabled(_ enabled: Int32)
 
+@_silgen_name("goldenpad_recomp_gameplay_input_active")
+private func goldenPadRecompGameplayInputActive() -> Int32
+
+@_silgen_name("goldenpad_recomp_set_sidestep_probe_enabled")
+private func goldenPadRecompSetSidestepProbeEnabled(_ enabled: Int32)
+
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
     case hold
@@ -142,6 +148,83 @@ final class RecompPrototypeInput: ObservableObject {
         static let cRight: UInt16 = 0x0001
     }
 
+    private struct MovementMapping: Equatable {
+        var buttons: UInt16
+        var stick: SIMD2<Float>
+    }
+
+    private enum ModernMovementMapper {
+        static let strafeThreshold: Float = 0.30
+
+        static func map(
+            buttons: UInt16,
+            stick: SIMD2<Float>,
+            modern: Bool,
+            gameplayActive: Bool
+        ) -> MovementMapping {
+            guard modern, gameplayActive else {
+                return MovementMapping(buttons: buttons, stick: stick)
+            }
+
+            var mappedButtons = buttons
+            if stick.x < -strafeThreshold { mappedButtons |= N64.cLeft }
+            if stick.x > strafeThreshold { mappedButtons |= N64.cRight }
+            return MovementMapping(
+                buttons: mappedButtons,
+                stick: SIMD2(0, stick.y)
+            )
+        }
+
+        static var isolationProbePasses: Bool {
+            let left = map(
+                buttons: N64.z,
+                stick: SIMD2(-0.75, 0.50),
+                modern: true,
+                gameplayActive: true
+            )
+            let right = map(
+                buttons: 0,
+                stick: SIMD2(0.75, -0.50),
+                modern: true,
+                gameplayActive: true
+            )
+            let centered = map(
+                buttons: 0,
+                stick: SIMD2(0.20, 0.25),
+                modern: true,
+                gameplayActive: true
+            )
+            let menu = map(
+                buttons: N64.a,
+                stick: SIMD2(-0.75, 0.50),
+                modern: true,
+                gameplayActive: false
+            )
+            let original = map(
+                buttons: N64.cRight,
+                stick: SIMD2(-0.75, 0.50),
+                modern: false,
+                gameplayActive: true
+            )
+            return left == MovementMapping(
+                buttons: N64.z | N64.cLeft,
+                stick: SIMD2(0, 0.50)
+            ) && right == MovementMapping(
+                buttons: N64.cRight,
+                stick: SIMD2(0, -0.50)
+            ) && centered == MovementMapping(
+                buttons: 0,
+                stick: SIMD2(0, 0.25)
+            ) && menu == MovementMapping(
+                buttons: N64.a,
+                stick: SIMD2(-0.75, 0.50)
+            ) && original == MovementMapping(
+                buttons: N64.cRight,
+                stick: SIMD2(-0.75, 0.50)
+            )
+        }
+    }
+
     @Published private(set) var externalControllerName: String?
     @Published private(set) var touchAimActive = false
     @Published private(set) var aimBehavior = RecompPrototypeAimBehavior.toggle
@@ -155,6 +238,7 @@ final class RecompPrototypeInput: ObservableObject {
     private var controllerCrouchWasPressed = false
     private var twoPlayerTestModeRequested = false
     private var fourPlayerTestModeRequested = false
+    private var hostInputSuspended = false
     private var lookSensitivity: Float = 4.0
     private var controller: GCController?
     private var controllerMapping = Dictionary(
@@ -170,6 +254,14 @@ final class RecompPrototypeInput: ObservableObject {
     #endif
 
     init() {
+        let sidestepProbeEnabled = ProcessInfo.processInfo.arguments.contains("--sidestep-probe")
+        goldenPadRecompSetSidestepProbeEnabled(sidestepProbeEnabled ? 1 : 0)
+        if sidestepProbeEnabled {
+            print(
+                "[GoldenPad] Modern sidestep mapping probe: " +
+                (ModernMovementMapper.isolationProbePasses ? "PASS" : "FAIL")
+            )
+        }
         goldenPadRecompSetFireRateProbeEnabled(
             ProcessInfo.processInfo.arguments.contains("--fire-rate-probe") ? 1 : 0
         )
@@ -216,8 +308,12 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func configureControllerLookMode(_ rawValue: String) {
-        controllerLookMode = RecompPrototypeControllerLookMode(rawValue: rawValue) ?? .analog
-        publish()
+        let next = RecompPrototypeControllerLookMode(rawValue: rawValue) ?? .analog
+        guard next != controllerLookMode else { return }
+        controllerLookMode = next
+        // Give the game one neutral publication when changing semantics so a
+        // held stick cannot carry an old-mode turn/strafe into the new mode.
+        publishController(port: 0, buttons: 0, stick: .zero, look: .zero)
     }
 
     func configureControllerMapping(_ rawValues: [RecompPrototypeControllerControl: String]) {
@@ -229,6 +325,20 @@ final class RecompPrototypeInput: ObservableObject {
                 return (control, action)
             }
         )
+        publish()
+    }
+
+    func setHostInputSuspended(_ suspended: Bool) {
+        guard suspended != hostInputSuspended else { return }
+        hostInputSuspended = suspended
+        if suspended {
+            touchButtons = 0
+            touchAimActive = false
+            touchMovement = .zero
+            touchLook = .zero
+            touchCrouchIsPressed = false
+            controllerCrouchWasPressed = false
+        }
         publish()
     }
 
@@ -326,6 +436,14 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     private func publish() {
+        if hostInputSuspended {
+            touchLook = .zero
+            for port in 0..<4 {
+                publishController(port: Int32(port), buttons: 0, stick: .zero, look: .zero)
+            }
+            return
+        }
+
         let queuedTouchLook = clamp(touchLook * lookSensitivity)
         touchLook = .zero
         var externalButtons: UInt16 = 0
@@ -403,18 +521,51 @@ final class RecompPrototypeInput: ObservableObject {
         // right stick is an absolute value published every frame; multiplying
         // it by 4x saturated the camera at roughly one-quarter stick travel.
         // Keep the post-dead-zone controller value normalized instead.
+        let gameplayActive = goldenPadRecompGameplayInputActive() != 0
+        let externalMovement = ModernMovementMapper.map(
+            buttons: externalButtons,
+            stick: externalStick,
+            modern: controllerLookMode == .analog,
+            gameplayActive: gameplayActive
+        )
+        let mappedTouchMovement = ModernMovementMapper.map(
+            buttons: touchButtons,
+            stick: touchMovement,
+            modern: true,
+            gameplayActive: gameplayActive
+        )
         if twoPlayerTestModeActive {
-            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
-            publishController(port: 1, buttons: touchButtons, stick: touchMovement, look: .zero)
+            publishController(
+                port: 0,
+                buttons: externalMovement.buttons,
+                stick: externalMovement.stick,
+                look: controllerLook
+            )
+            publishController(
+                port: 1,
+                buttons: mappedTouchMovement.buttons,
+                stick: mappedTouchMovement.stick,
+                look: .zero
+            )
             if fourPlayerTestModeActive {
                 publishController(port: 2, buttons: 0, stick: .zero, look: .zero)
                 publishController(port: 3, buttons: 0, stick: .zero, look: .zero)
             }
         } else if controller != nil {
-            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
+            publishController(
+                port: 0,
+                buttons: externalMovement.buttons,
+                stick: externalMovement.stick,
+                look: controllerLook
+            )
             publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
         } else {
-            publishController(port: 0, buttons: touchButtons, stick: touchMovement, look: .zero)
+            publishController(
+                port: 0,
+                buttons: mappedTouchMovement.buttons,
+                stick: mappedTouchMovement.stick,
+                look: .zero
+            )
             publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
         }
         if queuedTouchLook != .zero && (controller == nil || twoPlayerTestModeActive) {

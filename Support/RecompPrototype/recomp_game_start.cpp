@@ -73,6 +73,8 @@ std::atomic<bool> audioCallbackReported = false;
 std::atomic<bool> stateProbeStarted = false;
 std::atomic<uint8_t> invalidInputPortsReported = 0;
 std::atomic<bool> fireRateProbeEnabled = false;
+std::atomic<bool> sidestepProbeEnabled = false;
+std::atomic<int32_t> gameplayInputModeReported = -1;
 std::atomic<uint64_t> fireRateProbeSimulationTicks = 0;
 std::atomic<uint32_t> fireRateProbeRawGuardSamples = 0;
 std::mutex statusMutex;
@@ -142,6 +144,7 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
         std::filesystem::rename(latest, previous, error);
     }
     diagnosticsLogPath = latest;
+    gameplayInputModeReported.store(-1, std::memory_order_relaxed);
     std::ofstream log(diagnosticsLogPath, std::ios::trunc);
     log << "[GoldenPadRecomp] diagnostics: private current-session log started\n";
     if (unexpectedPreviousEnd) {
@@ -682,6 +685,12 @@ extern "C" void goldenpad_recomp_set_controller_state(int32_t controllerNum, uin
     const size_t port = static_cast<size_t>(controllerNum);
     const uint32_t normalizedButtons = buttons & 0xFFFFu;
     const uint32_t previousButtons = controllerButtons[port].exchange(normalizedButtons, std::memory_order_relaxed);
+    if (sidestepProbeEnabled.load(std::memory_order_relaxed) &&
+        (normalizedButtons & 0x0003u) != 0 &&
+        (previousButtons & 0x0003u) == 0) {
+        logEvent("sidestep-probe", "controller=%d buttons=0x%04X stick=(%d,%d)",
+            controllerNum + 1, normalizedButtons, stickX, stickY);
+    }
     if (previousButtons != normalizedButtons) {
         const uint32_t transition = controllerButtonTransitions[port].fetch_add(1) + 1;
         if (transition <= 12 || transition % 120 == 0) {
@@ -738,6 +747,10 @@ extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t enabled) {
         playerFireRateWindow = {};
         guardFireRateWindow = {};
     }
+}
+
+extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t enabled) {
+    sidestepProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
 }
 
 extern "C" void goldenpad_recomp_fire_rate_player_sample(
@@ -976,6 +989,47 @@ extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t enabled) {
 extern "C" void goldenpad_recomp_request_return_to_title() {
     returnToTitleRequested.store(true, std::memory_order_release);
     logEvent("navigation", "return to main menu requested");
+}
+
+extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
+    const auto reportMode = [](int32_t active) {
+        const int32_t previous = gameplayInputModeReported.exchange(
+            active, std::memory_order_relaxed);
+        if (previous != active) {
+            logEvent("input-mode", "mobile mapping uses %s semantics",
+                active != 0 ? "live-gameplay strafe" : "menu/watch stick");
+        }
+        return active;
+    };
+
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
+        return reportMode(0);
+    }
+
+    constexpr int32_t kTitleStage = 90;
+    const int32_t stage = readGameWord(rdram, 0x80023FA8);
+    if (stage == kTitleStage) {
+        return reportMode(0);
+    }
+
+    const uint32_t playerAddress = static_cast<uint32_t>(
+        readGameWord(rdram, 0x80079EB0));
+    if (playerAddress < 0x80000000 || playerAddress > 0x9FFFFFFF) {
+        return reportMode(0);
+    }
+
+    // These are GoldenEye's own watch-state fields. Switch away from gameplay
+    // semantics as soon as a watch transition begins; waiting for
+    // outside_watch_menu to clear allowed the first watch-navigation sample to
+    // leak through as a strafe during the opening animation.
+    const int32_t watchAnimationState = readGameWord(rdram, playerAddress + 0x1C8);
+    const int32_t outsideWatchMenu = readGameWord(rdram, playerAddress + 0x1CC);
+    const int32_t openCloseSoloWatchMenu = readGameWord(rdram, playerAddress + 0x1D0);
+    return reportMode(
+        watchAnimationState == 0 &&
+        outsideWatchMenu != 0 &&
+        openCloseSoloWatchMenu == 0 ? 1 : 0);
 }
 
 extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() {
