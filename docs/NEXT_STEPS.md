@@ -2,7 +2,7 @@
 
 Updated: 2026-08-22
 
-This is the short operational queue for GoldenPad after Preview 2. It does not
+This is the short operational queue for GoldenPad after Preview 3. It does not
 replace the authoritative documents:
 
 - [`TECH_DEBT.md`](TECH_DEBT.md) owns priority, evidence, and closure state;
@@ -17,13 +17,13 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
-| 2 | **TD-02 modern sidestep repair** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus and Original N64 C-button mode remain unchanged. |
+| 1 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged Preview 3 baseline. No gameplay behavior change. |
+| Parallel user-facing lane | **TD-02 reporter confirmation** | Ask issue #8's reporter to verify the released opt-in sidestep adapter with touch and a connected controller; keep it opt-in until the full gate passes. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
-Land TD-01 and TD-02 as separate review units. The fire-rate probe can be built
-without changing controls. A12 evidence collection can proceed independently of
-both.
+Preview 3 is the accepted release baseline. Land the fire-rate probe separately;
+TD-02 reporter confirmation and A12 evidence collection can proceed without
+changing the released control defaults.
 
 ## Do immediately after
 

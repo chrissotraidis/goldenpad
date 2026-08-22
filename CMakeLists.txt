@@ -94,7 +94,9 @@ if(goldenpad_apple_platform STREQUAL "mac")
         goldenpad_mac_patches_text)
     foreach(required_bridge IN ITEMS
             "recomp_get_camera_inputs"
-            "goldenpad_recomp_consume_crouch_toggle")
+            "goldenpad_recomp_consume_crouch_toggle"
+            "goldenpad_recomp_consume_inventory_slot"
+            "goldenpad_recomp_consume_reload")
         string(FIND "${goldenpad_mac_patches_text}"
             "${required_bridge}" goldenpad_mac_bridge_offset)
         if(goldenpad_mac_bridge_offset EQUAL -1)
@@ -397,7 +399,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "2"
+        MACOSX_BUNDLE_BUNDLE_VERSION "3"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_recomp_code_signing_required}"

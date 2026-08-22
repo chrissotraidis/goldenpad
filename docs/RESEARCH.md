@@ -6,7 +6,7 @@ tracked repository.
 
 ## Decision
 
-GoldenPad's primary Preview 2 runtime uses **GoldenEye64Recomp at
+GoldenPad's primary Preview 3 runtime uses **GoldenEye64Recomp at
 `a787fe0d95e8278fcba5ba2d768fa6a606e75f55`**, statically generated ARM64 game
 code, N64ModernRuntime/N64Recomp components, and **RT64 at
 `5473732a822a4423b5696e7cb18fecc425a59875`** with Plume at

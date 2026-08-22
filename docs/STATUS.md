@@ -6,15 +6,16 @@ Updated: 2026-08-22
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 2 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Public release | Preview 3 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, saves/preferences preservation, and the bounded four-view experimental render repair. |
-| Major gameplay debt | Native-60-Hz automatic-fire cadence and modern sidestep semantics are not yet corrected. |
+| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect; Preview 3 ships modern Honey sidestep as an opt-in adapter pending reporter confirmation. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Record deterministic player/guard fire-rate cadence on the unchanged baseline. |
-| Immediate user-facing repair | Fix modern MOVE strafe / LOOK turn semantics while preserving menus and original C-button mode. |
+| Preview 3 controls release | Accepted input-only update from Preview 2: opt-in mobile Honey sidestep, clearer setup copy, and the hands-on accepted Mac control build. |
+| Immediate engineering gate | Record deterministic player/guard fire-rate cadence before changing native-60-Hz gameplay timing. |
+| Immediate user-facing follow-up | Ask the issue #8 reporter to verify touch and controller sidestep behavior; keep the opt-in adapter and Preview 2 default unchanged meanwhile. |
 
 Documentation ownership:
 
@@ -78,16 +79,41 @@ flicker investigation and real three/four-controller routing.
 
 GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
 the project's support status, not an official or commercial affiliation. The
-current arm64 Release product is `GoldenPad.app`; its product, display name and
-executable are all `GoldenPad`, and the final packaged-source executable
-SHA-256 is
+Preview 2 arm64 Release product established `GoldenPad.app` as the product,
+display name and executable; its packaged-source executable SHA-256 was
 `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
-Hands-on review reached authentic gameplay with working keyboard and mouse
-input, and the user intentionally quit after evaluating it. The build is stable
-enough to retain as the Mac alpha baseline, but it is not at iPhone/iPad quality:
-mouse look remains too slow, desktop controls remain less polished, a thin blue
-strip persists at the far-right render edge, and longer performance testing is
-still open.
+Hands-on review reached authentic gameplay, but that release retained slow,
+less-polished mouse/keyboard controls. Preview 3 supersedes those controls while
+preserving the same renderer boundary.
+
+The Preview 3 Mac release retains that renderer boundary while reworking only
+controls. Its preceding hands-on pass was judged the best Mac control version
+so far. The final follow-up lowers the default mouse
+sensitivity from 2.50× to 2.25×, makes left/right mouse Fire/Action, removes
+Space as Fire, assigns R reload and C crouch, adds middle/wheel cycling and
+1–9/0 owned-inventory selection, makes Escape pause without releasing capture,
+uses Delete for explicit pointer release, and neutralizes Honey's Shift+W/S
+pitch conflict. The MIPS patch regenerates, the arm64 app builds, and its
+ROM-free archive audits successfully. The exact accepted executable SHA-256 is
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`;
+the audited release archive SHA-256 is
+`819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`.
+The user then completed hands-on review and declared this exact second Mac
+build stable and working. That accepts the current mouse/keyboard control
+contract; the thin far-right blue line remains separate open TD-09 debt.
+
+The same Preview 3 line was built for physical iPad as version `0.1.0`
+build `3`, installed in place under the unchanged bundle identifier, and
+launched on the attached iPad Pro. Pre/post device readbacks matched both ROM
+copies, the active save, backup save, and preferences byte-for-byte. This proves
+build, install, and private-data preservation. Current and previous build-3
+session logs also record `ROM validation passed`, `GoldenEye loop active`, real
+stage transitions, sustained display-list/VI/present progress, and nonzero audio
+output. The user then accepted iPhone/iPad and Mac Preview 3 as stable for
+publication, with no newly observed major regression. The sidestep adapter ships
+opt-in while issue #8 remains open for reporter confirmation. The final copy-
+only signed device executable SHA-256 is
+`6ad969b56b6358e8c2731f97063b3d0dccf28674fdb4939216a289a330d8a72e`.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and
@@ -105,6 +131,21 @@ their latest hands-on launch/gameplay checks. This does not promote local
 multiplayer or Mac sustained performance to stable-release status. The
 coordinated repository update produces separate audited platform artifacts: an
 iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
+
+The audited Preview 3 mobile artifact is
+`GoldenPad-0.1.0-preview.3-unsigned.ipa` at SHA-256
+`ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`.
+Its 18-member archive passed the ROM/save/signing/private-path/setup-copy audit
+and has sorted unsigned app-content SHA-256
+`956e805d2575167b1045c7c5769f22f55d933e5a60c4a6283bfe30fedc1e5ab0`.
+The audited Preview 3 Mac Alpha artifact is
+`GoldenPad-0.1.0-preview.3-macos-arm64-alpha.zip` at SHA-256
+`819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`;
+its 20-member archive has sorted app-content SHA-256
+`e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`.
+Both artifacts were reproduced byte-for-byte by two independent packaging
+runs. Neither contains ROM, save, provisioning, signing identity, or private
+build-path data.
 
 The exact final Preview 2 mobile executable SHA-256 is
 `100ee12be02e2077e7559f6cd4ead210bb933abffb87874cf76a16afa06e67a9`.

@@ -32,7 +32,7 @@ fi
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "2"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "3"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 
@@ -71,7 +71,7 @@ done < <(find "$goldenpad_audit" -type f -print0)
 
 rom_patch="$app_path/vanilla_to_tlbfree.gep1"
 if [ ! -f "$rom_patch" ] || [ "$(shasum -a 256 "$rom_patch" | awk '{print $1}')" != "5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263" ]; then
-  echo "IPA is missing the exact pinned Preview 2 GEP1 conversion patch." >&2
+  echo "IPA is missing the exact pinned GEP1 conversion patch." >&2
   exit 1
 fi
 
@@ -80,6 +80,8 @@ for required_symbol in \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
   _goldenpad_recomp_set_four_player_test_mode \
+  _goldenpad_recomp_request_crouch_toggle \
+  _goldenpad_recomp_consume_crouch_toggle \
   _goldenpad_recomp_audio_render \
   _goldenpad_recomp_import_rom \
   _goldenpad_recomp_validate_tlbfree_rom \
@@ -87,6 +89,18 @@ for required_symbol in \
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then
     echo "IPA is missing required primary-runtime symbol: $required_symbol" >&2
+    exit 1
+  fi
+done
+
+for required_text in \
+  'Choose Original ROM' \
+  'Your original file will not be changed.' \
+  'The file you select stays in its original location.'
+do
+  if ! strings "$executable" | awk -v required="$required_text" \
+      'index($0, required) { found = 1 } END { exit !found }'; then
+    echo "IPA is missing required Preview 3 setup copy: $required_text" >&2
     exit 1
   fi
 done

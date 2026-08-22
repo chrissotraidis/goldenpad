@@ -58,7 +58,8 @@ struct GoldenPadMacApp: App {
     @AppStorage("recomp.invertAimY") private var invertAimY = false
     @AppStorage("recomp.reticleEnabled") private var reticleEnabled = false
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
-    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.5
+    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.25
+    @AppStorage("recomp.macMouseTuningVersion") private var mouseTuningVersion = 0
 
     var body: some Scene {
         WindowGroup("GoldenPad") {
@@ -89,6 +90,7 @@ struct GoldenPadMacApp: App {
             .background(Color.black)
             .preferredColorScheme(.dark)
             .onAppear {
+                migrateMacMouseTuningIfNeeded()
                 configureInput()
                 surface.setAppActive(true)
                 audio.activate()
@@ -141,6 +143,14 @@ struct GoldenPadMacApp: App {
         input.configureInvertAimY(invertAimY)
         input.configureUnlockAllMissions(unlockAllMissions)
         input.configureMouseSensitivity(mouseSensitivity)
+    }
+
+    private func migrateMacMouseTuningIfNeeded() {
+        guard mouseTuningVersion < 1 else { return }
+        if mouseSensitivity == 2.5 {
+            mouseSensitivity = 2.25
+        }
+        mouseTuningVersion = 1
     }
 }
 
@@ -195,15 +205,16 @@ private struct RecompMacSettingsView: View {
     @AppStorage("recomp.invertAimY") private var invertAimY = false
     @AppStorage("recomp.reticleEnabled") private var reticleEnabled = false
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
-    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.5
+    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.25
     @AppStorage("recomp.macKey.moveForward") private var moveForwardKey = Int(RecompMacBindableKey.w.rawValue)
     @AppStorage("recomp.macKey.moveBackward") private var moveBackwardKey = Int(RecompMacBindableKey.s.rawValue)
     @AppStorage("recomp.macKey.moveLeft") private var moveLeftKey = Int(RecompMacBindableKey.a.rawValue)
     @AppStorage("recomp.macKey.moveRight") private var moveRightKey = Int(RecompMacBindableKey.d.rawValue)
-    @AppStorage("recomp.macKey.fire") private var fireKey = Int(RecompMacBindableKey.space.rawValue)
+    @AppStorage("recomp.macKey.fire") private var fireKey = Int(RecompMacBindableKey.unassigned.rawValue)
     @AppStorage("recomp.macKey.aim") private var aimKey = Int(RecompMacBindableKey.shift.rawValue)
     @AppStorage("recomp.macKey.action") private var actionKey = Int(RecompMacBindableKey.e.rawValue)
     @AppStorage("recomp.macKey.changeWeapon") private var changeWeaponKey = Int(RecompMacBindableKey.q.rawValue)
+    @AppStorage("recomp.macKey.reload") private var reloadKey = Int(RecompMacBindableKey.r.rawValue)
     @AppStorage("recomp.macKey.crouch") private var crouchKey = Int(RecompMacBindableKey.c.rawValue)
     @AppStorage("recomp.macKey.start") private var startKey = Int(RecompMacBindableKey.escape.rawValue)
 
@@ -245,10 +256,11 @@ private struct RecompMacSettingsView: View {
                     RecompMacKeyBindingRow(title: "Aim", keyCode: $aimKey, input: input)
                     RecompMacKeyBindingRow(title: "Action", keyCode: $actionKey, input: input)
                     RecompMacKeyBindingRow(title: "Change weapon", keyCode: $changeWeaponKey, input: input)
+                    RecompMacKeyBindingRow(title: "Reload", keyCode: $reloadKey, input: input)
                     RecompMacKeyBindingRow(title: "Crouch", keyCode: $crouchKey, input: input)
                     RecompMacKeyBindingRow(title: "Start / pause", keyCode: $startKey, input: input)
                 }
-                Text("Mouse wheel selects the previous or next weapon. Escape always releases captured mouse input; menu navigation follows the four movement bindings.")
+                Text("Left mouse fires; right mouse performs Action; middle click and the wheel cycle weapons. Number keys select owned inventory slots. Escape opens GoldenEye's pause menu; Delete releases captured mouse input. Menu navigation follows the four movement bindings.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

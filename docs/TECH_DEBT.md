@@ -109,13 +109,13 @@ bundle unrelated changes. Every repair must be independently revertible.
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Confirmed** from the public report and input/game patch trace | C-button controller mode can strafe; modern MOVE horizontal still follows original turn behavior and touch has no equivalent C-left/right mapping | Gameplay-only synthetic input test, then physical touch + modern controller acceptance with menus unchanged |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Opt-in adapter released; reporter verification open** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; the user accepted Preview 3 as stable for publication, but the issue reporter has not confirmed both input paths | Ask the reporter to verify touch and controller behavior; retain the full menu/watch/aim/style/lifecycle regression gate before changing the default |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
-| TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Confirmed** arithmetically from both clamps | Queue saturation and the `[-1, 1]` consumer clamp cap turn rate and discard faster deltas; sensitivity cannot solve the structural loss | Measure host delta versus consumed look, then widen both clamps behind `GOLDENPAD_RECOMP_MAC` and run the Mac input/render gate |
+| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Hands-on accepted for Preview 3** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the accepted follow-up has slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and no Honey Shift+W pitch conflict | Retain the exact accepted executable as the control; keep long-session performance monitoring separate and reject any later input change that fails the Mac regression gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
@@ -172,15 +172,15 @@ probe**. It is small, cannot change player data or accepted feel, turns a
 source-confirmed global gameplay defect into a GoldenPad-specific number, and
 becomes the objective gate for the actual repair.
 
-The smartest next user-facing repair is **TD-02 modern sidestepping**. It is a
-current public issue with a traced ownership seam and can be fixed independently
-while the timing probe is built. TD-03 crash-artifact collection and A12-family
-reproduction also run from the first step as an evidence-only lane; no A12 code
-change is selected without that evidence. The next landing sequence is:
+The smartest next user-facing action is **physical acceptance of the isolated
+TD-02 sidestep candidate**. It is a current public issue with a traced ownership
+seam, but a successful build does not close it. TD-03 crash-artifact collection
+and A12-family reproduction can run as an evidence-only lane; no A12 code change
+is selected without that evidence. The next landing sequence is:
 
 1. land the fire-rate probe and record player plus guard cadence;
-2. repair modern sidestep semantics with menu and original-C-button regression
-   tests;
+2. run modern sidestep physical acceptance with menu, watch, aim/lean, native
+   styles, and original-C-button regression tests;
 3. apply the fire-rate authenticity patch only after the probe proves the
    current and expected numbers, then obtain hands-on combat acceptance;
 4. add the controller-lifecycle probe and neutralize the TD-07 disconnect leak;
@@ -195,30 +195,65 @@ Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would
 create a second unfinished ownership system.
 
+## Preview 3 Mac input release — 2026-08-22
+
+Preview 3 changes input only; it retains the accepted RT64/Plume sizing and
+the known thin far-right blue edge. The matched MIPS patch compiles and
+regenerates, the native arm64 app links all request/consumer symbols, and the
+ROM-free 20-member release archive passes the Mac package audit. The user has
+accepted the preceding mouse/WASD direction as the best Mac pass so far, then
+declared the exact C/R/Escape/Delete/mouse-wheel/number-key follow-up stable and
+working. This accepts the second Mac control build for Preview 3; it does not
+close TD-09.
+
+The exact accepted executable SHA-256 is
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
+The audited Preview 3 archive SHA-256 is
+`819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`,
+with sorted app-content SHA-256
+`e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`.
+
+The current desktop contract is left mouse Fire, right mouse Action, middle
+click or wheel weapon cycling, Shift Aim, E Action, Q next weapon, R reload, C
+crouch, Space unassigned, and 1–9/0 owned inventory slots. Escape sends
+Start/Pause without releasing pointer capture; Delete releases capture without
+sending a game button. Shift aim is stationary because Honey otherwise
+reinterprets W/S as manual-aim pitch. Crouch reads and adjusts GoldenEye's live
+stance; direct inventory selection follows the same native functions used by
+the watch menu. Unknown or unavailable slots are ignored.
+
+The corresponding iPad release is version `0.1.0` build `3`. It was installed
+in place and launched on the attached iPad Pro without changing the bundle
+identifier. Pre/post readbacks produced identical hashes for the Documents ROM,
+runtime ROM, active save, backup save, and preferences. Current and previous
+build-3 logs additionally show successful ROM validation, an active GoldenEye
+loop, stage transitions, continued render/present progress, and nonzero audio.
+The user accepted Preview 3 as stable for publication with no newly observed
+major regression. TD-02 remains open for issue-reporter confirmation and the
+full modern-sidestep regression matrix; the adapter therefore remains opt-in.
+The final copy-only signed device executable SHA-256 is
+`6ad969b56b6358e8c2731f97063b3d0dccf28674fdb4939216a289a330d8a72e`.
+
 ## macOS alpha disposition — 2026-08-21
 
-The native Apple-Silicon Mac product is retained as an **alpha**, one quality
-tier below the accepted iPhone/iPad single-player experience. The current
-packaged-source artifact is an arm64 `GoldenPad.app` whose product, bundle display
-name and executable are all `GoldenPad`; its executable SHA-256 is
-`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
-Hands-on review reached real gameplay and found the current build stable enough
-to preserve as the Mac alpha baseline, after which the user intentionally quit
-the app. That is alpha acceptance, not sustained-performance or release-parity
-evidence.
+The native Apple-Silicon Mac product remains **Alpha**, one support tier below
+the accepted iPhone/iPad single-player experience. Preview 3's current artifact
+is an arm64 `GoldenPad.app` whose product, bundle display name and executable are
+all `GoldenPad`. Its accepted executable SHA-256 is
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
+Hands-on review found its keyboard/mouse controls stable and working. That is
+Preview 3 Alpha acceptance, not notarization, broad hardware coverage, or a
+sustained-performance proof.
 
 The remaining Mac alpha debt is explicit:
 
-- mouse look works but the relative-delta queue and consumer both clamp it,
-  imposing an approximately 180°/s hip-fire and 60°/s aiming ceiling at the
-  60 Hz game loop while discarding faster motion; this needs a Mac-gated seam
-  repair rather than a wider sensitivity slider;
-- a thin blue strip remains at the far-right render edge;
-- the Mac build performs below the iPhone/iPad versions, and prior iterations
-  have staggered or frozen under load, so sustained gameplay still needs a
-  bounded acceptance pass without screen recording or continuous diagnostics;
-- direct numeric weapon selection and accepted Mac multiplayer assignment are
-  not implemented; and
+- a thin blue strip remains at the far-right render edge and was reconfirmed in
+  the accepted Preview 3 Mac controls build;
+- prior Mac iterations staggered or froze under load, so broader hardware and
+  sustained-gameplay coverage is still required even though the accepted build
+  was stable during hands-on review;
+- direct numeric inventory selection is accepted in Preview 3; Mac multiplayer
+  assignment is not implemented; and
 - the separate arm64 Alpha archive is package-audited, while
   oldest-supported-OS testing and notarization remain future gates.
 
@@ -229,7 +264,7 @@ Those experiments caused much worse world-geometry and control regressions. A
 later Mac-only repair must reproduce the thin edge, preserve Dam/Surface scene
 geometry, and pass the full input/render gate before replacing this baseline.
 
-Preview 2 is one coordinated source baseline, not one cross-platform binary.
+Preview 3 is one coordinated source baseline, not one cross-platform binary.
 iPhone and iPad ship in an `.ipa`; macOS ships as a separate arm64 Alpha archive
 containing `GoldenPad.app`. Mobile multiplayer remains experimental despite the
 accepted render baseline because residual flicker and real Player 3/4 routing
@@ -262,9 +297,9 @@ of an AppKit event-delivery defect.
 Future regeneration must apply
 `patches/goldeneye64recomp-ios-modern-controls.patch` first and regenerate both
 halves of the embedded patch together. Before linking, verify generated
-`RecompiledPatches/patches.c` calls both `recomp_get_camera_inputs` and
-`goldenpad_recomp_consume_crouch_toggle`. Treat either missing call as a failed
-build. Do not replace the accepted view callbacks with an app-local event
+`RecompiledPatches/patches.c` calls `recomp_get_camera_inputs` plus the crouch,
+reload, and inventory consumers. Treat any missing call as a failed build. Do
+not replace the accepted view callbacks with an app-local event
 monitor to compensate for a missing game patch. Plume's swap-chain window-size
 query must likewise remain the
 accepted baseline until a separate, Mac-only edge fix passes scene comparisons;
@@ -277,10 +312,11 @@ the last accepted RT64 rendering, captured mouse movement fails in either axis,
 menu pointer directions disagree with WASD, crouching changes camera pitch on
 its own, or unlock-all-missions changes the toggle without changing mission
 availability. A successful build and live PID are not acceptance for these
-interaction and rendering gates. Direct numeric weapon selection remains open;
-GoldenEye's current bridge exposes weapon cycling, not stable inventory-slot
-selection, so number-key behavior must not be fabricated without a game-side
-contract.
+interaction and rendering gates. Direct numeric weapon selection remains open
+for acceptance, but it now has a game-side contract: the request is consumed
+only in active gameplay, bounds-checks the live inventory count, resolves the
+owned item through GoldenEye's inventory index, and invokes the same equip
+functions used by the watch menu.
 
 The retained 21:16:44 executable later froze during extended hands-on use, so
 it is a comparison control, not a release fallback. A rebuilt candidate using

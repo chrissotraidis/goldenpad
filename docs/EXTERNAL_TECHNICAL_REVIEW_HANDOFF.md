@@ -28,7 +28,7 @@ Repository:
 Public release baseline:
 
 ```text
-v0.1.0-preview.2
+v0.1.0-preview.3
 ```
 
 Begin by recording the branch, exact commit, worktree status, and release tag
@@ -72,8 +72,9 @@ and sanitized runtime evidence are in scope.
 
 ### Stable baseline that must not be destabilized
 
-Preview 2 was accepted for single-player use on physical iPhone and iPad. The
-following behavior is a regression boundary:
+Preview 3 was accepted for iPhone/iPad and Apple-Silicon Mac use. It retains
+Preview 2's accepted single-player foundation while adding the documented
+control changes. The following behavior is a regression boundary:
 
 - normal-speed single-player gameplay;
 - high-resolution RT64/Metal rendering;
@@ -274,15 +275,16 @@ Questions to answer:
 
 Current status:
 
-- Keyboard and mouse reach gameplay, but mouse look remains too slow and the
-  combined WASD/mouse feel is less natural than touch/controller input.
+- Preview 3 keyboard/mouse controls received hands-on acceptance with WASD,
+  relative mouse look, mouse buttons, C/R/Escape/Delete, wheel cycling and
+  numeric inventory selection working as documented.
 - Earlier direct camera writes, mismatched generated patches and app-local event
   monitoring were rejected.
 - Unbounded render-thread requests enqueued onto AppKit's main queue caused
   growing input latency, audio underruns and effective freezes. The retained
   Plume patch coalesces those requests.
-- Longer gameplay without QuickTime, profiling or continuous log streaming is
-  still required.
+- The thin far-right blue edge and broader sustained-gameplay coverage remain
+  open; Mac multiplayer assignment is not implemented.
 
 Inspect first:
 
@@ -295,11 +297,10 @@ Inspect first:
 
 Questions to answer:
 
-- Is slow mouse feel caused primarily by host scaling, N64 right-stick/C-button
-  semantics, game-side camera consumption, frame-rate coupling, acceleration,
-  or multiple clamps/dead zones?
+- Do the retained queue/consumer clamps create measurable loss or frame-rate
+  coupling outside the accepted hands-on scenarios?
 - What measurement separates event delivery latency from camera response gain?
-- Can sensitivity be improved solely at the accepted relative-delta seam?
+- Can any future tuning remain solely at the accepted relative-delta seam?
 - Does the coalescing patch bound every relevant main-queue request, and how can
   queue growth be verified with low observer effect?
 - What is the minimum sustained acceptance run for promoting this Alpha without

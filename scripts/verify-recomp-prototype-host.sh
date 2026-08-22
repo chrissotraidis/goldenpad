@@ -55,6 +55,8 @@ for required_symbol in \
     goldenpad_recomp_set_two_player_test_mode \
     goldenpad_recomp_set_four_player_test_mode \
     goldenpad_recomp_queue_touch_look \
+    goldenpad_recomp_gameplay_input_active \
+    goldenpad_recomp_current_control_style \
     goldenpad_recomp_request_crouch_toggle \
     goldenpad_recomp_request_return_to_title \
     goldenpad_recomp_note_transient_inactive \
@@ -71,11 +73,19 @@ for required_text in \
     'iPad Touch Layout' \
     'recomp.touchLayout.phone.v1' \
     'recomp.touchLayout.tablet.v1' \
+    'Choose Original ROM' \
+    'Your original file will not be changed.' \
+    'The file you select stays in its original location.' \
+    'Preview 2 movement' \
+    'Sidestep with left/right' \
+    'Per-player styles; adapter paused' \
     'Experimental four-player render test'
 do
     strings "$binary" | grep -Fq "$required_text"
 done
 grep -Fq '@AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false' \
+    "$repo_root/Sources/RecompPrototypeApp.swift"
+grep -Fq '@AppStorage("recomp.movementMode") private var movementMode = RecompPrototypeMovementMode.previewTwo.rawValue' \
     "$repo_root/Sources/RecompPrototypeApp.swift"
 if find "$app" -type f \( \
     -iname '*.z64' -o -iname '*.v64' -o -iname '*.n64' -o \

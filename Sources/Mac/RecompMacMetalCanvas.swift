@@ -205,6 +205,10 @@ struct RecompMacMetalCanvas: NSViewRepresentable {
             threePointFiltering: threePointFiltering
         )
         if let window = view.window { surface.attach(to: view, window: window) }
+        if input.mouseCaptured, !context.coordinator.mouseCaptureWasActive {
+            view.claimKeyboardFocus()
+        }
+        context.coordinator.mouseCaptureWasActive = input.mouseCaptured
     }
 
     static func dismantleNSView(_ view: RecompMacMetalView, coordinator: Renderer) {
@@ -213,6 +217,7 @@ struct RecompMacMetalCanvas: NSViewRepresentable {
 
     final class Renderer: NSObject, MTKViewDelegate {
         let surface: RecompMacSurface
+        var mouseCaptureWasActive = false
         init(surface: RecompMacSurface) { self.surface = surface }
         func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
         func draw(in view: MTKView) { surface.drawHostFrame(in: view) }
@@ -239,6 +244,11 @@ final class RecompMacMetalView: MTKView {
                 window.makeFirstResponder(self)
             }
         }
+    }
+
+    func claimKeyboardFocus() {
+        guard let window, window.isKeyWindow, window.firstResponder !== self else { return }
+        window.makeFirstResponder(self)
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -286,6 +296,8 @@ final class RecompMacMetalView: MTKView {
     override func flagsChanged(with event: NSEvent) {
         if event.keyCode == 56 || event.keyCode == 60 {
             keyChanged?(event.keyCode, event.modifierFlags.contains(.shift))
+        } else if event.keyCode == 59 || event.keyCode == 62 {
+            keyChanged?(event.keyCode, event.modifierFlags.contains(.control))
         } else {
             super.flagsChanged(with: event)
         }

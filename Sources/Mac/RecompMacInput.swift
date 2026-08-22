@@ -24,8 +24,17 @@ private func goldenPadRecompSetTwoPlayerTestMode(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_queue_touch_look")
 private func goldenPadRecompQueueRelativeLook(_ controller: Int32, _ x: Int32, _ y: Int32)
 
+@_silgen_name("goldenpad_recomp_queue_mouse_look")
+private func goldenPadRecompQueueMouseLook(_ controller: Int32, _ x: Int64, _ y: Int64)
+
 @_silgen_name("goldenpad_recomp_request_crouch_toggle")
 private func goldenPadRecompRequestCrouchToggle(_ controller: Int32)
+
+@_silgen_name("goldenpad_recomp_request_inventory_slot")
+private func goldenPadRecompRequestInventorySlot(_ controller: Int32, _ slot: Int32)
+
+@_silgen_name("goldenpad_recomp_request_reload")
+private func goldenPadRecompRequestReload(_ controller: Int32)
 
 @_silgen_name("goldenpad_recomp_set_invert_aim_y")
 private func goldenPadRecompSetInvertAimY(_ enabled: Int32)
@@ -47,8 +56,9 @@ enum RecompMacBindableKey: UInt16, CaseIterable, Identifiable {
     case nine = 25, seven = 26, eight = 28, zero = 29
     case o = 31, u = 32, i = 34, p = 35, returnKey = 36
     case l = 37, j = 38, k = 40, n = 45, m = 46
-    case tab = 48, space = 49, escape = 53, shift = 56
+    case tab = 48, space = 49, escape = 53, shift = 56, control = 59
     case leftArrow = 123, rightArrow = 124, downArrow = 125, upArrow = 126
+    case unassigned = 65_535
 
     var id: UInt16 { rawValue }
 
@@ -69,10 +79,12 @@ enum RecompMacBindableKey: UInt16, CaseIterable, Identifiable {
         case .space: "Space"
         case .escape: "Escape"
         case .shift: "Shift"
+        case .control: "Control"
         case .leftArrow: "Left Arrow"
         case .rightArrow: "Right Arrow"
         case .downArrow: "Down Arrow"
         case .upArrow: "Up Arrow"
+        case .unassigned: "Unassigned"
         default: String(describing: self).uppercased()
         }
     }
@@ -80,7 +92,7 @@ enum RecompMacBindableKey: UInt16, CaseIterable, Identifiable {
 
 enum RecompMacKeyboardAction: String, CaseIterable {
     case moveForward, moveBackward, moveLeft, moveRight
-    case fire, aim, action, changeWeapon, crouch, start
+    case fire, aim, action, changeWeapon, reload, crouch, start
 
     var title: String {
         switch self {
@@ -92,6 +104,7 @@ enum RecompMacKeyboardAction: String, CaseIterable {
         case .aim: "Aim"
         case .action: "Action"
         case .changeWeapon: "Change weapon"
+        case .reload: "Reload"
         case .crouch: "Crouch"
         case .start: "Start / pause"
         }
@@ -103,10 +116,11 @@ enum RecompMacKeyboardAction: String, CaseIterable {
         case .moveBackward: .s
         case .moveLeft: .a
         case .moveRight: .d
-        case .fire: .space
+        case .fire: .unassigned
         case .aim: .shift
         case .action: .e
         case .changeWeapon: .q
+        case .reload: .r
         case .crouch: .c
         case .start: .escape
         }
@@ -117,8 +131,25 @@ enum RecompMacKeyboardAction: String, CaseIterable {
 
 struct RecompMacKeyboardBindings {
     private var codes: [RecompMacKeyboardAction: UInt16]
+    private static let bindingVersionKey = "recomp.macKeyBindingsVersion"
+    private static let currentBindingVersion = 2
 
     static func load(from defaults: UserDefaults = .standard) -> Self {
+        if defaults.integer(forKey: bindingVersionKey) < currentBindingVersion {
+            let crouchKey = RecompMacKeyboardAction.crouch.storageKey
+            let previous = defaults.object(forKey: crouchKey) as? NSNumber
+            let previousCode = previous.map { UInt16(truncating: $0) }
+            if previousCode == nil || previousCode == RecompMacBindableKey.control.rawValue {
+                defaults.set(RecompMacBindableKey.c.rawValue, forKey: crouchKey)
+            }
+            let fireKey = RecompMacKeyboardAction.fire.storageKey
+            let previousFire = defaults.object(forKey: fireKey) as? NSNumber
+            let previousFireCode = previousFire.map { UInt16(truncating: $0) }
+            if previousFireCode == nil || previousFireCode == RecompMacBindableKey.space.rawValue {
+                defaults.set(RecompMacBindableKey.unassigned.rawValue, forKey: fireKey)
+            }
+            defaults.set(currentBindingVersion, forKey: bindingVersionKey)
+        }
         var codes: [RecompMacKeyboardAction: UInt16] = [:]
         for action in RecompMacKeyboardAction.allCases {
             let stored = defaults.object(forKey: action.storageKey) as? NSNumber
@@ -145,9 +176,12 @@ struct RecompMacKeyboardBindings {
 @MainActor
 final class RecompMacInput: ObservableObject {
     private enum Key {
+        static let delete: UInt16 = 51
         static let escape: UInt16 = 53
         static let leftShift: UInt16 = 56
         static let rightShift: UInt16 = 60
+        static let leftControl: UInt16 = 59
+        static let rightControl: UInt16 = 62
     }
 
     private enum N64 {
@@ -186,7 +220,7 @@ final class RecompMacInput: ObservableObject {
     private var viewMouseActionHeld = false
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
-    private var mouseSensitivity: Float = 2.5
+    private var mouseSensitivity: Float = 2.25
     private var keyboardBindings = RecompMacKeyboardBindings.load()
     private var observers: [NSObjectProtocol] = []
     private var ticker: Timer?
@@ -272,6 +306,10 @@ final class RecompMacInput: ObservableObject {
         case 1:
             viewMouseActionHeld = pressed
             if pressed { mouseActionPulseFrames = 3 }
+        case 2:
+            if pressed {
+                pendingWeaponWheelSteps = min(6, pendingWeaponWheelSteps + 1)
+            }
         default:
             break
         }
@@ -292,13 +330,21 @@ final class RecompMacInput: ObservableObject {
         if pressed, !wasPressed {
             keyPulseFrames[keyCode] = 3
         }
-        if keyCode == Key.escape, pressed, !wasPressed {
+        if keyCode == Key.delete, pressed, !wasPressed {
             releaseMouseCapture()
         }
         if pressed, !wasPressed, gameplayInputActive,
            keyMatches(.crouch, keyCode: keyCode) {
             pendingMouseDelta.y = 0
             goldenPadRecompRequestCrouchToggle(0)
+        }
+        if pressed, !wasPressed, gameplayInputActive,
+           let slot = inventorySlot(for: keyCode) {
+            goldenPadRecompRequestInventorySlot(0, slot)
+        }
+        if pressed, !wasPressed, gameplayInputActive,
+           keyMatches(.reload, keyCode: keyCode) {
+            goldenPadRecompRequestReload(0)
         }
     }
 
@@ -402,7 +448,9 @@ final class RecompMacInput: ObservableObject {
 
         if let gamepad = controller?.extendedGamepad {
             let controllerMovement = SIMD2(gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value)
-            if simd_length(controllerMovement) > 0.08 { movement = controllerMovement }
+            if movement == .zero, simd_length(controllerMovement) > 0.15 {
+                movement = controllerMovement.applyingRadialDeadZone(0.15)
+            }
             rightStick = SIMD2(gamepad.rightThumbstick.xAxis.value, gamepad.rightThumbstick.yAxis.value)
                 .applyingRadialDeadZone(0.15)
                 .applyingResponseCurve(1.5)
@@ -417,6 +465,10 @@ final class RecompMacInput: ObservableObject {
             if gamepad.dpad.down.isPressed { buttons |= N64.dpadDown }
             if gamepad.dpad.left.isPressed { buttons |= N64.dpadLeft }
             if gamepad.dpad.right.isPressed { buttons |= N64.dpadRight }
+        }
+
+        if !gameplayInputActive {
+            rightStick = .zero
         }
 
         publishController(buttons: buttons, movement: movement, rightStick: rightStick)
@@ -452,11 +504,31 @@ final class RecompMacInput: ObservableObject {
         heldKeys.contains(code) || (keyPulseFrames[code] ?? 0) > 0
     }
 
+    private func inventorySlot(for keyCode: UInt16) -> Int32? {
+        switch keyCode {
+        case RecompMacBindableKey.one.rawValue: 0
+        case RecompMacBindableKey.two.rawValue: 1
+        case RecompMacBindableKey.three.rawValue: 2
+        case RecompMacBindableKey.four.rawValue: 3
+        case RecompMacBindableKey.five.rawValue: 4
+        case RecompMacBindableKey.six.rawValue: 5
+        case RecompMacBindableKey.seven.rawValue: 6
+        case RecompMacBindableKey.eight.rawValue: 7
+        case RecompMacBindableKey.nine.rawValue: 8
+        case RecompMacBindableKey.zero.rawValue: 9
+        default: nil
+        }
+    }
+
     private func keyMatches(_ action: RecompMacKeyboardAction, keyCode: UInt16) -> Bool {
         let configured = keyboardBindings.key(for: action)
-        return configured == RecompMacBindableKey.shift.rawValue
-            ? keyCode == Key.leftShift || keyCode == Key.rightShift
-            : keyCode == configured
+        if configured == RecompMacBindableKey.shift.rawValue {
+            return keyCode == Key.leftShift || keyCode == Key.rightShift
+        }
+        if configured == RecompMacBindableKey.control.rawValue {
+            return keyCode == Key.leftControl || keyCode == Key.rightControl
+        }
+        return keyCode == configured
     }
 
     private func actionIsActive(_ action: RecompMacKeyboardAction) -> Bool {
@@ -464,10 +536,20 @@ final class RecompMacInput: ObservableObject {
         if configured == RecompMacBindableKey.shift.rawValue {
             return keyIsActive(Key.leftShift) || keyIsActive(Key.rightShift)
         }
+        if configured == RecompMacBindableKey.control.rawValue {
+            return keyIsActive(Key.leftControl) || keyIsActive(Key.rightControl)
+        }
         return keyIsActive(configured)
     }
 
     private var keyboardMovement: SIMD2<Float> {
+        // In GoldenEye's 1.1 Honey layout the N64 stick becomes the manual-aim
+        // axis while R is held. Mouse look already owns that axis on desktop,
+        // so forwarding W/S as well makes Shift+W pitch the view downward.
+        // Keep Honey aim stationary and predictable instead.
+        if gameplayInputActive, actionIsActive(.aim) {
+            return .zero
+        }
         var movement = SIMD2<Float>.zero
         if actionIsActive(.moveForward) { movement.y += 1 }
         if actionIsActive(.moveBackward) { movement.y -= 1 }
@@ -500,9 +582,9 @@ final class RecompMacInput: ObservableObject {
         // The previous desktop rate remained too slow in physical play. Keep
         // the setting adjustable while doubling the actual mouse response.
         let scale = 1_680 * mouseSensitivity
-        let x = Int32(max(-32_767, min(32_767, delta.x * scale)))
-        let y = Int32(max(-32_767, min(32_767, -delta.y * scale)))
-        goldenPadRecompQueueRelativeLook(0, x, y)
+        let x = Int64((Double(delta.x) * Double(scale)).rounded())
+        let y = Int64((Double(-delta.y) * Double(scale)).rounded())
+        goldenPadRecompQueueMouseLook(0, x, y)
     }
 
     private func nextMenuMouseMovement() -> SIMD2<Float> {

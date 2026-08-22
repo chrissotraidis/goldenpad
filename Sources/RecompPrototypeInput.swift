@@ -38,6 +38,12 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
 
+@_silgen_name("goldenpad_recomp_gameplay_input_active")
+private func goldenPadRecompGameplayInputActive() -> Int32
+
+@_silgen_name("goldenpad_recomp_current_control_style")
+private func goldenPadRecompCurrentControlStyle() -> Int32
+
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
     case hold
@@ -61,6 +67,69 @@ enum RecompPrototypeControllerLookMode: String, CaseIterable {
         case .classic: "Original N64 C-buttons"
         case .off: "Off"
         }
+    }
+}
+
+enum RecompPrototypeMovementMode: String, CaseIterable {
+    case previewTwo
+    case honeySidestep
+
+    var title: String {
+        switch self {
+        case .previewTwo: "Preview 2 movement"
+        case .honeySidestep: "Sidestep with left/right"
+        }
+    }
+}
+
+private enum RecompPrototypeMovementMapper {
+    enum Direction {
+        case neutral
+        case left
+        case right
+    }
+
+    private static let pressThreshold: Float = 0.30
+    private static let releaseThreshold: Float = 0.20
+
+    static func map(
+        stick: SIMD2<Float>,
+        buttons: UInt16,
+        mode: RecompPrototypeMovementMode,
+        gameplayActive: Bool,
+        controlStyle: Int32,
+        cLeft: UInt16,
+        cRight: UInt16,
+        direction: inout Direction
+    ) -> (stick: SIMD2<Float>, buttons: UInt16) {
+        guard mode == .honeySidestep, gameplayActive, controlStyle == 0 else {
+            direction = .neutral
+            return (stick, buttons)
+        }
+
+        var mappedStick = stick
+        var mappedButtons = buttons
+        switch direction {
+        case .neutral:
+            if stick.x < -pressThreshold { direction = .left }
+            if stick.x > pressThreshold { direction = .right }
+        case .left:
+            if stick.x > pressThreshold {
+                direction = .right
+            } else if stick.x > -releaseThreshold {
+                direction = .neutral
+            }
+        case .right:
+            if stick.x < -pressThreshold {
+                direction = .left
+            } else if stick.x < releaseThreshold {
+                direction = .neutral
+            }
+        }
+        if direction == .left { mappedButtons |= cLeft }
+        if direction == .right { mappedButtons |= cRight }
+        mappedStick.x = 0
+        return (mappedStick, mappedButtons)
     }
 }
 
@@ -143,6 +212,8 @@ final class RecompPrototypeInput: ObservableObject {
     @Published private(set) var touchAimActive = false
     @Published private(set) var aimBehavior = RecompPrototypeAimBehavior.toggle
     @Published private(set) var controllerLookMode = RecompPrototypeControllerLookMode.analog
+    @Published private(set) var movementMode = RecompPrototypeMovementMode.previewTwo
+    @Published private(set) var activeControlStyle: Int32 = -1
     @Published private(set) var twoPlayerTestModeActive = false
     @Published private(set) var fourPlayerTestModeActive = false
     private var touchButtons: UInt16 = 0
@@ -150,6 +221,9 @@ final class RecompPrototypeInput: ObservableObject {
     private var touchLook = SIMD2<Float>.zero
     private var touchCrouchIsPressed = false
     private var controllerCrouchWasPressed = false
+    private var externalSidestepDirection = RecompPrototypeMovementMapper.Direction.neutral
+    private var touchSidestepDirection = RecompPrototypeMovementMapper.Direction.neutral
+    private var movementNeutralFrames = 0
     private var twoPlayerTestModeRequested = false
     private var fourPlayerTestModeRequested = false
     private var lookSensitivity: Float = 4.0
@@ -209,6 +283,16 @@ final class RecompPrototypeInput: ObservableObject {
 
     func configureControllerLookMode(_ rawValue: String) {
         controllerLookMode = RecompPrototypeControllerLookMode(rawValue: rawValue) ?? .analog
+        publish()
+    }
+
+    func configureMovementMode(_ rawValue: String) {
+        let next = RecompPrototypeMovementMode(rawValue: rawValue) ?? .previewTwo
+        guard movementMode != next else { return }
+        movementMode = next
+        externalSidestepDirection = .neutral
+        touchSidestepDirection = .neutral
+        movementNeutralFrames = 1
         publish()
     }
 
@@ -318,6 +402,11 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     private func publish() {
+        let gameplayActive = goldenPadRecompGameplayInputActive() != 0
+        let controlStyle = twoPlayerTestModeActive ? -2 : goldenPadRecompCurrentControlStyle()
+        if activeControlStyle != controlStyle {
+            activeControlStyle = controlStyle
+        }
         let queuedTouchLook = clamp(touchLook * lookSensitivity)
         touchLook = .zero
         var externalButtons: UInt16 = 0
@@ -377,6 +466,7 @@ final class RecompPrototypeInput: ObservableObject {
 
         switch controllerLookMode {
         case .analog:
+            if !gameplayActive { controllerLook = .zero }
             break
         case .classic:
             let threshold: Float = 0.30
@@ -389,13 +479,45 @@ final class RecompPrototypeInput: ObservableObject {
             controllerLook = .zero
         }
 
+        var mappedExternalMovement = RecompPrototypeMovementMapper.map(
+            stick: externalStick,
+            buttons: externalButtons,
+            mode: movementMode,
+            gameplayActive: gameplayActive && !twoPlayerTestModeActive,
+            controlStyle: controlStyle,
+            cLeft: N64.cLeft,
+            cRight: N64.cRight,
+            direction: &externalSidestepDirection
+        )
+        var mappedTouchMovement = RecompPrototypeMovementMapper.map(
+            stick: touchMovement,
+            buttons: touchButtons,
+            mode: movementMode,
+            gameplayActive: gameplayActive && !twoPlayerTestModeActive,
+            controlStyle: controlStyle,
+            cLeft: N64.cLeft,
+            cRight: N64.cRight,
+            direction: &touchSidestepDirection
+        )
+
+        if movementNeutralFrames > 0 {
+            mappedExternalMovement.stick = .zero
+            mappedExternalMovement.buttons &= ~(N64.cLeft | N64.cRight)
+            mappedTouchMovement.stick = .zero
+            mappedTouchMovement.buttons &= ~(N64.cLeft | N64.cRight)
+            movementNeutralFrames -= 1
+        }
+
+        externalStick = mappedExternalMovement.stick
+        externalButtons = mappedExternalMovement.buttons
+
         // The saved 4x tuning belongs to relative touch deltas. A physical
         // right stick is an absolute value published every frame; multiplying
         // it by 4x saturated the camera at roughly one-quarter stick travel.
         // Keep the post-dead-zone controller value normalized instead.
         if twoPlayerTestModeActive {
             publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
-            publishController(port: 1, buttons: touchButtons, stick: touchMovement, look: .zero)
+            publishController(port: 1, buttons: mappedTouchMovement.buttons, stick: mappedTouchMovement.stick, look: .zero)
             if fourPlayerTestModeActive {
                 publishController(port: 2, buttons: 0, stick: .zero, look: .zero)
                 publishController(port: 3, buttons: 0, stick: .zero, look: .zero)
@@ -404,10 +526,10 @@ final class RecompPrototypeInput: ObservableObject {
             publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
             publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
         } else {
-            publishController(port: 0, buttons: touchButtons, stick: touchMovement, look: .zero)
+            publishController(port: 0, buttons: mappedTouchMovement.buttons, stick: mappedTouchMovement.stick, look: .zero)
             publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
         }
-        if queuedTouchLook != .zero && (controller == nil || twoPlayerTestModeActive) {
+        if gameplayActive && queuedTouchLook != .zero && (controller == nil || twoPlayerTestModeActive) {
             goldenPadRecompQueueTouchLook(
                 twoPlayerTestModeActive ? 1 : 0,
                 Int32((queuedTouchLook.x * 32_767).rounded()),

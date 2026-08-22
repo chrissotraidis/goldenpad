@@ -87,7 +87,7 @@ final class RecompPrototypeROMStore: ObservableObject {
                 self.pendingOpenURL = nil
                 importROM(from: pendingOpenURL)
             } else {
-                state = .failed("The existing GoldenEye_TLBFREE.z64 is not the supported ROM. Choose your original NTSC-U ROM to replace it safely.")
+                state = .failed("GoldenPad couldn't verify the game copy stored on this device. Choose your original NTSC-U GoldenEye 007 ROM to recreate it. Your original file will not be changed.")
             }
         }
     }
@@ -244,7 +244,7 @@ struct RecompPrototypeROMSetupView: View {
                         .tint(.yellow)
                         .controlSize(.large)
                 } else {
-                    Button("Choose GoldenEye 007 ROM…") {
+                    Button("Choose Original ROM…") {
                         store.presentImporter()
                     }
                     .buttonStyle(.borderedProminent)
@@ -253,7 +253,7 @@ struct RecompPrototypeROMSetupView: View {
                     .controlSize(.large)
                 }
 
-                Text("Use your own original NTSC-U ROM. GoldenPad converts and verifies it privately on this device; the selected original is not copied into the app.")
+                Text("GoldenPad converts and verifies a private copy on this device. The file you select stays in its original location.")
                     .font(.footnote)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white.opacity(0.58))
@@ -277,7 +277,7 @@ struct RecompPrototypeROMSetupView: View {
         case .checking:
             return "Checking for your game…"
         case .needsROM:
-            return "Choose your original NTSC-U GoldenEye 007 ROM. GoldenPad accepts common N64 byte orders and prepares the required TLB-free copy automatically."
+            return "Choose your original NTSC-U GoldenEye 007 ROM to begin. GoldenPad will prepare the required game copy on this device."
         case .importing:
             return "Verifying and preparing your private game copy…"
         case .ready:

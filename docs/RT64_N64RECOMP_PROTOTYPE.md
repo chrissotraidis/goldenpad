@@ -41,7 +41,7 @@ as one dependency set.
 | `perfect-dark-pc-port/perfect_dark` | `32a1cb9f268dd3ac73016801025c6bbbfa20130f` | MIT | Sky conversion reference only |
 
 Linking N64ModernRuntime or GoldenEye64Recomp-derived code creates GPL-3.0
-distribution obligations. The primary Preview 2 and Mac Alpha packages therefore
+distribution obligations. The primary Preview 3 and Mac Alpha packages therefore
 carry the exact GPL text and required notices, and remain separately documented
 from MGB64 Legacy. The N64 decomp's public readability does not place game code
 or assets in the public domain.
@@ -146,7 +146,7 @@ The current decision is **use RT64/N64Recomp as GoldenPad's primary
 runtime while retaining MGB64 as the deprecated GoldenPad Legacy fallback**.
 That decision is based on physical single-player stability, accepted controls
 and the high-resolution RT64 result—not on missing quantitative cache or FPS
-measurements. Preview 2 is now public; future releases still require the package,
+measurements. Preview 3 is now public; future releases still require the package,
 data-boundary, and hands-on gates in `RELEASE_CHECKLIST.md`.
 
 ## Build and Simulator instructions
