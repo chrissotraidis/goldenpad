@@ -33,6 +33,26 @@ Do not regress the accepted single-player speed, high-resolution renderer,
 touch tuning, controller mapping, save compatibility, or clean-install defaults
 while addressing that debt.
 
+## Touch sidestep and control-template debt — 2026-08-22
+
+[Issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) records a real
+gap between GoldenPad's current input configurations. The accepted iPhone/iPad
+touch template combines GoldenEye's original analog-stick movement with
+GoldenPad's relative LOOK surface. Horizontal MOVE input therefore retains the
+original turn behavior and does not expose native sidestepping.
+
+Physical controllers have a separate **Original N64 C-buttons** right-stick
+configuration. It emits C-left/C-right and restores GoldenEye's native
+sidestepping, but it replaces the modern analog right-stick look path. Touch has
+no corresponding C-button or sidestep-capable template today.
+
+This remains design debt, not an approved control rewrite. A future pass should
+evaluate multiple named templates or a dedicated controls submenu that can add
+a sidestep-capable touch option while preserving the current accepted template.
+Any candidate must keep menu navigation unchanged, preserve independent
+movement and look, avoid silently changing existing saved preferences, and pass
+hands-on iPhone, iPad and physical-controller testing before becoming a default.
+
 ## macOS alpha disposition — 2026-08-21
 
 The native Apple-Silicon Mac product is retained as an **alpha**, one quality
