@@ -113,10 +113,12 @@ The same isolated Preview 3 line was built for physical iPad as version `0.1.0`
 build `3`, installed in place under the unchanged bundle identifier, and
 launched on the attached iPad Pro. Pre/post device readbacks matched both ROM
 copies, the active save, backup save, and preferences byte-for-byte. This proves
-build, install, launch, and private-data preservation; it does not prove the
-TD-02 touch/controller sidestep behavior. Physical control acceptance remains
-the next gate, and the published Preview 2 IPA remains untouched. The installed
-signed device executable SHA-256 is
+build, install, and private-data preservation. Current and previous build-3
+session logs also record `ROM validation passed`, `GoldenEye loop active`, real
+stage transitions, sustained display-list/VI/present progress, and nonzero audio
+output. This still does not prove the TD-02 touch/controller sidestep behavior.
+Physical control acceptance remains the next gate, and the published Preview 2
+IPA remains untouched. The installed signed device executable SHA-256 is
 `ecdbd8e0fedadef9a2176a2f0a427d0bdc141e08cf743e872d3f67fb5347d658`.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke

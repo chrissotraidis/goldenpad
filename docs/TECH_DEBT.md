@@ -225,10 +225,12 @@ the watch menu. Unknown or unavailable slots are ignored.
 The corresponding iPad candidate is version `0.1.0` build `3`. It was installed
 in place and launched on the attached iPad Pro without changing the bundle
 identifier. Pre/post readbacks produced identical hashes for the Documents ROM,
-runtime ROM, active save, backup save, and preferences. This is preservation and
-liveness evidence only: TD-02 remains open until touch and physical-controller
-behavior pass the modern-sidestep gate. The published Preview 2 IPA was not
-replaced. The installed signed device executable SHA-256 is
+runtime ROM, active save, backup save, and preferences. Current and previous
+build-3 logs additionally show successful ROM validation, an active GoldenEye
+loop, stage transitions, continued render/present progress, and nonzero audio.
+This is preservation and liveness evidence only: TD-02 remains open until touch
+and physical-controller behavior pass the modern-sidestep gate. The published
+Preview 2 IPA was not replaced. The installed signed device executable SHA-256 is
 `ecdbd8e0fedadef9a2176a2f0a427d0bdc141e08cf743e872d3f67fb5347d658`.
 
 ## macOS alpha disposition — 2026-08-21
