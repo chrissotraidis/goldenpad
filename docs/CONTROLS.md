@@ -266,11 +266,13 @@ acceptable default.
 - left mouse emits Z (Fire), right mouse emits B (Action), and middle click plus
   the wheel emit bounded A or A+Z weapon-cycle pulses;
 - Shift emits R (Aim), E emits B (Action), Q emits A (Weapon), R requests a
-  native reload, Control requests crouch, and Escape emits Start while also
-  releasing mouse capture;
-- Space is unassigned by default and Control is bindable. A one-time migration
-  moves the former default Space/Fire and C/Crouch bindings without replacing a
-  different user-selected binding;
+  native reload, C requests crouch, and Escape emits Start without changing
+  pointer capture;
+- Delete releases pointer capture without sending a GoldenEye button. Losing
+  app focus, including Command-Tab, also releases all held input;
+- Space is unassigned by default and Control remains bindable. A one-time
+  migration moves the experimental Control/Crouch default back to C without
+  replacing a different user-selected binding;
 - number keys 1–9 and 0 select owned inventory indices 1–10. Out-of-range slots
   are ignored and never fabricate an item;
 - mouse motion and controller right-stick motion use the direct-camera bridge.
@@ -419,10 +421,10 @@ separate adapter mode.
 
 **Keyboard/mouse:** Preview 3's baseline is Honey. W/S is analog walk, A/D is
 native C sidestep, mouse is direct look, and action buttons follow Honey.
-GoldenPad must add Control as a bindable crouch key if that is the intended
-default, verify window first-responder/focus before blaming GoldenEye movement,
-and make direct-camera aim detection use live aim state or live style rather
-than fixed R.
+C is the crouch default; Control remains an optional binding. Escape pauses and
+Delete releases the pointer. GoldenPad must verify window first-responder/focus
+before blaming GoldenEye movement, and make direct-camera aim detection use live
+aim state or live style rather than fixed R.
 
 **Crouch:** Native crouch lowering is contextual Aim+C-down; the pinned source's
 1.x `crouchUp` expression is counterintuitive and requires a runtime trace
@@ -446,8 +448,10 @@ narrow control-only candidate:
   are per player and the current host getter cannot safely classify both ports;
 - the host reads the live style from the current GoldenEye player record and
   displays it without changing GoldenEye's saved option;
-- Mac Control is bindable and is the crouch default; the candidate migrates
-  only the former C default and preserves any other saved crouch choice;
+- Mac C is the crouch default; the candidate migrates only its experimental
+  Control default back to C and preserves any other saved crouch choice;
+- Escape sends Start/Pause without releasing capture; Delete explicitly
+  releases capture, while application focus loss releases all held input;
 - left mouse is Fire, right mouse is Action, Space is unassigned, R reloads,
   middle click/wheel cycles inventory, and 1–9/0 request owned slots 1–10;
 - the crouch consumer follows GoldenEye's live stance instead of maintaining a

@@ -215,7 +215,7 @@ private struct RecompMacSettingsView: View {
     @AppStorage("recomp.macKey.action") private var actionKey = Int(RecompMacBindableKey.e.rawValue)
     @AppStorage("recomp.macKey.changeWeapon") private var changeWeaponKey = Int(RecompMacBindableKey.q.rawValue)
     @AppStorage("recomp.macKey.reload") private var reloadKey = Int(RecompMacBindableKey.r.rawValue)
-    @AppStorage("recomp.macKey.crouch") private var crouchKey = Int(RecompMacBindableKey.control.rawValue)
+    @AppStorage("recomp.macKey.crouch") private var crouchKey = Int(RecompMacBindableKey.c.rawValue)
     @AppStorage("recomp.macKey.start") private var startKey = Int(RecompMacBindableKey.escape.rawValue)
 
     var body: some View {
@@ -260,7 +260,7 @@ private struct RecompMacSettingsView: View {
                     RecompMacKeyBindingRow(title: "Crouch", keyCode: $crouchKey, input: input)
                     RecompMacKeyBindingRow(title: "Start / pause", keyCode: $startKey, input: input)
                 }
-                Text("Left mouse fires; right mouse performs Action; middle click and the wheel cycle weapons. Number keys select owned inventory slots. Escape always releases captured mouse input; menu navigation follows the four movement bindings.")
+                Text("Left mouse fires; right mouse performs Action; middle click and the wheel cycle weapons. Number keys select owned inventory slots. Escape opens GoldenEye's pause menu; Delete releases captured mouse input. Menu navigation follows the four movement bindings.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

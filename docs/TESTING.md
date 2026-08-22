@@ -209,7 +209,8 @@ stream, profiler, or background Simulator control:
    move the selection down.
 2. Start Dam and verify the pointer is captured automatically when live play
    begins. Horizontal and vertical look must remain responsive while moving
-   with WASD. Escape must release the pointer. Control must toggle between
+   with WASD. Escape must open the pause menu without releasing the pointer;
+   Delete must release the pointer without pausing. C must toggle between
    GoldenEye's live stand/squat state without pulling the camera downward.
    Shift+W/S must not pitch the camera or move the player while manual aim is
    held. If live play receives no mouse motion or command request, first verify
@@ -221,9 +222,10 @@ stream, profiler, or background Simulator control:
    consumer is missing; it does not by itself prove an AppKit delivery defect.
    The accepted baseline uses the Metal view's mouse callbacks and must not be
    replaced with an app-local event monitor without a separate failing test.
-3. Compare Dam and Surface against an accepted high-resolution capture. Reject
-   any blue edge, large blue/black background region, missing cliff/road/room
-   geometry, or culling change after an input-only patch.
+3. Compare Dam and Surface against an accepted high-resolution capture. The
+   known thin far-right blue line remains open as TD-09; confirm it does not
+   widen. Reject any new blue/black region, missing cliff/road/room geometry,
+   or culling change after an input-only patch.
 4. Enable **Unlock all missions**, return to mission select, and confirm later
    missions are available immediately. Disable it and confirm the current save
    remains unchanged; the setting must not write completion times to EEPROM.

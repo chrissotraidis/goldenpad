@@ -17,7 +17,7 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **Preview 3 Mac control acceptance** | Confirm the rebuilt input-only candidate: Control crouch, R reload, right mouse Action, middle/wheel cycling, 1–9/0 inventory, Space unassigned, Shift+W/S neutral, slightly lower mouse sensitivity, unchanged Dam/Surface rendering, and sustained responsiveness. |
+| 1 | **Preview 3 Mac control acceptance** | Confirm the rebuilt input-only candidate: C crouch, R reload, right mouse Action, middle/wheel cycling, 1–9/0 inventory, Space unassigned, Escape pause without release, Delete pointer release, Shift+W/S neutral, slightly lower mouse sensitivity, unchanged Dam/Surface rendering, and sustained responsiveness. |
 | 2 | **TD-02 modern sidestep acceptance** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus, multiplayer fallback, and Original N64 C-button mode remain unchanged. |
 | 3 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |

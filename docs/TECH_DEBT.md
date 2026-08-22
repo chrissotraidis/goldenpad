@@ -115,7 +115,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
-| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Candidate implemented; partially hands-on reviewed, not accepted** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the user found it the best Mac control pass so far. The follow-up adds slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and removes the Honey Shift+W pitch conflict | Re-run the complete Mac gate on the rebuilt candidate, especially Control, R, right/middle mouse, 1–9/0, Shift+W/S, persistence, geometry, and sustained responsiveness |
+| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Candidate implemented; partially hands-on reviewed, not accepted** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the user found it the best Mac control pass so far. The follow-up adds slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and removes the Honey Shift+W pitch conflict | Re-run the complete Mac gate on the rebuilt candidate, especially C, R, right/middle mouse, 1–9/0, Escape, Delete, Shift+W/S, persistence, geometry, and sustained responsiveness |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
@@ -202,23 +202,24 @@ the known thin far-right blue edge. The matched MIPS patch compiles and
 regenerates, the native arm64 app links all request/consumer symbols, and the
 ROM-free 20-member candidate archive passes the Mac package audit. The user has
 accepted the preceding mouse/WASD direction as the best Mac pass so far, but
-the latest Control/R/mouse-wheel/number-key build has not yet received hands-on
-acceptance and therefore does not replace Preview 2.
+the latest C/R/Escape/Delete/mouse-wheel/number-key build has not yet received
+hands-on acceptance and therefore does not replace Preview 2.
 
 The exact candidate executable SHA-256 is
-`09c34871e16215dc8f7b4d588f151a20c11e2b302e8db054ebd2a37c7edc20e0`.
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
 The audited archive SHA-256 is
-`b4f371e1d26d884d8ccc3f8b2df45081da9009e0434a11a7c6e27356b91c9eb4`,
+`7ddc8fab4cc31c5b012e716d75a28bb9b99e4e1f9803de8319d2467e19bb1cd7`,
 with sorted app-content SHA-256
-`8e144a980edb2951a6015dd8563336ea4f7fed716daa1e257ef10e67dffd09d8`.
+`e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`.
 
 The current desktop contract is left mouse Fire, right mouse Action, middle
-click or wheel weapon cycling, Shift Aim, E Action, Q next weapon, R reload,
-Control crouch, Space unassigned, and 1–9/0 owned inventory slots. Shift aim is
-stationary because Honey otherwise reinterprets W/S as manual-aim pitch. Crouch
-reads and adjusts GoldenEye's live stance; direct inventory selection follows
-the same native functions used by the watch menu. Unknown or unavailable slots
-are ignored.
+click or wheel weapon cycling, Shift Aim, E Action, Q next weapon, R reload, C
+crouch, Space unassigned, and 1–9/0 owned inventory slots. Escape sends
+Start/Pause without releasing pointer capture; Delete releases capture without
+sending a game button. Shift aim is stationary because Honey otherwise
+reinterprets W/S as manual-aim pitch. Crouch reads and adjusts GoldenEye's live
+stance; direct inventory selection follows the same native functions used by
+the watch menu. Unknown or unavailable slots are ignored.
 
 ## macOS alpha disposition — 2026-08-21
 
@@ -238,7 +239,8 @@ The remaining Mac alpha debt is explicit:
   imposing an approximately 180°/s hip-fire and 60°/s aiming ceiling at the
   60 Hz game loop while discarding faster motion; this needs a Mac-gated seam
   repair rather than a wider sensitivity slider;
-- a thin blue strip remains at the far-right render edge;
+- a thin blue strip remains at the far-right render edge and was reconfirmed in
+  the otherwise-good Preview 3 Mac controls candidate;
 - the Mac build performs below the iPhone/iPad versions, and prior iterations
   have staggered or frozen under load, so sustained gameplay still needs a
   bounded acceptance pass without screen recording or continuous diagnostics;

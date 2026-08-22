@@ -121,7 +121,7 @@ enum RecompMacKeyboardAction: String, CaseIterable {
         case .action: .e
         case .changeWeapon: .q
         case .reload: .r
-        case .crouch: .control
+        case .crouch: .c
         case .start: .escape
         }
     }
@@ -132,15 +132,15 @@ enum RecompMacKeyboardAction: String, CaseIterable {
 struct RecompMacKeyboardBindings {
     private var codes: [RecompMacKeyboardAction: UInt16]
     private static let bindingVersionKey = "recomp.macKeyBindingsVersion"
-    private static let currentBindingVersion = 1
+    private static let currentBindingVersion = 2
 
     static func load(from defaults: UserDefaults = .standard) -> Self {
         if defaults.integer(forKey: bindingVersionKey) < currentBindingVersion {
             let crouchKey = RecompMacKeyboardAction.crouch.storageKey
             let previous = defaults.object(forKey: crouchKey) as? NSNumber
             let previousCode = previous.map { UInt16(truncating: $0) }
-            if previousCode == nil || previousCode == RecompMacBindableKey.c.rawValue {
-                defaults.set(RecompMacBindableKey.control.rawValue, forKey: crouchKey)
+            if previousCode == nil || previousCode == RecompMacBindableKey.control.rawValue {
+                defaults.set(RecompMacBindableKey.c.rawValue, forKey: crouchKey)
             }
             let fireKey = RecompMacKeyboardAction.fire.storageKey
             let previousFire = defaults.object(forKey: fireKey) as? NSNumber
@@ -176,6 +176,7 @@ struct RecompMacKeyboardBindings {
 @MainActor
 final class RecompMacInput: ObservableObject {
     private enum Key {
+        static let delete: UInt16 = 51
         static let escape: UInt16 = 53
         static let leftShift: UInt16 = 56
         static let rightShift: UInt16 = 60
@@ -329,7 +330,7 @@ final class RecompMacInput: ObservableObject {
         if pressed, !wasPressed {
             keyPulseFrames[keyCode] = 3
         }
-        if keyCode == Key.escape, pressed, !wasPressed {
+        if keyCode == Key.delete, pressed, !wasPressed {
             releaseMouseCapture()
         }
         if pressed, !wasPressed, gameplayInputActive,

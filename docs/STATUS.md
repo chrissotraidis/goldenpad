@@ -94,15 +94,17 @@ An isolated Preview 3 Mac candidate now retains that renderer boundary while
 reworking only controls. Its preceding hands-on pass was judged the best Mac
 control version so far. The newly rebuilt follow-up lowers the default mouse
 sensitivity from 2.50× to 2.25×, makes left/right mouse Fire/Action, removes
-Space as Fire, assigns R reload and Control crouch, adds middle/wheel cycling
-and 1–9/0 owned-inventory selection, and neutralizes Honey's Shift+W/S pitch
-conflict. The MIPS patch regenerates, the arm64 app builds, and its ROM-free
+Space as Fire, assigns R reload and C crouch, adds middle/wheel cycling and
+1–9/0 owned-inventory selection, makes Escape pause without releasing capture,
+uses Delete for explicit pointer release, and neutralizes Honey's Shift+W/S
+pitch conflict. The MIPS patch regenerates, the arm64 app builds, and its ROM-free
 archive audits successfully. Those facts do not replace the required hands-on
-Control/R/mouse/number-key, rendering, and sustained-responsiveness checks.
+C/R/Escape/Delete/mouse/number-key, rendering, and sustained-responsiveness
+checks.
 The exact candidate executable SHA-256 is
-`09c34871e16215dc8f7b4d588f151a20c11e2b302e8db054ebd2a37c7edc20e0`;
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`;
 the audited candidate archive SHA-256 is
-`b4f371e1d26d884d8ccc3f8b2df45081da9009e0434a11a7c6e27356b91c9eb4`.
+`7ddc8fab4cc31c5b012e716d75a28bb9b99e4e1f9803de8319d2467e19bb1cd7`.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and
