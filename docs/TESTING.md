@@ -319,6 +319,39 @@ hands-on gameplay quality. The user separately supplied the final mobile
 interaction approval. The Mac artifact remains Alpha with the input, blue-edge
 and sustained-performance debt defined above.
 
+Preview 3 release evidence:
+
+- the exact signed mobile executable SHA-256 is
+  `6ad969b56b6358e8c2731f97063b3d0dccf28674fdb4939216a289a330d8a72e`;
+- build `3` was installed in place on the attached iPad without changing its
+  app-data container, and pre/post readbacks proved both ROM copies, the active
+  save, backup save and current preferences byte-identical;
+- the resulting session passed ROM validation and entered the GoldenEye loop;
+- the user accepted the final iPhone/iPad and Mac behavior for Preview 3
+  publication, with no newly observed major regression;
+- `scripts/verify-recomp-prototype-ipa.sh` passed the deterministic 18-member
+  unsigned IPA at SHA-256
+  `ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`,
+  with sorted unsigned app-content SHA-256
+  `956e805d2575167b1045c7c5769f22f55d933e5a60c4a6283bfe30fedc1e5ab0`;
+- the accepted Mac executable SHA-256 is
+  `a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`;
+- `scripts/verify-recomp-macos-alpha.sh` passed the deterministic 20-member
+  arm64 Alpha archive at SHA-256
+  `819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`,
+  with sorted app-content SHA-256
+  `e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`;
+- two independent packaging runs produced byte-identical mobile and Mac
+  archives; and
+- the setup-copy gate confirmed that the app asks for an original ROM without
+  exposing an internal filename or implying that the selected file is
+  replaced.
+
+These results prove the final packages, architecture, data-preservation
+boundary and user acceptance recorded for Preview 3. They do not close the
+known multiplayer, blue-edge, fire-rate, audio, lifecycle, A12X, or broader
+long-session performance debt.
+
 ## Desktop baseline
 
 ```sh

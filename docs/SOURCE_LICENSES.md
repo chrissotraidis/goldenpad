@@ -3,7 +3,7 @@
 GoldenPad has two different game-bearing source boundaries. They must not be
 collapsed into one inventory.
 
-The primary Preview 2 AOT/RT64 package is assembled from private generated game
+The primary Preview 3 AOT/RT64 package is assembled from private generated game
 inputs plus exact public GoldenEye64Recomp, N64ModernRuntime, N64Recomp, RT64,
 Plume, re-spirv, Zstandard, and project-owned host sources. Its package verifier
 requires `ThirdPartyNotices.txt`, the exact GPL-3.0 text, and notices for every

@@ -1,5 +1,10 @@
 # Independent GoldenPad technical deep-dive prompt
 
+Status: historical prompt snapshot sent before Preview 3 acceptance. Its
+observations describe the state the independent reviewer was asked to inspect;
+they are not the current defect ledger. Use [`STATUS.md`](STATUS.md),
+[`TECH_DEBT.md`](TECH_DEBT.md), and [`PLAN.md`](PLAN.md) for current truth.
+
 Copy everything below this line into a new conversation with the reviewing
 model. The review must be independent, source-grounded, and read-only.
 

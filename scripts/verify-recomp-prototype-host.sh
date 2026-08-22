@@ -73,6 +73,9 @@ for required_text in \
     'iPad Touch Layout' \
     'recomp.touchLayout.phone.v1' \
     'recomp.touchLayout.tablet.v1' \
+    'Choose Original ROM' \
+    'Your original file will not be changed.' \
+    'The file you select stays in its original location.' \
     'Preview 2 movement' \
     'Sidestep with left/right' \
     'Per-player styles; adapter paused' \

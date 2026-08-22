@@ -220,11 +220,13 @@ choice across an app relaunch; that requires runtime testing.
 
 ## Current GoldenPad behavior
 
-### Stable Preview 2 on iPhone/iPad
+### Stable Preview 3 on iPhone/iPad
 
-The source of truth for the accepted baseline is tag `v0.1.0-preview.2`.
+The source of truth for the accepted controls release is tag
+`v0.1.0-preview.3`. Preview 3 retains Preview 2 movement as the default and adds
+the opt-in sidestep adapter described below.
 
-| Input path | Preview 2 behavior | Native assumption |
+| Input path | Default Preview 3 behavior | Native assumption |
 | --- | --- | --- |
 | Touch Move pad | Publishes both axes as the one N64 analog stick. | In Honey, Y walks and X turns. It does not emit C-left/right. |
 | Touch Look surface | Queues relative deltas into GoldenPad's direct-camera patch. | Bypasses native C-button look/sidestep and applies camera rotation after native movement. |
@@ -256,7 +258,7 @@ Its useful finding is narrower: C-left/C-right is the correct native Honey
 semantic, but wholesale replacement of the established movement axis is not an
 acceptable default.
 
-### Preview 3 isolated Mac adapter
+### Preview 3 Mac adapter
 
 `Sources/Mac/RecompMacInput.swift` currently assumes Honey:
 
@@ -433,10 +435,9 @@ host convenience that bypasses the native crouch path. It must be labelled as
 such and tested for synchronization, weapon zoom conflicts, death/restart,
 mission transitions, and player-port changes.
 
-### Preview 3 candidate status
+### Preview 3 released adapter
 
-Branch `codex/preview3-controls` starts at `origin/main`/Preview 2 and contains a
-narrow control-only candidate:
+Preview 3 is a narrow control-only update from Preview 2:
 
 - mobile **Movement adapter** defaults to **Preview 2 movement**;
 - opt-in **Sidestep with left/right** preserves analog Y, converts horizontal
@@ -466,11 +467,12 @@ narrow control-only candidate:
   not collapsed to one normalized sample, and aimed sensitivity no longer
   inherits an unexplained threefold slowdown.
 
-The isolated ARM64 Simulator host and native ARM64 Mac target compile. The
-matched MIPS patch also compiles, regenerates, and links all crouch, reload, and
-inventory consumers. These are implementation checks, not hands-on control
-acceptance. Issue #8 remains open until the physical touch/controller matrix
-below passes.
+The ARM64 mobile and native Mac targets compile, the matched MIPS patch
+regenerates and links all crouch/reload/inventory consumers, and the final
+artifacts pass their package audits. The user accepted Preview 3 as stable for
+publication and specifically accepted the Mac controls. Issue #8 remains open
+until its reporter confirms both touch and controller sidestep behavior and the
+broader matrix below is complete.
 
 **Multiplayer:** Every translation is per port and per active player. A P1
 controller success does not validate touch P2. Preview 3 may retain the existing

@@ -17,7 +17,7 @@ research decision, architecture and implementation gates are recorded in
 
 ## Current execution plan (2026-08-22)
 
-Preview 2 is published. The current objective is to repair major single-player
+Preview 3 is published. The current objective is to repair major single-player
 gameplay and compatibility defects, then harden local multiplayer ownership,
 then decide whether network multiplayer deserves implementation. The historical
 foundation milestones below remain evidence, but they do not set today's order.
@@ -30,7 +30,7 @@ service.
 | Work | Size | Primary risk |
 | --- | ---: | --- |
 | TD-01 measurement probe | S | Probe observes the wrong game-side event |
-| TD-02 modern sidestep repair | M | Gameplay fix leaks into menus or original C-button mode |
+| TD-02 released sidestep verification | S | Reporter-specific touch/controller behavior differs from the accepted setup |
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
@@ -59,12 +59,13 @@ Execute and land these as separate review units:
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
 | 1 | **TD-01 fire-rate probe** | Global gameplay defect; measurement is behavior-neutral and gates the real fix | Player and guard shots/ammo delta per fixed 100-tick interval on the unmodified baseline | Deterministic repeated numbers recorded in `STATUS.md`; no gameplay behavior change |
-| 2 | **TD-02 modern sidestep repair** | Current public issue; traced, bounded input/gameplay seam | Modern MOVE strafes, LOOK turns; original C-button mode and all menus remain unchanged | Synthetic mapping test plus physical touch and controller acceptance |
+| Parallel user-facing lane | **TD-02 released sidestep verification** | Preview 3 ships the bounded adapter opt-in; issue closure still needs reporter evidence | Reporter confirms touch and controller MOVE strafe / LOOK turn behavior | Keep the adapter opt-in until reporter confirmation and the full regression matrix pass |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, Preview 2 reproduction, affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
-The fire-rate probe and A12 evidence work can proceed without changing accepted
-controls. Sidestep must land and be reaccepted before the later controller-
-lifecycle change because both can touch input publication.
+The fire-rate probe, TD-02 reporter confirmation, and A12 evidence work can
+proceed without changing accepted Preview 3 controls. Any later sidestep default
+change must be reviewed separately from controller-lifecycle work because both
+touch input publication.
 
 ### Wave 2 — major behavior and reliability corrections
 

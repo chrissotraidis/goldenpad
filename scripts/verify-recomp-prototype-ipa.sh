@@ -71,7 +71,7 @@ done < <(find "$goldenpad_audit" -type f -print0)
 
 rom_patch="$app_path/vanilla_to_tlbfree.gep1"
 if [ ! -f "$rom_patch" ] || [ "$(shasum -a 256 "$rom_patch" | awk '{print $1}')" != "5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263" ]; then
-  echo "IPA is missing the exact pinned Preview 2 GEP1 conversion patch." >&2
+  echo "IPA is missing the exact pinned GEP1 conversion patch." >&2
   exit 1
 fi
 
@@ -89,6 +89,18 @@ for required_symbol in \
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then
     echo "IPA is missing required primary-runtime symbol: $required_symbol" >&2
+    exit 1
+  fi
+done
+
+for required_text in \
+  'Choose Original ROM' \
+  'Your original file will not be changed.' \
+  'The file you select stays in its original location.'
+do
+  if ! strings "$executable" | awk -v required="$required_text" \
+      'index($0, required) { found = 1 } END { exit !found }'; then
+    echo "IPA is missing required Preview 3 setup copy: $required_text" >&2
     exit 1
   fi
 done

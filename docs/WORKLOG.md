@@ -1,5 +1,33 @@
 # Worklog
 
+## 2026-08-22 — accept and publish the Preview 3 controls release
+
+- Kept Preview 2's accepted runtime, save, audio, ROM conversion, renderer, and
+  experimental split-screen repair unchanged while adding an opt-in Honey
+  sidestep adapter for touch and connected controllers.
+- Rebuilt the native Mac control contract around WASD, relative mouse look, C
+  crouch, R reload, conventional mouse buttons, wheel/middle-click cycling,
+  number-key inventory selection, Escape pause, and Delete pointer release. The
+  user completed hands-on review and accepted the exact Mac build as stable.
+- Replaced technical and alarming mobile setup language with plain copy that
+  names the original ROM, hides the internal runtime filename, and states that
+  the selected original file will not be changed.
+- Rebuilt signed mobile build `3`, installed it in place on the attached iPad,
+  launched a ROM-validated GoldenEye session, and proved both ROM copies, the
+  active save, backup save, and latest preferences byte-identical before and
+  after the final copy-only update.
+- Packaged the 18-member Preview 3 unsigned IPA twice at identical SHA-256
+  `ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`;
+  its sorted app-content SHA-256 is
+  `956e805d2575167b1045c7c5769f22f55d933e5a60c4a6283bfe30fedc1e5ab0`.
+- Packaged the accepted 20-member Preview 3 Mac Alpha twice at identical SHA-256
+  `819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`;
+  its sorted app-content SHA-256 is
+  `e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`.
+- Retained issue #8 for reporter confirmation, multiplayer as experimental,
+  online multiplayer as unimplemented, and the thin Mac blue edge plus the
+  remaining timing, lifecycle, audio, compatibility, and rendering debt.
+
 ## 2026-08-22 — harden the documentation into an execution control plane
 
 - Added exact project/upstream evidence seams and closure tests for every TD-01

@@ -27,7 +27,7 @@ package with:
 ```sh
 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.2-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.3-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -42,10 +42,10 @@ validation stay inside the app container. An in-place update reuses an existing
 valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
 identity, or provisioning profile is placed in the IPA.
 
-The audited Preview 2 IPA SHA-256 is
-`704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
-It must not be published until the exact final signed rebuild receives the
-remaining hands-on gameplay approval.
+The audited Preview 3 IPA SHA-256 is
+`ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`.
+Its exact final signed rebuild was installed in place on iPad with byte-identical
+ROM, save, and preference readbacks before publication approval.
 
 ## Native Apple-Silicon Mac alpha
 
@@ -82,8 +82,8 @@ signature, and runs the Mac artifact audit. No ROM, save, generated source or
 Apple signing identity is included.
 
 The audited Alpha archive is
-`dist/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip` at SHA-256
-`7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`.
+`dist/GoldenPad-0.1.0-preview.3-macos-arm64-alpha.zip` at SHA-256
+`819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`.
 It is native arm64, ad-hoc signed and not notarized.
 
 The complete AOT build must have the maintained GoldenEye iOS context patch

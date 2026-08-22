@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 app_path=${GOLDENPAD_RECOMP_MAC_APP:-"$repo_root/build-recomp-macos-stable/Release/GoldenPad.app"}
-release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.2}
+release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.3}
 output_name="GoldenPad-${release_name}-macos-arm64-alpha.zip"
 output_path="$repo_root/dist/$output_name"
 

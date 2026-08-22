@@ -2,7 +2,7 @@
 
 Updated: 2026-08-22
 
-This document describes the architecture that ships in the current Preview 2
+This document describes the architecture that ships in the current Preview 3
 line. Historical MGB64 bring-up details remain useful, but they do not describe
 the primary product anymore.
 
@@ -215,7 +215,7 @@ staged feasibility and compatibility gates are documented in
 
 | Target | Role | Current product status |
 | --- | --- | --- |
-| `GoldenPadRecompPrototype` | Primary iPhone/iPad AOT + RT64 application, packaged to users as GoldenPad | Preview 2 |
+| `GoldenPadRecompPrototype` | Primary iPhone/iPad AOT + RT64 application, packaged to users as GoldenPad | Preview 3 |
 | `GoldenPadMac` | Native arm64 AppKit/SwiftUI host for the same AOT + RT64 path | Alpha |
 | `GoldenPad` | MGB64/Fast3D mobile application | `GoldenPad Legacy`, comparison/fallback only |
 

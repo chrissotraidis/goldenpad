@@ -109,7 +109,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Build 3 installed; behavior not accepted** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; signed build/install/launch and byte-identical private-data preservation are proved, but physical behavior is not | Physical touch + modern controller acceptance with menus, watch, aim/lean, styles, lifecycle, and Preview 2 default unchanged |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Opt-in adapter released; reporter verification open** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; the user accepted Preview 3 as stable for publication, but the issue reporter has not confirmed both input paths | Ask the reporter to verify touch and controller behavior; retain the full menu/watch/aim/style/lifecycle regression gate before changing the default |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
@@ -195,21 +195,21 @@ Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would
 create a second unfinished ownership system.
 
-## Preview 3 Mac input candidate — 2026-08-22
+## Preview 3 Mac input release — 2026-08-22
 
-This branch changes input only; it retains the accepted RT64/Plume sizing and
+Preview 3 changes input only; it retains the accepted RT64/Plume sizing and
 the known thin far-right blue edge. The matched MIPS patch compiles and
 regenerates, the native arm64 app links all request/consumer symbols, and the
-ROM-free 20-member candidate archive passes the Mac package audit. The user has
+ROM-free 20-member release archive passes the Mac package audit. The user has
 accepted the preceding mouse/WASD direction as the best Mac pass so far, then
 declared the exact C/R/Escape/Delete/mouse-wheel/number-key follow-up stable and
-working. This accepts the second Mac control build; it does not close TD-09 or
-change the published Preview 2 artifacts.
+working. This accepts the second Mac control build for Preview 3; it does not
+close TD-09.
 
-The exact candidate executable SHA-256 is
+The exact accepted executable SHA-256 is
 `a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
-The audited archive SHA-256 is
-`7ddc8fab4cc31c5b012e716d75a28bb9b99e4e1f9803de8319d2467e19bb1cd7`,
+The audited Preview 3 archive SHA-256 is
+`819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`,
 with sorted app-content SHA-256
 `e15c17528a72881e3062504c2abc82a0a57bf0d039feb8240cbaf03b5db4f941`.
 
@@ -222,42 +222,38 @@ reinterprets W/S as manual-aim pitch. Crouch reads and adjusts GoldenEye's live
 stance; direct inventory selection follows the same native functions used by
 the watch menu. Unknown or unavailable slots are ignored.
 
-The corresponding iPad candidate is version `0.1.0` build `3`. It was installed
+The corresponding iPad release is version `0.1.0` build `3`. It was installed
 in place and launched on the attached iPad Pro without changing the bundle
 identifier. Pre/post readbacks produced identical hashes for the Documents ROM,
 runtime ROM, active save, backup save, and preferences. Current and previous
 build-3 logs additionally show successful ROM validation, an active GoldenEye
 loop, stage transitions, continued render/present progress, and nonzero audio.
-This is preservation and liveness evidence only: TD-02 remains open until touch
-and physical-controller behavior pass the modern-sidestep gate. The published
-Preview 2 IPA was not replaced. The installed signed device executable SHA-256 is
-`ecdbd8e0fedadef9a2176a2f0a427d0bdc141e08cf743e872d3f67fb5347d658`.
+The user accepted Preview 3 as stable for publication with no newly observed
+major regression. TD-02 remains open for issue-reporter confirmation and the
+full modern-sidestep regression matrix; the adapter therefore remains opt-in.
+The final copy-only signed device executable SHA-256 is
+`6ad969b56b6358e8c2731f97063b3d0dccf28674fdb4939216a289a330d8a72e`.
 
 ## macOS alpha disposition — 2026-08-21
 
-The native Apple-Silicon Mac product is retained as an **alpha**, one quality
-tier below the accepted iPhone/iPad single-player experience. The current
-packaged-source artifact is an arm64 `GoldenPad.app` whose product, bundle display
-name and executable are all `GoldenPad`; its executable SHA-256 is
-`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
-Hands-on review reached real gameplay and found the current build stable enough
-to preserve as the Mac alpha baseline, after which the user intentionally quit
-the app. That is alpha acceptance, not sustained-performance or release-parity
-evidence.
+The native Apple-Silicon Mac product remains **Alpha**, one support tier below
+the accepted iPhone/iPad single-player experience. Preview 3's current artifact
+is an arm64 `GoldenPad.app` whose product, bundle display name and executable are
+all `GoldenPad`. Its accepted executable SHA-256 is
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
+Hands-on review found its keyboard/mouse controls stable and working. That is
+Preview 3 Alpha acceptance, not notarization, broad hardware coverage, or a
+sustained-performance proof.
 
 The remaining Mac alpha debt is explicit:
 
-- mouse look works but the relative-delta queue and consumer both clamp it,
-  imposing an approximately 180°/s hip-fire and 60°/s aiming ceiling at the
-  60 Hz game loop while discarding faster motion; this needs a Mac-gated seam
-  repair rather than a wider sensitivity slider;
 - a thin blue strip remains at the far-right render edge and was reconfirmed in
-  the otherwise-good Preview 3 Mac controls candidate;
-- the Mac build performs below the iPhone/iPad versions, and prior iterations
-  have staggered or frozen under load, so sustained gameplay still needs a
-  bounded acceptance pass without screen recording or continuous diagnostics;
-- direct numeric weapon selection now has an isolated candidate but remains
-  unaccepted; Mac multiplayer assignment is not implemented; and
+  the accepted Preview 3 Mac controls build;
+- prior Mac iterations staggered or froze under load, so broader hardware and
+  sustained-gameplay coverage is still required even though the accepted build
+  was stable during hands-on review;
+- direct numeric inventory selection is accepted in Preview 3; Mac multiplayer
+  assignment is not implemented; and
 - the separate arm64 Alpha archive is package-audited, while
   oldest-supported-OS testing and notarization remain future gates.
 
@@ -268,7 +264,7 @@ Those experiments caused much worse world-geometry and control regressions. A
 later Mac-only repair must reproduce the thin edge, preserve Dam/Surface scene
 geometry, and pass the full input/render gate before replacing this baseline.
 
-Preview 2 is one coordinated source baseline, not one cross-platform binary.
+Preview 3 is one coordinated source baseline, not one cross-platform binary.
 iPhone and iPad ship in an `.ipa`; macOS ships as a separate arm64 Alpha archive
 containing `GoldenPad.app`. Mobile multiplayer remains experimental despite the
 accepted render baseline because residual flicker and real Player 3/4 routing

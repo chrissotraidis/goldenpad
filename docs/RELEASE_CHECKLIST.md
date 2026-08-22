@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 2 is the current coordinated release. It is a
+GoldenPad 0.1.0 Preview 3 is the current coordinated release. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 
@@ -72,6 +72,25 @@ Do not reopen Mac renderer/input surgery for this update. The current Mac alpha
 is intentionally frozen with its disclosed limitations because the rejected
 drawable-size and direct-camera experiments caused much larger regressions.
 
+## Coordinated Preview 3 controls update
+
+- [x] Start from the published Preview 2 source baseline and keep renderer,
+  ROM conversion, save, audio, and experimental split-screen repairs unchanged.
+- [x] Add opt-in Honey sidestep semantics without changing the default Preview 2
+  movement mode, menus, Original N64 C-button mode, or multiplayer fallback.
+- [x] Obtain hands-on acceptance of the exact Mac C/R/Escape/Delete/mouse/
+  wheel/number-key control build while retaining the known thin blue edge.
+- [x] Rebuild signed mobile build `3` with the revised first-run/invalid-ROM
+  copy, install it in place on iPad, launch the GoldenEye loop, and prove both
+  ROMs, both saves, and the latest preferences byte-identical.
+- [x] Package the 18-member unsigned IPA twice with identical SHA-256
+  `ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`.
+- [x] Package the accepted 20-member Mac Alpha twice with identical SHA-256
+  `819bc8eabc1fc84d2a37c1847f68c8832c023f0b0643851ca3f6251244fc32ba`.
+- [x] Keep issue #8 open for reporter verification, multiplayer experimental,
+  online multiplayer unimplemented, and the remaining technical debt explicit.
+- [x] Obtain user approval to merge and publish Preview 3.
+
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
 
@@ -125,11 +144,11 @@ plus warm performance checks on the target hardware.
   ```sh
   ./scripts/package-recomp-prototype-ipa.sh
   ./scripts/verify-recomp-prototype-ipa.sh \
-    dist/GoldenPad-0.1.0-preview.2-unsigned.ipa
+    dist/GoldenPad-0.1.0-preview.3-unsigned.ipa
 
   ./scripts/package-recomp-macos-alpha.sh
   ./scripts/verify-recomp-macos-alpha.sh \
-    dist/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip
+    dist/GoldenPad-0.1.0-preview.3-macos-arm64-alpha.zip
   ```
 
 - Keep the README's install table and limitations accurate.

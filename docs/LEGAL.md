@@ -90,7 +90,7 @@ and the public source inputs for the primary runtime are compiled from ignored
 exact upstream checkouts and are never copied wholesale into this repository.
 
 The following MGB64 audio, volatile-ROM, asset-placeholder, and SDK-source guard
-details apply to `GoldenPad Legacy`, not to the primary Preview 2 runtime.
+details apply to `GoldenPad Legacy`, not to the primary Preview 3 runtime.
 The mobile audio build compiles MGB64's native clean-room synth, decoder and
 sequence modules. Matching-target Nintendo/SGI/Rare SDK-lineage audio
 implementations remain excluded by the same source guard as the rest of the SDK
