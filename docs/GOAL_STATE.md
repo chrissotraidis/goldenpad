@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 16:52 CEST
+Updated: 2026-08-22 17:12 CEST
 
 ## Session identity
 
@@ -8,14 +8,45 @@ Updated: 2026-08-22 16:52 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td07-controller-ownership` |
+| Branch | `codex/td04-lifecycle-discriminator` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-07 disconnect/lifecycle containment passes code and Simulator gates; physical reconnect and real P3/P4 routing remain |
-| Phase | L9 complete: TD-07 implementation review unit committed and pushed |
+| Active debt | TD-04 bounded lifecycle discriminator implemented; intermittent same-process Simulator resume freeze reproduced; no repair selected |
+| Phase | L8/L9: finish TD-04 validation, documentation, commit, and branch push |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-04 now has a bounded, opt-in lifecycle discriminator. On transient-inactive
+or foreground-resume, it snapshots display-list, VI-update, and presented-frame
+counters. At the first monitor tick after each transition-relative two-second
+boundary it reports one of three states and stops on recovery or on the first
+monitor tick at or beyond ten seconds (strictly less than twelve seconds):
+
+- `recovered`: presented frames advanced;
+- `presentation-stalled`: display lists or VI advanced but presentation did not;
+- `no-runtime-progress`: none of the three counters advanced.
+
+The previous watchdog could only say that RT64 made no progress for ten seconds.
+The unchanged classifier expectation first reported `classifier=FAIL`; it
+reports `PASS` after the three-state classifier was implemented.
+
+Two retained-process Simulator Home/resume observations produced different
+results. One recovered with `dl +2 / vi +2 / presented +2` at 2.281 seconds.
+Another held `dl=918 / vi=917 / presented=870` for more than ten seconds. In the
+frozen run the diagnostics thread and input publisher remained alive, while the
+game timer, renderer counters, and audio production stayed fixed and ordinary
+input did not advance the game. That observation is an intermittent
+`no-runtime-progress` reproduction, not evidence of a drawable-only stall.
+Other Home runs started a new PID and are process-restart controls, not resume
+evidence. The Simulator screenshot toolbar did not cause an iOS scene-phase
+transition and is not screenshot acceptance.
+
+No TD-04 behavior repair is selected. Physical screenshot, Control Center,
+lock, and retained-process background/resume runs must classify the failure. If
+display lists or VI advance while presentation stays flat, instrument RT64/
+Plume drawable, present-queue, and command-fence waits. If all counters stay
+flat, inspect the runtime/game-thread resume seam before touching Metal.
 
 TD-07 now has a bounded ownership/lifecycle containment candidate. Ownership is
 explicit: normal touch-only mode assigns touch to Player 1; normal controller
@@ -54,6 +85,14 @@ control.
 | Gate | Status | Evidence |
 | --- | --- | --- |
 | Main/release control recorded | PASS | `main` and `origin/main` began at `788667e`; Preview 2 was not modified |
+| TD-04 isolated branch | PASS | TD-04 is stacked on the pushed TD-07 checkpoint and isolated on `codex/td04-lifecycle-discriminator` |
+| TD-04 red classifier | PASS | The first opt-in build reported `lifecycle-probe: classifier=FAIL` against the prior generic no-progress model |
+| TD-04 green classifier | PASS | The unchanged zero-progress, presentation-stalled, and recovered table reports `lifecycle-probe: classifier=PASS` |
+| TD-04 focused ARM64 Simulator build | PASS | Release target rebuilt successfully; executable SHA-256 `6510dc3c0ce07845f2361987a4b5784b68b83fa1eca9dcce2ba7af3b2789ffec` |
+| Retained resume recovery | PASS (one run) | Same PID recovered at 2.281 seconds with deltas `dl=2 vi=2 presented=2` |
+| Retained resume freeze | REPRODUCED (one run) | Same PID stayed at `dl=918 vi=917 presented=870`; game timer/audio stayed fixed while diagnostics/input threads remained live |
+| Simulator screenshot transition | NOT ESTABLISHED | Simulator's screenshot control did not generate the iOS transient-inactive callback |
+| Physical lifecycle matrix | NOT RUN | Simulator cannot establish device screenshot, Control Center, lock, or physical Metal behavior |
 | Dedicated review units | PASS | TD-01 is preserved on `origin/codex/autonomous-repair-loop`; TD-02 is pushed on `origin/codex/td02-modern-sidestep`; TD-07 is isolated on `codex/td07-controller-ownership` |
 | Red discriminator | PASS | The first `--sidestep-probe` build reported `Modern sidestep mapping probe: FAIL` with the pre-repair identity mapping |
 | Green code-level mapping probe | PASS | The same table-driven probe reports `PASS` for left, right, center/dead-zone, menu, and Original-mode cases |
@@ -76,7 +115,8 @@ control.
 | Clean session end | PASS | Simulator Home removed `active-session.marker`; no app session or recording was left active |
 | Physical touch/controller feel | NOT RUN | Simulator and synthetic evidence cannot establish touch ergonomics or physical-controller feel |
 | QuickTime | OFF | It was never started |
-| Commit/push | PASS | Implementation commit `38f0c6b` is pushed on `origin/codex/td07-controller-ownership`; `main` was not changed |
+| TD-07 commit/push | PASS | Implementation commit `38f0c6b` is pushed on `origin/codex/td07-controller-ownership`; `main` was not changed |
+| TD-04 commit/push | PENDING | Finish final build/static/preservation gates, commit, and push only the TD-04 topic branch |
 
 ## Blocker ledger
 
@@ -85,6 +125,7 @@ control.
 | TD-01 sustained player KF7 baseline | FORMALLY BLOCKED | Ordinary input reached a dropped KF7, but the pickup held 20 rounds; repeated attempts did not provide the 34-round discrimination ceiling and survive 100 ticks | Resume only with a repeatable ordinary setup holding at least 34 rounds; do not inject inventory or apply the timing repair |
 | TD-02 physical acceptance | WAITING FOR HUMAN/DEVICE INPUT | Code and Simulator gates pass; no physical touch or controller feel can be inferred | Test modern MOVE/LOOK on iPhone and iPad, then test Modern, Original C-buttons, and Off with a physical controller |
 | TD-07 physical lifecycle | WAITING FOR HUMAN/DEVICE INPUT | Synthetic lifecycle and Simulator integration pass; no real disconnect/reconnect or multi-controller timing was exercised | Test controller loss while held, reconnect, reorder, background/foreground, then design real P2-P4 slots separately |
+| TD-04 physical classification | WAITING FOR HUMAN/DEVICE INPUT | Intermittent same-process Simulator freeze is real, but the physical failure has not been classified | Run the opt-in physical transition matrix and select scheduler/runtime or renderer wait instrumentation from the observed counter pattern |
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
@@ -125,6 +166,12 @@ network transport.
   independent overlay/scene suspension state.
 - The opt-in Simulator launch exercised the live bridge as controller Player 1
   plus touch Player 2. A normal relaunch returned to controller Player 1 only.
+- TD-04 diagnostics are opt-in via `--lifecycle-probe`; normal launches retain
+  only the pre-existing health/watchdog logging.
+- TD-04 writes at most one sample after each transition-relative two-second boundary,
+  exits early on recovery, and stops on the first existing monitor tick at or
+  beyond ten seconds. It does not add sleeps or locks to the game, render,
+  audio, or main threads.
 - Final Simulator data hashes remained:
   - both ROM copies: `7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959`;
   - active save: `36d67fe002913ae2b8ba1b1d9fd45c236d6de0b0e4dc11ee90cde23816216fe9`;
@@ -144,7 +191,10 @@ network transport.
 - `Sources/RecompPrototypeApp.swift`: renders touch controls only when touch has
   an owner and routes scene lifecycle through its independent suspension reason.
 - `Support/RecompPrototype/recomp_game_start.cpp`: receives the explicit touch
-  port, reports truthful runtime ownership, and keeps unowned ports neutral.
+  port, reports truthful runtime ownership, keeps unowned ports neutral, and
+  owns the opt-in bounded lifecycle classifier.
+- `Sources/RecompPrototypeMetalCanvas.swift`: enables the TD-04 diagnostic only
+  for the explicit `--lifecycle-probe` launch argument.
 - `scripts/verify-recomp-prototype-host.sh` and
   `scripts/verify-recomp-prototype-ipa.sh`: require the new runtime symbols.
 - `docs/GOAL_STATE.md`, `docs/NEXT_STEPS.md`, `docs/STATUS.md`,
@@ -158,10 +208,8 @@ the saved two-player preference.
 
 ## Exact next action
 
-Keep TD-07 unmerged pending physical lifecycle acceptance. Start the next
-independent evidence-only review unit with the TD-04 lifecycle discriminator:
-inventory the existing drawable/present/fence/VI breadcrumbs, add only the
-missing bounded timing evidence, and reject any repair until the physical
-transition matrix identifies a failing boundary. Keep TD-01 formally blocked,
-retain TD-02 for physical acceptance, and keep networking gated behind physical
-lifecycle acceptance plus a separate real P2-P4 ownership design.
+Finish the TD-04 build, static, preservation, and clean-session gates; commit and
+push `codex/td04-lifecycle-discriminator` without merging it. Do not choose a
+freeze repair until the physical transition matrix yields the counter pattern.
+Keep TD-01 formally blocked, retain TD-02/TD-07 for physical acceptance, and
+keep networking gated behind stable local ownership and deterministic state.

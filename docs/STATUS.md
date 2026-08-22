@@ -13,7 +13,7 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Physically accept the TD-02 controls and TD-07 lifecycle candidates; independently collect TD-04/05/06 discriminators. |
+| Immediate engineering gate | Physically accept TD-02/TD-07 and classify TD-04 with the new bounded lifecycle probe; independently collect TD-05/06 discriminators. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
@@ -652,7 +652,11 @@ evidence ledger below is preserved as historical validation for
   Simulator integration pass. Physical disconnect/reconnect timing and stable
   real P2-P4 controller slots remain open.
 - Screenshot/background resume has previously frozen gameplay and needs a
-  dedicated physical lifecycle pass.
+  dedicated physical lifecycle pass. An isolated opt-in TD-04 discriminator now
+  distinguishes no runtime progress from presentation-only stalls. One retained
+  Simulator resume recovered and one froze with game/render/audio counters flat
+  while diagnostics/input stayed live. No repair is selected from Simulator
+  evidence alone.
 - A small amount of audible static has been reported during otherwise working
   audio; long-session speaker and route-change acceptance remains open.
 - Some maps can still expose original or renderer-specific geometry/clipping

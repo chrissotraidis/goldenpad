@@ -25,6 +25,9 @@ private func goldenPadRecompSetAppActive(_ active: Int32)
 @_silgen_name("goldenpad_recomp_note_transient_inactive")
 private func goldenPadRecompNoteTransientInactive()
 
+@_silgen_name("goldenpad_recomp_set_lifecycle_probe_enabled")
+private func goldenPadRecompSetLifecycleProbeEnabled(_ enabled: Int32)
+
 #if GOLDENPAD_RECOMP_AOT_LINKED
 @_silgen_name("goldenpad_recomp_start_game")
 private func goldenPadRecompStartGame(
@@ -46,6 +49,12 @@ final class RecompPrototypeSurface: ObservableObject {
     private var rendererInitialized = false
     private var gameLaunchRequested = false
     private var statusTimer: Timer?
+
+    init() {
+        goldenPadRecompSetLifecycleProbeEnabled(
+            ProcessInfo.processInfo.arguments.contains("--lifecycle-probe") ? 1 : 0
+        )
+    }
 
     func attach(to view: MTKView) {
         metalView = view

@@ -57,6 +57,7 @@ for required_symbol in \
     goldenpad_recomp_set_four_player_test_mode \
     goldenpad_recomp_set_fire_rate_probe_enabled \
     goldenpad_recomp_set_sidestep_probe_enabled \
+    goldenpad_recomp_set_lifecycle_probe_enabled \
     goldenpad_recomp_gameplay_input_active \
     goldenpad_recomp_queue_touch_look \
     goldenpad_recomp_request_crouch_toggle \

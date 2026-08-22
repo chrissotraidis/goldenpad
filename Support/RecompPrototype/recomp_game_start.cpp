@@ -75,6 +75,13 @@ std::atomic<bool> stateProbeStarted = false;
 std::atomic<uint8_t> invalidInputPortsReported = 0;
 std::atomic<bool> fireRateProbeEnabled = false;
 std::atomic<bool> sidestepProbeEnabled = false;
+std::atomic<bool> lifecycleProbeEnabled = false;
+std::atomic<uint64_t> lifecycleProgressSequence = 0;
+std::atomic<uint64_t> lifecycleProgressStartedMs = 0;
+std::atomic<uint64_t> lifecycleProgressBaselineDisplayLists = 0;
+std::atomic<uint64_t> lifecycleProgressBaselineScreenUpdates = 0;
+std::atomic<uint64_t> lifecycleProgressBaselinePresented = 0;
+std::atomic<int32_t> lifecycleProgressKind = 0;
 std::atomic<int32_t> gameplayInputModeReported = -1;
 std::atomic<uint64_t> fireRateProbeSimulationTicks = 0;
 std::atomic<uint32_t> fireRateProbeRawGuardSamples = 0;
@@ -104,6 +111,46 @@ bool audioPlaybackPrimed = false;
 uint32_t audioFadeInFramesRemaining = 0;
 float audioLastLeft = 0.0f;
 float audioLastRight = 0.0f;
+
+enum class LifecycleProgressState {
+    noRuntimeProgress,
+    presentationStalled,
+    recovered,
+};
+
+LifecycleProgressState classifyLifecycleProgress(
+    uint64_t displayListDelta,
+    uint64_t screenUpdateDelta,
+    uint64_t presentedDelta
+) {
+    if (presentedDelta != 0) {
+        return LifecycleProgressState::recovered;
+    }
+    if (displayListDelta != 0 || screenUpdateDelta != 0) {
+        return LifecycleProgressState::presentationStalled;
+    }
+    return LifecycleProgressState::noRuntimeProgress;
+}
+
+bool lifecycleProgressClassifierProbePasses() {
+    return classifyLifecycleProgress(0, 0, 0) == LifecycleProgressState::noRuntimeProgress &&
+        classifyLifecycleProgress(0, 12, 0) == LifecycleProgressState::presentationStalled &&
+        classifyLifecycleProgress(12, 12, 12) == LifecycleProgressState::recovered;
+}
+
+const char *lifecycleProgressStateName(LifecycleProgressState state) {
+    switch (state) {
+    case LifecycleProgressState::noRuntimeProgress: return "no-runtime-progress";
+    case LifecycleProgressState::presentationStalled: return "presentation-stalled";
+    case LifecycleProgressState::recovered: return "recovered";
+    }
+    return "unknown";
+}
+
+uint64_t monotonicMilliseconds() {
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
 void logEvent(const char *event, const char *format, ...) {
     char detail[768];
@@ -153,6 +200,29 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     }
     std::ofstream marker(diagnosticsSessionMarkerPath, std::ios::trunc);
     marker << "GoldenPad foreground session active\n";
+    if (lifecycleProbeEnabled.load(std::memory_order_relaxed)) {
+        log << "[GoldenPadRecomp] lifecycle-probe: classifier="
+            << (lifecycleProgressClassifierProbePasses() ? "PASS" : "FAIL") << '\n';
+    }
+}
+
+void startLifecycleProgressWindow(int32_t kind, const char *kindName) {
+    if (!lifecycleProbeEnabled.load(std::memory_order_relaxed)) { return; }
+    const uint64_t displayLists = rt64DisplayListCount.load(std::memory_order_relaxed);
+    const uint64_t screenUpdates = rt64ScreenUpdateCount.load(std::memory_order_relaxed);
+    const uint64_t presented = rt64PresentedCount.load(std::memory_order_relaxed);
+    lifecycleProgressBaselineDisplayLists.store(displayLists, std::memory_order_relaxed);
+    lifecycleProgressBaselineScreenUpdates.store(screenUpdates, std::memory_order_relaxed);
+    lifecycleProgressBaselinePresented.store(presented, std::memory_order_relaxed);
+    lifecycleProgressStartedMs.store(monotonicMilliseconds(), std::memory_order_relaxed);
+    lifecycleProgressKind.store(kind, std::memory_order_relaxed);
+    const uint64_t sequence = lifecycleProgressSequence.fetch_add(1, std::memory_order_release) + 1;
+    logEvent("lifecycle-progress",
+        "sequence=%llu transition=%s baseline=(dl=%llu vi=%llu presented=%llu)",
+        static_cast<unsigned long long>(sequence), kindName,
+        static_cast<unsigned long long>(displayLists),
+        static_cast<unsigned long long>(screenUpdates),
+        static_cast<unsigned long long>(presented));
 }
 
 void markDiagnosticsSessionActive() {
@@ -314,6 +384,9 @@ void monitorGameState(uint8_t *rdram) {
     uint64_t previousScreenUpdates = 0;
     uint64_t previousPresented = 0;
     int stalledActiveSamples = 0;
+    uint64_t observedLifecycleSequence = 0;
+    uint64_t nextLifecycleSampleMs = 0;
+    int lifecycleProgressSamples = 0;
     int heartbeat = 0;
     while (runtimeStarted.load(std::memory_order_relaxed)) {
         const int32_t menu = readGameWord(rdram, 0x8002A6C0);
@@ -335,6 +408,44 @@ void monitorGameState(uint8_t *rdram) {
         const uint64_t screenUpdates = rt64ScreenUpdateCount.load(std::memory_order_relaxed);
         const uint64_t presented = rt64PresentedCount.load(std::memory_order_relaxed);
         const bool active = appActive.load(std::memory_order_relaxed);
+        if (lifecycleProbeEnabled.load(std::memory_order_relaxed) && active) {
+            const uint64_t sequence = lifecycleProgressSequence.load(std::memory_order_acquire);
+            if (sequence != observedLifecycleSequence) {
+                observedLifecycleSequence = sequence;
+                lifecycleProgressSamples = 0;
+                nextLifecycleSampleMs = lifecycleProgressStartedMs.load(
+                    std::memory_order_relaxed) + 2'000;
+            }
+            const uint64_t nowMs = monotonicMilliseconds();
+            if (sequence != 0 && lifecycleProgressSamples < 5 &&
+                nowMs >= nextLifecycleSampleMs) {
+                const uint64_t displayListDelta = displayLists -
+                    lifecycleProgressBaselineDisplayLists.load(std::memory_order_relaxed);
+                const uint64_t screenUpdateDelta = screenUpdates -
+                    lifecycleProgressBaselineScreenUpdates.load(std::memory_order_relaxed);
+                const uint64_t presentedDelta = presented -
+                    lifecycleProgressBaselinePresented.load(std::memory_order_relaxed);
+                const LifecycleProgressState progress = classifyLifecycleProgress(
+                    displayListDelta, screenUpdateDelta, presentedDelta);
+                const int32_t kind = lifecycleProgressKind.load(std::memory_order_relaxed);
+                const uint64_t ageMs = nowMs -
+                    lifecycleProgressStartedMs.load(std::memory_order_relaxed);
+                logEvent("lifecycle-progress",
+                    "sequence=%llu transition=%s ageMs=%llu delta=(dl=%llu vi=%llu presented=%llu) state=%s sample=%d/5",
+                    static_cast<unsigned long long>(sequence),
+                    kind == 1 ? "transient-inactive" : "foreground-resume",
+                    static_cast<unsigned long long>(ageMs),
+                    static_cast<unsigned long long>(displayListDelta),
+                    static_cast<unsigned long long>(screenUpdateDelta),
+                    static_cast<unsigned long long>(presentedDelta),
+                    lifecycleProgressStateName(progress), lifecycleProgressSamples + 1);
+                ++lifecycleProgressSamples;
+                nextLifecycleSampleMs += 2'000;
+                if (progress == LifecycleProgressState::recovered || ageMs >= 10'000) {
+                    lifecycleProgressSamples = 5;
+                }
+            }
+        }
         if (heartbeat == 0) {
             const uint32_t player = static_cast<uint32_t>(readGameWord(rdram, 0x80079EB0));
             const bool playerValid = player >= 0x80000000u && player < 0xA0000000u;
@@ -939,6 +1050,7 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t active) {
         }
         if (next) {
             markDiagnosticsSessionActive();
+            startLifecycleProgressWindow(2, "foreground-resume");
         }
         logEvent("lifecycle", "host became %s; RT64 presentation %s",
             next ? "active" : "inactive", next ? "resumed" : "suspended");
@@ -954,6 +1066,13 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t active) {
 
 extern "C" void goldenpad_recomp_note_transient_inactive() {
     logEvent("lifecycle", "transient inactive state observed; RT64 presentation kept active");
+    if (appActive.load(std::memory_order_relaxed)) {
+        startLifecycleProgressWindow(1, "transient-inactive");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t enabled) {
+    lifecycleProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
 }
 
 extern "C" int32_t goldenpad_recomp_is_app_active() {

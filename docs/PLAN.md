@@ -34,7 +34,7 @@ service.
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Code/Simulator pass; physical notification timing remains |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
-| TD-04/TD-05/TD-06 discriminators | S each | Instrumentation changes timing or logs the wrong boundary |
+| TD-04/TD-05/TD-06 discriminators | S each | TD-04 host classifier is implemented; physical classification and TD-05/06 evidence remain |
 | TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
 | Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
@@ -76,9 +76,11 @@ changing accepted controls.
 2. **TD-07 disconnect neutralization and lifecycle probe:** code and Simulator
    gates pass. Physically test held-input loss, reconnect/reorder, and lifecycle
    suspension before separately designing real controller slots.
-3. **TD-04 lifecycle instrumentation:** add only bounded drawable, present-wait,
-   fence-wait, VI, input-timer, and audio counters. Run the physical transition
-   matrix before selecting a repair.
+3. **TD-04 lifecycle instrumentation:** the opt-in host-level display-list/VI/
+   presented classifier is implemented and has an intermittent same-process
+   Simulator reproduction. Run the physical transition matrix before deciding
+   whether the next bounded seam is runtime resume or matched RT64/Plume
+   drawable/present/fence timing.
 4. **TD-05 audio evidence:** read requested frequency and counters from a failing
    session, then run the ROM-free synthetic discontinuity test. Move ring reset
    to consumer ownership or honor the requested rate only if the test implicates

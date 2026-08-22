@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-08-22 — TD-04 bounded lifecycle discrimination
+
+- Audited the existing lifecycle path and found that the ten-second watchdog
+  could not separate stopped game/runtime progress from a presentation-only
+  stall, even though display-list, VI, and presented counters already existed.
+- Added an opt-in, transition-relative two-second classifier that stops on
+  presentation recovery or at ten seconds. Its unchanged synthetic table first
+  reported `FAIL` against the generic baseline and then `PASS` for no-progress,
+  presentation-stalled, and recovered cases.
+- Reproduced both outcomes on retained Simulator processes. One Home/resume
+  recovered at 2.281 seconds with `dl=2 vi=2 presented=2`; another held
+  `dl=918 vi=917 presented=870` beyond ten seconds. The frozen run kept
+  diagnostics and input alive while the game timer and audio production stayed
+  fixed, so it is not evidence of a drawable-only failure.
+- Did not select a lifecycle repair. The physical transition matrix must decide
+  whether the next bounded work belongs to runtime/game-thread resume or to
+  matched RT64/Plume drawable, present-queue, and command-fence timing.
+
 ## 2026-08-22 — autonomous TD-01, TD-02, and TD-07 evidence loop
 
 - Added the read-only native-60-Hz fire-rate probe. Ordinary Dam guard windows

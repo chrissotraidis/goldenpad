@@ -228,6 +228,29 @@ four-port render diagnostic is not this gate.
 
 #### Lifecycle stall/freeze gate
 
+Launch the isolated diagnostic candidate with `--lifecycle-probe` and require:
+
+```text
+[GoldenPadRecomp] lifecycle-probe: classifier=PASS
+```
+
+Every transient-inactive or foreground-resume transition records a counter
+baseline, then samples at the first monitor tick after each transition-relative
+2, 4, 6, 8, and 10 second boundary. It stops immediately when presented frames
+advance, or on the first existing monitor tick at or beyond ten seconds
+(strictly less than twelve seconds). Interpret the final state:
+
+- `recovered`: presentation advanced; record recovery age and all deltas;
+- `presentation-stalled`: display lists or VI advanced but presented did not;
+  instrument drawable acquisition, present-queue progress, and Metal command-
+  fence duration in the matched RT64/Plume archive build;
+- `no-runtime-progress`: display-list, VI, and presented deltas are all zero;
+  inspect runtime/game-thread resume before changing RT64 presentation.
+
+Treat a new PID after foregrounding as process restart, not resume acceptance.
+Simulator's screenshot toolbar is not valid evidence unless the app log records
+the transient-inactive callback.
+
 On the current physical build, run at least ten repetitions each of screenshot,
 Control Center open/close, app switcher round-trip, lock/unlock, and
 background/foreground during live gameplay. Record one bounded post-run log,
@@ -242,6 +265,15 @@ not a continuous console. Correlate:
 
 Classify a recoverable multi-second stall separately from a permanent freeze.
 Do not patch the app lifecycle merely because both look similar to a user.
+
+The 2026-08-22 Simulator discriminator first failed against the generic
+classifier, then passed unchanged after implementing the three states. One
+same-PID Home/resume recovered at 2.281 seconds with `dl=2 vi=2 presented=2`.
+Another same-PID run held `dl=918 vi=917 presented=870` beyond ten seconds; the
+game timer and audio production also stayed fixed while diagnostics and input
+publication remained alive. This proves an intermittent Simulator
+`no-runtime-progress` reproduction only. It does not close the physical gate or
+select a repair.
 
 #### Audio discontinuity gate
 
