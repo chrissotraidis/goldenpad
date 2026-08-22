@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 18:05 CEST
+Updated: 2026-08-22 18:52 CEST
 
 ## Session identity
 
@@ -8,11 +8,11 @@ Updated: 2026-08-22 18:05 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td06-depth-rebuild-discriminator` |
+| Branch | `codex/td06-lighting-render-order` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-06 matched depth discriminator complete; aliased-depth churn rejected; shared lighting/render order remains |
-| Phase | L10 complete: TD-06 evidence review unit committed and pushed |
+| Active debt | TD-06 depth churn and broad fixed-render-order effects rejected; physical frame-local capture remains |
+| Phase | L11: failed render-order experiment reverted; evidence reconciliation in progress |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -31,8 +31,19 @@ changing AppStorage, entered a real four-player Temple match, showed four live
 quadrants, and advanced from 6,035 to 7,348 display lists while every rebuild
 counter remained zero. The final `5022ffc...` binary independently repeated the
 four-view result from 2,696 through 4,297 display lists with every cause still
-zero. The physical lighting flicker is still open; sequential
-player-pass ownership of shared lighting state is the next bounded seam.
+zero. The physical lighting flicker is still open.
+
+The next isolated TD-06 unit tested the remaining broad render-order theory.
+Natural order covered all 24 player permutations with zero invalid samples and
+changed on 11,000 of 11,490 transitions. A launch-only fixed mode substituted
+identity order only around `lvlRender` and restored the original shuffle
+immediately afterward. Matched 30-frame Simulator series showed effectively
+equal aggregate luminance changes with mixed per-view direction, and the user
+judged the diagnostic presentation worse. Commit `cc1cea0` preserves the
+experiment; `74646c3` reverts it from the continuing baseline. Regeneration
+without the probe returned to the exact `5022ffc...` executable hash, excluding
+toolchain drift. Further TD-06 code is gated on continuous physical frame-local
+evidence from the accepted Preview 2 baseline.
 
 TD-05 now has an opt-in, non-game-audio discriminator. `--audio-probe` replaces
 incoming game samples with a cheap project-generated continuous stereo triangle
@@ -178,13 +189,18 @@ control.
 | Matched normal-mode underruns | REPRODUCED (Simulator) | Normal path reached 3,335/26 at 608,931 rendered frames versus synthetic 3,195/27 at 604,702; the probe did not create the cadence defect |
 | TD-05 physical listening/routes | NOT RUN | Simulator cannot establish audible static, speaker/Bluetooth behavior, interruptions, or retained-process lifecycle continuity |
 | TD-05 commit/push | PASS | Evidence commit `119d532` is pushed on `origin/codex/td05-audio-discriminator`; `main` was not changed |
-| TD-06 isolated branch | PASS | TD-06 is stacked on the pushed TD-05 checkpoint and isolated on `codex/td06-depth-rebuild-discriminator` |
+| TD-06 depth branch | PASS | The depth discriminator is pushed on `codex/td06-depth-rebuild-discriminator` |
 | TD-06 archive closures | PASS | iPhoneOS and Simulator each retained 210 RT64 members and 246 force-loaded members; RT64 hashes `9d522e0...` and `1c49791...` |
 | TD-06 single-player control | PASS | 1,437 display lists/presentations; total/width/size/RDRAM rebuilds all zero |
 | TD-06 four-player Temple discriminator | HYPOTHESIS REJECTED | Four live quadrants; initial run `dl=6035..7348`, exact-final recheck `dl=2696..4297`; total/width/size/RDRAM rebuilds all zero |
 | TD-06 focused ARM64 Simulator build | PASS | Release executable SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface` |
 | TD-06 preservation and clean end | PASS | Both ROMs, active/backup saves, and preferences remained byte-identical; Home removed `active-session.marker` |
 | TD-06 normal-launch isolation | PASS | Exact final binary returned to `input=external-p1` with no depth-probe or neutral-P3/P4 log entries |
+| TD-06 render-order branch | PASS | The second hypothesis was isolated on `codex/td06-lighting-render-order`; experiment commit `cc1cea0` is followed by revert `74646c3` |
+| Natural render-order sampling | PASS | All 24 permutations, zero invalid samples, 11,000 changes across 11,490 transitions |
+| Fixed-`lvlRender` comparison | HYPOTHESIS REJECTED | Four coherent views, but fixed and natural 30-frame series had effectively equal aggregate luminance changes with mixed per-view direction; user judged the diagnostic worse |
+| Baseline restoration | PASS | Removing the experiment regenerated executable SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface` exactly; no toolchain drift |
+| Render-order preservation/clean end | PASS | Both ROMs, active/backup saves, and preferences remained byte-identical; Home removed `active-session.marker` |
 | ROM-free host verification | PASS | Fresh temporary ARM64 Simulator build passed with the complete inert-stub symbol surface |
 | Mac Alpha rebuild | BLOCKED BEFORE COMPILE | Existing private generated `patches.c` lacks the earlier TD-01 probe symbol; CMake correctly stopped before compiling/linking TD-06. The RT64 query is compiled out under `GOLDENPAD_RECOMP_MAC`; a fresh matched generation campaign is still required |
 | TD-06 commit/push | PASS | Evidence commit `db19f54` is pushed on `origin/codex/td06-depth-rebuild-discriminator`; `main` was not changed |
@@ -199,6 +215,7 @@ control.
 | TD-04 physical classification | WAITING FOR HUMAN/DEVICE INPUT | Intermittent same-process Simulator freeze is real, but the physical failure has not been classified | Run the opt-in physical transition matrix and select scheduler/runtime or renderer wait instrumentation from the observed counter pattern |
 | TD-05 physical audio | WAITING FOR HUMAN/DEVICE INPUT | Simulator rejects rate mismatch/ring corruption but observes underruns without detected jumps | Listen to the synthetic probe on speaker and Bluetooth across route/interruption/lifecycle; retain the same-session counters when static is heard |
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
+| TD-06 physical flicker localization | WAITING FOR HUMAN/DEVICE INPUT | Depth churn and a broad fixed-render-order effect are rejected; Simulator screenshots cannot close a subtle temporal physical symptom | Record the exact accepted Preview 2 build continuously and identify a repeatable frame/viewport/state transition before more renderer code |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
 block promotion of their respective candidates; neither justifies starting a
@@ -298,11 +315,11 @@ never writes the saved two- or four-player preferences.
 
 ## Exact next action
 
-Keep TD-06 unmerged. Start the next independent TD-06 unit at the game/renderer
-boundary: locate shared lighting state that
-persists across sequential player passes and add only a fixed-render-order
-discriminator. Do not change the frozen Preview 2 depth-address repair, and do
-not promote a lighting repair without continuous physical four-view evidence.
-Keep TD-01 formally blocked, retain TD-02/TD-04/TD-05/TD-07 for physical
-acceptance, and keep networking gated behind stable local ownership and
-deterministic state.
+Keep TD-06 unmerged and preserve its exact reverted `5022ffc...` baseline. Do
+not add another lighting or renderer patch until continuous physical Preview 2
+video localizes the symptom to a repeatable frame/viewport/state transition.
+With TD-01 formally blocked and TD-02/TD-03/TD-04/TD-05/TD-06/TD-07 waiting on
+physical or external evidence, re-audit the next independently testable item.
+TD-08 is the earliest contained source-backed candidate; isolate its Mac-only
+mouse-delta clamp measurement before any behavior change. Keep networking
+gated behind stable local ownership and deterministic state.

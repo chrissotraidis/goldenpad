@@ -132,7 +132,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Bounded discriminator implemented; intermittent Simulator freeze reproduced** | One retained-process Simulator resume recovered; another kept display-list, VI, presentation, game timer, and audio counters fixed while diagnostics/input stayed live. This is `no-runtime-progress`, not proof of a drawable-only stall. No repair is selected | Run the opt-in physical matrix. All counters flat routes to runtime/game-thread resume; VI/display-list progress with flat presentation routes to RT64/Plume drawable, present-queue, and fence timing |
 | TD-05 | P1 | Intermittent audible static | **Synthetic discriminator implemented; normal Simulator underruns reproduced; physical symptom still unclassified** | Final chain is requested/source 22.05 kHz through AVAudioEngine's 48 kHz session/mixer. 1,110,144 synthetic frames had zero ring errors, >0.05 jumps, or drops but 4,480 underrun frames/37 callbacks. A matched normal run reproduced nearly the same cadence (3,335/26 versus 3,195/27 near 605k rendered frames). Rate mismatch/ring corruption are rejected; cadence/reserve is the leading seam | Run the same synthetic probe with physical listening across speaker, Bluetooth, route/interruption, and retained lifecycle; tune reserve only if the audible event aligns with underruns and latency remains acceptable |
-| TD-06 | P1 | Residual split-screen lighting flicker | **Observed; first runtime hypothesis rejected** | Matched single-player and real four-player Temple runs both recorded zero RT64 depth `formatChanged` rebuilds, rejecting per-frame aliased-depth churn for this build. Shared lighting state versus sequential player render order is now the leading seam; the physical perceptual cause remains open | Add one fixed-player-render-order/shared-lighting-state discriminator, then correlate it with continuous physical four-view video; keep the accepted depth-address repair frozen |
+| TD-06 | P1 | Residual split-screen lighting flicker | **Observed; two runtime hypotheses rejected** | Matched single-player/four-player runs recorded zero RT64 depth `formatChanged` rebuilds. A launch-only fixed-`lvlRender` order produced no systematic four-view luminance improvement and looked worse to the user, so it was reverted. The physical perceptual cause remains open | Record the exact accepted Preview 2 baseline continuously on a physical device and identify a repeatable frame-local symptom before adding any further lighting/renderer patch; keep the depth-address repair frozen |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Disconnect-containment candidate; code + Simulator pass** | Explicit routes now neutralize paired-controller loss, retain the active controller across enumeration reorder, separate overlay/scene suspension, and prove controller-P1/touch-P2 without persisting test mode. Stable real P2-P4 controller slots are still absent | Physical held-input disconnect/reconnect/background acceptance, then design and prove explicit real P2-P4 slots and assignment policy |
 | TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Confirmed** arithmetically from both clamps | Queue saturation and the `[-1, 1]` consumer clamp cap turn rate and discard faster deltas; sensitivity cannot solve the structural loss | Measure host delta versus consumed look, then widen both clamps behind `GOLDENPAD_RECOMP_MAC` and run the Mac input/render gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
@@ -211,8 +211,8 @@ landing sequence is:
    KF7 rounds, then apply the authenticity patch only if the probe proves the
    current and expected numbers and obtain hands-on combat acceptance;
 5. collect the existing failing-session audio/lifecycle evidence; TD-06 depth
-   churn is rejected, so take only the fixed render-order/shared-lighting
-   discriminator next;
+   churn and a broad fixed-render-order effect are rejected, so require an exact
+   physical Preview 2 recording before further renderer instrumentation;
 6. act on the A12X evidence with a bounded repair or tested support-floor
    decision;
 7. take the contained Mac-only TD-08/TD-09 fixes; and
@@ -369,10 +369,18 @@ live quadrants, advanced from 6,035 to 7,348 display lists, and also recorded
 zero events from every cause. The exact final `5022ffc...` executable repeated
 the live match from 2,696 through 4,297 display lists with every cause still
 zero. The proposed per-frame aliased-depth churn is therefore rejected for this
-build. This evidence narrows the next investigation
-to sequential player-pass ownership of shared lighting state; it does not close
-the slight physical flicker report or authorize reopening the accepted depth
-repair.
+build.
+
+The follow-up fixed-`lvlRender` discriminator sampled all 24 natural player
+permutations, temporarily forced identity order only across rendering, and
+restored the original shuffle immediately afterward. Its fixed and natural
+30-frame Simulator series had effectively equal aggregate luminance changes
+with mixed per-view direction, and the user judged the diagnostic presentation
+worse. The code was reverted, and the baseline rebuilt to the exact prior
+`5022ffc...` hash. This rejects a broad render-order improvement; it does not
+close the slight physical flicker report. Require continuous physical,
+frame-local evidence before another renderer patch, and do not reopen the
+accepted depth repair.
 
 The four-port neutral render diagnostic now exists on iOS/iPadOS, but the
 primary host still binds only one real controller. Physical testing with real

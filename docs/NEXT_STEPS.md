@@ -25,7 +25,7 @@ For a long-running unattended implementation session, follow
 | 1 | **TD-07 physical lifecycle acceptance** | Code and Simulator gates now pass on an isolated candidate. Test held-input disconnect, reconnect/reorder, background/foreground, and confirm touch never leaks to Player 1. Do not confuse this with real P3/P4 routing. |
 | 2 | **TD-04 physical lifecycle classification** | The opt-in bounded discriminator and an intermittent Simulator freeze reproduction are complete. Run the physical matrix; route all-flat counters to runtime resume and presentation-only stalls to matched RT64/Plume timing instrumentation. No repair is selected yet. |
 | 3 | **TD-05 physical audio classification** | Synthetic rate/ring checks pass; Simulator underruns remain without detected jumps. Listen on speaker/Bluetooth through route/interruption/lifecycle before selecting cadence, reserve, or reset ownership work. |
-| 4 | **TD-06 render-order/lighting discriminator** | Matched depth rebuilds are zero in both single-player and real four-player Temple, so aliased-depth churn is rejected. Instrument shared lighting ownership by player pass next, then require continuous physical four-view video before any repair. |
+| 4 | **TD-06 physical flicker capture** | Depth rebuild churn and a broad fixed-`lvlRender` order effect are rejected. Capture the exact accepted Preview 2 build continuously on a physical device and reduce the shimmer to a repeatable frame/viewport/state transition before adding another renderer patch. |
 | Blocked timing lane | **Finish TD-01 sustained fire-rate baseline** | The probe and three guard windows pass (13/17/18 events per 100 ticks). Three player tap-response windows also pass ammo/event agreement but are not sustained. Resume only with a repeatable ordinary setup providing at least 34 KF7 rounds; do not inject inventory. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
@@ -47,9 +47,10 @@ independently.
      matrix before deciding whether archive-level drawable/fence timing is needed.
    - Audio: the synthetic signal rejects rate mismatch/ring corruption in
      Simulator; physical listening and lifecycle/route evidence remain.
-   - Flicker: the matched depth counter rejects aliased-depth churn. Take only
-     the fixed render-order/shared-lighting discriminator next; keep the
-     accepted depth-address repair frozen.
+   - Flicker: the matched depth counter rejects aliased-depth churn, and the
+     isolated fixed-order comparison showed no systematic improvement and was
+     reverted. Keep the accepted depth-address repair frozen; require physical
+     frame-local evidence before another renderer experiment.
 2. **TD-01 authenticity repair only after its blocker clears**
    - Obtain the sustained 34-round baseline without state injection.
    - Use the probe's before/after numbers.

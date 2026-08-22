@@ -332,11 +332,23 @@ match from 2,696 through 4,297 display lists with every cause still zero. This
 rejects aliased-depth `formatChanged` churn for these runs; it does not
 establish that the physical lighting flicker is gone.
 
-The next discriminator is a fixed-player-render-order diagnostic that records
-which player pass owns shared lighting state, paired with the existing
-continuous physical-video comparison. Never alter the frozen depth-address
-repair merely to add instrumentation, and do not promote a render-order change
-without physical four-view acceptance.
+A launch-only follow-up sampled the original shuffled player order and could
+temporarily substitute `0,1,2,3` only around `lvlRender`. Natural order covered
+all 24 permutations with zero invalid samples and changed on 11,000 of 11,490
+transitions. The fixed run also retained all 24 sampled original permutations
+and presented four coherent views, but two 30-frame Simulator series had
+effectively equal aggregate mean absolute luminance changes (about 0.153/255
+fixed versus 0.155/255 natural) with mixed per-view direction. The user judged
+the diagnostic presentation worse. The experiment was reverted, and the
+reverted build reproduced the exact `5022ffc...` executable hash.
+
+This rejects a broad fixed-render-order improvement; it does not close the
+subtle physical symptom because the random spawn views were not pixel-identical
+and screenshots are not continuous physical video. Re-run the exact accepted
+Preview 2 build on a physical device, preserve a continuous recording, and
+identify a repeatable frame/viewport/state transition before adding further
+lighting or renderer instrumentation. Never alter the frozen depth-address
+repair merely to add a probe.
 
 #### A12-family compatibility gate
 

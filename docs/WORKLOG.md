@@ -1,5 +1,37 @@
 # Worklog
 
+## 2026-08-22 — TD-06 render-order hypothesis rejected and reverted
+
+- Confirmed from the matched GoldenEye source that `shuffle_player_ids()`
+  randomizes all four player IDs every simulation tick before `lvlRender`, while
+  the game submits each viewport sequentially. The game-side `GlobalLight` is a
+  fixed constant installed again for every player pass; no mutation was found.
+- Added an isolated launch-only discriminator in commit `cc1cea0`. Observe mode
+  sampled the original permutation. Fixed mode temporarily substituted
+  `0,1,2,3` only around `lvlRender`, then restored the original order before the
+  next simulation tick. No saved setting selected either mode.
+- Natural order covered all 24 permutations with zero invalid samples and
+  changed on 11,000 of the first 11,490 transitions. The fixed-render run still
+  sampled all 24 original permutations and reached 11,628 samples/11,148
+  changes while presenting four coherent Temple views.
+- Two matched 30-frame Simulator series did not show a systematic luminance
+  improvement. Mean absolute per-pixel changes across the four cropped views
+  were `0.166553/0.158212/0.141538/0.146119` on a 0–255 scale with fixed
+  rendering and `0.193602/0.143154/0.150690/0.133555` with natural rendering.
+  The aggregate means were effectively equal, and the per-view directions were
+  mixed. Different random spawn views make this a rejection of a broad effect,
+  not a pixel-identical physical flicker closure test.
+- The user judged the diagnostic presentation worse. The experiment was
+  rejected and reverted in `74646c3`; it is not a candidate repair. Rebuilding
+  the reverted matched patch set returned exactly to executable SHA-256
+  `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface`,
+  ruling out regeneration/toolchain drift.
+- Both ROMs, active/backup saves, and preferences remained byte-identical.
+  Simulator Home cleared the active-session marker. TD-06 remains open only for
+  a continuous physical recording of the accepted Preview 2 baseline; do not
+  add another renderer patch until that recording identifies a repeatable
+  frame-local symptom.
+
 ## 2026-08-22 — TD-06 matched depth-rebuild discrimination
 
 - Located the exact RT64 seam: `State::submitFramebufferPair` derives depth
@@ -21,8 +53,9 @@
   match from 2,696 through 4,297 display lists with every cause still zero.
 - The matched zero/zero result rejects per-frame aliased-depth rebuild churn as
   the residual lighting-flicker mechanism for this build. It does not close the
-  visual defect. The next bounded discriminator is shared lighting state versus
-  player render order, followed by continuous physical video.
+  visual defect. At this checkpoint it selected shared lighting state versus
+  player render order as the next discriminator; the later experiment recorded
+  above rejected a broad fixed-order effect and restored the baseline.
 - Both ROM copies, active save, backup save, and preferences remained
   byte-identical; Simulator Home removed the active-session marker.
 - The existing Mac Alpha build directory failed its pre-existing generated-input
