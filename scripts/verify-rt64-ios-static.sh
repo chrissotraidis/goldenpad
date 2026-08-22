@@ -45,6 +45,7 @@ rt64_patch_targets=(
     src/apple/rt64_apple.mm
     src/hle/rt64_application.cpp
     src/hle/rt64_application_window.h
+    src/hle/rt64_state.cpp
 )
 
 if ! git -C "$rt64_path" diff --quiet -- "${rt64_patch_targets[@]}"; then
@@ -74,28 +75,28 @@ cleanup() {
         git -C "$rt64_path" apply --reverse "$simulator_resource_patch" >/dev/null
     fi
     if [ "$plume_query_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
+        patch -R -V none -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
     fi
     if [ "$plume_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
+        patch -R -V none -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
     fi
     if [ "$rt64_embedded_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
+        patch -R -V none -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
     fi
     if [ "$rt64_sdk_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
+        patch -R -V none -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
     fi
     rm -rf "$probe_root"
 }
 trap cleanup EXIT
 
-patch -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
+patch -V none -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
 rt64_sdk_patch_applied=1
-patch -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
+patch -V none -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
 rt64_embedded_patch_applied=1
-patch -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
+patch -V none -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
 plume_patch_applied=1
-patch -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
+patch -V none -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
 plume_query_patch_applied=1
 if [ "$simulator_resource_limits" = "ON" ]; then
     git -C "$rt64_path" apply "$simulator_resource_patch"
@@ -117,7 +118,12 @@ if [ "$shader_target_count" -ne "$expected_shader_targets" ]; then
     exit 1
 fi
 
-xargs ninja -C "$host_build" < "$shader_targets" >/dev/null
+shader_build_log="$probe_root/shader-build.log"
+if ! xargs ninja -C "$host_build" < "$shader_targets" >"$shader_build_log" 2>&1; then
+    rg -n 'FAILED:|error:' "$shader_build_log" | tail -n 40 >&2 || true
+    tail -n 120 "$shader_build_log" >&2
+    exit 1
+fi
 
 metal_sources="$probe_root/metal-sources.txt"
 find "$host_build/src/shaders" -type f -name '*.metal' | LC_ALL=C sort > "$metal_sources"
@@ -204,6 +210,12 @@ for sdk in iphoneos iphonesimulator; do
             exit 1
         fi
     done
+
+    if ! xcrun -sdk "$sdk" nm -gU "${archives[0]}" |
+        rg '_goldenpad_rt64_depth_format_rebuild_stats$' >/dev/null; then
+        echo "$sdk RT64 archive does not export the depth-format rebuild counter." >&2
+        exit 1
+    fi
 
     rt64_members=$(xcrun -sdk "$sdk" ar -t "${archives[0]}" | wc -l | tr -d ' ')
     closure_members=0

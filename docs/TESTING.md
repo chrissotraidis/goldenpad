@@ -316,12 +316,27 @@ larger reserve is acceptable; correlate listening and latency before tuning.
 
 #### Residual flicker gate
 
-Add one bounded counter at the RT64 depth `formatChanged` path that clears and
-re-reads depth from RAM. Run matched single-player and multiplayer sessions. A
-per-frame multiplayer count with zero in single player supports aliased-depth
-churn; zero in both rejects it. Only then run a fixed-player-render-order
-diagnostic and the existing continuous-video comparison. Never alter the frozen
-depth-address repair merely to add this instrumentation.
+The bounded RT64 depth `formatChanged` counter is implemented behind
+`--depth-rebuild-probe`. It reports total rebuilds, width/size/RDRAM causes, and
+the latest affected address; it does not change framebuffer behavior. The
+pinned iPhoneOS and Simulator archive closures both passed at 210 RT64 members
+and 246 force-loaded members.
+
+The 2026-08-22 matched Simulator result was zero in both cases. The
+single-player/menu control reached 1,437 display lists and presentations with
+zero rebuilds. A real four-player Temple match, launched with the non-persistent
+`--four-player-render-probe`, showed four live quadrants and advanced from
+6,035 to 7,348 display lists while total, width, size, and RDRAM rebuild counts
+all remained zero. The exact final executable SHA-256 `5022ffc...` repeated the
+match from 2,696 through 4,297 display lists with every cause still zero. This
+rejects aliased-depth `formatChanged` churn for these runs; it does not
+establish that the physical lighting flicker is gone.
+
+The next discriminator is a fixed-player-render-order diagnostic that records
+which player pass owns shared lighting state, paired with the existing
+continuous physical-video comparison. Never alter the frozen depth-address
+repair merely to add instrumentation, and do not promote a render-order change
+without physical four-view acceptance.
 
 #### A12-family compatibility gate
 

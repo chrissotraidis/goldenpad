@@ -357,9 +357,12 @@ final class RecompPrototypeInput: ObservableObject {
     private var overlayInputSuspended = false
     private var sceneInputSuspended = false
     private var controllerRequiresNeutralRelease = false
-    private let ownershipProbeForcesTwoPlayer = ProcessInfo.processInfo.arguments.contains(
-        "--controller-ownership-probe"
+    private let fourPlayerRenderProbeForcesFourPlayer = ProcessInfo.processInfo.arguments.contains(
+        "--four-player-render-probe"
     )
+    private let ownershipProbeForcesTwoPlayer =
+        ProcessInfo.processInfo.arguments.contains("--controller-ownership-probe") ||
+        ProcessInfo.processInfo.arguments.contains("--four-player-render-probe")
     private var lookSensitivity: Float = 4.0
     private var controller: GCController?
     private var controllerMapping = Dictionary(
@@ -401,6 +404,11 @@ final class RecompPrototypeInput: ObservableObject {
             // Exercise the real integration route without changing AppStorage:
             // controller Player 1 plus touch Player 2 for this launch only.
             configureTwoPlayerTestMode(true)
+        }
+        if fourPlayerRenderProbeForcesFourPlayer {
+            // Extend the launch-only route with neutral Players 3/4. The normal
+            // AppStorage-backed toggle remains unchanged.
+            configureFourPlayerTestMode(true)
         }
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { [weak self] _ in
@@ -509,7 +517,7 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func configureFourPlayerTestMode(_ enabled: Bool) {
-        fourPlayerTestModeRequested = enabled
+        fourPlayerTestModeRequested = fourPlayerRenderProbeForcesFourPlayer || enabled
         updateTestModes()
     }
 

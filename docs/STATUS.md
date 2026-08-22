@@ -13,7 +13,7 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, and listen to the new TD-05 synthetic probe; TD-06 matched-depth evidence remains independent. |
+| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, and listen to the TD-05 synthetic probe; TD-06 depth churn is rejected and shared lighting/render order is next. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
@@ -77,6 +77,17 @@ log reached 54,652 presented VI updates with zero audio drops or underruns. This
 establishes the Preview 2 stable experimental multiplayer baseline. Multiplayer
 is not yet bug-free or fully accepted pending the residual
 flicker investigation and real three/four-controller routing.
+
+The 2026-08-22 TD-06 matched counter rejects the first residual-flicker
+hypothesis. A single-player/menu control reached 1,437 RT64 display lists with
+zero depth-format rebuilds. A real four-player Temple Simulator match displayed
+four stable quadrants, advanced from 6,035 to 7,348 display lists, and also
+recorded zero width, size, or RDRAM-caused rebuilds. The exact final
+`5022ffc...` executable repeated the four-view match from 2,696 through 4,297
+display lists with every cause still zero. The residual physical lighting
+flicker remains open, but the next seam is shared lighting state across
+sequential player passes, not speculative changes to the frozen depth-address
+repair.
 
 GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
 the project's support status, not an official or commercial affiliation. The

@@ -28,6 +28,9 @@ private func goldenPadRecompNoteTransientInactive()
 @_silgen_name("goldenpad_recomp_set_lifecycle_probe_enabled")
 private func goldenPadRecompSetLifecycleProbeEnabled(_ enabled: Int32)
 
+@_silgen_name("goldenpad_recomp_set_depth_rebuild_probe_enabled")
+private func goldenPadRecompSetDepthRebuildProbeEnabled(_ enabled: Int32)
+
 #if GOLDENPAD_RECOMP_AOT_LINKED
 @_silgen_name("goldenpad_recomp_start_game")
 private func goldenPadRecompStartGame(
@@ -53,6 +56,9 @@ final class RecompPrototypeSurface: ObservableObject {
     init() {
         goldenPadRecompSetLifecycleProbeEnabled(
             ProcessInfo.processInfo.arguments.contains("--lifecycle-probe") ? 1 : 0
+        )
+        goldenPadRecompSetDepthRebuildProbeEnabled(
+            ProcessInfo.processInfo.arguments.contains("--depth-rebuild-probe") ? 1 : 0
         )
     }
 

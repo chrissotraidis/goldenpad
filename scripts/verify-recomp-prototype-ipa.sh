@@ -85,6 +85,8 @@ for required_symbol in \
   _goldenpad_recomp_set_sidestep_probe_enabled \
   _goldenpad_recomp_set_lifecycle_probe_enabled \
   _goldenpad_recomp_set_audio_probe_enabled \
+  _goldenpad_recomp_set_depth_rebuild_probe_enabled \
+  _goldenpad_rt64_depth_format_rebuild_stats \
   _goldenpad_recomp_note_audio_host_rates \
   _goldenpad_recomp_audio_probe_stats \
   _goldenpad_recomp_gameplay_input_active \

@@ -29,6 +29,14 @@
 extern RspUcodeFunc aspMain;
 gpr get_entrypoint_address();
 
+#if !defined(GOLDENPAD_RECOMP_MAC)
+extern "C" uint64_t goldenpad_rt64_depth_format_rebuild_stats(
+    uint64_t *widthChanges,
+    uint64_t *sizeChanges,
+    uint64_t *rdramChanges,
+    uint32_t *latestAddress);
+#endif
+
 namespace zelda64 {
 void register_overlays();
 void register_patches();
@@ -77,6 +85,7 @@ std::atomic<bool> fireRateProbeEnabled = false;
 std::atomic<bool> sidestepProbeEnabled = false;
 std::atomic<bool> lifecycleProbeEnabled = false;
 std::atomic<bool> audioProbeEnabled = false;
+std::atomic<bool> depthRebuildProbeEnabled = false;
 std::atomic<uint32_t> audioRequestedFrequency = 0;
 std::atomic<uint32_t> audioHostSourceFrequency = 0;
 std::atomic<uint32_t> audioHostSessionFrequency = 0;
@@ -124,6 +133,23 @@ float audioProbeLastLeft = 0.0f;
 float audioProbeLastRight = 0.0f;
 
 constexpr float kAudioProbeJumpThreshold = 0.05f;
+
+uint64_t queryDepthFormatRebuildStats(
+    uint64_t *widthChanges,
+    uint64_t *sizeChanges,
+    uint64_t *rdramChanges,
+    uint32_t *latestAddress) {
+#if defined(GOLDENPAD_RECOMP_MAC)
+    *widthChanges = 0;
+    *sizeChanges = 0;
+    *rdramChanges = 0;
+    *latestAddress = 0;
+    return 0;
+#else
+    return goldenpad_rt64_depth_format_rebuild_stats(
+        widthChanges, sizeChanges, rdramChanges, latestAddress);
+#endif
+}
 
 int16_t audioProbeSample(uint64_t frame) {
     // A 200-frame triangle stays continuous across its wrap and is cheap
@@ -260,6 +286,20 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     if (audioProbeEnabled.load(std::memory_order_relaxed)) {
         log << "[GoldenPadRecomp] audio-probe: detector="
             << (audioProbeDetectorSelfTestPasses() ? "PASS" : "FAIL") << '\n';
+    }
+    if (depthRebuildProbeEnabled.load(std::memory_order_relaxed)) {
+        uint64_t widthChanges = 0;
+        uint64_t sizeChanges = 0;
+        uint64_t rdramChanges = 0;
+        uint32_t latestAddress = 0;
+        const uint64_t rebuilds = queryDepthFormatRebuildStats(
+            &widthChanges, &sizeChanges, &rdramChanges, &latestAddress);
+        log << "[GoldenPadRecomp] depth-rebuild-probe: counter=READY"
+            << " baseline=" << rebuilds
+            << " causes=(width=" << widthChanges
+            << " size=" << sizeChanges
+            << " rdram=" << rdramChanges << ')'
+            << " latest=0x" << std::hex << latestAddress << std::dec << '\n';
     }
 }
 
@@ -564,6 +604,20 @@ void monitorGameState(uint8_t *rdram) {
                         audioProbeLargeJumps.load(std::memory_order_relaxed)),
                     static_cast<unsigned long long>(
                         audioProbeSequenceErrors.load(std::memory_order_relaxed)));
+            }
+            if (depthRebuildProbeEnabled.load(std::memory_order_relaxed)) {
+                uint64_t widthChanges = 0;
+                uint64_t sizeChanges = 0;
+                uint64_t rdramChanges = 0;
+                uint32_t latestAddress = 0;
+                const uint64_t rebuilds = queryDepthFormatRebuildStats(
+                    &widthChanges, &sizeChanges, &rdramChanges, &latestAddress);
+                logEvent("depth-rebuild-probe",
+                    "total=%llu causes=(width=%llu size=%llu rdram=%llu) latest=0x%08X",
+                    static_cast<unsigned long long>(rebuilds),
+                    static_cast<unsigned long long>(widthChanges),
+                    static_cast<unsigned long long>(sizeChanges),
+                    static_cast<unsigned long long>(rdramChanges), latestAddress);
             }
         }
         const bool rendererHadStarted = displayLists != 0 || screenUpdates != 0;
@@ -1159,6 +1213,10 @@ extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t enabled) {
 
 extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t enabled) {
     audioProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t enabled) {
+    depthRebuildProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
 }
 
 extern "C" void goldenpad_recomp_note_audio_host_rates(

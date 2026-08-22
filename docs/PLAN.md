@@ -34,7 +34,7 @@ service.
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Code/Simulator pass; physical notification timing remains |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
-| TD-04/TD-05/TD-06 discriminators | S each | TD-04/TD-05 host probes are implemented; physical classification and TD-06 depth evidence remain |
+| TD-04/TD-05/TD-06 discriminators | S each | TD-04/TD-05 host probes are implemented; TD-06 depth churn is rejected and its render-order/lighting discriminator remains |
 | TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
 | Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
@@ -86,9 +86,11 @@ changing accepted controls.
    and >0.05 jump checks pass while underruns remain. Run matched physical
    listening/route/lifecycle gates before changing cadence, reserve, or reset
    ownership.
-5. **TD-06 flicker discriminator:** count matched single-/multiplayer depth
-   rebuilds. Do not modify the frozen depth alias repair. Renderer surgery is a
-   go only if the counter and physical video establish the perceptual link.
+5. **TD-06 flicker discriminator:** matched single-/multiplayer depth rebuilds
+   are zero, rejecting aliased-depth churn for this build. Instrument shared
+   lighting ownership across a fixed player render order next. Do not modify
+   the frozen depth alias repair; a behavioral change is a go only if bounded
+   instrumentation and physical video establish the perceptual link.
 
 These packages may gather evidence concurrently, but behavioral repairs land
 one at a time against a freshly accepted baseline.

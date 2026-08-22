@@ -17,8 +17,16 @@ extern "C" void goldenpad_recomp_set_three_point_filtering(int32_t) {}
 extern "C" void goldenpad_recomp_set_controller_state(int32_t, uint32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_set_right_analog(int32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_set_controller_connected(int32_t) {}
+extern "C" void goldenpad_recomp_set_touch_input_port(int32_t) {}
 extern "C" void goldenpad_recomp_set_two_player_test_mode(int32_t) {}
 extern "C" void goldenpad_recomp_set_four_player_test_mode(int32_t) {}
+extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_note_audio_host_rates(uint32_t, uint32_t, uint32_t) {}
+extern "C" int32_t goldenpad_recomp_gameplay_input_active() { return 0; }
 extern "C" void goldenpad_recomp_set_app_active(int32_t) {}
 extern "C" void goldenpad_recomp_note_transient_inactive() {}
 extern "C" void goldenpad_recomp_queue_touch_look(int32_t, int32_t, int32_t) {}
@@ -47,6 +55,16 @@ extern "C" void goldenpad_recomp_audio_stats(
         queuedFrames, renderedFrames, nonzeroSamples,
         droppedFrames, underrunFrames, underrunCallbacks,
     };
+    for (uint64_t *output : outputs) {
+        if (output != nullptr) {
+            *output = 0;
+        }
+    }
+}
+
+extern "C" void goldenpad_recomp_audio_probe_stats(
+    uint64_t *observedFrames, uint64_t *largeJumps, uint64_t *sequenceErrors) {
+    uint64_t *outputs[] = {observedFrames, largeJumps, sequenceErrors};
     for (uint64_t *output : outputs) {
         if (output != nullptr) {
             *output = 0;

@@ -1,5 +1,40 @@
 # Worklog
 
+## 2026-08-22 — TD-06 matched depth-rebuild discrimination
+
+- Located the exact RT64 seam: `State::submitFramebufferPair` derives depth
+  `formatChanged` from width, size, or overlapping-RDRAM metadata. A changed
+  format later discards the previous write, clears the depth target, and resets
+  its RAM-read height.
+- Added an opt-in, cause-specific counter without changing framebuffer
+  allocation, clear behavior, render order, or the frozen Preview 2
+  depth-address repair. Normal launches do not poll or log the counter.
+- Hardened the pinned two-SDK archive verifier with full shader-build failure
+  output, clean no-backup patch application, and an exported-symbol gate. The
+  final device and Simulator closures each retained 210 RT64 members and 246
+  total force-loaded members.
+- A single-player/menu control advanced to 1,437 display lists/presentations
+  with zero depth-format rebuilds. A launch-only four-player route then entered
+  a real four-player Temple match without changing AppStorage; the match
+  advanced from 6,035 to 7,348 display lists with four visible quadrants and
+  zero rebuilds from every cause. The exact final executable repeated the live
+  match from 2,696 through 4,297 display lists with every cause still zero.
+- The matched zero/zero result rejects per-frame aliased-depth rebuild churn as
+  the residual lighting-flicker mechanism for this build. It does not close the
+  visual defect. The next bounded discriminator is shared lighting state versus
+  player render order, followed by continuous physical video.
+- Both ROM copies, active save, backup save, and preferences remained
+  byte-identical; Simulator Home removed the active-session marker.
+- The existing Mac Alpha build directory failed its pre-existing generated-input
+  gate before compilation because its private `patches.c` predates the TD-01
+  probe. No generated output was replaced. TD-06's archive query is compiled
+  out for `GOLDENPAD_RECOMP_MAC`; a fresh matched-generation Mac campaign
+  remains required before claiming a cross-platform build pass.
+- Added inert no-AOT stubs for the accumulated probe/control symbols. The
+  ROM-free ARM64 Simulator verifier passed in a fresh temporary build directory;
+  the final AOT executable independently exports both the TD-06 host setter and
+  RT64 archive getter required by the package audit.
+
 ## 2026-08-22 — TD-05 synthetic audio discrimination
 
 - Verified that the game requests 48 kHz during startup and then settles at

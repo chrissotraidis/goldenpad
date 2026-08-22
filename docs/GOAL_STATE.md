@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 17:34 CEST
+Updated: 2026-08-22 18:05 CEST
 
 ## Session identity
 
@@ -8,14 +8,31 @@ Updated: 2026-08-22 17:34 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td05-audio-discriminator` |
+| Branch | `codex/td06-depth-rebuild-discriminator` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-05 synthetic continuity discriminator implemented; Simulator rate/ring corruption hypotheses rejected; underrun cadence remains |
-| Phase | L9 complete: TD-05 evidence review unit committed and pushed |
+| Active debt | TD-06 matched depth discriminator complete; aliased-depth churn rejected; shared lighting/render order remains |
+| Phase | L10 evidence complete; documentation and checkpoint push in progress |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-06 now has a bounded counter at the exact pinned RT64 depth
+`formatChanged` seam. It counts total rebuilds and width, size, and RDRAM
+overlap causes, while leaving framebuffer allocation, clears, render order, and
+the frozen Preview 2 depth-address repair unchanged. The pinned device and
+Simulator archive closures both passed with 210 RT64 members and 246 total
+force-loaded members.
+
+The matched result rejects the leading aliased-depth hypothesis for this build.
+A single-player/menu control reached 1,437 display lists/presentations with zero
+rebuilds. A launch-only four-player route advertised neutral P3/P4 without
+changing AppStorage, entered a real four-player Temple match, showed four live
+quadrants, and advanced from 6,035 to 7,348 display lists while every rebuild
+counter remained zero. The final `5022ffc...` binary independently repeated the
+four-view result from 2,696 through 4,297 display lists with every cause still
+zero. The physical lighting flicker is still open; sequential
+player-pass ownership of shared lighting state is the next bounded seam.
 
 TD-05 now has an opt-in, non-game-audio discriminator. `--audio-probe` replaces
 incoming game samples with a cheap project-generated continuous stereo triangle
@@ -161,6 +178,15 @@ control.
 | Matched normal-mode underruns | REPRODUCED (Simulator) | Normal path reached 3,335/26 at 608,931 rendered frames versus synthetic 3,195/27 at 604,702; the probe did not create the cadence defect |
 | TD-05 physical listening/routes | NOT RUN | Simulator cannot establish audible static, speaker/Bluetooth behavior, interruptions, or retained-process lifecycle continuity |
 | TD-05 commit/push | PASS | Evidence commit `119d532` is pushed on `origin/codex/td05-audio-discriminator`; `main` was not changed |
+| TD-06 isolated branch | PASS | TD-06 is stacked on the pushed TD-05 checkpoint and isolated on `codex/td06-depth-rebuild-discriminator` |
+| TD-06 archive closures | PASS | iPhoneOS and Simulator each retained 210 RT64 members and 246 force-loaded members; RT64 hashes `9d522e0...` and `1c49791...` |
+| TD-06 single-player control | PASS | 1,437 display lists/presentations; total/width/size/RDRAM rebuilds all zero |
+| TD-06 four-player Temple discriminator | HYPOTHESIS REJECTED | Four live quadrants; initial run `dl=6035..7348`, exact-final recheck `dl=2696..4297`; total/width/size/RDRAM rebuilds all zero |
+| TD-06 focused ARM64 Simulator build | PASS | Release executable SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface` |
+| TD-06 preservation and clean end | PASS | Both ROMs, active/backup saves, and preferences remained byte-identical; Home removed `active-session.marker` |
+| TD-06 normal-launch isolation | PASS | Exact final binary returned to `input=external-p1` with no depth-probe or neutral-P3/P4 log entries |
+| ROM-free host verification | PASS | Fresh temporary ARM64 Simulator build passed with the complete inert-stub symbol surface |
+| Mac Alpha rebuild | BLOCKED BEFORE COMPILE | Existing private generated `patches.c` lacks the earlier TD-01 probe symbol; CMake correctly stopped before compiling/linking TD-06. The RT64 query is compiled out under `GOLDENPAD_RECOMP_MAC`; a fresh matched generation campaign is still required |
 
 ## Blocker ledger
 
@@ -245,27 +271,37 @@ network transport.
   port, reports truthful runtime ownership, keeps unowned ports neutral, and
   owns the opt-in bounded lifecycle classifier.
 - `Sources/RecompPrototypeMetalCanvas.swift`: enables the TD-04 diagnostic only
-  for the explicit `--lifecycle-probe` launch argument.
+  for the explicit `--lifecycle-probe` launch argument and enables TD-06
+  counter logging only for `--depth-rebuild-probe`.
 - `Sources/RecompPrototypeAudio.swift`: enables TD-05 only for
   `--audio-probe`, records source/session/mixer rates, and polls bounded probe
   counters off the render thread.
+- `Support/RecompPrototype/recomp_rt64_surface_stub.cpp`: keeps every probe and
+  input symbol inert but link-complete in the no-AOT verification target.
 - `scripts/verify-recomp-prototype-host.sh` and
-  `scripts/verify-recomp-prototype-ipa.sh`: require the new runtime symbols.
+  `scripts/verify-recomp-prototype-ipa.sh`: require the TD-06 runtime setter;
+  the package audit also requires the RT64 archive getter.
+- `patches/rt64-ios-embedded.patch`: adds the cause-specific RT64 depth-format
+  counter without changing the framebuffer path.
+- `scripts/verify-rt64-ios-static.sh`: verifies the exported counter in both
+  mobile archives, reports shader-generation failures, and leaves pinned
+  sources free of patch backup files.
 - `docs/GOAL_STATE.md`, `docs/NEXT_STEPS.md`, `docs/STATUS.md`,
   `docs/TECH_DEBT.md`, `docs/TESTING.md`, `docs/PLAN.md`, and
   `docs/WORKLOG.md`: current implementation status, evidence, remaining human
   gate, and next safe work.
 
-Normal launches enable neither the sidestep publication probe nor the TD-07
-paired ownership probe. The latter is a launch-only diagnostic and never writes
-the saved two-player preference.
+Normal launches enable neither the sidestep publication probe, the TD-07 paired
+ownership probe, nor TD-06 counter logging. The launch-only four-player route
+never writes the saved two- or four-player preferences.
 
 ## Exact next action
 
-Keep TD-05 unmerged and do not tune the production ring from Simulator evidence.
-Start the next independent unattended unit at TD-06: locate the exact
-`formatChanged` depth rebuild seam in the pinned RT64 source/archive pipeline,
-then add only a bounded matched single-/multiplayer counter if it can be rebuilt
-without weakening the frozen Preview 2 depth-address repair. Keep
-TD-01 formally blocked, retain TD-02/TD-04/TD-07 for physical acceptance, and
-keep networking gated behind stable local ownership and deterministic state.
+Checkpoint and push TD-06 without merging it. Then start the next independent
+TD-06 unit at the game/renderer boundary: locate shared lighting state that
+persists across sequential player passes and add only a fixed-render-order
+discriminator. Do not change the frozen Preview 2 depth-address repair, and do
+not promote a lighting repair without continuous physical four-view evidence.
+Keep TD-01 formally blocked, retain TD-02/TD-04/TD-05/TD-07 for physical
+acceptance, and keep networking gated behind stable local ownership and
+deterministic state.
