@@ -94,7 +94,9 @@ if(goldenpad_apple_platform STREQUAL "mac")
         goldenpad_mac_patches_text)
     foreach(required_bridge IN ITEMS
             "recomp_get_camera_inputs"
-            "goldenpad_recomp_consume_crouch_toggle")
+            "goldenpad_recomp_consume_crouch_toggle"
+            "goldenpad_recomp_fire_rate_player_sample"
+            "goldenpad_recomp_fire_rate_guard_sample")
         string(FIND "${goldenpad_mac_patches_text}"
             "${required_bridge}" goldenpad_mac_bridge_offset)
         if(goldenpad_mac_bridge_offset EQUAL -1)
@@ -291,7 +293,9 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             goldenpad_recomp_patches_text)
         foreach(required_bridge IN ITEMS
                 "recomp_get_camera_inputs"
-                "goldenpad_recomp_consume_crouch_toggle")
+                "goldenpad_recomp_consume_crouch_toggle"
+                "goldenpad_recomp_fire_rate_player_sample"
+                "goldenpad_recomp_fire_rate_guard_sample")
             string(FIND "${goldenpad_recomp_patches_text}"
                 "${required_bridge}" goldenpad_recomp_bridge_offset)
             if(goldenpad_recomp_bridge_offset EQUAL -1)

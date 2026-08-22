@@ -80,6 +80,7 @@ for required_symbol in \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
   _goldenpad_recomp_set_four_player_test_mode \
+  _goldenpad_recomp_set_fire_rate_probe_enabled \
   _goldenpad_recomp_audio_render \
   _goldenpad_recomp_import_rom \
   _goldenpad_recomp_validate_tlbfree_rom \

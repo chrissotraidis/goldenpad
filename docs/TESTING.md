@@ -122,6 +122,21 @@ assumed. A later repair passes only if its before/after ratio matches the
 source-derived expectation, semi-automatic and menu behavior remain unchanged,
 and hands-on combat feel is explicitly re-accepted.
 
+Current primary-runtime status (2026-08-22): launch the Simulator app with
+`--fire-rate-probe`. The probe is off for normal launches, observes at most
+three player and three guard windows, and does not write timing, inventory,
+mission, transform, player, or guard state. Simulator menu/action keys remain
+arrows plus A/S/B/Z/R; diagnostics-only analog movement uses I/J/K/L so a held
+movement pulse does not also emit an N64 D-pad look button.
+
+One ordinary Dam run recorded the same KF7 guard for three 100-tick windows:
+13, 17, and 18 committed events (mean 16.0, range 13–18; counters 3→39,
+42→90, and 93→144). This confirms the guard counter and every-third-count gate,
+but AI burst/line-of-sight variance means it is not a sustained-player
+substitute. Attract input separately began a player window at weapon 8,
+30 rounds, counter 8, then changed state before tick 100. TD-01 stays open until
+three complete ordinary-input player windows are recorded.
+
 #### Modern sidestep gate
 
 Test GoldenPad's modern and original modes separately in live gameplay:

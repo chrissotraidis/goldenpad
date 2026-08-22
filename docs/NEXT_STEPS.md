@@ -13,17 +13,22 @@ replace the authoritative documents:
 If this queue conflicts with those documents, update all affected documents in
 the same change rather than choosing whichever wording is more convenient.
 
+For a long-running unattended implementation session, follow
+[`GOAL_LOOP.md`](GOAL_LOOP.md) and resume from
+[`GOAL_STATE.md`](GOAL_STATE.md).
+
 ## Do now
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
+| 1 | **Finish TD-01 fire-rate baseline** | The opt-in probe and three guard windows pass (13/17/18 events per 100 ticks). Record three complete player KF7 windows with ammo delta before changing cadence. |
 | 2 | **TD-02 modern sidestep repair** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus and Original N64 C-button mode remain unchanged. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
-Land TD-01 and TD-02 as separate review units. The fire-rate probe can be built
-without changing controls. A12 evidence collection can proceed independently of
-both.
+Land TD-01 and TD-02 as separate review units. TD-01's probe is implemented and
+read-only, but its fixed player baseline is still open; do not start the timing
+repair or TD-02 on the same branch. A12 evidence collection can proceed
+independently.
 
 ## Do immediately after
 

@@ -2,11 +2,13 @@ diff --git a/patches/externs.h b/patches/externs.h
 index 609e348..a6dfd75 100644
 --- a/patches/externs.h
 +++ b/patches/externs.h
-@@ -406,6 +406,7 @@ extern f32 titleTransitionX;
+@@ -406,6 +406,9 @@ extern f32 titleTransitionX;
  extern Mtxf dword_CODE_bss_80079E98;
  extern f32 g_SkyCloudOffset;
  extern struct player* g_CurrentPlayer;
 +void bondviewApplyVertaTheta(void);
++PropRecord* chrGetEquippedWeaponProp(struct ChrRecord* chr, s32 hand);
++void chrlvFireWeaponRelated(struct ChrRecord* chr, s32 hand);
  extern s32 cameraFrameCounter1;
  extern s32 cameraFrameCounter2;
  extern s32 cameraBufferToggle;
@@ -14,7 +16,7 @@ diff --git a/patches/patches.h b/patches/patches.h
 index 77b502e..f952ae0 100644
 --- a/patches/patches.h
 +++ b/patches/patches.h
-@@ -117,6 +117,10 @@ int recomp_printf(const char* fmt, ...);
+@@ -117,6 +117,14 @@ int recomp_printf(const char* fmt, ...);
      extern u8 identifier[]
  
  float recomp_get_aspect_ratio(float);
@@ -22,6 +24,10 @@ index 77b502e..f952ae0 100644
 +s32 goldenpad_recomp_consume_crouch_toggle(s32 controllernum);
 +s32 goldenpad_recomp_unlock_all_missions_enabled(void);
 +s32 goldenpad_recomp_consume_return_to_title(void);
++void goldenpad_recomp_fire_rate_player_sample(
++    s32 playernum, s32 weapon, s32 ammo, s32 counter);
++void goldenpad_recomp_fire_rate_guard_sample(
++    s32 item, s32 before, s32 after, u32 guardKey);
  void recomp_crash(const char* err);
  
  #endif
@@ -29,7 +35,7 @@ diff --git a/patches/syms.ld b/patches/syms.ld
 index 31e51b1..b028f61 100644
 --- a/patches/syms.ld
 +++ b/patches/syms.ld
-@@ -76,4 +76,7 @@ boot_osPiRawStartDma = 0x8F000100;
+@@ -76,4 +76,9 @@ boot_osPiRawStartDma = 0x8F000100;
  osGetCount_recomp = 0x8F000104;
  sprintf_recomp = 0x8F000108;
  osPfsInit_recomp = 0x8F00010C;
@@ -39,11 +45,13 @@ index 31e51b1..b028f61 100644
 +goldenpad_recomp_consume_crouch_toggle = 0x8F000114;
 +goldenpad_recomp_unlock_all_missions_enabled = 0x8F000118;
 +goldenpad_recomp_consume_return_to_title = 0x8F00011C;
++goldenpad_recomp_fire_rate_player_sample = 0x8F000120;
++goldenpad_recomp_fire_rate_guard_sample = 0x8F000124;
 diff --git a/patches/workbench_theboy.c b/patches/workbench_theboy.c
 index d4424c7..64f6206 100644
 --- a/patches/workbench_theboy.c
 +++ b/patches/workbench_theboy.c
-@@ -473,6 +473,75 @@ void InitFrameRateControl(void)
+@@ -473,6 +473,111 @@ void InitFrameRateControl(void)
  extern s32 g_DebugMode;
  extern s32 g_DebugHighlightedOption;
  
@@ -116,14 +124,55 @@ index d4424c7..64f6206 100644
 +    }
 +}
 +
++static void goldenpadSampleGuardFire(struct ChrRecord* chr, s32 hand)
++{
++    PropRecord* weaponProp = chrGetEquippedWeaponProp(chr, hand);
++    u8* chrBytes = (u8*) chr;
++    s32 item = -1;
++    u8 before = chrBytes[0x04 + hand];
++
++    if (weaponProp != NULL && weaponProp->chr != NULL) {
++        item = ((s8*) weaponProp->chr)[0x80];
++    }
++
++    chrlvFireWeaponRelated(chr, hand);
++    goldenpad_recomp_fire_rate_guard_sample(
++        item, before, chrBytes[0x04 + hand], ((u32) chr & ~1u) | (u32) hand);
++}
++
++RECOMP_PATCH void chrlvTriggerFireWeapon(struct ChrRecord* chr)
++{
++    const u16 fireWeaponLeft = 0x0004;
++    const u16 fireWeaponRight = 0x0008;
++    const u16 fireTracer = 0x0080;
++    u16* hidden = (u16*) &((u8*) chr)[0x12];
++
++    *hidden &= ~fireTracer;
++
++    if (*hidden & fireWeaponRight) {
++        goldenpadSampleGuardFire(chr, GUNRIGHT);
++        *hidden &= ~fireWeaponRight;
++    }
++
++    if (*hidden & fireWeaponLeft) {
++        goldenpadSampleGuardFire(chr, GUNLEFT);
++        *hidden &= ~fireWeaponLeft;
++    }
++}
++
  RECOMP_PATCH void bossMainloop(void) {
      // declarations
  
-@@ -702,6 +771,7 @@ RECOMP_PATCH void bossMainloop(void) {
+@@ -702,6 +807,12 @@ RECOMP_PATCH void bossMainloop(void) {
                                      viSetViewPosition(localPlayer->viewleft, localPlayer->viewtop);
  
                                      lvlViewMoveTick();
 +                                    goldenpadApplyModernTouchControls();
++                                    goldenpad_recomp_fire_rate_player_sample(
++                                        get_cur_playernum(),
++                                        g_CurrentPlayer->hands[GUNRIGHT].weaponnum,
++                                        g_CurrentPlayer->hands[GUNRIGHT].weapon_ammo_in_magazine,
++                                        g_CurrentPlayer->hands[GUNRIGHT].field_88C);
                                  }
                              }
  

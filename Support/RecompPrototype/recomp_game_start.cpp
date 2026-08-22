@@ -72,6 +72,9 @@ std::atomic<uint8_t> inputStateReported = 0;
 std::atomic<bool> audioCallbackReported = false;
 std::atomic<bool> stateProbeStarted = false;
 std::atomic<uint8_t> invalidInputPortsReported = 0;
+std::atomic<bool> fireRateProbeEnabled = false;
+std::atomic<uint64_t> fireRateProbeSimulationTicks = 0;
+std::atomic<uint32_t> fireRateProbeRawGuardSamples = 0;
 std::mutex statusMutex;
 std::mutex diagnosticsMutex;
 std::string runtimeStatus = "AOT runtime: waiting for imported user ROM";
@@ -239,6 +242,62 @@ void writeGameWord(uint8_t *rdram, uint32_t address, int32_t value) {
 
 float readGameFloat(uint8_t *rdram, uint32_t address) {
     return std::bit_cast<float>(static_cast<uint32_t>(readGameWord(rdram, address)));
+}
+
+constexpr uint32_t kFireRateWindowTicks = 100;
+constexpr uint32_t kFireRateProbeRunLimit = 3;
+constexpr uint8_t kKf7SovietItem = 8;
+constexpr uint8_t kKf7SovietRawRate = 3;
+
+struct PlayerFireRateWindow {
+    bool active = false;
+    uint32_t runs = 0;
+    uint32_t ticks = 0;
+    int32_t lastWeapon = -1;
+    int32_t lastAmmo = -1;
+    int32_t player = -1;
+    int32_t weapon = -1;
+    int32_t startingAmmo = -1;
+    int32_t endingAmmo = -1;
+    int32_t startingCounter = -1;
+    int32_t endingCounter = -1;
+    uint32_t shotEvents = 0;
+};
+
+struct GuardFireRateWindow {
+    bool active = false;
+    uint32_t runs = 0;
+    uint32_t guardKey = 0;
+    uint64_t startingTick = 0;
+    uint8_t startingCounter = 0;
+    uint8_t endingCounter = 0;
+    uint32_t shotEvents = 0;
+};
+
+PlayerFireRateWindow playerFireRateWindow;
+GuardFireRateWindow guardFireRateWindow;
+
+bool isAutomaticPlayerWeapon(int32_t weapon) {
+    // GoldenEye's full-auto group runs from the Skorpion through the RC-P90.
+    return weapon >= 7 && weapon <= 14;
+}
+
+void completeGuardFireRateWindow(uint64_t simulationTick) {
+    if (!guardFireRateWindow.active ||
+        simulationTick - guardFireRateWindow.startingTick < kFireRateWindowTicks) {
+        return;
+    }
+    logEvent("fire-rate-probe",
+        "guard run=%u complete ticks=%u item=%u rawRate=%u events=%u counter=%u->%u",
+        guardFireRateWindow.runs + 1,
+        kFireRateWindowTicks,
+        kKf7SovietItem,
+        kKf7SovietRawRate,
+        guardFireRateWindow.shotEvents,
+        guardFireRateWindow.startingCounter,
+        guardFireRateWindow.endingCounter);
+    ++guardFireRateWindow.runs;
+    guardFireRateWindow.active = false;
 }
 
 size_t getQueuedFrames();
@@ -486,6 +545,12 @@ void runRuntime(ultramodern::renderer::WindowHandle window, std::filesystem::pat
     try {
         configureDiagnostics(configPath);
         logEvent("runtime", "worker started");
+        if (fireRateProbeEnabled.load(std::memory_order_acquire)) {
+            logEvent("fire-rate-probe",
+                "enabled; observation only, %u-tick windows, maximum %u player and guard runs",
+                kFireRateWindowTicks,
+                kFireRateProbeRunLimit);
+        }
         std::filesystem::create_directories(configPath);
         recomp::register_config_path(std::move(configPath));
         configurePrototypeGraphics();
@@ -661,6 +726,141 @@ extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
         logEvent("input", "external controller %s; touch overlay %s",
             next ? "connected" : "disconnected",
             next && !twoPlayerTestMode.load(std::memory_order_relaxed) ? "hidden" : "visible");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t enabled) {
+    const bool next = enabled != 0;
+    fireRateProbeEnabled.store(next, std::memory_order_release);
+    if (next) {
+        fireRateProbeSimulationTicks.store(0, std::memory_order_relaxed);
+        fireRateProbeRawGuardSamples.store(0, std::memory_order_relaxed);
+        playerFireRateWindow = {};
+        guardFireRateWindow = {};
+    }
+}
+
+extern "C" void goldenpad_recomp_fire_rate_player_sample(
+    uint8_t *rdram, recomp_context *ctx) {
+    if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {
+        return;
+    }
+    const int32_t player = _arg<0, int32_t>(rdram, ctx);
+    const int32_t weapon = _arg<1, int32_t>(rdram, ctx);
+    const int32_t ammo = _arg<2, int32_t>(rdram, ctx);
+    const int32_t counter = _arg<3, int32_t>(rdram, ctx);
+    if (player != 0) {
+        return;
+    }
+
+    const uint64_t simulationTick =
+        fireRateProbeSimulationTicks.fetch_add(1, std::memory_order_relaxed) + 1;
+    completeGuardFireRateWindow(simulationTick);
+
+    if (!isAutomaticPlayerWeapon(weapon)) {
+        playerFireRateWindow.active = false;
+        playerFireRateWindow.lastWeapon = weapon;
+        playerFireRateWindow.lastAmmo = ammo;
+        return;
+    }
+    const int32_t previousAmmo = playerFireRateWindow.lastAmmo;
+    const uint32_t shotEvents = playerFireRateWindow.lastWeapon == weapon &&
+        previousAmmo > ammo ? static_cast<uint32_t>(previousAmmo - ammo) : 0;
+    playerFireRateWindow.lastWeapon = weapon;
+    playerFireRateWindow.lastAmmo = ammo;
+    if (!playerFireRateWindow.active) {
+        if (shotEvents == 0 ||
+            playerFireRateWindow.runs >= kFireRateProbeRunLimit) {
+            return;
+        }
+        playerFireRateWindow.active = true;
+        playerFireRateWindow.ticks = 1;
+        playerFireRateWindow.player = player;
+        playerFireRateWindow.weapon = weapon;
+        playerFireRateWindow.startingAmmo = previousAmmo;
+        playerFireRateWindow.endingAmmo = ammo;
+        playerFireRateWindow.startingCounter = counter;
+        playerFireRateWindow.endingCounter = counter;
+        playerFireRateWindow.shotEvents = shotEvents;
+        logEvent("fire-rate-probe",
+            "player run=%u begin ticks=%u weapon=%d ammo=%d counter=%d",
+            playerFireRateWindow.runs + 1,
+            kFireRateWindowTicks,
+            weapon,
+            previousAmmo,
+            counter);
+        return;
+    }
+    if (playerFireRateWindow.weapon != weapon) {
+        playerFireRateWindow.active = false;
+        return;
+    }
+    playerFireRateWindow.shotEvents += shotEvents;
+    playerFireRateWindow.endingAmmo = ammo;
+    playerFireRateWindow.endingCounter = counter;
+    ++playerFireRateWindow.ticks;
+    if (playerFireRateWindow.ticks >= kFireRateWindowTicks) {
+        logEvent("fire-rate-probe",
+            "player run=%u complete ticks=%u weapon=%d events=%u ammo=%d->%d counter=%d->%d",
+            playerFireRateWindow.runs + 1,
+            playerFireRateWindow.ticks,
+            playerFireRateWindow.weapon,
+            playerFireRateWindow.shotEvents,
+            playerFireRateWindow.startingAmmo,
+            playerFireRateWindow.endingAmmo,
+            playerFireRateWindow.startingCounter,
+            playerFireRateWindow.endingCounter);
+        ++playerFireRateWindow.runs;
+        playerFireRateWindow.active = false;
+    }
+}
+
+extern "C" void goldenpad_recomp_fire_rate_guard_sample(
+    uint8_t *rdram, recomp_context *ctx) {
+    if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {
+        return;
+    }
+    const int32_t item = _arg<0, int32_t>(rdram, ctx);
+    const uint8_t before = static_cast<uint8_t>(_arg<1, int32_t>(rdram, ctx));
+    const uint8_t after = static_cast<uint8_t>(_arg<2, int32_t>(rdram, ctx));
+    const uint32_t guardKey = _arg<3, uint32_t>(rdram, ctx);
+    const uint32_t rawSample =
+        fireRateProbeRawGuardSamples.fetch_add(1, std::memory_order_relaxed);
+    if (rawSample < 8) {
+        logEvent("fire-rate-probe",
+            "guard raw=%u item=%d counter=%u->%u key=0x%08X",
+            rawSample + 1,
+            item,
+            before,
+            after,
+            guardKey);
+    }
+    const bool committedGate = item == kKf7SovietItem &&
+        after == static_cast<uint8_t>(before + 1u) &&
+        after % kKf7SovietRawRate == 0;
+    if (!committedGate) {
+        return;
+    }
+
+    if (!guardFireRateWindow.active && guardFireRateWindow.runs < kFireRateProbeRunLimit) {
+        guardFireRateWindow.active = true;
+        guardFireRateWindow.guardKey = guardKey;
+        guardFireRateWindow.startingTick =
+            fireRateProbeSimulationTicks.load(std::memory_order_relaxed);
+        guardFireRateWindow.startingCounter = after;
+        guardFireRateWindow.endingCounter = after;
+        guardFireRateWindow.shotEvents = 1;
+        logEvent("fire-rate-probe",
+            "guard run=%u begin ticks=%u item=%d rawRate=%u counter=%u",
+            guardFireRateWindow.runs + 1,
+            kFireRateWindowTicks,
+            item,
+            kKf7SovietRawRate,
+            after);
+    } else if (guardFireRateWindow.active &&
+        guardFireRateWindow.guardKey == guardKey) {
+        ++guardFireRateWindow.shotEvents;
+        guardFireRateWindow.endingCounter = after;
     }
 }
 

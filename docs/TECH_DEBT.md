@@ -108,7 +108,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages and reached by GoldenPad's opt-in primary-runtime probe; one Dam KF7 guard produced 13/17/18 committed events per 100 ticks | Primary runtime lacks the authenticity repair; the guard result confirms the counter/gate mechanism, while three fixed player KF7 windows remain required | Complete the player baseline, then port the two source-level MGB64 seams as a separate review unit and re-accept gameplay feel |
 | TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Confirmed** from the public report and input/game patch trace | C-button controller mode can strafe; modern MOVE horizontal still follows original turn behavior and touch has no equivalent C-left/right mapping | Gameplay-only synthetic input test, then physical touch + modern controller acceptance with menus unchanged |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
@@ -167,10 +167,11 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is the **TD-01 fire-rate measurement
-probe**. It is small, cannot change player data or accepted feel, turns a
-source-confirmed global gameplay defect into a GoldenPad-specific number, and
-becomes the objective gate for the actual repair.
+The smartest next engineering action is to **finish the player half of the
+TD-01 fire-rate baseline**. The launch-controlled probe, matched game patch,
+build/preservation gates, and three guard windows now pass. GoldenEye's attract
+input reached weapon 8 at 30 rounds but changed state before tick 100, so that
+partial window is not a baseline and the authenticity repair remains gated.
 
 The smartest next user-facing repair is **TD-02 modern sidestepping**. It is a
 current public issue with a traced ownership seam and can be fixed independently

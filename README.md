@@ -605,6 +605,8 @@ override those current authority documents.
 | [`scripts/`](scripts/) | Fetch, build, test, audit, and unsigned-IPA packaging gates |
 | [`docs/PLAN.md`](docs/PLAN.md) | Current repair order, parallel evidence lanes, stop rules, and historical milestones |
 | [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Short operational queue for the next implementation sessions |
+| [`docs/GOAL_LOOP.md`](docs/GOAL_LOOP.md) | Mandatory evidence-gated procedure for long-running autonomous repair sessions |
+| [`docs/GOAL_STATE.md`](docs/GOAL_STATE.md) | Current autonomous phase, gates, evidence, blockers, and exact next action |
 | [`docs/STATUS.md`](docs/STATUS.md) | Current product truth, evidence, and immediate gates |
 | [`docs/TECH_DEBT.md`](docs/TECH_DEBT.md) | Authoritative evidence-ranked defect, priority, repair, and upstream-watch ledger |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Shipped AOT/RT64 architecture, ownership boundaries, and Legacy separation |

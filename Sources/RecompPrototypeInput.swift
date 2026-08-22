@@ -38,6 +38,9 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
 
+@_silgen_name("goldenpad_recomp_set_fire_rate_probe_enabled")
+private func goldenPadRecompSetFireRateProbeEnabled(_ enabled: Int32)
+
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
     case hold
@@ -162,9 +165,14 @@ final class RecompPrototypeInput: ObservableObject {
     #if targetEnvironment(simulator)
     private var simulatorKeyboardHeldButtons: UInt16 = 0
     private var simulatorKeyboardPulseFrames: [UInt16: Int] = [:]
+    private var simulatorKeyboardHeldStick: UInt8 = 0
+    private var simulatorKeyboardStickPulseFrames: [UInt8: Int] = [:]
     #endif
 
     init() {
+        goldenPadRecompSetFireRateProbeEnabled(
+            ProcessInfo.processInfo.arguments.contains("--fire-rate-probe") ? 1 : 0
+        )
         refreshController()
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { [weak self] _ in
@@ -373,6 +381,8 @@ final class RecompPrototypeInput: ObservableObject {
         if simulatorButtons & N64.dpadDown != 0 { externalStick.y = -1 }
         if simulatorButtons & N64.dpadLeft != 0 { externalStick.x = -1 }
         if simulatorButtons & N64.dpadRight != 0 { externalStick.x = 1 }
+        let simulatorStick = consumeSimulatorKeyboardStick()
+        if simulatorStick != .zero { externalStick = simulatorStick }
         #endif
 
         switch controllerLookMode {
@@ -451,6 +461,15 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     private func handleSimulatorKey(_ keyCode: GCKeyCode, pressed: Bool) {
+        if let stick = simulatorStickBit(for: keyCode) {
+            if pressed {
+                simulatorKeyboardHeldStick |= stick
+                simulatorKeyboardStickPulseFrames[stick] = 4
+            } else {
+                simulatorKeyboardHeldStick &= ~stick
+            }
+            return
+        }
         guard let button = simulatorButton(for: keyCode) else { return }
         if pressed {
             simulatorKeyboardHeldButtons |= button
@@ -473,6 +492,32 @@ final class RecompPrototypeInput: ObservableObject {
             }
         }
         return buttons
+    }
+
+    private func consumeSimulatorKeyboardStick() -> SIMD2<Float> {
+        var stick = simulatorKeyboardHeldStick
+        for (direction, frames) in Array(simulatorKeyboardStickPulseFrames) {
+            stick |= direction
+            if frames <= 1 {
+                simulatorKeyboardStickPulseFrames.removeValue(forKey: direction)
+            } else {
+                simulatorKeyboardStickPulseFrames[direction] = frames - 1
+            }
+        }
+        return SIMD2(
+            (stick & 0x08 != 0 ? 1 : 0) - (stick & 0x04 != 0 ? 1 : 0),
+            (stick & 0x01 != 0 ? 1 : 0) - (stick & 0x02 != 0 ? 1 : 0)
+        )
+    }
+
+    private func simulatorStickBit(for keyCode: GCKeyCode) -> UInt8? {
+        switch keyCode {
+        case .keyI: 0x01
+        case .keyK: 0x02
+        case .keyJ: 0x04
+        case .keyL: 0x08
+        default: nil
+        }
     }
 
     private func simulatorButton(for keyCode: GCKeyCode) -> UInt16? {
