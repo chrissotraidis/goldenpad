@@ -267,14 +267,15 @@ emits no per-frame port warnings.
 Audio is consumed by a 22,050 Hz stereo `AVAudioSourceNode` and converted by
 AVAudioEngine to the current device route. Diagnostics separately report the
 real queued, rendered, non-zero, producer-dropped and consumer-underrun frame
-counts. Physical logging identified the reported static as consumer cadence
-jitter rather than a sample-rate mismatch: the game and engine averaged the
-same rate, but larger AVAudioEngine pulls occasionally arrived just before the
-next per-VI game chunk. The host now keeps a 1,024-frame scheduling reserve,
-prebuffers about 46 ms and uses 32-frame fades only when rebuffering. The final
-hardware soak rendered more than 2.3 million frames with zero underrun frames,
-zero underrun callbacks and zero producer drops. Physical-speaker listening
-remains the final audio acceptance gate. The iOS ring now also matches the
+counts. The 1,024-frame reserve removed one observed underrun mechanism, but it
+did not identify the reported static's cause. GoldenEye requests exactly 22,050
+Hz and the runtime passes that rate through unquantized, matching the host;
+sample-rate mismatch is therefore ruled out at the pinned source. Overflow
+discontinuity, the lifecycle reset race, cadence/underrun timing, and
+route/post-engine effects remain open TD-05 classes. The final hardware soak
+rendered more than 2.3 million frames with zero underrun frames, zero underrun
+callbacks and zero producer drops, which is healthy counter evidence rather
+than audible-quality proof. The iOS ring now also matches the
 reference GoldenEye64Recomp host's stereo-pair swap required by
 N64ModernRuntime's RDRAM address ordering; queue health alone could not detect
 that channel-order defect.

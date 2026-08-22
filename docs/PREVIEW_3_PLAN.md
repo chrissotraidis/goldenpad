@@ -1,6 +1,6 @@
 # Preview 3 control plan
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 Preview 3 is an iteration on the accepted Preview 2 runtime. Its scope is
 controls and native Mac usability. It does not include renderer changes,
@@ -88,6 +88,9 @@ acceptance. The user accepted Preview 3 as stable for publication.
 ## Explicitly open
 
 - Touch/controller physical acceptance for issue #8.
+- Explicit touch neutralization for Settings/Share presentation and common-mode
+  mobile input publication during UI tracking (TD-14).
+- Neutral-frame controller disconnect/ownership-collapse behavior (TD-07).
 - Crouch-hook synchronization with native crouch, zoom restrictions, death,
   and mission transitions.
 - GoldenEye Look Ahead versus direct Mac mouse pitch while moving.

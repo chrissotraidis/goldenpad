@@ -1,6 +1,6 @@
 # GoldenEye and GoldenPad control contract
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 This is the authoritative control reference for GoldenPad. It describes what
 the reconstructed GoldenEye game actually does, what GoldenPad currently adds,
@@ -473,6 +473,13 @@ artifacts pass their package audits. The user accepted Preview 3 as stable for
 publication and specifically accepted the Mac controls. Issue #8 remains open
 until its reporter confirms both touch and controller sidestep behavior and the
 broader matrix below is complete.
+
+Post-release source review keeps two neutralization gaps open. Presenting the
+GoldenPad settings/share sheet does not explicitly release latched touch, and a
+controller disconnect-to-none can collapse the two-player diagnostic while
+republishing its held touch state as Player 1. The mobile 60 Hz publisher also
+uses the default run-loop mode rather than `.common`. These are TD-14/TD-07
+debts; Preview 3 acceptance does not waive their transition gates.
 
 **Multiplayer:** Every translation is per port and per active player. A P1
 controller success does not validate touch P2. Preview 3 may retain the existing

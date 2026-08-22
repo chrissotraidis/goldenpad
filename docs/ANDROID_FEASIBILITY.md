@@ -182,11 +182,11 @@ toolchain through the Apple bundle branches.
 
 ### Dependency identity needs one accepted source of truth
 
-The checked-out N64ModernRuntime research reference is newer than the runtime
-used by the accepted mobile and Mac builds. The accepted build caches and Mac
-dependency script use `e75e0de77e8377d4954fe7b511c0d1cf608e7ded`, while
-`docs/RT64_N64RECOMP_PROTOTYPE.md` also records the later research checkout
-`589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1`.
+The accepted mobile/Mac dependency script and current authority documents use
+N64ModernRuntime reference
+`e75e0de77e8377d4954fe7b511c0d1cf608e7ded`. A later local research checkout at
+`589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` was never promoted into the accepted
+build contract and is retained only as historical investigation context.
 
 Android work must start from the accepted `e75e0d` runtime plus the exact AOT
 patch and advance all platforms together only after the common tests pass. It

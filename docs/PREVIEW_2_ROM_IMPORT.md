@@ -25,10 +25,17 @@ saves, graphics settings, touch layouts, and game startup remain on the Preview
 - Destination: `Documents/GoldenEye_TLBFREE.z64`, excluded from device backup
   and protected until the first unlock after restart.
 
+After validation, the primary librecomp runtime also maintains a second full
+copy at `Application Support/GoldenPadRecomp/<game_id>.z64`. That copy is needed
+by the current runtime-selection path, but unlike the Documents copy it is not
+yet explicitly backup-excluded or assigned a file-protection class. TD-12 tracks
+that storage/privacy hardening. Both copies must be preserved and hash-checked
+during any update or migration.
+
 The package includes transformation data, not a complete ROM. The original
 selected file is read through the system document picker and is not copied into
-GoldenPad. The generated file remains private user data and must never enter the
-repository, build tree, IPA, diagnostics, or release assets.
+GoldenPad. Both generated copies remain private user data and must never enter
+the repository, build tree, IPA, diagnostics, or release assets.
 
 ## Launch state machine
 

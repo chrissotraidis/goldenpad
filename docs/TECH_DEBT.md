@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 This is GoldenPad's authoritative engineering-debt ledger. It records current
 defects, evidence strength, repair order, acceptance gates, rejected approaches,
@@ -28,15 +28,22 @@ The current preview line deliberately leaves the following primary-runtime
 debt visible:
 
 - native-60-Hz player/guard automatic-fire cadence is not timing-authentic;
-- modern MOVE horizontal input does not yet provide FPS-style sidestepping;
+- Preview 2 movement remains the default; Preview 3's opt-in Honey sidestep
+  adapter still needs issue-reporter and broader physical/style confirmation;
 - A12-family RT64/Metal compatibility is unresolved after the deterministic
   issue #9 first-frame crash report;
 - local multiplayer has a physically coherent experimental baseline, but slight
   lighting flicker and real three/four-controller routing remain open;
+- settings/share presentation can leave latched touch publishing, controller
+  loss can collapse touch onto Player 1 without a neutral frame, and the mobile
+  input timer still uses the default run-loop mode;
 - Preview 2 has the bounded in-app retail conversion flow, but its exact final
   first-run path still needs hands-on acceptance on both iPhone and iPad;
 - occasional audio static and stage-specific geometry faults need precise
   reproduction and bounded fixes;
+- the runtime writes a second converted-ROM copy under Application Support;
+  unlike the protected Documents copy, that path is not yet backup-excluded or
+  assigned an explicit file-protection class;
 - six anonymous `/private/tmp/goldenpad-recomp.*` compiler source literals
   remain in the executable; the package verifier rejects private `/Users/`
   paths and any unexpected temporary path;
@@ -57,8 +64,9 @@ original turn behavior and does not expose native sidestepping.
 
 Physical controllers have a separate **Original N64 C-buttons** right-stick
 configuration. It emits C-left/C-right and restores GoldenEye's native
-sidestepping, but it replaces the modern analog right-stick look path. Touch has
-no corresponding C-button or sidestep-capable template today.
+sidestepping, but it replaces the modern analog right-stick look path. Preview 2
+has no corresponding touch template; Preview 3 adds a style-gated opt-in Honey
+adapter without changing that default.
 
 The verified product decision is to correct the existing modern semantics, not
 add four visible C buttons or another preset first: modern MOVE horizontal
@@ -67,39 +75,43 @@ remains separate. The repair must keep menu navigation unchanged, avoid silently
 changing unrelated saved preferences, and pass hands-on iPhone, iPad, and
 physical-controller testing before becoming the default behavior.
 
-## Verified technical review — 2026-08-22
+## External review disposition — 2026-08-23
 
-The external third-pass review supplied on 2026-08-22 was checked against the
-current checkout, the live public issues, and temporary read-only copies of the
-exact GoldenEye64Recomp `a787fe0d`, RT64 `5473732a`, Plume `d890ac8`, and MGB64
-`cd9b58f` pins. Its principal source findings are accurate:
+The attached independent revision-2 review is retained in
+[`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md). It inspected
+historical baseline `788667e`; it is supporting evidence, not repository
+instructions or a substitute for Preview 3 verification. Its source findings
+remain useful, while its baseline statements and line references are frozen to
+that older tree.
 
-- the primary host binds only the first extended `GCController`; the legacy
-  four-slot coordinator is not connected to the primary runtime;
-- the pinned primary game loop runs at native 60 Hz, and its apparent 30 FPS
-  frame-skip variables are assigned but never consumed;
-- both pinned recomp documentation and MGB64's measured reference identify the
-  automatic-fire cadence defect, while GoldenPad's primary patch chain contains
-  no repair;
-- RT64 busy-spins the game/VI thread when its present queue is full, and Plume
-  contains an unbounded Metal command-fence wait;
-- the current host logs but ignores the game's requested audio frequency and
-  Swift constructs a 22,050 Hz source format; and
-- RT64 marks overlapping framebuffer ranges as RDRAM-changed and rebuilds depth
-  from RAM after a depth-format change, supporting the proposed multiplayer
-  flicker mechanism.
+The review's documentation corrections are incorporated into the current
+authority documents. Its code findings were reconciled against Preview 3 and
+the isolated debt branches:
 
-The review is not runtime proof. It performed no build, game run, device test,
-audio capture, or profiling pass. In particular, the residual flicker's final
-visual cause, any permanent screenshot/resume freeze, the cause of audible
-static, and unreduced stage-specific geometry reports remain unconfirmed. Its
-confidence percentages are advisory, not project measurements.
+- Preview 3 adds game-state/watch guards to the sidestep adapter, releases the
+  opt-in Honey adapter, and replaces the Mac relative-mouse clamp path. It does
+  not close the settings/share touch latch, controller-collapse neutral frame,
+  issue #8, multi-controller ownership, or physical lifecycle acceptance.
+- The fire-rate mechanism remains confirmed. An isolated read-only probe later
+  measured guard windows of 13/17/18 events per 100 ticks, but sustained player
+  evidence remains blocked on an ordinary setup with enough ammunition.
+- Matched isolated TD-06 runs recorded zero depth-`formatChanged` rebuilds, and
+  a fixed-player-order diagnostic showed no systematic improvement and was
+  reverted. The zero did not support predicted per-frame churn, but the counter
+  was not calibrated on a known-active pre-repair build and omitted non-format
+  uploads, so the wider depth-activity family remains unclosed.
+- GoldenEye requests exactly 22,050 Hz and the runtime passes that value through
+  unquantized, matching the host source format. Producer/consumer rate mismatch
+  is ruled out; overflow discontinuity, lifecycle reset races, cadence/underrun,
+  and route/post-engine behavior remain live audio hypotheses.
+- The review's non-Metal3 Plume descriptor-binding divergence is a strong A12
+  diagnostic lead, not a proven crash cause or authority to change the renderer.
+- The runtime-managed converted-ROM copy, game-bearing-build reproducibility,
+  and modal/run-loop neutralization gaps are explicit TD-12, TD-13, and TD-14
+  items.
 
-Repository source baseline for this reconciliation: branch
-`codex/android-feasibility-doc` at `7da0722`. Its committed delta from `main` at
-`13c07ba` was documentation-only, so the runtime source inspected by the
-external review and this verification was equivalent. The documentation edits
-described here were still uncommitted during verification.
+The review performed no build, game run, device test, audio capture, or
+profiling pass. Confidence labels in that snapshot remain advisory.
 
 ## Priority ledger
 
@@ -108,17 +120,20 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; isolated GoldenPad guard-probe windows recorded 13/17/18 events per 100 ticks, while sustained player magnitude remains unmeasured | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Resume the read-only sustained-player probe only with an ordinary setup holding at least 34 rounds; then patch player and guard seams together and re-accept combat |
 | TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Opt-in adapter released; reporter verification open** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; the user accepted Preview 3 as stable for publication, but the issue reporter has not confirmed both input paths | Ask the reporter to verify touch and controller behavior; retain the full menu/watch/aim/style/lifecycle regression gate before changing the default |
-| TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
-| TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
-| TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
-| TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
-| TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
+| TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; cause unknown; full `.ips` and local A12 reproduction remain absent | A12X is inside the declared ARM64/Metal/iPadOS envelope. Plume's non-Metal3 descriptor-binding path is a strong diagnostic lead, not a proven cause | Obtain the full redacted `.ips` and A12 reproduction; separately force non-direct/Tier-1 binding paths in diagnostic-only builds on accepted hardware before selecting a repair or floor |
+| TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Isolated discriminator evidence; physical classification open** | One experimental Simulator run recovered and another held all runtime-progress counters flat while diagnostics stayed live. This is not proof of a drawable-only stall; unbounded fence and queue waits remain | Run the opt-in physical transition matrix, then add only the wait-point instrumentation selected by the observed counter class |
+| TD-05 | P1 | Intermittent audible static | **Observed report; cause unknown; rate mismatch ruled out** | Game, runtime, and host agree at 22,050 Hz. Isolated synthetic Simulator runs found no ring corruption or large jumps but did observe underruns; overflow discontinuity, reset race, cadence, and route artifacts remain | Capture one audible failing physical session with counter series and external timestamp; use the ROM-free signal only if the counters stay flat |
+| TD-06 | P1 | Residual split-screen lighting flicker | **Observed; fixed order rejected; rebuild counter inconclusive** | Matched isolated runs recorded zero depth-`formatChanged` rebuilds, but lacked known-active calibration and non-format upload counts. Fixed player order showed no systematic benefit and was reverted. The physical owner remains unknown | Capture fixed-scene physical video first; if new telemetry is justified, calibrate it on a known-active path and count both rebuild and non-format upload branches |
+| TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed disconnect leak/design gap; isolated containment candidate exists** | On disconnect-to-none, Preview 3 skips `releaseTouchInput()` and can republish P2 touch as P1; it also lacks stable P2-P4 slots and identity policy. A separate branch proves containment in Simulator only | Rebase the smallest containment change, require a neutral frame on every ownership transition, add held-input suspend/resume coverage, then physically accept before designing slots |
 | TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Hands-on accepted for Preview 3** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the accepted follow-up has slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and no Honey Shift+W pitch conflict | Retain the exact accepted executable as the control; keep long-session performance monitoring separate and reject any later input change that fails the Mac regression gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
-| TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
-| TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
+| TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Live original `skyRender` selects water, but active replacement helpers discard selected texture/geometry into fog-color fills; the full textured replacement is disabled. Other reports remain unreduced | Treat sky/water as bounded upstream feature debt; require one original-versus-current stage/settings/camera case for every other effect or geometry claim |
+| TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; controller polling exists, but stable simulation frame identity, hashes, serialization, rollback, matchmaking, and transport do not | Complete TD-07, add an offline frame/hash determinism probe, then consider the two-device LAN experiment |
+| TD-12 | P2 | Converted-ROM storage, backup, and package-path hygiene | **Confirmed write path; backup exposure is a strong inference** | The protected Documents runtime image is excluded from backup, but librecomp writes another full copy under `Application Support/GoldenPadRecomp` without explicit backup exclusion/protection. Package scans also miss `/var/folders` | Exclude/protect the runtime-managed copy without changing conversion or saves; extend path checks and verify attributes plus package contents |
+| TD-13 | P2 | Game-bearing build reproducibility | **Structural gap, disclosed** | Public verifiers build the ROM-free host and audit packaged content; private generated AOT inputs and the accepted runtime pin prevent an external clean build of the shipped executable | Add a scripted game-bearing build proof usable with private inputs and reproduce one shipped-source digest from two independent clean build directories |
+| TD-14 | P1 | Host input suspension and modal/run-loop neutralization | **Confirmed source gaps** | Settings/share sheets do not explicitly release touch; the 60 Hz mobile publisher uses the default run-loop mode and can pause during tracking; pause/watch guard completeness still needs a transition probe | Add a failing held-touch modal/scroll/watch transition test, then neutralize all ports on presentation and prove menu/watch/gameplay resume without replayed input |
 
 ## Source and evidence map
 
@@ -132,13 +147,16 @@ or changed. Pinned-upstream paths refer to the exact revisions in
 | TD-02 | `Sources/RecompPrototypeInput.swift`; `patches/goldeneye64recomp-ios-modern-controls.patch` | Public issue #8 and GoldenEye movement/C-button semantics | [`TESTING.md` modern sidestep gate](TESTING.md#modern-sidestep-gate) |
 | TD-03 | `CMakeLists.txt`; `Config/RecompPrototypeInfo.plist.in`; RT64/Plume build | Public issue #9 first-frame `AGXMetalA12` / `submitRasterScene` signature | [`TESTING.md` A12-family compatibility gate](TESTING.md#a12-family-compatibility-gate) |
 | TD-04 | `Sources/RecompPrototypeApp.swift`; surface/audio lifecycle bridges | RT64 `rt64_present_queue.cpp`; Plume `plume_metal.cpp`; historical physical symptom | [`TESTING.md` lifecycle stall/freeze gate](TESTING.md#lifecycle-stallfreeze-gate) |
-| TD-05 | `Sources/RecompPrototypeAudio.swift`; `Support/RecompPrototype/recomp_game_start.cpp` | Reference host honors `set_frequency`; accepted runs had healthy counters but did not capture reported static | [`TESTING.md` audio discontinuity gate](TESTING.md#audio-discontinuity-gate) plus listening acceptance |
-| TD-06 | Preview 2 viewport/depth patch and RT64 diagnostic bridge | RT64 `rt64_framebuffer_manager.cpp` and `rt64_state.cpp`; physical video observed slight flicker | [`TESTING.md` residual flicker gate](TESTING.md#residual-flicker-gate) and continuous physical video |
+| TD-05 | `Sources/RecompPrototypeAudio.swift`; `Support/RecompPrototype/recomp_game_start.cpp` | Exact 22,050 Hz source chain; isolated synthetic ring/discontinuity evidence; physical static report | [`TESTING.md` audio discontinuity gate](TESTING.md#audio-discontinuity-gate) plus time-correlated physical listening |
+| TD-06 | Preview 2 viewport/depth patch and isolated RT64 diagnostic branches | Zero uncalibrated depth-format counts, reverted fixed-order experiment, and physical video showing slight flicker | [`TESTING.md` residual flicker gate](TESTING.md#residual-flicker-gate) and continuous physical video |
 | TD-07 | `Sources/RecompPrototypeInput.swift`; `Support/RecompPrototype/recomp_game_start.cpp` | Single `GCController.controllers().first` binding; diagnostic port flags; legacy slots are not connected | [`TESTING.md` controller ownership lifecycle gate](TESTING.md#controller-ownership-lifecycle-gate) plus physical 2–4 controller runs |
 | TD-08 | `queueClampedAxis`; `recomp_get_camera_inputs`; `Sources/Mac/RecompMacInput.swift` | Fixed 3°/frame game-side look step and two source-confirmed clamps | Mac input/render gate in [`TESTING.md`](TESTING.md#native-macos-regression-gate) |
 | TD-09 | `Sources/Mac/GoldenPadMacApp.swift` | Mobile one-point seam mask in `Sources/RecompPrototypeApp.swift`; observed Mac edge | Fixed-camera Dam/Surface before/after captures with no other pixel-region regression |
-| TD-10 | Stage-specific game patches and RT64 effect support | Pinned partial sky reconstruction, absent water handling, unreduced user reports | One deterministic stage/settings/camera reproducer per claimed defect |
+| TD-10 | Stage-specific game patches and RT64 effect support | Live water selection degrading through fog-fill replacement helpers; disabled full textured replacement; unreduced user reports | One deterministic stage/settings/camera/original-reference reproducer per claimed defect |
 | TD-11 | No current implementation seam | Controller polling exists; serialization, rollback, handshake, transport, and state hashes do not | M0–M3 gates in [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md#milestones-and-gates) |
+| TD-12 | `Sources/RecompPrototypeROMStore.swift`; `Sources/RecompPrototypeMetalCanvas.swift`; librecomp `select_rom`; package verifiers | Protected Documents copy versus runtime-managed Application Support copy; current scan coverage | Attribute/readback gate in [`TESTING.md`](TESTING.md#converted-rom-storage-and-backup-gate) plus package audit |
+| TD-13 | CMake private-input path; primary host/package verifiers | ROM-free host build proof and package-content audits do not prove provenance of the game-bearing executable | Two clean private-input builds with identical source/package digests |
+| TD-14 | `Sources/RecompPrototypeApp.swift`; `Sources/RecompPrototypeInput.swift`; game-side input guard patch | External review R1/R2; default-mode mobile timer; current sheet presentation and guard set | Held-input modal/scroll/watch transition gate with neutral publication and no post-dismiss replay |
 
 ## Closure and change-control rules
 
@@ -167,29 +185,33 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is the **TD-01 fire-rate measurement
-probe**. It is small, cannot change player data or accepted feel, turns a
-source-confirmed global gameplay defect into a GoldenPad-specific number, and
-becomes the objective gate for the actual repair.
+The smartest next engineering action is to **finish the TD-01 sustained-player
+measurement** on the unchanged Preview 3 baseline. The probe and guard windows
+already exist on an isolated branch, but no player timing repair is authorized
+until an ordinary-input setup provides enough ammunition for a repeatable
+comparison.
 
-The smartest next user-facing action is **physical acceptance of the isolated
-TD-02 sidestep candidate**. It is a current public issue with a traced ownership
-seam, but a successful build does not close it. TD-03 crash-artifact collection
-and A12-family reproduction can run as an evidence-only lane; no A12 code change
-is selected without that evidence. The next landing sequence is:
+The smartest next user-facing action is **issue #8 reporter confirmation of the
+released opt-in TD-02 adapter**. Internal acceptance allowed Preview 3 to ship,
+but it did not close the reporter's touch/controller experience. TD-03 crash-
+artifact collection and A12-family reproduction can run as an evidence-only
+lane; no A12 code change is selected without that evidence. The next landing
+sequence is:
 
-1. land the fire-rate probe and record player plus guard cadence;
-2. run modern sidestep physical acceptance with menu, watch, aim/lean, native
-   styles, and original-C-button regression tests;
+1. rebase the read-only fire-rate probe and finish sustained player cadence;
+2. obtain issue #8 reporter confirmation for the released opt-in adapter;
 3. apply the fire-rate authenticity patch only after the probe proves the
    current and expected numbers, then obtain hands-on combat acceptance;
-4. add the controller-lifecycle probe and neutralize the TD-07 disconnect leak;
-5. collect the existing failing-session audio/lifecycle evidence and add only
-   the bounded counters needed to discriminate TD-04 through TD-06;
+4. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
+   separate input-lifecycle units;
+5. run the already-defined physical audio/lifecycle/flicker evidence gates and
+   add only the counters selected by those observations;
 6. act on the A12X evidence with a bounded repair or tested support-floor
    decision;
-7. take the contained Mac-only TD-08/TD-09 fixes; and
-8. implement stable real multi-controller ownership before any network layer.
+7. keep the accepted TD-08 Mac input repair frozen and take only a justified
+   TD-09 edge repair;
+8. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
+9. implement stable real multi-controller ownership before any network layer.
 
 Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would

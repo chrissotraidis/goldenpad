@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 This document describes the architecture that ships in the current Preview 3
 line. Historical MGB64 bring-up details remain useful, but they do not describe
@@ -87,6 +87,12 @@ to the repository or app bundle. The active and backup GoldenEye EEP4K saves
 remain separate from the runtime image and from user preferences. Installation
 evidence must verify all of those payloads independently.
 
+The primary runtime also writes a second validated converted-ROM copy under
+`Application Support/GoldenPadRecomp/<game_id>.z64`. The Documents copy is
+explicitly protected and excluded from backup; the runtime-managed copy is not
+yet assigned equivalent attributes. That is active TD-12 storage/privacy debt,
+not a distribution leak, and both copies must be preserved during updates.
+
 ## Rendering and presentation
 
 RT64 interprets GoldenEye's display lists and emits Metal work through Plume.
@@ -142,23 +148,28 @@ Mac-specific multi-controller policy remain unimplemented. The four-slot
 `InputCoordinator` in the legacy MGB64 path is a useful design reference but is
 not wired to the primary runtime.
 
-Disconnecting the only controller while the two-player diagnostic is active
-currently collapses the test mode and can route touch back to port 1 mid-match.
-That is a confirmed ownership leak, not accepted reconnect behavior.
+Preview 3 releases touch for scene inactivity/background and touch-layout
+editing, but settings/share presentation does not explicitly release it. On a
+disconnect-to-none transition, `refreshController()` also skips touch release
+before the diagnostic route collapses, so latched P2 touch can publish as P1.
+It still selects the first extended controller and has no stable identity/slot
+policy. A separate isolated branch has a Simulator-tested containment state
+machine, but it is not part of Preview 3 or physically accepted.
 
 ### Control semantics
 
 Touch look accumulates relative deltas and the game-side modern-controls patch
-consumes them once per publication. Physical right-stick look can instead use
-the original N64 C-button mode. The current modern touch MOVE stick still
-inherits GoldenEye's original horizontal analog behavior, so it turns rather
-than sidesteps. GitHub issue #8 tracks the missing modern-FPS mapping: MOVE
-horizontal should strafe while LOOK horizontal turns, with the original
-C-button mode preserved separately and menu navigation unchanged.
+consumes them once per publication. Preview 3 keeps the original horizontal
+analog behavior by default and adds an opt-in 1.1 Honey adapter that maps MOVE-X
+to native C-left/C-right while retaining LOOK. It falls back in menus, the
+watch, multiplayer, unknown states, and other native control styles. Issue #8
+remains open for reporter confirmation; the adapter is not proof of a universal
+semantic mapping for GoldenEye 1.2-1.4.
 
-Both mobile and Mac publish input from main-run-loop timers. Main-thread drift
-can therefore surface as delayed buttons, movement, and look together, even
-though rendering and audio consumption live on other threads.
+Both mobile and Mac publish input from main-run-loop timers. The Mac timer uses
+the common run-loop mode; mobile uses the default scheduled-timer mode, so UI
+tracking can pause publication. Main-thread drift can therefore surface as
+delayed buttons, movement, and look even though rendering/audio run elsewhere.
 
 ## Audio
 
@@ -167,17 +178,19 @@ GoldenEye produces stereo PCM through the project-owned bounded ring.
 Mobile adds `AVAudioSession` activation, interruption, and route-change policy;
 Mac uses the same basic ring without the mobile session owner.
 
-Two debts are architecturally important:
+Two facts are architecturally important:
 
-1. the game calls a `set_frequency` host callback, but the current project host
-   logs and ignores it while Swift creates a 22,050 Hz source format; and
+1. the game requests exactly 22,050 Hz and the runtime passes that value through
+   unquantized, matching Swift's 22,050 Hz source format; the host logs rather
+   than dynamically applying it, but producer/consumer rate mismatch is not a
+   live explanation for the reported static; and
 2. foreground reset currently mutates consumer-owned ring fields from the
    lifecycle thread, which can race an audio restart in an unusual
    interruption/background ordering.
 
 Zero drop/underrun counters prove the ring did not starve in that observed run;
-they do not rule out rate mismatch, discontinuity, route transition, or audible
-static.
+they do not rule out overflow discontinuity, the reset race, route/post-engine
+artifacts, or audible static.
 
 ## Lifecycle and threading
 

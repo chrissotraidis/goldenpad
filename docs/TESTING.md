@@ -107,8 +107,11 @@ that merely repeats the proposed implementation is insufficient.
 
 #### Native-60-Hz fire-rate gate
 
-Add a diagnostics-only sustained-fire route through the ordinary game input
-boundary. On a fixed stage/setup and fixed tick interval, record at minimum:
+The isolated read-only probe and three guard windows already pass at 13, 17,
+and 18 committed automatic-fire events per 100 ticks. Three short player
+tap-response windows matched ammo delta to event count, but they are not a
+sustained-fire baseline. Resume the probe only through the ordinary game input
+boundary, on a repeatable setup with at least 34 rounds, and record:
 
 - simulation ticks;
 - weapon and starting/ending ammo;
@@ -136,6 +139,23 @@ Test GoldenPad's modern and original modes separately in live gameplay:
 
 A code-level mapping test is required before device work; one successful
 controller preset does not establish touch behavior.
+
+#### Host input suspension gate
+
+Start with MOVE and FIRE held separately through touch and controller paths.
+For each, present Settings, Share Diagnostics, touch-layout editing, the watch,
+pause, and a scroll-tracking gesture. Assert that:
+
+- every published port becomes neutral before the modal/paused boundary;
+- no held button, stick, look delta, or queued crouch edge replays on dismissal;
+- the 60 Hz mobile publisher remains scheduled through common-mode UI tracking,
+  or the UI explicitly suspends and resumes it with a neutral boundary;
+- native menu/watch navigation remains unchanged; and
+- ordinary Preview 3 touch/controller gameplay resumes only after fresh input.
+
+Run the gate in normal single-player and the controller-P1/touch-P2 diagnostic.
+Scene-inactive release alone does not pass sheet presentation, because a SwiftUI
+sheet need not background or inactivate the scene.
 
 #### Controller ownership lifecycle gate
 
@@ -172,22 +192,34 @@ Do not patch the app lifecycle merely because both look similar to a user.
 
 #### Audio discontinuity gate
 
-First read the existing `audio: game requested ... Hz output` line and the
-drop/underrun trajectories from the same session in which static was heard.
-Then feed a project-generated continuous sine or ramp through the ring and use
-an output tap to locate sample discontinuities. This test must contain no game
-audio. It should cover cold start, route change, interruption,
+GoldenEye requests exactly 22,050 Hz and the runtime passes that request through
+unquantized, matching the host source node. The requested-Hz line is therefore a
+deployed-binary consistency check, not an open rate-mismatch hypothesis.
+
+Capture the drop/underrun trajectories from the same physical session in which
+static is heard and correlate them with an external audio timestamp. If the
+counters stay flat, feed a project-generated continuous sine or ramp through
+the ring and use an output tap to locate sample discontinuities. This test must
+contain no game audio. Cover cold start, route change, interruption,
 background/foreground, and ring wrap. Zero underrun counters alone do not pass
 audible quality.
 
 #### Residual flicker gate
 
-Add one bounded counter at the RT64 depth `formatChanged` path that clears and
-re-reads depth from RAM. Run matched single-player and multiplayer sessions. A
-per-frame multiplayer count with zero in single player supports aliased-depth
-churn; zero in both rejects it. Only then run a fixed-player-render-order
-diagnostic and the existing continuous-video comparison. Never alter the frozen
-depth-address repair merely to add this instrumentation.
+Isolated matched single-player and four-player runs recorded zero depth
+`formatChanged` rebuilds. A later fixed-player-render-order diagnostic sampled
+all shuffled permutations, showed no systematic luminance improvement, looked
+worse to the user, and was reverted. The order hypothesis is rejected. The zero
+rebuild signal is only narrowing evidence because it lacked known-active
+calibration and did not count non-`formatChanged` uploads.
+
+The next gate is continuous physical capture of the unchanged accepted render
+baseline at a fixed, preferably stationary scene. Identify the first affected
+frame and viewport before adding more telemetry. If a later RT64 diagnostic is
+justified, count both `formatChanged` rebuilds and non-`formatChanged` depth
+uploads, calibrate counter placement against a throwaway pre-repair build, and
+preserve all three `randomGetNext()` calls in any order experiment. Never alter
+the frozen depth-address repair merely to instrument it.
 
 #### A12-family compatibility gate
 
@@ -198,6 +230,12 @@ a second A12-family device. Compare one newer accepted device with the same
 scene/configuration. Only a successful candidate run on affected hardware can
 close the defect; otherwise document a deliberately chosen minimum GPU
 generation rather than calling A12X non-ARM64.
+
+In parallel, two diagnostic-only builds may force Plume's
+`useDirectBufferAddresses=false` path and the Tier-1 encoder path on accepted
+newer hardware. A reproduction there would localize the non-Metal3 binding seam;
+a pass would not clear A12X. Neither variant may ship or replace the affected-
+hardware gate.
 
 ### Native macOS regression gate
 
@@ -306,7 +344,7 @@ Preview 2 release evidence:
   `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`;
 - unsigned mobile app-content SHA-256 is
   `bce1606fb88cf5a2a423875073871a8417d66f7b1462568bbbae390b72d1a5ec`;
-- the final native Mac executable SHA-256 is
+- the package-audited Preview 2 Mac executable SHA-256 is
   `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`;
 - `scripts/verify-recomp-macos-alpha.sh` passed the 20-member arm64 Alpha
   archive at SHA-256
@@ -316,8 +354,11 @@ Preview 2 release evidence:
 
 These package audits establish architecture and contamination boundaries, not
 hands-on gameplay quality. The user separately supplied the final mobile
-interaction approval. The Mac artifact remains Alpha with the input, blue-edge
-and sustained-performance debt defined above.
+interaction approval. The packaged Preview 2 Mac executable is a source-
+equivalent rebuild of hands-on-tested executable
+`0e73a74da8866f9f3784afedf78ff87a0ca18916e363e63fb33083747b149d00`;
+the packaged `7c78b72f...` binary itself had package-audit evidence only.
+Preview 3 later received exact-binary Mac hands-on acceptance.
 
 Preview 3 release evidence:
 
@@ -1078,6 +1119,24 @@ status, terminate/uninstall/shut down the phone, and only then repeat on iPad.
 The 2026-08-03 pass reported `Apple iOS simulator GPU` at 1206x2622 and
 1668x2420 respectively. A Release `iphoneos` linked app also built as ARM64.
 This satisfies G2; GoldenEye frames begin at G3 and remain core-gated.
+
+## Converted ROM storage and backup gate
+
+GoldenPad currently keeps the protected, backup-excluded Documents runtime
+image and a second librecomp-managed copy under
+`Application Support/GoldenPadRecomp/<game_id>.z64`. Before TD-12 closes:
+
+1. import through the normal picker and verify both copies by size/hash without
+   printing or exporting their bytes;
+2. verify both files carry the intended data-protection class and are excluded
+   from device/iCloud backup;
+3. relaunch and prove the runtime still selects the same validated data;
+4. perform an in-place update and prove both files, active save, backup save,
+   and preferences remain byte-identical; and
+5. rerun the IPA/package audit to prove neither copy entered the artifact.
+
+Do not delete or relocate an existing user copy as part of a documentation or
+attribute-only repair. Migration must be atomic and preservation-tested.
 
 ## Package gate
 

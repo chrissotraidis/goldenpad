@@ -47,7 +47,7 @@ or expand redistribution rights.
   project license does not grant rights in the original game. That uncertainty
   is disclosed here; it is not treated as a GoldenEye-specific development
   blocker.
-- The shipped Preview 2 runtime uses statically generated GoldenEye64Recomp game
+- The shipped Preview 3 runtime uses statically generated GoldenEye64Recomp game
   code, N64ModernRuntime, N64Recomp components, RT64, Plume, and their transitive
   dependencies. The distributed package must carry its required notices and
   exact GPL text, and the corresponding-source boundary must remain available
@@ -121,11 +121,18 @@ temporary storage or memory before hashing. A filename is never validation.
 Before any IPA/archive is shared:
 
 1. enumerate every archive member;
-2. scan names, sizes, hashes, magic bytes, strings, and high-entropy blobs;
+2. scan archive names and sizes, known hashes, N64 magic at file offset zero,
+   selected executable strings, and documented private-path patterns;
 3. reject ROM headers, known ROM hashes, extracted media, saves, dev paths,
    local references, credentials, signing files, and undocumented binaries;
 4. verify the installed app requires user-selected retail data;
 5. record the audit command and result in `docs/WORKLOG.md`.
+
+The current verifier does not perform a general entropy scan, does not search
+every archive member's full byte stream, and its private-path patterns do not
+yet cover every temporary-directory form such as `/var/folders`. Do not claim
+broader coverage until the scripts implement and verify it; TD-12 tracks that
+hardening.
 
 Every game-bearing IPA must carry `ThirdPartyNotices.txt`. The primary package
 verifier also requires `COPYING-GPL-3.0.txt` and notices for

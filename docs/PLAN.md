@@ -15,7 +15,7 @@ The native Apple-Silicon macOS extension is a separate gated product track. Its
 research decision, architecture and implementation gates are recorded in
 [`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
-## Current execution plan (2026-08-22)
+## Current execution plan (2026-08-23)
 
 Preview 3 is published. The current objective is to repair major single-player
 gameplay and compatibility defects, then harden local multiplayer ownership,
@@ -29,13 +29,16 @@ service.
 
 | Work | Size | Primary risk |
 | --- | ---: | --- |
-| TD-01 measurement probe | S | Probe observes the wrong game-side event |
+| TD-01 sustained-player measurement | S | Ordinary setup does not provide enough ammunition for a discriminating window |
 | TD-02 released sidestep verification | S | Reporter-specific touch/controller behavior differs from the accepted setup |
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
+| TD-14 modal/run-loop neutralization | S | Replayed input or menu/watch regression across presentation boundaries |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
-| TD-04/TD-05/TD-06 discriminators | S each | Instrumentation changes timing or logs the wrong boundary |
-| TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
+| TD-04/TD-05/TD-06 physical classification | S each | Instrumentation changes timing or logs the wrong boundary |
+| TD-09 Mac-only edge repair | S | Renderer coverage regression; Preview 3 input is already accepted |
+| TD-12 storage/package hygiene | S | User-data migration or backup attributes damage a valid runtime copy |
+| TD-13 game-bearing build proof | S-M | Private inputs make provenance checks environment-dependent |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
 | Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
 | Public internet multiplayer product | XL | Synchronization, service, security, reconnect, operations, and support |
@@ -58,11 +61,11 @@ Execute and land these as separate review units:
 
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
-| 1 | **TD-01 fire-rate probe** | Global gameplay defect; measurement is behavior-neutral and gates the real fix | Player and guard shots/ammo delta per fixed 100-tick interval on the unmodified baseline | Deterministic repeated numbers recorded in `STATUS.md`; no gameplay behavior change |
+| 1 | **TD-01 sustained-player probe completion** | Guard mechanism is measured; player magnitude still gates the real fix | Ordinary-input player ammo/event slope over a sustained fixed-tick window, retaining the existing guard evidence | Repeatable numbers recorded with at least 34 starting rounds; no gameplay behavior change |
 | Parallel user-facing lane | **TD-02 released sidestep verification** | Preview 3 ships the bounded adapter opt-in; issue closure still needs reporter evidence | Reporter confirms touch and controller MOVE strafe / LOOK turn behavior | Keep the adapter opt-in until reporter confirmation and the full regression matrix pass |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, Preview 2 reproduction, affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
-The fire-rate probe, TD-02 reporter confirmation, and A12 evidence work can
+The sustained fire-rate run, TD-02 reporter confirmation, and A12 evidence work can
 proceed without changing accepted Preview 3 controls. Any later sidestep default
 change must be reviewed separately from controller-lifecycle work because both
 touch input publication.
@@ -73,19 +76,23 @@ touch input publication.
    the player and guard timing seams as a matched generated patch set. Require
    before/after cadence evidence, semi-automatic regression checks, and hands-on
    combat reacceptance.
-2. **TD-07 disconnect neutralization and lifecycle probe:** make a lost
-   controller publish neutral, prevent implicit touch reassignment, and freeze
-   the ownership invariants before implementing real controller slots.
-3. **TD-04 lifecycle instrumentation:** add only bounded drawable, present-wait,
-   fence-wait, VI, input-timer, and audio counters. Run the physical transition
-   matrix before selecting a repair.
-4. **TD-05 audio evidence:** read requested frequency and counters from a failing
-   session, then run the ROM-free synthetic discontinuity test. Move ring reset
-   to consumer ownership or honor the requested rate only if the test implicates
-   that seam.
-5. **TD-06 flicker discriminator:** count matched single-/multiplayer depth
-   rebuilds. Do not modify the frozen depth alias repair. Renderer surgery is a
-   go only if the counter and physical video establish the perceptual link.
+2. **TD-14 modal/run-loop neutralization:** add the failing held-input boundary
+   gate, neutralize settings/share presentation, and prove watch/pause plus
+   scroll tracking cannot replay latched input.
+3. **TD-07 disconnect neutralization and lifecycle probe:** rebase only the
+   smallest proven containment seam, add held-input suspend/resume coverage,
+   and physically accept it before implementing real controller slots.
+4. **TD-04 lifecycle classification:** run the physical transition matrix with
+   existing bounded signals, then instrument only the observed wait class.
+5. **TD-05 audio evidence:** correlate one audible physical event with the
+   counter series. The exact 22,050 Hz chain rules out rate mismatch; use the
+   ROM-free signal only for counter-invisible discontinuities.
+6. **TD-06 physical flicker capture:** fixed player order is rejected; the zero
+   `formatChanged` signal remains inconclusive without known-active calibration
+   and non-format upload counts. Identify the first affected physical frame
+   before more renderer work.
+7. **TD-12/TD-13 hygiene:** repair runtime-copy attributes and add game-bearing
+   build provenance as independent non-gameplay work packages.
 
 These packages may gather evidence concurrently, but behavioral repairs land
 one at a time against a freshly accepted baseline.
@@ -94,8 +101,8 @@ one at a time against a freshly accepted baseline.
 
 - Resolve TD-03 on affected A12 hardware or publish an evidence-backed support
   floor.
-- Take the Mac-only TD-08 mouse-clamp repair and TD-09 trailing-edge mask as
-  independent changes behind the native Mac regression gate.
+- Keep Preview 3's accepted Mac relative-input repair frozen. Take a TD-09
+  trailing-edge mask only after fixed-scene captures isolate the strip.
 - Reduce each stage/effect report under TD-10 to one deterministic camera,
   stage, settings, and expected-reference case before changing game or renderer
   code.
@@ -140,8 +147,10 @@ This plan is complete only when:
   tested, consistently documented support floor;
 - TD-04 through TD-06 have been reproduced/classified with their discriminating
   evidence, and any justified repair has passed its physical gate;
-- TD-07 supports stable real local controller ownership on the claimed
-  platforms; and
+- TD-07 supports stable real local controller ownership and TD-14 closes modal,
+  pause, and run-loop neutralization on the claimed platforms;
+- TD-12 storage/backup hygiene and TD-13 game-bearing build proof pass without
+  weakening private-data or reproducibility boundaries; and
 - the network go/no-go decision is recorded from determinism and LAN evidence,
   even if the correct product decision is **no network multiplayer**.
 

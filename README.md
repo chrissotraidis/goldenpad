@@ -512,8 +512,13 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
   coverage remains open in the focused importer acceptance record.
 - Some stage-specific geometry glitches remain to be captured precisely.
 - Occasional audio static and multi-controller play remain open quality work.
+- Settings/share presentation, controller disconnect-to-none, and mobile UI
+  tracking still need explicit neutral-input transition coverage.
 - The generated-input pipeline is not independently reproducible from the
   public repository; private retail-derived inputs are never distributed.
+- The runtime keeps a second converted-ROM copy under Application Support. It
+  remains private and package-audited out of releases, but backup-exclusion and
+  explicit file-protection attributes still need to match the Documents copy.
 - This source-available developer preview is not an official or commercially
   licensed GoldenEye distribution.
 
@@ -616,6 +621,7 @@ override those current authority documents.
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Clean-checkout, package, signing, and publication gates |
 | [`docs/RELEASE_NOTES_0.1.0-preview.3.md`](docs/RELEASE_NOTES_0.1.0-preview.3.md) | Preview 3 downloads, checksums, controls update and disclosed limitations |
 | [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Local ownership, determinism, LAN research, network feasibility, and go/no-go gates |
+| [`docs/EXTERNAL_REVIEW_2026-08-22.md`](docs/EXTERNAL_REVIEW_2026-08-22.md) | Preserved independent revision-2 review plus maintained disposition against Preview 3; supporting evidence, not current authority |
 | [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |

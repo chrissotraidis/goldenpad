@@ -1,6 +1,6 @@
 # Multiplayer roadmap
 
-Updated: 2026-08-22
+Updated: 2026-08-23
 
 GoldenPad currently has **experimental local split-screen in one runtime**. It
 does not have peer-to-peer, LAN, internet, relay, dedicated-server, or rollback
@@ -37,10 +37,11 @@ run. Slight lighting flicker remained. This establishes a stable experimental
 render baseline, not complete multiplayer acceptance.
 
 Do not reopen the depth-address repair unless the former large corruption
-returns or a bounded trace directly implicates it. The leading residual-flicker
-hypothesis is separate: overlapping aliased depth ranges may force a quantized
-depth rebuild from RDRAM every multiplayer frame. First count those rebuilds in
-matched single- and multiplayer runs; do not begin with renderer surgery.
+returns or a bounded trace directly implicates it. Matched isolated runs found
+zero depth-`formatChanged` rebuilds, but that counter lacked a known-active
+calibration and non-format upload coverage. A fixed-player-order diagnostic
+showed no systematic improvement and was reverted. The residual flicker remains
+unclassified; the next evidence is fixed-scene physical capture.
 
 ## Local multiplayer blockers
 
@@ -72,13 +73,12 @@ test does not establish this.
 The old large corruption is closed for the frozen baseline. The remaining
 flicker must be treated as a temporal defect:
 
-1. count RT64 depth `formatChanged` clear/re-read events for equivalent single-
-   and multiplayer sessions;
-2. if the count supports aliased-depth churn, decide whether the visual severity
-   justifies an RT64 framebuffer-tracking change;
-3. if it does not, use a fixed player render order as a diagnostic, not a fix;
-4. capture continuous video and a bounded post-run log; a clean still is
-   insufficient; and
+1. keep the accepted depth-address repair frozen;
+2. capture continuous physical video at a fixed, preferably stationary scene;
+   a clean still is insufficient;
+3. identify the first affected frame and viewport before adding telemetry;
+4. if later telemetry is justified, count non-`formatChanged` uploads as well
+   as rebuilds and calibrate the counters on a known-active path; and
 5. re-run the exact two-/four-player and single-player regression gates after
    any candidate.
 
@@ -98,10 +98,12 @@ is deciding who owns simulation state and keeping two native game runtimes in
 agreement. Current local multiplayer has one process, one game clock, one RNG
 stream, and one shared memory image. Network play would split those assumptions.
 
-The current runtime exposes frame/controller polling, but no validated complete
-state serialization, deterministic state hash, rewind, or rollback restore.
-Therefore a matchmaking UI or packet demo would not demonstrate playable
-network multiplayer.
+The current runtime exposes controller polling, but it does not expose a stable
+simulation frame identity: the poll-ID seam is an upstream TODO and the VI count
+is wall-clock-derived and skippable. It also has no validated complete state
+serialization, deterministic state hash, rewind, or rollback restore. Therefore
+a matchmaking UI or packet demo would not demonstrate playable network
+multiplayer.
 
 ### Feasibility matrix
 
@@ -141,6 +143,8 @@ Before a peer can join, both sides must agree on:
 - transport capabilities and maximum accepted input delay.
 
 No ROM bytes, extracted assets, saves, or signing data may cross the network.
+Do not include persistent device identifiers in the protocol or compatibility
+record; use an ephemeral session/player identity instead.
 Reject an incompatible peer with a specific reason before starting simulation.
 
 ### Synchronization experiments

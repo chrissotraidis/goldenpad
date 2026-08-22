@@ -18,14 +18,19 @@ isolated from the accepted mobile target, while the user-facing product, bundle
 display name and executable are all `GoldenPad`. It is native arm64 macOS, not
 Mac Catalyst.
 
-Current status: **implemented and package-audited Alpha**. The current Release
-`GoldenPad.app` builds, signs ad hoc and reaches authentic gameplay. Its final
-packaged-source executable SHA-256 is
-`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
-Hands-on review accepted it as an alpha baseline, not as mobile-parity or a
-public stable Mac release. Mouse look remains too slow, keyboard/mouse controls
-need later tuning, a thin blue strip remains on the far-right render edge, and
-sustained performance remains open. The separate arm64 Alpha archive passed its
+Current status: **implemented Preview 3 Alpha**. This document preserves the
+2026-08-21 feasibility/implementation record; current controls and evidence are
+in [`STATUS.md`](STATUS.md) and [`PREVIEW_3_PLAN.md`](PREVIEW_3_PLAN.md).
+
+For Preview 2, hands-on gameplay was recorded on executable
+`0e73a74da8866f9f3784afedf78ff87a0ca18916e363e63fb33083747b149d00`;
+the packaged-source executable
+`7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`
+was a source-equivalent rebuild with package-audit evidence only. Preview 3
+later received exact-binary hands-on acceptance for executable
+`a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
+The thin far-right render edge and sustained-performance depth remain open. The
+separate Preview 2 arm64 Alpha archive passed its
 architecture, signature, dependency, icon, notices, private-path and game-data
 audit at SHA-256
 `7a9e7342b0ae39518f73807f854b479d9691fd612ae6861ea527f2a19e4450a4`.
@@ -315,9 +320,9 @@ this first target.
 | `Sources/RecompPrototypeAudio.swift` | Extract the PCM/`AVAudioEngine` owner; leave `AVAudioSession` in the mobile adapter. Do not change ring size or render behavior during the split. |
 | `Sources/RecompPrototypeInput.swift` | Split the controller/input model from touch-only views. Preserve current Xbox/MFi mappings and right-stick behavior byte-for-byte where practical. |
 | Mac RT64 patch/overlay | Start with a Mac-only embedded-surface patch so the accepted iOS archive is byte-for-byte unaffected. Consolidate it with `patches/rt64-ios-embedded.patch` only after both platform verifiers pass. |
-| `scripts/verify-recomp-macos.sh` | Clean configure/build and Mach-O/dependency assertions. |
+| `scripts/build-recomp-macos-dependencies.sh` | Validate/fetch the exact private runtime, RT64, Plume, and generated-input prerequisites used by the Mac build. |
 | `scripts/package-recomp-macos-alpha.sh` | Assemble and audit an ad-hoc-signed, ROM-free arm64 Alpha archive containing `GoldenPad.app`. |
-| `scripts/verify-recomp-macos-app.sh` | Bundle, signing, dependency, private-path, ROM/save and generated-asset audit. |
+| `scripts/verify-recomp-macos-alpha.sh` | Bundle, signing, dependency, private-path, ROM/save and generated-asset audit. |
 
 Expected developer output:
 
@@ -335,7 +340,10 @@ cmake -S . -B build-recomp-macos -G Xcode \
   -DCMAKE_OSX_ARCHITECTURES=arm64 \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
 cmake --build build-recomp-macos --config Release --target GoldenPadMac
-scripts/verify-recomp-macos.sh build-recomp-macos/Release/GoldenPad.app
+GOLDENPAD_RECOMP_MAC_APP="$PWD/build-recomp-macos/Release/GoldenPad.app" \
+  scripts/package-recomp-macos-alpha.sh
+scripts/verify-recomp-macos-alpha.sh \
+  dist/GoldenPad-0.1.0-preview.3-macos-arm64-alpha.zip
 ```
 
 The configure call also receives the existing private AOT, runtime, reference

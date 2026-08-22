@@ -15,7 +15,32 @@ scripts, documentation, and legally clean upstream patches.
 
 ## Verify the change
 
-Run the checks relevant to your scope. A full production change should pass:
+Run the checks relevant to your scope. For the primary AOT/RT64 runtime, the
+public ROM-free host and renderer checks are:
+
+```sh
+./scripts/verify-recomp-prototype-host.sh
+./scripts/verify-rt64-ios-static.sh
+./scripts/check-no-rom-data.sh
+```
+
+A game-bearing mobile build additionally requires the private generated AOT
+inputs documented in `docs/BUILDING.md`. After building it, package and audit
+the exact artifact:
+
+```sh
+./scripts/package-recomp-prototype-ipa.sh
+./scripts/verify-recomp-prototype-ipa.sh \
+  dist/GoldenPad-0.1.0-preview.3-unsigned.ipa
+```
+
+For the native Mac Alpha, use
+`scripts/build-recomp-macos-dependencies.sh`,
+`scripts/package-recomp-macos-alpha.sh`, and
+`scripts/verify-recomp-macos-alpha.sh`.
+
+The following checks are for `GoldenPad Legacy` only; they do not prove the
+primary Preview 3 runtime:
 
 ```sh
 ./scripts/verify-mgb64-ios-renderer.sh

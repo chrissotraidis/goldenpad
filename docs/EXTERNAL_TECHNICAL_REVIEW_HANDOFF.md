@@ -1,7 +1,8 @@
 # External technical review handoff
 
-Status: the 2026-08-22 third-pass response to this prompt has been independently
-reconciled into [`TECH_DEBT.md`](TECH_DEBT.md), [`ARCHITECTURE.md`](ARCHITECTURE.md),
+Status: the independent revision-2 response is preserved with its maintained
+disposition in [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md)
+and reconciled into [`TECH_DEBT.md`](TECH_DEBT.md), [`ARCHITECTURE.md`](ARCHITECTURE.md),
 [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md), and
 [`TESTING.md`](TESTING.md). [`STATUS.md`](STATUS.md) and [`PLAN.md`](PLAN.md) own
 the current truth and execution order. This file remains a reproducible review
