@@ -274,6 +274,7 @@ control.
 | TD-10 water path | KNOWN UPSTREAM OMISSION | The only `IsWater`/`WaterImageId` branch is inside `#if 0`; pinned upstream documents flat water/custom-microcode absence |
 | TD-10 other effects/geometry | EVIDENCE REQUIRED | Glass, monitors, framebuffer feedback, and missing/clipped geometry have no deterministic stage/camera/settings/original-reference cases |
 | TD-10 source mutation | NONE | Classification is documentation-only; no patch, generated input, renderer, build product, or private data changed |
+| TD-10 commit/push | PASS | Documentation commit `ad7474c` is pushed on `origin/codex/td10-effect-classification`; `main` was not changed |
 
 ## Blocker ledger
 
