@@ -12,7 +12,7 @@ Updated: 2026-08-22 18:52 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-06 depth churn and broad fixed-render-order effects rejected; physical frame-local capture remains |
-| Phase | L11: failed render-order experiment reverted; evidence reconciliation in progress |
+| Phase | L11 complete: failed render-order experiment reverted, documented, and pushed |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -204,6 +204,7 @@ control.
 | ROM-free host verification | PASS | Fresh temporary ARM64 Simulator build passed with the complete inert-stub symbol surface |
 | Mac Alpha rebuild | BLOCKED BEFORE COMPILE | Existing private generated `patches.c` lacks the earlier TD-01 probe symbol; CMake correctly stopped before compiling/linking TD-06. The RT64 query is compiled out under `GOLDENPAD_RECOMP_MAC`; a fresh matched generation campaign is still required |
 | TD-06 commit/push | PASS | Evidence commit `db19f54` is pushed on `origin/codex/td06-depth-rebuild-discriminator`; `main` was not changed |
+| TD-06 render-order commit/push | PASS | Experiment `cc1cea0`, revert `74646c3`, and evidence commit `5c0f41f` are pushed on `origin/codex/td06-lighting-render-order`; `main` was not changed |
 
 ## Blocker ledger
 
