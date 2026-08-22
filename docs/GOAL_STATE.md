@@ -12,7 +12,7 @@ Updated: 2026-08-22 17:34 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-05 synthetic continuity discriminator implemented; Simulator rate/ring corruption hypotheses rejected; underrun cadence remains |
-| Phase | L8/L9: finish TD-05 validation, documentation, commit, and branch push |
+| Phase | L9 complete: TD-05 evidence review unit committed and pushed |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -160,7 +160,7 @@ control.
 | Synthetic underrun trajectory | OBSERVED (Simulator) | 4,480 underrun frames across 37 callbacks; the continuity detector remained zero because the fade path smoothed those boundaries |
 | Matched normal-mode underruns | REPRODUCED (Simulator) | Normal path reached 3,335/26 at 608,931 rendered frames versus synthetic 3,195/27 at 604,702; the probe did not create the cadence defect |
 | TD-05 physical listening/routes | NOT RUN | Simulator cannot establish audible static, speaker/Bluetooth behavior, interruptions, or retained-process lifecycle continuity |
-| TD-05 commit/push | PENDING | Finish static/preservation/normal-mode gates, commit, and push only the TD-05 topic branch |
+| TD-05 commit/push | PASS | Evidence commit `119d532` is pushed on `origin/codex/td05-audio-discriminator`; `main` was not changed |
 
 ## Blocker ledger
 
@@ -262,9 +262,10 @@ the saved two-player preference.
 
 ## Exact next action
 
-Finish the TD-05 static, preservation, normal-launch, and clean-session gates;
-commit and push `codex/td05-audio-discriminator` without merging it. Do not tune
-the production ring from Simulator evidence. The next independent unattended
-unit is TD-06's matched single-/multiplayer depth-rebuild discriminator. Keep
+Keep TD-05 unmerged and do not tune the production ring from Simulator evidence.
+Start the next independent unattended unit at TD-06: locate the exact
+`formatChanged` depth rebuild seam in the pinned RT64 source/archive pipeline,
+then add only a bounded matched single-/multiplayer counter if it can be rebuilt
+without weakening the frozen Preview 2 depth-address repair. Keep
 TD-01 formally blocked, retain TD-02/TD-04/TD-07 for physical acceptance, and
 keep networking gated behind stable local ownership and deterministic state.
