@@ -378,6 +378,16 @@ and require both absence of the two Mac probe symbols and exact accepted
 executable SHA-256 `5022ffc...`. Normal Mac launches must not enable the probe.
 After any later repair, the following full gate still applies.
 
+For TD-09, first capture the unchanged accepted Mac control at fixed Dam and
+Surface cameras. Measure the suspect far-right strip in physical pixels and
+retain the full frame, not only a crop. A menu or black intro frame is not a
+valid reproduction. If the control cannot reach gameplay or its window becomes
+inaccessible, stop and classify that baseline failure before adding a mask.
+Only after reproduction may a Mac-only opaque one-point SwiftUI overlay be
+compared against the same cameras. Reject it if it hides more than the measured
+host seam, changes any other pixel region, affects input/hit testing, or requires
+changing `CAMetalLayer.drawableSize`, RT64 window size, viewport, or scissor.
+
 Before promoting a native `GoldenPad.app`, test without a recorder, live log
 stream, profiler, or background Simulator control:
 

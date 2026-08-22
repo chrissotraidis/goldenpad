@@ -1,5 +1,29 @@
 # Worklog
 
+## 2026-08-22 — TD-09 edge seam source-bounded; visual gate blocked
+
+- Confirmed the presentation ownership difference: mobile overlays one opaque
+  trailing SwiftUI point after the Metal canvas, while the Mac ZStack has no
+  corresponding mask. Neither implementation changes RT64 viewport or drawable
+  sizing. The earlier `CAMetalLayer.drawableSize` substitution remains rejected
+  because it expanded the thin edge into missing, duplicated, and blue scene
+  geometry.
+- Launched the current diagnostic Mac build and the retained accepted Mac Alpha
+  control at exact executable SHA-256 `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
+  Both rendered intro/menu frames. The current build reached file select; the
+  accepted control reached the main mission menu.
+- Both processes then remained alive while their windows became inaccessible on
+  the first selection/click attempt. Each exact PID was stopped with SIGTERM.
+  This repeats the pre-existing Mac interaction/runtime blocker and prevented
+  the required fixed-camera Dam/Surface capture.
+- No mask, Metal layer, window-size, viewport, or renderer behavior was changed.
+  A menu capture cannot establish a gameplay-only blue edge or validate a
+  one-point mask. TD-09 remains open until an unchanged accepted control reaches
+  Dam/Surface and produces a matched capture.
+- Both ROM copies remained SHA-256 `7ec491ee...`; the save and backup remained
+  `36d67fe...` and `c01d4013...`. The stale `active-session.marker` is retained
+  as evidence of the forced diagnostic stops.
+
 ## 2026-08-22 — TD-08 Mac mouse-clamp ownership isolated
 
 - Traced relative mouse input from `NSEvent.deltaX/Y` through the 60 Hz Swift

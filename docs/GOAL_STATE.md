@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 19:10 CEST
+Updated: 2026-08-22 19:25 CEST
 
 ## Session identity
 
@@ -8,14 +8,29 @@ Updated: 2026-08-22 19:10 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td08-mouse-clamp-measurement` |
+| Branch | `codex/td09-edge-measurement` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-08 Mac mouse-delta loss measurement; source ownership isolated, live runtime sampling blocked by pre-existing Mac stall |
-| Phase | L12 evidence checkpoint: Mac-only detector built, exact mobile baseline preserved, no behavior repair selected |
+| Active debt | TD-09 Mac trailing-edge measurement; host ownership isolated, Dam/Surface capture blocked by pre-existing Mac window loss |
+| Phase | L13 source/visual audit: no mask applied; exact accepted control repeated the interaction blocker |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-09's smallest plausible ownership seam is the final SwiftUI presentation
+boundary, not RT64 sizing. Mobile overlays one opaque trailing point after the
+Metal canvas; Mac does not. The earlier drawable-size substitution is still
+rejected because it turned the thin strip into broad missing, duplicated, and
+blue geometry.
+
+The visual acceptance gate could not be reached. The current diagnostic build
+rendered through file select, and the exact retained Mac Alpha control
+`7c78b72f...` rendered through the main mission menu. On the first
+selection/click attempt, each process remained alive while its window became
+inaccessible. Neither produced a fixed Dam/Surface frame, so the reported strip
+was not measured and no one-point mask was applied. Both exact processes were
+stopped with SIGTERM; protected ROM/save/backup hashes remain unchanged and the
+stale active-session marker is retained.
 
 TD-08's loss boundary is now exact. `NSEvent.deltaX/Y` accumulates until the
 60 Hz Swift publisher multiplies it by `1680 × sensitivity`; the default 2.5
@@ -233,6 +248,11 @@ control.
 | TD-08 Mac build | PASS | Native target exports both probe hooks; diagnostic executable SHA-256 `1d49e815c42bef08e8df72f5ee980e6acd4da3d00ba52c54e4ab371f1c7d7b18` |
 | TD-08 live input sampling | BLOCKED BY UNCHANGED BASELINE | Mac process reproduced its existing runtime/UI stall before samples; `dl=0 vi=0 presented=0`. No clamp repair is selected |
 | TD-08 commit/push | PASS | Implementation and evidence commit `b21a327` is pushed on `origin/codex/td08-mouse-clamp-measurement`; `main` was not changed |
+| TD-09 source ownership | PASS | Mobile has a final one-point SwiftUI mask; Mac does not. No RT64/window-size change is required to test the hypothesis |
+| TD-09 current-build reachability | BASELINE FAILED | Current diagnostic build rendered intro/file select, then remained alive with no accessible window on the first selection attempt |
+| TD-09 accepted-control reachability | BASELINE FAILED | Exact `7c78b72f...` Mac Alpha rendered through the mission menu, then remained alive with no accessible window on the first click attempt |
+| TD-09 Dam/Surface capture | NOT RUN | Baselines did not reach stable gameplay; menu frames cannot establish the reported strip or accept a mask |
+| TD-09 preservation | PASS | ROMs `7ec491ee...`, save `36d67fe...`, and backup `c01d4013...` remained exact; no source behavior was changed |
 
 ## Blocker ledger
 
@@ -246,6 +266,7 @@ control.
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
 | TD-06 physical flicker localization | WAITING FOR HUMAN/DEVICE INPUT | Depth churn and a broad fixed-render-order effect are rejected; Simulator screenshots cannot close a subtle temporal physical symptom | Record the exact accepted Preview 2 build continuously and identify a repeatable frame/viewport/state transition before more renderer code |
 | TD-08 live Mac clamp trace | BASELINE BLOCKED | Detector/build/mobile-isolation gates pass, but the unchanged Mac runtime stalled before mouse input and yielded no live samples | Recover ordinary uninstrumented Mac gameplay, then run matched slow/medium/fast publisher/queue/consumer measurement before changing behavior |
+| TD-09 Mac edge capture | BASELINE BLOCKED | Current and exact accepted Mac builds both lost their accessible window before fixed Dam/Surface captures | Recover ordinary accepted-control gameplay, quantify the far-right strip, then compare the independent one-point host mask without altering RT64/window sizing |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
 block promotion of their respective candidates; neither justifies starting a
@@ -347,10 +368,9 @@ never writes the saved two- or four-player preferences.
 
 Keep TD-06 unmerged and preserve its exact reverted `5022ffc...` baseline. Do
 not add another lighting or renderer patch until continuous physical Preview 2
-video localizes the symptom. TD-08's detector is ready, but the unchanged Mac
-runtime must first reach ordinary gameplay without the probe. When it does,
-collect matched slow/medium/fast raw, published, queued, and consumed look
-values; change only the boundary proven to discard motion. If that baseline
-stall repeats, leave TD-08 behavior unchanged and advance TD-09's independent
-measurement or another evidence-only lane. Keep networking gated behind stable
-local ownership and deterministic state.
+video localizes the symptom. TD-08 and TD-09 now share a precondition: restore
+ordinary interaction/gameplay on the exact accepted Mac control. Then collect
+TD-08 host-to-consumer mouse loss and TD-09 fixed Dam/Surface edge captures as
+separate evidence runs. Until that baseline passes, change neither clamp nor
+mask. Advance only an independent evidence-only lane, and keep networking gated
+behind stable local ownership and deterministic state.
