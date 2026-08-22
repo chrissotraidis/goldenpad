@@ -12,7 +12,7 @@ Updated: 2026-08-22 17:12 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-04 bounded lifecycle discriminator implemented; intermittent same-process Simulator resume freeze reproduced; no repair selected |
-| Phase | L8/L9: finish TD-04 validation, documentation, commit, and branch push |
+| Phase | L9 complete: TD-04 evidence review unit committed and pushed |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -116,7 +116,7 @@ control.
 | Physical touch/controller feel | NOT RUN | Simulator and synthetic evidence cannot establish touch ergonomics or physical-controller feel |
 | QuickTime | OFF | It was never started |
 | TD-07 commit/push | PASS | Implementation commit `38f0c6b` is pushed on `origin/codex/td07-controller-ownership`; `main` was not changed |
-| TD-04 commit/push | PENDING | Finish final build/static/preservation gates, commit, and push only the TD-04 topic branch |
+| TD-04 commit/push | PASS | Evidence commit `a24c226` is pushed on `origin/codex/td04-lifecycle-discriminator`; `main` was not changed |
 
 ## Blocker ledger
 
@@ -208,8 +208,10 @@ the saved two-player preference.
 
 ## Exact next action
 
-Finish the TD-04 build, static, preservation, and clean-session gates; commit and
-push `codex/td04-lifecycle-discriminator` without merging it. Do not choose a
-freeze repair until the physical transition matrix yields the counter pattern.
-Keep TD-01 formally blocked, retain TD-02/TD-07 for physical acceptance, and
-keep networking gated behind stable local ownership and deterministic state.
+Keep TD-04 unmerged and do not choose a freeze repair until the physical matrix
+yields the counter pattern. Start the next independent evidence-only unit at
+TD-05: inventory requested versus active audio rate, existing ring ownership,
+and discontinuity visibility; add only a ROM-free discriminator that can reject
+or select those seams. Keep TD-01 formally blocked, retain TD-02/TD-07 for
+physical acceptance, and keep networking gated behind stable local ownership
+and deterministic state.
