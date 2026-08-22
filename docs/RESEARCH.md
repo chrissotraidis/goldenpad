@@ -1,16 +1,22 @@
 # Research
 
-Last verified: 2026-08-16. All checkouts below live under the ignored `ref/`
-directory and are references unless this document explicitly says otherwise.
+Last reconciled: 2026-08-22. Upstream source checkouts live under ignored
+reference or temporary directories and are never copied wholesale into the
+tracked repository.
 
 ## Decision
 
-GoldenPad's production-core candidate is **MGB64 at `cd9b58f`**. It is the only
-inspected original-retail-N64 project that both builds from its public checkout
-and reaches visible Apple Silicon GoldenEye gameplay. Its native target compiles
-the reconstructed game logic plus first-party platform replacements, while
-leaving the historical libultra/libultrare implementation source sets empty.
-The upstream native SDK-surface guard passes at the exact pin.
+GoldenPad's primary Preview 2 runtime uses **GoldenEye64Recomp at
+`a787fe0d95e8278fcba5ba2d768fa6a606e75f55`**, statically generated ARM64 game
+code, N64ModernRuntime/N64Recomp components, and **RT64 at
+`5473732a822a4423b5696e7cb18fecc425a59875`** with Plume at
+`d890ac899e505fb30040e037a4037cdeca68f033`. This is the physically approved
+iPhone/iPad release architecture and the basis of the Apple-Silicon Mac Alpha.
+
+**MGB64 at `cd9b58f5f91291579b8e551aa925aab000d311cf`** remains buildable as
+`GoldenPad Legacy`. It is a regression fallback and a source-level gameplay/
+fidelity oracle, not the primary runtime. Its native SDK-surface guard and
+machine-classified source manifest remain required for Legacy builds.
 
 This adopts the same disclosed community decomp/recomp boundary used by the
 other native N64 ports evaluated for GoldenPad: the ROM supplies bulk media,
@@ -18,30 +24,37 @@ while reconstructed or translated game logic is native code. Lack of an
 original-rightsholder license is a commercial/official-distribution concern,
 not a GoldenEye-specific development blocker. See `LEGAL.md`.
 
-GoldenRecomp + N64Recomp + N64ModernRuntime + RT64 remains the preferred static-
-recomp reference architecture, but not the active production path: its pinned
-game-code submodule is unavailable, generated `RecompiledFuncs` are absent, and
-its TLB-free ROM/ELF recipe cannot be reproduced from the public checkout.
+The primary runtime's generated AOT inputs are intentionally private and cannot
+be recreated from the public GoldenEye64Recomp checkout alone. That public-
+reproducibility boundary remains disclosed; it is not evidence that the shipped
+binary uses MGB64. GoldenRecomp is a separate static-recomp lineage whose own
+clean public TLB-free ELF/metadata pipeline remains unavailable.
 
-The upstream GoldenEye decompilation tracker reached 99.5% on 2026-08-16, but
-the corresponding current source was not publicly auditable and MGB64's public
-head remained GoldenPad's existing `cd9b58f` pin. This changes upgrade timing,
-not the selected architecture. The source/engine watch, texture-impact analysis,
-and gated MGB64 update procedure are maintained in [Technical debt and upstream
-watch](TECH_DEBT.md).
+The matching GoldenEye decompilation reached 100% on 2026-08-16. It is a
+behavior/game-side oracle, not a drop-in runtime or renderer replacement. The
+source/engine watch, timing-fidelity evidence, and gated MGB64 update procedure
+are maintained in [Technical debt and upstream watch](TECH_DEBT.md).
 
 ## Verified inventory
 
 | Project | URL | Branch and commit | License/provenance | Purpose and disposition |
 | --- | --- | --- | --- | --- |
-| GoldenRecomp | https://github.com/kholdfuzion/GoldenRecomp | `main` at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 wrapper; generated game functions are local build output | Static-recomp/RT64 reference. Not active until its input pipeline is reproducible. |
-| N64Recomp | https://github.com/N64Recomp/N64Recomp | `main` at `ffb39cdad1da5de07eaaa48bd1db4a89a7986771` | MIT | Recompiler tooling reference; pin before incorporation. |
-| N64ModernRuntime | https://github.com/N64Recomp/N64ModernRuntime | `main` at `589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` | GPL-3.0 (`COPYING`) | Threads, controllers, audio, timing, PI/ROM and saves. Candidate dependency. |
-| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Preferred renderer. GoldenPad's tracked patches build the complete static library for iOS device and Simulator and link it through an opt-in host bridge. |
+| GoldenEye64Recomp | https://github.com/cblock85/GoldenEye64Recomp | `main` at `a787fe0d95e8278fcba5ba2d768fa6a606e75f55` | GPL-3.0 wrapper/patch lineage; generated game inputs remain private | Primary game/runtime integration reference and generated-patch source. Active. |
+| GoldenRecomp | https://github.com/kholdfuzion/GoldenRecomp | `main` at `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 wrapper; generated game functions are local build output | Separate static-recomp reference; not GoldenPad's active game lineage. |
+| N64Recomp | https://github.com/N64Recomp/N64Recomp | generator reference `ffb39cdad1da5de07eaaa48bd1db4a89a7986771`; runtime-linked revision follows the accepted N64ModernRuntime tree | MIT | Recompiler/runtime component in the primary AOT path; update only with the matched generated/runtime set. |
+| N64ModernRuntime | https://github.com/N64Recomp/N64ModernRuntime | accepted private AOT build reference `e75e0de77e8377d4954fe7b511c0d1cf608e7ded` plus the tracked AOT patch | GPL-3.0 (`COPYING`) | Active primary runtime dependency. Threads, controllers, audio, timing, PI/ROM, and saves. |
+| RT64 | https://github.com/rt64/rt64 | `main` at `5473732a822a4423b5696e7cb18fecc425a59875` | MIT; vendored dependencies carry their own licenses | Primary renderer. GoldenPad's tracked patches build the complete static library for Apple device/Simulator and the Mac Alpha. |
 | Plume | RT64 submodule `src/contrib/plume` | `d890ac899e505fb30040e037a4037cdeca68f033` | MIT | RT64 rendering backend. GoldenPad's UIKit/Metal patch compiles and runs its Apple backend on ARM64 device and Simulator targets without copying the dependency into the repository. |
-| MGB64 | https://github.com/akratch/mgb64 | `main` at `cd9b58f5f91291579b8e551aa925aab000d311cf` | MIT for first-party work; decompiled game rights and matching-target SDK lineage documented in `THIRD_PARTY.md` | Selected production-core candidate. Compile only the guarded native source surface; never matching-target SDK implementations or ROM media. |
+| MGB64 | https://github.com/akratch/mgb64 | `main` at `cd9b58f5f91291579b8e551aa925aab000d311cf` | MIT for first-party work; decompiled game rights and matching-target SDK lineage documented in `THIRD_PARTY.md` | `GoldenPad Legacy` comparison/fallback and fidelity oracle. Compile only the guarded native source surface. |
 | n64decomp/007 | https://github.com/n64decomp/007 | `master` at `754a0a977efcbc99a46d079a73292e40780e3aab` | **No LICENSE file found**; includes decompiled game and libultra/Rare lineage | Symbol/decomp research only. Not incorporated. |
 | HarkinianPad | https://github.com/chrissotraidis/harkinianpad | `main` at `4db21e4be0f0be52948438de5d8c755d191897ae` | All rights reserved for its integration code, docs and art; upstream licenses separate | UX/architecture reference only. Clean-room reimplement touch ideas; do not copy code or art without permission. |
+
+## Historical path-selection evidence
+
+The following blocker and MGB64 evidence records why the project initially
+selected MGB64 and how the static-recomp path was evaluated before the current
+AOT inputs became available. It is historical evidence, not the current product
+decision.
 
 ## Blocker follow-up
 
@@ -67,7 +80,9 @@ The static-recomp path therefore needs one external upstream change: a
 licensed public TLB-free input repository/ELF recipe, or a licensed complete
 ROM symbol/section/relocation metadata file compatible with current N64Recomp.
 Neither exists in the inspected public ecosystem today. This remains a
-GoldenRecomp limitation, not a blocker on the selected MGB64 production path.
+GoldenRecomp limitation. Historically it did not block the then-selected MGB64
+path; the current primary runtime instead uses private generated AOT inputs and
+keeps that public-reproducibility limitation disclosed.
 
 ## GoldenRecomp inspection
 
@@ -192,21 +207,27 @@ GoldenPad's opt-in bridge then created the real Plume Metal device, direct
 command queue and swapchain against its UIKit-owned `CAMetalLayer`. Sequential
 runtime passes visibly reported `Apple iOS simulator GPU` at 1206x2622 on
 iPhone 16 Pro and 1668x2420 on iPad Pro 11-inch (M4). This completes the RT64
-mobile renderer/surface reference gate. The selected MGB64 production path is
-now independently connected through its coupled Fast3D/Metal renderer.
+mobile renderer/surface reference gate. That path was subsequently promoted to
+the primary runtime and physically approved on iPhone/iPad; MGB64's coupled
+Fast3D/Metal renderer remains independently connected as Legacy.
 
 MGB64's coupled Fast3D/Metal path now runs the title, menus and live missions on
 iOS. Only the audited native source set is compiled; UIKit owns the layer and
-cadence, while ROM state remains null before validated import. RT64 remains a
-verified alternative, not a second simultaneous bring-up dependency.
+cadence, while ROM state remains null before validated import. It is retained
+for comparisons and source-level behavior evidence, not as a second production
+renderer.
 
 ## Current unknowns
 
-1. Which MGB64 game/render hotspots cause large scene-to-scene cadence drops on
-   Simulator and physical Apple hardware?
-2. Which remaining touch sensitivities and placements are comfortable during a
-   complete human-played mission on phone and tablet?
-3. Does local two-to-four-player split-screen retain correct controller
-   assignment, aspect layout, audio and save behavior on iPad?
-4. Can GoldenRecomp's exact TLB-free input branch or equivalent complete public
-   metadata eventually be restored for a comparative RT64 build?
+1. What exact fire-rate cadence does GoldenPad's primary runtime measure for the
+   player and guards before/after an authenticity repair?
+2. Does RT64's aliased-depth rebuild path cause the observed residual
+   multiplayer lighting flicker, or only an invisible performance cost?
+3. Can the primary input host preserve stable ownership across two to four real
+   controllers and every disconnect/reconnect/foreground order?
+4. Is the reported A12X first-frame crash repairable in RT64/Plume, or does the
+   project need a deliberately tested minimum GPU generation?
+5. Which audio discontinuity class produces the intermittent static, and does a
+   current-build hard lifecycle freeze exist apart from recoverable stalls?
+6. Can the public generated-input pipeline become reproducible without
+   distributing retail-derived data?

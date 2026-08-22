@@ -1,261 +1,237 @@
 # Architecture
 
-## Shape
+Updated: 2026-08-22
+
+This document describes the architecture that ships in the current Preview 2
+line. Historical MGB64 bring-up details remain useful, but they do not describe
+the primary product anymore.
+
+## Product topology
 
 ```text
-GoldenPadApp (SwiftUI lifecycle, UIKit document picker/Metal view, status)
-    |
-ApplePlatform (paths, audio session, controllers, touch, lifecycle, Metal view)
-    |
-NormalizedInput + PortableHost APIs
-    |
-MGB64 decompiled game core + native compatibility layer
-    |
-MGB64 Fast3D/Metal first; RT64 remains a verified renderer option
-    |
-Metal / CAMetalLayer
+                         user-supplied NTSC-U retail dump
+                                      |
+                         validate + private TLB-free conversion
+                                      |
+              +-----------------------+-----------------------+
+              |                                               |
+      iPhone / iPad host                              Apple-Silicon Mac host
+      SwiftUI + UIKit                                 SwiftUI + AppKit
+      touch + GCController                            keyboard/mouse + controller
+      AVAudioSession + AVAudioEngine                  AVAudioEngine
+              |                                               |
+              +---------------- project-owned bridges --------+
+                                      |
+                    statically generated GoldenEye ARM64 code
+                              + N64ModernRuntime
+                                      |
+                            N64 display-list tasks
+                                      |
+                              RT64 -> Plume -> Metal
+                                      |
+                              CAMetalLayer presentation
 ```
 
-The simulation, recomp runtime and renderer are portable static libraries. The
-iPhone/iPad target is a thin SwiftUI/UIKit host. An Objective-C++ bridge will be
-added only where the C++ runtime requires it. Platform callbacks do not leak
-into game simulation code.
+The primary runtime is the statically recompiled GoldenEye64Recomp path. The
+older MGB64/Fast3D application is a separately buildable `GoldenPad Legacy`
+comparison and fallback target. It is not the release runtime and its controller,
+audio, scheduler, or save architecture must not be attributed to Preview 2.
 
-## Core and undecompiled code
+## Ownership boundaries
 
-MGB64 is the production-core candidate. Its decompiled retail-N64 game logic is
-built ahead of time as Apple ARM64 C code; it is not an interpreter, JIT, or
-general N64 emulator. The app accepts only the supported GoldenEye revision and
-loads bulk media from the user's ROM at runtime.
+| Owner | Responsibilities | Must not own |
+| --- | --- | --- |
+| SwiftUI/UIKit/AppKit host | Windows and views, ROM selection, settings UI, touch and hardware events, lifecycle notifications, audio-device setup, user-facing diagnostics | GoldenEye simulation state, N64 render commands, network simulation policy |
+| `Support/RecompPrototype` | Host callbacks, controller-port publication, relative-look queue, PCM ring, save bridge, lifecycle flags, bounded health counters | App UI, retail-data distribution, RT64 internals |
+| Generated AOT game code + N64ModernRuntime | GoldenEye simulation, original menus and multiplayer rules, N64 task scheduling, patched game-side input consumers | Apple UI, device enumeration, transport/matchmaking |
+| RT64 + Plume | N64 display-list interpretation, framebuffer tracking, GPU work, Metal swap chain and presentation | GoldenEye gameplay rules, controller assignment, app lifecycle policy |
+| User data stores | Converted runtime data, saves and preferences inside the app container | Repository, app bundle, release archive |
 
-MGB64's matching-N64 tree contains historical SDK-lineage compatibility files,
-but its native build uses platform replacements and an explicit empty libultra/
-libultrare implementation source set. GoldenPad reproduces that narrow boundary
-and runs the upstream guard before compiling the core. GoldenRecomp remains a
-future static-recomp alternative if its missing public ELF/metadata pipeline is
-restored.
+These seams are intentional. A host-side convenience must not write
+undocumented player/camera structures or fabricate mission state. Renderer fixes
+must not silently change game simulation, input ownership, or save data.
 
-## Graphics
+## Static recompilation and generated inputs
 
-RT64 consumes N64 display lists and emits Metal work. Its macOS Metal path is
-the starting point. Tracked patches make shader generation SDK-aware, keep the
-Plume backend portable across AppKit and UIKit, and replace desktop
-window/dialog/inspector ownership with three small embedded-host shims. They are
-applied only to exact pinned references by the RT64 verification scripts and
-reversed on exit. Generated shaders and archives are never committed.
+The primary app executes ahead-of-time generated Apple ARM64 code. It is not a
+general Nintendo 64 emulator, interpreter, or JIT. N64ModernRuntime provides the
+portable runtime services used by that generated code, and RT64 consumes the
+game's N64 display-list tasks.
 
-`AppleRenderSurface` owns the live `MTKView` command queue and lifecycle. While
-the view is attached, it exposes non-retaining opaque pointers to that `UIView`
-and its `CAMetalLayer`, matching RT64's Apple `RenderWindow { window, view }`
-boundary. UIKit retains both objects. The surface pauses rendering outside the
-active scene and while the native Game Settings overlay is presented, then
-resumes only when both conditions permit frames. The same state boundary stops
-external retrace delivery and resets frame telemetry, so the game cannot keep
-running or accumulate false FPS samples behind a modal sheet. The surface
-refreshes the drawable dimensions/refresh rate on layout. The
-default ROM-free build clears the foundation frame. When verified RT64 archives
-are supplied explicitly, `rt64_metal_bridge.cpp` force-links the full renderer
-closure and retains a Plume Metal interface, device, direct command queue and
-swapchain for that surface. The default build uses a null bridge stub, so a
-clean checkout does not depend on an ignored reference tree.
+The generated AOT source and converted retail-derived inputs are intentionally
+private and untracked. CMake requires the generated `patches.c` and
+`patches_bin.c` pair together and checks for project patch markers before a
+complete primary build. Regenerating one half without the other can produce a
+valid-looking build whose game-side input or multiplayer repair is absent, so
+that state fails configuration by design.
 
-MGB64's Fast3D Metal path is the shortest initial game renderer because it is
-already coupled to the selected core and proven on Apple Silicon. The completed
-RT64 mobile closure remains available for a later renderer migration or a
-restored GoldenRecomp path; integrating one renderer first avoids carrying two
-game-rendering stacks through initial gameplay bring-up.
+The exact public dependency pins and patch application order are recorded in
+[`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). A public clean
+checkout can audit the host, patches, pins, and packaging rules, but it cannot
+recreate private generated game inputs by itself.
 
-The complete MGB64 Metal backend now compiles for both Apple mobile SDKs as a
-separate static target. Its two macOS-only display-sync assignments are removed
-for mobile because `MTKView`/UIKit owns cadence. The Fast3D interpreter,
-room-normal helper, screenshot and texture units compile as a separate
-five-object mobile archive. Target-local
-trap shims make accidental SDL/OpenGL ownership fail closed and leave no desktop
-window or GL readback/swap symbols in that archive. A small ARC Objective-C++
-bridge implements MGB64's existing `platformGetMetalLayer` contract using the
-weakly observed UIKit-owned layer. The opt-in renderer target now links both
-archives, selects Metal directly, supplies neutral mobile renderer settings and
-lets the game thread's real `gfx_run_dl` own backend `start_frame`/`end_frame`
-calls after startup; before startup, `MTKView` presents an empty frame and offers
-the scheduler a retrace. Host-owned ROM
-globals remain null/zero until a validated private import succeeds. The minimap
-queue is an explicit lifecycle-only no-op until the real game overlay is wired.
-The native title animation, authentic front end and Dam stage now render through
-this path on both simulator classes. A diagnostics-only Start script reaches
-the mission through the normal controller boundary; gameplay acceptance remains
-separate.
-
-## Scheduler and mobile OS surface
-
-MGB64's native port uses a cooperative scheduler: the original scheduler data
-structures and queues remain intact, while the host frame loop delivers retrace
-messages instead of starting an emulated N64 scheduler thread. GoldenPad keeps
-that upstream model but does not compile the desktop `platform/stubs.c`, which
-also owns SDL keyboard, mouse, controller and audio behavior. The project-owned
-`mgb64_mobile_os.c` implements only the required message, timing, VI, task,
-neutral-controller and scheduler bootstrap surface.
-
-The UIKit-owned `MTKView` now offers a retrace after each presented empty frame,
-but only when the scheduler is initialized and its graphics queue is empty.
-This naturally leaves exactly one pending message before `bossEntry` supplies a
-consumer. Queue mutation is protected for the future game/UI thread split.
-Before UIKit attaches, a timed fallback permits bounded bring-up; after attach,
-blocking receives wait for MTKView and inactive/background scenes produce no
-synthetic frames. Non-graphics queues also honor real one-shot/repeating timers,
-including the 100 ms waits in `bossInitMainthreadData`.
-
-`mgb64_mobile_host.c` owns the four pthread-protected controller states fed by
-Swift, deterministic-mode flags, frame stats, renderer recovery state,
-lifecycle-watchdog state and the bounded PCM ring without an SDL window. MGB64's
-portable `app_overlay_hooks.c` remains the real overlay dispatch owner. Rumble
-and Game Controller haptics remain provisional; controller reads, Fast3D
-dispatch and native PCM output now cross the real game boundary.
-
-After ROM, file-table, scheduler and renderer readiness, the host calls
-`goldenpad_mgb64_start_game` exactly once. A named detached pthread initializes
-the portable audio/watchdog services and enters non-returning `bossEntry`.
-UIKit continues to provide retrace cadence while display-list submission and
-Metal presentation remain on the game thread.
-
-Portable GU matrix/vector math is similarly isolated into
-`mgb64_mobile_gu.c`. The functions are MGB64's real native host algorithms, not
-matching-target SDK implementation sources, and do not pull the SDL-owned
-platform unit into the app. This is the first bounded `bossEntry` closure slice.
-
-The next closure layer directly enumerates small upstream portable leaf units:
-segment constants, clean-room trig, bounded stdio, and isolated gameplay
-fidelity decisions. Keeping them separate from audio, settings, input and
-window ownership lets the linker map prove progress without importing a desktop
-subsystem.
-
-Game-side configuration and direct-start globals are owned by
-`mgb64_mobile_config.c` on Apple mobile. These are plain typed defaults consumed
-by the decompiled game code; UIKit settings can update them through a narrow
-bridge later. The SDL platform file remains excluded.
-
-Portable model conversion, level-name lookup, analog radial mapping, setup-name
-resolution and weapon-cue tables use MGB64's real separated upstream modules.
-Small game constants and the `unknown2` ROM offset live in
-`mgb64_mobile_legacy_data.c`, away from the desktop compatibility owner and
-without embedding the referenced ROM bytes.
-
-## ROM and resources
+## ROM and save flow
 
 ```text
-UIDocumentPicker or Files Open In -> security-scoped URL -> mapped private source
-    -> normalize Z64/V64/N64 byte order -> SHA-1 validation
-    -> copy normalized bytes into volatile core-owned memory
-    -> patch native file table to owned-buffer offsets
-    -> close source access -> start core
+Files picker / Open In
+    -> security-scoped private source
+    -> normalize Z64, V64, N64, or ROM byte order
+    -> validate the supported NTSC-U retail revision
+    -> create and validate the required TLB-free runtime image in app storage
+    -> start the AOT runtime
 ```
 
-The handoff rechecks exact size, big-endian header and internal title before
-copying. Replacement clears the prior heap buffer before freeing it; process or
-app-container removal clears the remainder. The final flow never bundles the
-ROM. GoldenPad declares a narrow imported content type for Z64/V64/N64/ROM and
-routes picker and Files-open events through one validator. Generated caches are
-versioned by ROM hash,
-core version, schema, and locale, and can be regenerated. Caches must stay in
-`Application Support`, never `Documents` or the app bundle.
+Preview 2 performs the conversion on device and reuses a valid existing Preview
+1 runtime image during an in-place update. No ROM or extracted asset is copied
+to the repository or app bundle. The active and backup GoldenEye EEP4K saves
+remain separate from the runtime image and from user preferences. Installation
+evidence must verify all of those payloads independently.
 
-MGB64's generated `rom_offsets.c` performs the table patch. Its native
-`asset_stubs.c` contributes one-byte link placeholders only; they contain no
-game media and every active table pointer is replaced with a validated ROM
-offset before resource loading begins. Clearing ROM ownership first nulls all
-table pointers, then zeroes and frees the old allocation.
+## Rendering and presentation
 
-## Platform services
+RT64 interprets GoldenEye's display lists and emits Metal work through Plume.
+UIKit or AppKit owns the view and `CAMetalLayer`; RT64 owns the swap-chain and
+renderer contract. The host passes non-owning Apple object handles and does not
+encode a second scene renderer.
 
-- **Input:** touch and `GCController` devices feed one normalized snapshot per
-  simulation tick. Players 1-4 are assigned deterministically. Touch is Player 1
-  only and auto-hides when an active physical controller is assigned. The native
-  Controllers page mirrors all four slots and can swap a connected controller
-  into another slot without changing the gameplay mapping layer. It treats
-  Player 1 touch plus a Player 2 gamepad as the ready state for the original
-  game's two-controller multiplayer gate.
-- **Input mapping:** one frame carries normalized movement/look/actions plus an
-  exact libultra-compatible N64 controller state. Classic exposes A/B/Z/Start,
-  D-pad, L/R and all four C buttons; modern and southpaw preserve independent
-  move/look axes while still deriving the corresponding N64 mask.
-- **Touch:** left movement stick; right look region; fire, aim, interact, reload,
-  crouch, weapon and pause/menu surfaces. Classic adds the complete N64 button
-  set. Each preset resolves from device-class defaults plus small persisted
-  deltas, so phone and tablet changes do not copy or overwrite each other.
-  Relative look deltas accumulate between renderer input samples and are consumed
-  once, preventing event loss without reintroducing continuous virtual-stick
-  rotation. Phone defaults inset the action rail and bottom utility buttons from
-  the rounded edge and home-indicator strip; tablet defaults remain independent.
-  Per-control position, 70–150% size and visibility plus global opacity, scale,
-  sensitivity, Toggle/Hold aim, dead zone, gyro and controller auto-hide settings
-  are supported. Entering native settings and switching control presets both
-  neutralize touch state so a latched action cannot leak across UI modes.
-- **Native settings:** Game Settings is a hub. Touch Controls owns aiming,
-  overlay and layout; Controllers owns physical-stick response, per-player
-  assignment and connection status; Display owns 1×–4× scene resolution and the
-  opt-in Performance HUD.
-  Resolution scales the `MTKView`/`CAMetalLayer` drawable relative to UIKit
-  points while the SwiftUI controls remain at native UI resolution. The HUD reads produced
-  game-frame cadence from MGB64's `rspGfxTaskStart` boundary, while UIKit refresh
-  remains a separate render-host concern. It never treats simulation ticks as
-  cadence and defaults off; its visibility does not control cadence sampling.
-- **Audio:** MGB64's native synth produces 22.05 kHz stereo PCM into a bounded
-  lock-protected ring. An `AVAudioSourceNode` pulls it into `AVAudioEngine`,
-  which resamples to the current device rate; `AVAudioSession` handles
-  interruption, route changes and sample-rate changes.
-- **Saves:** the game-facing 16 Kbit EEPROM API and bounds behavior are live.
-  Swift restores the exact 2 KiB image from Application Support at bootstrap and
-  snapshots it under a C mutex for an atomic, protected write on scene
-  deactivation/backgrounding. Settings and generic host save slots persist
-  separately.
-- **Timing:** `mach_continuous_time`/display callbacks drive a fixed simulation
-  cadence. Rendering may interpolate but never advances game state twice.
-- **Filesystem:** all paths are injected by the host; core code never assumes
-  current-working-directory or desktop locations.
-- **Lifecycle:** resign-active pauses input/audio; background flushes saves and
-  releases transient GPU work; foreground recreates surfaces if needed.
+On mobile, a one-point black trailing-edge overlay masks a measured two-physical-
+pixel host sampling seam without changing RT64's drawable or viewport. The Mac
+host does not yet apply the equivalent mask. Replacing RT64's window-size
+contract with raw `CAMetalLayer.drawableSize` is prohibited: the experiment
+expanded the small edge seam into missing, duplicated, and blue world geometry.
 
-The current host implements the Apple render-surface boundary, common snapshot,
-exact N64 masks, classic,
-modern and southpaw presets, four deterministic controller slots,
-extended-gamepad mapping, Core Motion input, and a live touch-layout editor.
-Simulator-only synthetic MFi controllers are excluded from auto-hide without
-changing physical-device behavior. The selected core now consumes these frames
-through its real `osCont*` calls, renders its title/front-end/Dam path, and emits
-decoded game audio through the native PCM chain. Diagnostics observe menu/stage
-state through atomics published alongside the game-thread controller read. Menu
-and gameplay-input probes are read-only. One separately named mission-flow probe
-may request MGB64's existing scripted-success behavior after live Dam starts;
-the game still owns report construction and EEPROM writes, and the result is
-never accepted as organic completion. The same diagnostic boundary can publish
-player position, view angles, aim, weapon/ammo, watch and progression state for
-acceptance. Read-only snapshots sample Facility's real camera mode, model-159
-doors at setup pads 67/68, and the model-155 door at pad 75 on the game thread.
-The Facility routes wait for
-`CAMERAMODE_FP`, then publish only ordinary normalized movement, look and B
-frames through the same controller setter used by touch and physical pads. They
-never force a player transform or door state. The separate Dam route uses that
-same boundary for MGB64's promoted multiwaypoint controller sequence. Its
-game-thread diagnostic publishes only camera mode, player position, and the
-four objective statuses; acceptance requires that the objective vector remain
-unchanged. Real-controller auto-hide,
-physical gyro, crouch/objectives flow and organic mission-completion semantics
-remain acceptance gates.
+GoldenEye renders split-screen players sequentially into a shared framebuffer.
+The accepted Preview 2 repair scopes full-frame operations to the active player
+viewport and preserves GoldenEye's lower-player shifted depth-image address.
+That repair removed the former large black/checkerboard corruption on physical
+iPad. Residual lighting flicker remains a separate investigation and does not
+currently justify reopening the accepted depth-clear repair.
 
-## Targets
+## Timing
 
-One Xcode app target supports iPhone and iPad device families with an ARM64
-device slice and Apple Silicon simulator slice. Core/runtime/renderer are static
-library targets shared with a macOS validation executable. iOS and iPadOS are
-one source target with device-class layouts, not forked game code.
+The pinned primary game loop runs one game iteration per VI at native 60 Hz.
+The apparent `desiredFPS = 30` frame-skip variables in the upstream patch are
+dead state: they are assigned but not consumed. Presentation refresh settings
+do not change that simulation cadence.
 
-## Multiplayer
+This distinction matters:
 
-Single-player is completed first. Then controller assignment and viewport
-layout are validated for two players, followed by three/four players. Touch
-never generates inputs outside Player 1. The UI now exposes all four controller
-slots and swaps assignments explicitly; the common snapshot composer keeps
-Players 2–4 controller-only. The pinned desktop core has also rendered distinct
-two-player split-screen views through its private startup smoke. Human match
-completion and multi-controller hardware remain acceptance gates. Four-player
-iPad split screen is a final acceptance gate, not an initial architecture
-dependency.
+- several original per-rendered-frame counters run too quickly at a fixed 60 Hz;
+- the confirmed player/guard automatic-fire defect is tracked in
+  [`TECH_DEBT.md`](TECH_DEBT.md);
+- modern-look input currently applies a fixed angular step per game frame; and
+- unlocking or uncapping the simulation would compound both defects.
+
+High-refresh work therefore belongs behind a fixed-simulation/render-
+interpolation design and determinism gates, not a faster game loop.
+
+## Input
+
+### Current primary-runtime model
+
+The iPhone/iPad host currently selects the first connected extended
+`GCController`. In normal play it publishes that controller to N64 port 1 and
+hides touch. Without a controller, touch publishes to port 1. The opt-in
+two-player diagnostic publishes the controller to port 1 and touch to port 2;
+the four-player diagnostic only advertises neutral ports 3 and 4 so rendering
+can be tested.
+
+This is not a complete multi-controller ownership model. Real controllers 2–4,
+stable slot assignment, sleep/disconnect/reconnect, foreground recovery, and
+Mac-specific multi-controller policy remain unimplemented. The four-slot
+`InputCoordinator` in the legacy MGB64 path is a useful design reference but is
+not wired to the primary runtime.
+
+Disconnecting the only controller while the two-player diagnostic is active
+currently collapses the test mode and can route touch back to port 1 mid-match.
+That is a confirmed ownership leak, not accepted reconnect behavior.
+
+### Control semantics
+
+Touch look accumulates relative deltas and the game-side modern-controls patch
+consumes them once per publication. Physical right-stick look can instead use
+the original N64 C-button mode. The current modern touch MOVE stick still
+inherits GoldenEye's original horizontal analog behavior, so it turns rather
+than sidesteps. GitHub issue #8 tracks the missing modern-FPS mapping: MOVE
+horizontal should strafe while LOOK horizontal turns, with the original
+C-button mode preserved separately and menu navigation unchanged.
+
+Both mobile and Mac publish input from main-run-loop timers. Main-thread drift
+can therefore surface as delayed buttons, movement, and look together, even
+though rendering and audio consumption live on other threads.
+
+## Audio
+
+GoldenEye produces stereo PCM through the project-owned bounded ring.
+`AVAudioSourceNode` consumes it and `AVAudioEngine` handles device-rate output.
+Mobile adds `AVAudioSession` activation, interruption, and route-change policy;
+Mac uses the same basic ring without the mobile session owner.
+
+Two debts are architecturally important:
+
+1. the game calls a `set_frequency` host callback, but the current project host
+   logs and ignores it while Swift creates a 22,050 Hz source format; and
+2. foreground reset currently mutates consumer-owned ring fields from the
+   lifecycle thread, which can race an audio restart in an unusual
+   interruption/background ordering.
+
+Zero drop/underrun counters prove the ring did not starve in that observed run;
+they do not rule out rate mismatch, discontinuity, route transition, or audible
+static.
+
+## Lifecycle and threading
+
+Mobile distinguishes transient `.inactive` state from `.background`.
+Screenshots and system overlays can make the app inactive briefly, so GoldenPad
+releases touch but deliberately keeps RT64 presentation active. Backgrounding
+deactivates audio and then marks the surface inactive. Foregrounding reverses
+that sequence.
+
+At the pinned RT64 revision, the game/VI thread busy-spins when the bounded
+present ring is full. A throttled or unavailable drawable can therefore produce
+a recoverable multi-second simulation-and-audio stall. Plume also contains one
+unbounded Metal command-fence wait; whether current reports include a permanent
+fence stall is unknown until a physical lifecycle matrix reproduces it. The
+first change must be bounded counters and reproduction, not a lifecycle rewrite.
+
+The Mac Plume patch coalesces per-present AppKit window and refresh queries to at
+most one pending update of each kind. Removing that bound would again let the
+render thread starve the main queue that owns input and host timers.
+
+## Local and network multiplayer
+
+Current multiplayer is GoldenEye split-screen inside one runtime. It is not
+peer-to-peer or online play. Transport, discovery, or GameKit alone cannot turn
+it into network play because all peers need a defined simulation-ownership and
+synchronization model.
+
+The primary runtime currently exposes controller polling but no validated
+savestate/serialization or rollback seam. Network work therefore begins only
+after deterministic local controller ownership and state-hash experiments. The
+staged feasibility and compatibility gates are documented in
+[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md).
+
+## Build targets
+
+| Target | Role | Current product status |
+| --- | --- | --- |
+| `GoldenPadRecompPrototype` | Primary iPhone/iPad AOT + RT64 application, packaged to users as GoldenPad | Preview 2 |
+| `GoldenPadMac` | Native arm64 AppKit/SwiftUI host for the same AOT + RT64 path | Alpha |
+| `GoldenPad` | MGB64/Fast3D mobile application | `GoldenPad Legacy`, comparison/fallback only |
+
+The product names overlap historically, so runtime claims should name the
+architecture, not infer it from a target's executable name.
+
+## Legacy MGB64 boundary
+
+MGB64 remains valuable as a source-level behavior oracle, portable-decomp
+reference, and regression fallback. Its cooperative scheduler, four-slot input
+coordinator, Fast3D renderer, 2 KiB host save experiments, and extensive
+diagnostic mission probes belong to the legacy target. They must not be used as
+evidence that the primary RT64 runtime already has four-controller ownership,
+network determinism, or the same save/audio implementation.
+
+Targeted MGB64 fixes may inform a primary-runtime patch only after the equivalent
+GoldenEye function and behavior are traced at the exact primary pin. Bulk
+merging MGB64, the completed decompilation, or a different renderer is outside
+the current repair strategy.

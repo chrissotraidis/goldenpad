@@ -1,10 +1,20 @@
-# Production source licenses
+# Source-license boundaries
 
-GoldenPad's production source inventory is generated from the configured
-game-bearing Xcode target at the pinned MGB64 commit. The machine-readable
-manifest is [`source-license-manifest.tsv`](source-license-manifest.tsv).
+GoldenPad has two different game-bearing source boundaries. They must not be
+collapsed into one inventory.
 
-## Current inventory
+The primary Preview 2 AOT/RT64 package is assembled from private generated game
+inputs plus exact public GoldenEye64Recomp, N64ModernRuntime, N64Recomp, RT64,
+Plume, re-spirv, Zstandard, and project-owned host sources. Its package verifier
+requires `ThirdPartyNotices.txt`, the exact GPL-3.0 text, and notices for every
+named dependency. Private retail-derived inputs remain excluded from source and
+binary distribution.
+
+The machine-readable [`source-license-manifest.tsv`](source-license-manifest.tsv)
+is generated from the separately configured **MGB64 Legacy** Xcode target at the
+pinned MGB64 commit. It does not inventory the primary AOT binary.
+
+## MGB64 Legacy inventory
 
 | Boundary | Files | Meaning |
 | --- | ---: | --- |
@@ -21,14 +31,14 @@ that enter the binary through MGB64's `decor_assets.c` and `texpack_stb.c`, even
 though Xcode does not list those headers as standalone compilation units.
 
 This is a provenance and license-obligation map, not a claim that the original
-game code has been relicensed. The unresolved decompilation redistribution
-boundary remains stated in [`LEGAL.md`](LEGAL.md). The app bundle includes
-`ThirdPartyNotices.txt` for MGB64, n64-fast3d-engine, Perfect Dark, cgltf, jsmn
-and stb_image; the package verifier requires it.
+game code has been relicensed. The unresolved decompilation/static-recompilation
+redistribution boundary remains stated in [`LEGAL.md`](LEGAL.md). A Legacy app
+bundle includes `ThirdPartyNotices.txt` for MGB64, n64-fast3d-engine, Perfect
+Dark, cgltf, jsmn, and stb_image; the Legacy package verifier requires it.
 
 ## Verification
 
-After configuring or building the production target:
+After configuring or building the MGB64 Legacy target:
 
 ```sh
 ./scripts/generate-source-license-manifest.sh

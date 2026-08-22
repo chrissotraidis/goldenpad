@@ -10,7 +10,7 @@
 
 A lower level never substitutes for a higher one.
 
-## Primary RT64/AOT candidate — 2026-08-22
+## Primary RT64/AOT runtime — 2026-08-22
 
 The primary runtime is the internal `GoldenPadRecompPrototype` target installed
 as `GoldenPad`. Its current evidence ledger is
@@ -68,7 +68,7 @@ Hands-on acceptance for the newest signed build must cover:
 
 Multiplayer is not an initial single-player preview gate. The former RT64
 `0x0000000320000000` crash has a targeted KSEG1 address-mask repair and the
-Preview 2 candidate now scopes full-frame clears/fades to the active player
+Preview 2 repair scopes full-frame clears/fades to the active player
 viewport. A real two-player Temple match remained visually stable on ARM64 iPad
 Simulator for more than 11,000 presented VI updates, with controller Player 1
 movement and touch Player 2 FIRE registered independently. This is Simulator
@@ -76,14 +76,15 @@ evidence only. The first physical iPad follow-up failed: Player 2 still flashed
 in horizontal split, and four-player mode corrupted lower views plus the
 upper-right view. A subsequent 81.69-second physical capture showed corruption
 recovering and migrating between lower quadrants despite healthy presentation
-logs. The current candidate makes each lower-player depth clear use the exact
+logs. The accepted repair makes each lower-player depth clear use the exact
 shifted image address and viewport Y range used for rendering; a 43.87-second
 four-player Simulator recording stayed clean. Physical four-player testing of
-the exact candidate then kept all views coherent and did not reproduce the old
+the exact render-control executable then kept all views coherent and did not
+reproduce the old
 black/checkerboard corruption. A 59.33-second device recording stayed coherent
 across 3,336 consecutive frame comparisons, and its paired log reached 54,652
 presented VI updates with zero audio drops or underruns. This is sufficient to
-freeze the exact executable as the stable experimental Preview 2 baseline, with
+retain the exact executable as the stable experimental Preview 2 baseline, with
 slight residual lighting flicker recorded as known debt; it is not a claim of
 bug-free or complete multiplayer acceptance.
 
@@ -98,6 +99,105 @@ For the focused physical multiplayer retest:
 3. If any flash occurs, leave the match running and capture video plus one
    bounded post-run application-log readback. A clean still screenshot is not
    sufficient evidence for this temporal fault.
+
+### Technical-debt discrimination gates
+
+These gates must exist before their corresponding repair is promoted. A test
+that merely repeats the proposed implementation is insufficient.
+
+#### Native-60-Hz fire-rate gate
+
+Add a diagnostics-only sustained-fire route through the ordinary game input
+boundary. On a fixed stage/setup and fixed tick interval, record at minimum:
+
+- simulation ticks;
+- weapon and starting/ending ammo;
+- player automatic-shot events; and
+- a fixed-line-of-sight guard's automatic-shot events in a separate run.
+
+Run the unmodified baseline first. The pinned MGB64 reference measured AK-47 at
+33.3 shots per 100 locked-60-Hz ticks without authenticity scaling and 11.3 at
+the N64-equivalent cadence; GoldenPad's own result must be recorded rather than
+assumed. A later repair passes only if its before/after ratio matches the
+source-derived expectation, semi-automatic and menu behavior remain unchanged,
+and hands-on combat feel is explicitly re-accepted.
+
+#### Modern sidestep gate
+
+Test GoldenPad's modern and original modes separately in live gameplay:
+
+1. In modern mode, MOVE horizontal strafes and does not turn; LOOK horizontal
+   turns and does not emit C-left/right.
+2. The same semantics hold for touch and a physical controller.
+3. Original N64 C-button mode still emits C-left/right sidestep input.
+4. File select, mission menus, watch/pause, and settings navigation keep their
+   existing directions and button behavior.
+5. Changing modes or opening settings neutralizes held movement/action state.
+
+A code-level mapping test is required before device work; one successful
+controller preset does not establish touch behavior.
+
+#### Controller ownership lifecycle gate
+
+The synthetic probe must cover, in order: connect controller A; connect B;
+disconnect A while input is held; reconnect A with device ordering changed;
+background/foreground; disconnect all. At every step assert:
+
+- each device owns at most one port and each port at most one device;
+- a lost device publishes neutral before any reassignment;
+- touch stays on its explicit owner and never falls through to Player 1
+  mid-match;
+- held buttons are not replayed after reconnect/foreground; and
+- advertised connected-port count matches actual published states.
+
+Then repeat on physical hardware with two, three, and four controllers. The
+neutral four-port render diagnostic is not this gate.
+
+#### Lifecycle stall/freeze gate
+
+On the current physical build, run at least ten repetitions each of screenshot,
+Control Center open/close, app switcher round-trip, lock/unlock, and
+background/foreground during live gameplay. Record one bounded post-run log,
+not a continuous console. Correlate:
+
+- VI and presented-frame progress;
+- nil-drawable/acquire failures;
+- present-queue wait duration;
+- Metal fence-wait duration;
+- input-publication timer drift; and
+- audio produced/drop/underrun counters.
+
+Classify a recoverable multi-second stall separately from a permanent freeze.
+Do not patch the app lifecycle merely because both look similar to a user.
+
+#### Audio discontinuity gate
+
+First read the existing `audio: game requested ... Hz output` line and the
+drop/underrun trajectories from the same session in which static was heard.
+Then feed a project-generated continuous sine or ramp through the ring and use
+an output tap to locate sample discontinuities. This test must contain no game
+audio. It should cover cold start, route change, interruption,
+background/foreground, and ring wrap. Zero underrun counters alone do not pass
+audible quality.
+
+#### Residual flicker gate
+
+Add one bounded counter at the RT64 depth `formatChanged` path that clears and
+re-reads depth from RAM. Run matched single-player and multiplayer sessions. A
+per-frame multiplayer count with zero in single player supports aliased-depth
+churn; zero in both rejects it. Only then run a fixed-player-render-order
+diagnostic and the existing continuous-video comparison. Never alter the frozen
+depth-address repair merely to add this instrumentation.
+
+#### A12-family compatibility gate
+
+For issue #9, retain a complete redacted `.ips`, verify the tested IPA checksum,
+and record device model, OS build, GPU driver family, first failing project/
+RT64 frame, and binary-image UUIDs. Reproduce on Preview 2 and, if possible, on
+a second A12-family device. Compare one newer accepted device with the same
+scene/configuration. Only a successful candidate run on affected hardware can
+close the defect; otherwise document a deliberately chosen minimum GPU
+generation rather than calling A12X non-ARM64.
 
 ### Native macOS regression gate
 

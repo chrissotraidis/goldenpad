@@ -421,10 +421,11 @@ Touch Controls also contains:
 - the current iPhone or iPad touch layout.
 
 The current touch template does not expose GoldenEye's native C-left/C-right
-sidestep inputs. A future sidestep-capable touch template or control submenu is
-tracked in [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8). The
-accepted iPhone and iPad layouts remain unchanged while that design and its
-physical-device behavior are evaluated.
+sidestep inputs. [Issue #8](https://github.com/chrissotraidis/goldenpad/issues/8)
+tracks the verified modern-semantics repair: MOVE horizontal should strafe while
+LOOK horizontal turns, with Original N64 C-buttons preserved as a separate
+controller mode. This is an input-semantics change, not a touch-layout rewrite;
+the accepted iPhone/iPad placement profiles remain regression controls.
 
 In edit mode, drag a control directly over the running game. The selected
 control receives a yellow outline and the always-visible top slider resizes it
@@ -458,6 +459,12 @@ without the former black/checkerboard failure, but slight lighting flicker and
 real Player 3/4 controller routing remain open. Treat multiplayer as an
 experimental Preview 2 path, not a fully accepted feature.
 
+The primary host does not yet support peer-to-peer or online multiplayer. It
+binds one real controller; the additional ports above are diagnostics, not a
+network or production four-controller layer. The staged local-ownership,
+determinism, LAN, and internet gates are documented in the
+[multiplayer roadmap](docs/MULTIPLAYER_ROADMAP.md).
+
 ## Resolution and performance
 
 Open the three-dot menu and choose **Settings** to select Native N64, 2× or
@@ -484,8 +491,19 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 
 ## Current limitations
 
+- Automatic player/guard weapon cadence is not yet timing-authentic at the
+  primary runtime's native 60 Hz. A deterministic measurement gate is required
+  before changing the accepted combat feel.
+- Modern MOVE horizontal input does not yet provide modern-FPS sidestep
+  semantics. Original N64 C-button mode can restore sidestep on a physical
+  controller, but touch remains affected ([issue #8](https://github.com/chrissotraidis/goldenpad/issues/8)).
+- A deterministic first-frame RT64/Metal crash is reported on an A12X iPad Pro
+  with Preview 1. A12-family hardware is not yet validated; the compatibility
+  fix or minimum GPU policy remains open ([issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)).
 - Multiplayer has a stable experimental render baseline, not final acceptance.
   Slight lighting flicker and real three/four-controller routing remain open.
+- Peer-to-peer, LAN, internet, relay, and rollback multiplayer are not
+  implemented.
 - Preview 2's in-app retail-ROM conversion is complete and package-audited.
   A clean physical-iPhone installation has reached the empty-container setup
   screen; fresh real-ROM import, wrong-ROM, cancellation and low-storage
@@ -573,6 +591,11 @@ the repository being publicly readable.
 
 ## Project map
 
+For engineering work, read in this order: **Status → Technical Debt → Plan →
+Testing**. Architecture and the multiplayer roadmap provide subsystem-specific
+constraints. Historical handoffs and worklogs preserve evidence but do not
+override those current authority documents.
+
 | Path | Purpose |
 |---|---|
 | [`Sources/`](Sources/) | Native SwiftUI, Metal host, input, audio/save services, and ROM validation |
@@ -580,17 +603,21 @@ the repository being publicly readable.
 | [`Support/MGB64/`](Support/MGB64/) | Deprecated legacy fallback adapters |
 | [`patches/`](patches/) | Maintained, reversible recomp, RT64 and legacy changes |
 | [`scripts/`](scripts/) | Fetch, build, test, audit, and unsigned-IPA packaging gates |
-| [`docs/PLAN.md`](docs/PLAN.md) | Milestones and definition-of-done gates |
-| [`docs/STATUS.md`](docs/STATUS.md) | Current evidence and remaining work |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Portable core and thin Apple platform design |
+| [`docs/PLAN.md`](docs/PLAN.md) | Current repair order, parallel evidence lanes, stop rules, and historical milestones |
+| [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) | Short operational queue for the next implementation sessions |
+| [`docs/STATUS.md`](docs/STATUS.md) | Current product truth, evidence, and immediate gates |
+| [`docs/TECH_DEBT.md`](docs/TECH_DEBT.md) | Authoritative evidence-ranked defect, priority, repair, and upstream-watch ledger |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Shipped AOT/RT64 architecture, ownership boundaries, and Legacy separation |
 | [`docs/RESEARCH.md`](docs/RESEARCH.md) | Pinned upstreams and production-core decision |
 | [`docs/BUILDING.md`](docs/BUILDING.md) | Full local build and signing workflow |
 | [`docs/TESTING.md`](docs/TESTING.md) | Reproducible verification procedures and hashes |
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Clean-checkout, package, signing, and publication gates |
 | [`docs/RELEASE_NOTES_0.1.0-preview.2.md`](docs/RELEASE_NOTES_0.1.0-preview.2.md) | Preview 2 downloads, checksums, changes and disclosed limitations |
-| [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Experimental render baseline and deferred controller/network work |
+| [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Local ownership, determinism, LAN research, network feasibility, and go/no-go gates |
+| [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |
+| [`docs/SOURCE_LICENSES.md`](docs/SOURCE_LICENSES.md) | Separate primary-runtime and MGB64 Legacy source/license boundaries |
 | [`docs/ART.md`](docs/ART.md) | Original app-icon provenance |
 | [`docs/WORKLOG.md`](docs/WORKLOG.md) | Chronological production log |
 

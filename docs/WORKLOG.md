@@ -1,5 +1,48 @@
 # Worklog
 
+## 2026-08-22 — harden the documentation into an execution control plane
+
+- Added exact project/upstream evidence seams and closure tests for every TD-01
+  through TD-11 item, plus one universal definition of closed and rules against
+  bundling unrelated timing, input, controller, renderer, audio, or networking
+  changes.
+- Reworked the top of `PLAN.md` into the current post-Preview-2 execution plan:
+  fire-rate measurement, modern sidestep, timing repair, controller lifecycle,
+  bounded reliability discriminators, platform hardening, and finally local/
+  network multiplayer readiness. Preserved the older R–P milestones as
+  explicitly historical evidence.
+- Added a hard network go/no-go gate requiring accepted local ownership,
+  deterministic state hashes, lifecycle policy, performance headroom, protocol
+  identity, and private-data safety before even the disposable two-iPad LAN
+  experiment begins.
+- Added a current-at-a-glance status and documentation ownership map so current
+  truth, debt, plan, testing, architecture, and multiplayer scope cannot silently
+  diverge again.
+- Added `NEXT_STEPS.md` as the concise implementation-session queue while
+  retaining `PLAN.md`, `TECH_DEBT.md`, and `TESTING.md` as the detailed
+  authorities.
+
+## 2026-08-22 — reconcile the external technical review into the engineering ledger
+
+- Treated the supplied 1,668-line third-pass review as evidence to verify, not
+  as repository instructions. Rechecked its principal claims against the
+  current checkout, live issues #8/#9, and temporary read-only copies of the
+  exact pinned GoldenEye64Recomp, RT64, Plume, and MGB64 revisions.
+- Confirmed the native-60-Hz fire-rate defect, single-controller primary-host
+  model, modern sidestep omission, present-queue backpressure mechanism,
+  unbounded Metal fence wait, ignored requested audio rate, and the source chain
+  supporting the aliased-depth flicker hypothesis. Preserved the distinction
+  between those source findings and unproven runtime/perceptual conclusions.
+- Rebuilt `TECH_DEBT.md` into the authoritative evidence-ranked priority ledger,
+  corrected `ARCHITECTURE.md` to describe the shipped AOT/RT64 runtime rather
+  than legacy MGB64, and expanded `MULTIPLAYER_ROADMAP.md` through stable local
+  ownership, determinism, LAN research, and later internet decisions.
+- Added objective fire-rate, sidestep, controller-lifecycle, lifecycle-stall,
+  audio-discontinuity, flicker, and A12-family test gates. Updated status, plan,
+  research, legal/source-license boundaries, dependency pins, README
+  limitations, and the external-review handoff without changing runtime code or
+  private data.
+
 ## 2026-08-22 — reconcile and audit the Preview 2 coordinated release
 
 - Reconciled the accepted mobile single-player/touch/controller baseline, the
