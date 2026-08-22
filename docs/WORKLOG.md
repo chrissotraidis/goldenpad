@@ -1,5 +1,28 @@
 # Worklog
 
+## 2026-08-22 — TD-10 sky/water debt classified from active code
+
+- Re-audited the pinned generated patch registry, `patches/skybox.c`, GoldenPad's
+  viewport patch, and the pinned upstream known-issues statement. The active
+  patch surface registers `skyRenderTri` and `skyRenderFull`, not the full
+  `skyRender` reconstruction.
+- Both active helpers ignore their texture/vertex inputs and fill the current
+  viewport with the environment fog color. GoldenPad's mobile patch correctly
+  scopes those fills for split-screen, but it does not restore textured sky.
+- The approximately 1,100-line candidate full-sky renderer is inside `#if 0`.
+  Its only `IsWater`/`WaterImageId` texture path is therefore not compiled or
+  registered. The upstream README independently states that skyboxes and water
+  use custom microcode RT64 does not implement and that water is flat.
+- Classified Frigate flat water as a known pinned-upstream fidelity omission,
+  not an unexplained GoldenPad geometry regression. Solid/fog-color sky is a
+  known approximation. Neither is a small stage-local patch; restoring them
+  requires a complete validated sky/water command path or upstream RT64 support.
+- Kept framebuffer-dependent glass/monitor effects and reported missing/clipped
+  geometry open. They have no stage + camera + settings + original-reference
+  reproducer, so this audit does not assign them to the sky/water cause.
+- No source, generated patch, renderer, ROM, save, preference, or build product
+  changed during this classification.
+
 ## 2026-08-22 — TD-09 edge seam source-bounded; visual gate blocked
 
 - Confirmed the presentation ownership difference: mobile overlays one opaque

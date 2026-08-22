@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 19:25 CEST
+Updated: 2026-08-22 19:42 CEST
 
 ## Session identity
 
@@ -8,14 +8,28 @@ Updated: 2026-08-22 19:25 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td09-edge-measurement` |
+| Branch | `codex/td10-effect-classification` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-09 Mac trailing-edge measurement; host ownership isolated, Dam/Surface capture blocked by Computer Use visibility loss |
-| Phase | L13 source/visual audit: no mask applied; bounded logs prove both Mac controls kept presenting |
+| Active debt | TD-10 stage/effect fidelity classification; sky/water known, remaining reports need deterministic evidence |
+| Phase | L14 source classification: no renderer change; independent unattended source lanes exhausted |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-10 is now split by actual implementation ownership. The active pinned
+`skyRenderTri` and `skyRenderFull` patches ignore texture/vertex inputs and fill
+the current viewport with environment fog color. The full textured `skyRender`
+candidate is inside `#if 0`, is absent from the generated registry, and contains
+the only `IsWater`/`WaterImageId` path. The pinned upstream README independently
+documents unsupported custom sky/water microcode and flat water.
+
+Therefore non-textured/fog-fill sky and Frigate flat water are known upstream
+fidelity omissions, not unexplained GoldenPad geometry regressions. They require
+a complete validated sky/water command path or upstream RT64 capability, not a
+stage-local tweak. Glass/monitor framebuffer effects and missing/clipped geometry
+remain separate unreduced reports. No code, generated patch, renderer, private
+data, or build artifact changed in this classification.
 
 TD-09's smallest plausible ownership seam is the final SwiftUI presentation
 boundary, not RT64 sizing. Mobile overlays one opaque trailing point after the
@@ -256,6 +270,10 @@ control.
 | TD-09 Dam/Surface capture | NOT RUN | Baselines did not reach stable gameplay; menu frames cannot establish the reported strip or accept a mask |
 | TD-09 preservation | PASS | ROMs `7ec491ee...`, save `36d67fe...`, and backup `c01d4013...` remained exact; no source behavior was changed |
 | TD-09 commit/push | PASS | Evidence commit `bcb2823` and runtime-log correction `86f3190` are pushed on `origin/codex/td09-edge-measurement`; `main` was not changed |
+| TD-10 active sky path | CLASSIFIED | Generated registry contains the two fog-fill helpers, not the disabled full textured `skyRender` candidate |
+| TD-10 water path | KNOWN UPSTREAM OMISSION | The only `IsWater`/`WaterImageId` branch is inside `#if 0`; pinned upstream documents flat water/custom-microcode absence |
+| TD-10 other effects/geometry | EVIDENCE REQUIRED | Glass, monitors, framebuffer feedback, and missing/clipped geometry have no deterministic stage/camera/settings/original-reference cases |
+| TD-10 source mutation | NONE | Classification is documentation-only; no patch, generated input, renderer, build product, or private data changed |
 
 ## Blocker ledger
 
@@ -270,6 +288,7 @@ control.
 | TD-06 physical flicker localization | WAITING FOR HUMAN/DEVICE INPUT | Depth churn and a broad fixed-render-order effect are rejected; Simulator screenshots cannot close a subtle temporal physical symptom | Record the exact accepted Preview 2 build continuously and identify a repeatable frame/viewport/state transition before more renderer code |
 | TD-08 live Mac clamp trace | BASELINE BLOCKED | Detector/build/mobile-isolation gates pass, but the unchanged Mac runtime stalled before mouse input and yielded no live samples | Recover ordinary uninstrumented Mac gameplay, then run matched slow/medium/fast publisher/queue/consumer measurement before changing behavior |
 | TD-09 Mac edge capture | TOOLING BLOCKED | Both Mac controls continued presenting, but Computer Use lost visibility before fixed Dam/Surface captures | Use a capture route that survives interaction, quantify the unchanged far-right strip, then compare the independent one-point host mask without altering RT64/window sizing |
+| TD-10 glass/monitor/geometry reports | EVIDENCE BLOCKED | Only sky/water ownership is source-confirmed; other reports lack an exact reference case | Record one stage/room/position/yaw/pitch/settings/full-frame/original-reference case per claimed defect |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
 block promotion of their respective candidates; neither justifies starting a
@@ -374,6 +393,9 @@ not add another lighting or renderer patch until continuous physical Preview 2
 video localizes the symptom. For TD-08 and TD-09, do not treat Computer Use
 window loss as a runtime failure: bounded counters continued advancing. Use a
 capture/input route that survives pointer/menu interaction, then collect TD-08
-host-to-consumer mouse loss and TD-09 fixed Dam/Surface edge captures as
-separate evidence runs. Until those gates pass, change neither clamp nor mask.
-Keep networking gated behind stable local ownership and deterministic state.
+host-to-consumer mouse loss and TD-09 fixed Dam/Surface edge captures separately.
+For TD-10, accept flat Frigate water/fog-fill sky as known feature debt until a
+complete upstream-grade implementation is scoped; gather deterministic original
+references for every other effect/geometry claim. The next productive work now
+requires physical/human or reporter evidence. Change no blocked behavior and
+keep networking gated behind stable local ownership and deterministic state.

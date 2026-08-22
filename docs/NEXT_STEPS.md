@@ -28,6 +28,7 @@ For a long-running unattended implementation session, follow
 | 4 | **TD-06 physical flicker capture** | Depth rebuild churn and a broad fixed-`lvlRender` order effect are rejected. Capture the exact accepted Preview 2 build continuously on a physical device and reduce the shimmer to a repeatable frame/viewport/state transition before adding another renderer patch. |
 | 5 | **TD-08 healthy Mac baseline + live clamp measurement** | The Mac-only observer builds and the exact mobile executable is unchanged. Recover ordinary Mac gameplay first, then collect matched slow/medium/fast raw, published, queued, and consumed look evidence. Do not widen a clamp from source arithmetic alone. |
 | 6 | **TD-09 fixed Mac edge captures** | Source ownership is confirmed. Both controls kept presenting after Computer Use lost visibility, so use a capture route that survives interaction. Measure unchanged Dam/Surface first; only then test the independent one-point host mask. Never change RT64/window sizing. |
+| 7 | **TD-10 deterministic stage/effect cases** | Sky fog-fill and flat Frigate water are known upstream feature gaps. Do not “fix” them as geometry. Reduce glass/monitor and missing/clipped geometry reports one at a time with stage, camera, settings, full frame, and original reference. |
 | Blocked timing lane | **Finish TD-01 sustained fire-rate baseline** | The probe and three guard windows pass (13/17/18 events per 100 ticks). Three player tap-response windows also pass ammo/event agreement but are not sustained. Resume only with a repeatable ordinary setup providing at least 34 KF7 rounds; do not inject inventory. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
@@ -68,7 +69,8 @@ one at a time against a freshly accepted baseline.
   hardware evidence.
 - After TD-08 live evidence, take any Mac mouse repair independently from the
   TD-09 edge-mask repair.
-- Reduce stage/effect reports to deterministic reproductions.
+- Treat complete sky/water support as upstream feature work; reduce every other
+  stage/effect report to a deterministic reproduction.
 - Implement stable real two- to four-controller ownership.
 - Add deterministic frame numbers and state hashes.
 - Run the bounded two-iPad LAN input/hash experiment only if the

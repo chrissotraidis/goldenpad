@@ -106,9 +106,10 @@ one at a time against a freshly accepted baseline.
   boundary is confirmed. Computer Use lost its window while bounded runtime
   counters kept advancing; require a different fixed-gameplay capture path
   before any mask.
-- Reduce each stage/effect report under TD-10 to one deterministic camera,
-  stage, settings, and expected-reference case before changing game or renderer
-  code.
+- TD-10's known fog-fill sky and flat-water paths are upstream feature gaps, not
+  generic geometry regressions. Reduce glass/monitor and missing/clipped
+  geometry reports to one deterministic camera, stage, settings, and original-
+  reference case before changing game or renderer code.
 - Re-run preservation and package checks after any dependency or generated-patch
   update.
 

@@ -15,6 +15,7 @@ Updated: 2026-08-22
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
 | Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, listen to TD-05, and capture TD-06. TD-08/TD-09 source boundaries are isolated; their live Mac gates need a capture/input route that survives pointer/menu interaction. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
+| Stage/effect fidelity | TD-10 now separates known fog-fill sky/flat-water upstream omissions from unreduced glass, monitor, and geometry reports. |
 
 Documentation ownership:
 
@@ -123,6 +124,13 @@ controls continued presenting at `5420/5420/5419` and `2914/2914/2913`
 display-list/VI/presented counts. This is a tool-visibility limitation, not a
 confirmed app stall. No fixed Dam/Surface capture exists, so no Mac mask is
 implemented or accepted.
+
+TD-10 no longer treats all later-stage visuals as one generic geometry defect.
+The active pinned sky helpers fill each viewport with fog color; the full
+textured sky/water candidate and its only water branch are disabled. Frigate
+flat water and non-textured sky are therefore known upstream fidelity gaps.
+Framebuffer-dependent effects and missing/clipped geometry remain open only as
+separate deterministic reproduction tasks; no renderer change was made.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and

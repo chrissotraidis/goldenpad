@@ -360,6 +360,30 @@ scene/configuration. Only a successful candidate run on affected hardware can
 close the defect; otherwise document a deliberately chosen minimum GPU
 generation rather than calling A12X non-ARM64.
 
+### TD-10 stage/effect classification gate
+
+Record one case per claimed defect. Every case must include debt subclass, stage,
+room or recognizable checkpoint, player position/yaw/pitch from the bounded
+health log, resolution mode, MSAA, three-point filtering, single/multiplayer,
+full-frame GoldenPad capture, and an original-hardware/reference capture of the
+same expected behavior. Re-run first at **Native N64**, MSAA off, and three-point
+filtering on. Do not group multiple stages or effects under one result.
+
+Classify before coding:
+
+- fog-color/solid sky or flat Frigate water maps to the known disabled custom-
+  microcode sky/water path; it is upstream feature work, not a local geometry
+  regression;
+- missing glass, monitor, or framebuffer feedback remains effect coverage until
+  its exact expected image is established; and
+- missing/clipped rooms or props remain geometry/culling/portal reports and
+  cannot inherit the sky/water diagnosis without command-stream evidence.
+
+A future sky/water candidate must compare the same camera against original
+output, preserve the Preview 2 single-/multiplayer viewport and depth repairs,
+and pass every existing renderer gate. Never enable the disabled full-sky block
+wholesale merely because it contains water branches.
+
 ### Native macOS regression gate
 
 For TD-08 measurement, launch only a diagnostic Mac build with
