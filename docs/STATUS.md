@@ -13,9 +13,9 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Isolated Preview 3 candidate | Input-only branch from Preview 2: opt-in mobile Honey sidestep plus a rebuilt Mac control contract. It is not merged or release-accepted. |
-| Immediate engineering gate | Physically accept or reject the rebuilt Mac control candidate, then record deterministic player/guard fire-rate cadence. |
-| Immediate user-facing repair | Accept Mac desktop controls and modern MOVE strafe / LOOK turn semantics while preserving Preview 2, menus, and original C-button mode. |
+| Isolated Preview 3 candidate | Input-only branch from Preview 2: opt-in mobile Honey sidestep plus the hands-on accepted second Mac control build. It is not merged or publicly released. |
+| Immediate engineering gate | Physically accept or reject the installed build-3 iPad candidate, then record deterministic player/guard fire-rate cadence. |
+| Immediate user-facing repair | Accept modern MOVE strafe / LOOK turn semantics on iPad while preserving Preview 2, menus, multiplayer fallback, and original C-button mode. |
 
 Documentation ownership:
 
@@ -105,6 +105,19 @@ The exact candidate executable SHA-256 is
 `a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`;
 the audited candidate archive SHA-256 is
 `7ddc8fab4cc31c5b012e716d75a28bb9b99e4e1f9803de8319d2467e19bb1cd7`.
+The user then completed hands-on review and declared this exact second Mac
+build stable and working. That accepts the current mouse/keyboard control
+contract; the thin far-right blue line remains separate open TD-09 debt.
+
+The same isolated Preview 3 line was built for physical iPad as version `0.1.0`
+build `3`, installed in place under the unchanged bundle identifier, and
+launched on the attached iPad Pro. Pre/post device readbacks matched both ROM
+copies, the active save, backup save, and preferences byte-for-byte. This proves
+build, install, launch, and private-data preservation; it does not prove the
+TD-02 touch/controller sidestep behavior. Physical control acceptance remains
+the next gate, and the published Preview 2 IPA remains untouched. The installed
+signed device executable SHA-256 is
+`ecdbd8e0fedadef9a2176a2f0a427d0bdc141e08cf743e872d3f67fb5347d658`.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and

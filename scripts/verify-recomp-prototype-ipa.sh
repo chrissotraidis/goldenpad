@@ -32,7 +32,7 @@ fi
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "2"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "3"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 
@@ -80,6 +80,8 @@ for required_symbol in \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
   _goldenpad_recomp_set_four_player_test_mode \
+  _goldenpad_recomp_request_crouch_toggle \
+  _goldenpad_recomp_consume_crouch_toggle \
   _goldenpad_recomp_audio_render \
   _goldenpad_recomp_import_rom \
   _goldenpad_recomp_validate_tlbfree_rom \

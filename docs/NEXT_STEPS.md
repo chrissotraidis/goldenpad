@@ -17,9 +17,8 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **Preview 3 Mac control acceptance** | Confirm the rebuilt input-only candidate: C crouch, R reload, right mouse Action, middle/wheel cycling, 1–9/0 inventory, Space unassigned, Escape pause without release, Delete pointer release, Shift+W/S neutral, slightly lower mouse sensitivity, unchanged Dam/Surface rendering, and sustained responsiveness. |
-| 2 | **TD-02 modern sidestep acceptance** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus, multiplayer fallback, and Original N64 C-button mode remain unchanged. |
-| 3 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
+| 1 | **TD-02 build-3 iPad sidestep acceptance** | On the already installed preserved-data candidate, confirm opt-in modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus, multiplayer fallback, and Original N64 C-button mode remain unchanged. |
+| 2 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
 Do not merge the Mac candidate or TD-02 because it builds. Each remains isolated

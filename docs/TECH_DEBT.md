@@ -109,13 +109,13 @@ bundle unrelated changes. Every repair must be independently revertible.
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; MGB64 measured AK-47 at 33.3 versus 11.3 shots per 100 ticks | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Add a deterministic player and guard fire-rate probe; then port the two source-level MGB64 seams and re-accept gameplay feel |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Candidate implemented; not accepted** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; physical behavior is unproved | Physical touch + modern controller acceptance with menus, watch, aim/lean, styles, lifecycle, and Preview 2 default unchanged |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Build 3 installed; behavior not accepted** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; signed build/install/launch and byte-identical private-data preservation are proved, but physical behavior is not | Physical touch + modern controller acceptance with menus, watch, aim/lean, styles, lifecycle, and Preview 2 default unchanged |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; full `.ips` and local A12 hardware reproduction remain absent | A12X satisfies declared ARM64/Metal/iPadOS requirements; the deterministic `submitRasterScene` crash is a renderer/GPU compatibility defect or an undocumented GPU floor, not signing or CPU architecture | Obtain a redacted full `.ips`; reproduce on A12-family hardware with Preview 2 before choosing a fix or support floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
-| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Candidate implemented; partially hands-on reviewed, not accepted** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the user found it the best Mac control pass so far. The follow-up adds slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and removes the Honey Shift+W pitch conflict | Re-run the complete Mac gate on the rebuilt candidate, especially C, R, right/middle mouse, 1–9/0, Escape, Delete, Shift+W/S, persistence, geometry, and sustained responsiveness |
+| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Hands-on accepted for Preview 3** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the accepted follow-up has slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and no Honey Shift+W pitch conflict | Retain the exact accepted executable as the control; keep long-session performance monitoring separate and reject any later input change that fails the Mac regression gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
@@ -201,9 +201,10 @@ This branch changes input only; it retains the accepted RT64/Plume sizing and
 the known thin far-right blue edge. The matched MIPS patch compiles and
 regenerates, the native arm64 app links all request/consumer symbols, and the
 ROM-free 20-member candidate archive passes the Mac package audit. The user has
-accepted the preceding mouse/WASD direction as the best Mac pass so far, but
-the latest C/R/Escape/Delete/mouse-wheel/number-key build has not yet received
-hands-on acceptance and therefore does not replace Preview 2.
+accepted the preceding mouse/WASD direction as the best Mac pass so far, then
+declared the exact C/R/Escape/Delete/mouse-wheel/number-key follow-up stable and
+working. This accepts the second Mac control build; it does not close TD-09 or
+change the published Preview 2 artifacts.
 
 The exact candidate executable SHA-256 is
 `a6352c5179ff5822f4af3d1b20e1b02bf0d5d1af46b453c9bceca435b7e59808`.
@@ -220,6 +221,15 @@ sending a game button. Shift aim is stationary because Honey otherwise
 reinterprets W/S as manual-aim pitch. Crouch reads and adjusts GoldenEye's live
 stance; direct inventory selection follows the same native functions used by
 the watch menu. Unknown or unavailable slots are ignored.
+
+The corresponding iPad candidate is version `0.1.0` build `3`. It was installed
+in place and launched on the attached iPad Pro without changing the bundle
+identifier. Pre/post readbacks produced identical hashes for the Documents ROM,
+runtime ROM, active save, backup save, and preferences. This is preservation and
+liveness evidence only: TD-02 remains open until touch and physical-controller
+behavior pass the modern-sidestep gate. The published Preview 2 IPA was not
+replaced. The installed signed device executable SHA-256 is
+`ecdbd8e0fedadef9a2176a2f0a427d0bdc141e08cf743e872d3f67fb5347d658`.
 
 ## macOS alpha disposition — 2026-08-21
 
