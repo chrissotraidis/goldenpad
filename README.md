@@ -48,6 +48,43 @@ the primary development version.
 > no ROM, save, extracted retail media, provisioning profile, or signing
 > identity. No official, commercial, or App Store clearance is claimed.
 
+## Play on iPhone or iPad
+
+You need an iPhone or iPad running iOS/iPadOS 17 or later, a Mac or Windows
+computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
+
+> **No jailbreak or JIT is required. Do not search for a TLB-free ROM.**
+> Preview 2 accepts your ordinary `.z64`, `.v64`, `.n64`, or `.rom` dump and
+> prepares the required private runtime copy automatically on the device.
+
+1. Install **AltStore Classic** by following its official
+   [macOS guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-macos)
+   or [Windows guide](https://faq.altstore.io/altstore-classic/how-to-install-altstore-windows).
+   Use AltStore Classic with AltServer, not AltStore PAL. PAL cannot install an
+   arbitrary unsigned `.ipa` downloaded from GitHub.
+2. Download
+   [`GoldenPad-0.1.0-preview.2-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa).
+   This is the iPhone/iPad app. Do not download the separate Mac `.zip`.
+3. Open AltStore Classic on the device, go to **My Apps**, tap **+**, and choose
+   the downloaded GoldenPad `.ipa` from Files. Follow iOS's prompts to trust
+   your Apple ID and enable Developer Mode if required.
+4. Launch GoldenPad, tap **Choose GoldenEye 007 ROM**, and select your own
+   original US retail dump from Files. Other regions and revisions are not
+   interchangeable with the supported release.
+5. Keep GoldenPad open while it verifies and prepares the game. The title
+   sequence starts automatically when setup finishes.
+
+Apps signed through AltStore Classic with a free Apple ID normally need to be
+refreshed every seven days and count toward Apple's three-active-app limit.
+AltStore documents the current limits and refresh process in its
+[Getting Started guide](https://faq.altstore.io/altstore-classic/your-altstore).
+Install future GoldenPad updates through the same sideloading setup. Do not
+delete the app merely to update it: uninstalling can remove its generated game
+copy, saves, and settings.
+
+If any step fails, use [the troubleshooting checklist](#if-it-does-not-work)
+before reporting that GoldenPad itself does not work.
+
 ## Current screenshots
 
 <table>
@@ -78,7 +115,7 @@ the repository or application package.
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
 | Local iPhone/iPad build | **Physically approved Preview 2** | The exact release build is installed on both devices with their ROMs, saves and preferences preserved, and the user approved it for publication after hands-on review. |
 | Native Apple-Silicon Mac build | **Official project Alpha** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the separate arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-macos-arm64-alpha.zip); mouse tuning, the thin far-right blue edge and sustained performance remain open. |
-| Unsigned `.ipa` | **Audited Preview 2** | [Download the public unsigned IPA](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa), verify its checksum, then re-sign it for your own device. |
+| Unsigned `.ipa` | **Audited Preview 2** | Follow [Play on iPhone or iPad](#play-on-iphone-or-ipad) to install the public unsigned IPA with AltStore Classic. |
 | GitHub release | **Preview 2** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.2). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
@@ -128,15 +165,15 @@ online enhancements are tracked in the [multiplayer roadmap](docs/MULTIPLAYER_RO
 GoldenPad is a native integration of reconstructed N64 game code, not a general
 emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
-## Get started
+## Release files and advanced setup
 
-### Preview 2
+### Preview 2 downloads
 
 Download
 [`GoldenPad-0.1.0-preview.2-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.2/GoldenPad-0.1.0-preview.2-unsigned.ipa)
-and its adjacent `.sha256` file. The IPA is intentionally unsigned: re-sign it
-with your own Apple development identity or trusted sideloading workflow, then
-install it on iOS/iPadOS 17 or later.
+and its adjacent `.sha256` file. The IPA is intentionally unsigned. Follow
+[Play on iPhone or iPad](#play-on-iphone-or-ipad) for the supported AltStore
+Classic installation path.
 
 On first launch, choose your own original NTSC-U retail ROM from Files.
 GoldenPad recognizes `.z64`, `.v64`, `.n64`, and `.rom` byte orders, performs
@@ -151,7 +188,12 @@ It is an ad-hoc-signed, non-notarized arm64 app and remains below mobile release
 quality. It uses the same user-supplied-data boundary and must not be described
 as mobile parity.
 
-### Preview 1 manual setup (legacy)
+<details>
+<summary><strong>Preview 1 manual setup (legacy only)</strong></summary>
+
+> **Preview 2 users do not need these steps or a prebuilt TLB-free ROM.** This
+> section is retained only for people intentionally running the older Preview 1
+> artifact.
 
 > **Using the IPA does not require building GoldenPad from source.** Install and
 > re-sign the IPA, generate the required game-data file once from your own retail
@@ -161,8 +203,8 @@ as mobile parity.
 Download
 [`GoldenPad-0.1.0-preview.1-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.1/GoldenPad-0.1.0-preview.1-unsigned.ipa)
 and its adjacent `.sha256` file. The IPA is intentionally unsigned: re-sign it
-with your own Apple development identity or trusted sideloading workflow, then
-install it on iOS/iPadOS 17 or later.
+with your own Apple development identity or install it through AltStore Classic,
+then install it on iOS/iPadOS 17 or later.
 
 GoldenPad does not include or download GoldenEye. Preview 1 expects a supported,
 user-derived `GoldenEye_TLBFREE.z64` in the app's Documents folder. Use Finder
@@ -215,6 +257,8 @@ The generated file must report SHA-256
 `7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959`.
 The delta patch contains no complete ROM; conversion happens locally and the
 retail input and generated output remain yours and must not be redistributed.
+
+</details>
 
 ### Build from source
 
@@ -285,7 +329,8 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Re-sign and install the unsigned Preview 2 IPA.
+1. Install the unsigned Preview 2 IPA by following
+   [Play on iPhone or iPad](#play-on-iphone-or-ipad).
 2. Launch GoldenPad and choose your own supported original NTSC-U retail ROM
    from Files. The importer accepts `.z64`, `.v64`, `.n64`, and `.rom` byte
    orders and validates the exact retail revision before conversion.
@@ -293,9 +338,60 @@ GoldenPad never downloads or bundles game data.
    input. The original logos, front end, file selection and missions follow
    after the native runtime initializes.
 
-The file remains in the app's private Documents container. It is not in the
-IPA, repository, release checksum, or diagnostics export. Removing the app can
-remove that container, so preserve your own source and saves before uninstalling.
+The generated TLB-free runtime copy remains in GoldenPad's private Documents
+container; the original file stays where you selected it. Neither file is in
+the IPA, repository, release checksum, or diagnostics export. Removing the app
+can remove its generated copy and saves, so preserve your original ROM and back
+up important data before uninstalling.
+
+## If it does not work
+
+First identify the exact step that failed. Installation, ROM validation, and
+the game runtime are separate stages with different fixes.
+
+### The IPA will not install or open
+
+- Confirm that you used **AltStore Classic with AltServer**, not AltStore PAL.
+- Confirm that the device runs iOS/iPadOS 17 or later, Developer Mode is
+  enabled, and the Apple ID profile is trusted when iOS requests it.
+- With a free Apple ID, check the three-active-app limit and seven-day expiry in
+  AltStore. Refresh or reinstall through the same AltStore setup rather than
+  deleting GoldenPad.
+- Record the complete AltStore or iOS error. If GoldenPad never launches, the
+  failure happened before its ROM importer or game runtime ran.
+
+### GoldenPad rejects the selected ROM
+
+- Use your own original **US/NTSC-U GoldenEye 007** Nintendo 64 retail dump.
+  PAL, Japanese, modified, overdumped, and other revisions are rejected.
+- `.z64`, `.v64`, `.n64`, and `.rom` are accepted. Renaming another file or ROM
+  does not change its contents and will not pass validation.
+- Preview 2 performs the TLB-free conversion itself. Do not download, request,
+  or manually create a TLB-free ROM for the current release.
+- If GoldenPad cannot read a valid file from a cloud or third-party provider,
+  copy it into **On My iPhone** or **On My iPad** in Files and try again.
+  Keep enough free storage for GoldenPad's private prepared copy.
+
+### The ROM is accepted but the game does not start
+
+Fully quit and reopen GoldenPad once. If the app reaches its three-dot menu,
+choose **Share Diagnostics & Logs** and keep the generated text file private
+until you have checked it for personal information.
+
+When filing a [GitHub issue](https://github.com/chrissotraidis/goldenpad/issues),
+include:
+
+- iPhone or iPad model and iOS/iPadOS version;
+- GoldenPad release and build number;
+- sideloading method and its exact error, if installation failed;
+- the precise screen or action where progress stopped;
+- the complete on-screen GoldenPad error;
+- the ROM extension and stated region/revision, plus a checksum if available;
+  and
+- GoldenPad's diagnostics text if the app ran far enough to create it.
+
+Never attach or link the ROM, generated game data, saves, Apple ID credentials,
+certificates, or provisioning profiles.
 
 ## Touch controls
 
@@ -391,8 +487,9 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 - Multiplayer has a stable experimental render baseline, not final acceptance.
   Slight lighting flicker and real three/four-controller routing remain open.
 - Preview 2's in-app retail-ROM conversion is complete and package-audited.
-  First-install, wrong-ROM, cancellation and low-storage coverage remains open
-  as documented in the focused importer acceptance record.
+  A clean physical-iPhone installation has reached the empty-container setup
+  screen; fresh real-ROM import, wrong-ROM, cancellation and low-storage
+  coverage remains open in the focused importer acceptance record.
 - Some stage-specific geometry glitches remain to be captured precisely.
 - Occasional audio static and multi-controller play remain open quality work.
 - The generated-input pipeline is not independently reproducible from the
@@ -424,7 +521,26 @@ retained only as the deprecated legacy fallback.
 Preview 2 is available from the
 [GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.2).
 It is an unsigned, ROM-free developer-preview IPA and must be re-signed. It does
-not include game data; see **First launch** for the in-app import flow.
+not include game data; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad)
+for installation and first-launch instructions.
+</details>
+
+<details>
+<summary><strong>Do I need JIT or a TLB-free ROM?</strong></summary>
+
+No. GoldenPad's game code is compiled ahead of time, so the iPhone/iPad release
+does not need JIT. Preview 2 accepts the supported original US retail dump and
+creates the required TLB-free runtime copy privately on the device. Do not use
+the old Preview 1 manual conversion instructions for Preview 2.
+</details>
+
+<details>
+<summary><strong>Why will the IPA not install through AltStore PAL?</strong></summary>
+
+AltStore PAL is a separate notarized marketplace channel and cannot install an
+arbitrary unsigned IPA from GitHub. Use AltStore Classic with AltServer on a
+Mac or Windows computer, as described in
+[Play on iPhone or iPad](#play-on-iphone-or-ipad).
 </details>
 
 <details>
