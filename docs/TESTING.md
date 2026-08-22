@@ -192,7 +192,15 @@ before issue #8 can close or the change can enter a release build.
 
 #### Controller ownership lifecycle gate
 
-The synthetic probe must cover, in order: connect controller A; connect B;
+Launch the isolated candidate with `--controller-ownership-probe`. The probe is
+launch-only and must not change the saved two-player preference. Require:
+
+```text
+[GoldenPad] Controller ownership lifecycle probe: PASS
+[GoldenPadRecomp] health: ... input=external-p1+touch-p2 ...
+```
+
+The synthetic probe covers, in order: connect controller A; connect B;
 disconnect A while input is held; reconnect A with device ordering changed;
 background/foreground; disconnect all. At every step assert:
 
@@ -203,8 +211,20 @@ background/foreground; disconnect all. At every step assert:
 - held buttons are not replayed after reconnect/foreground; and
 - advertised connected-port count matches actual published states.
 
-Then repeat on physical hardware with two, three, and four controllers. The
-neutral four-port render diagnostic is not this gate.
+After a clean exit, launch normally and require `input=external-p1` with no
+touch overlay when the synthetic controller remains connected. ROM, save,
+backup, and preferences hashes must match before/after values.
+
+The 2026-08-22 candidate first failed the disconnect expectation because paired
+controller loss returned touch to Player 1. The same expectations pass after
+explicit routing and neutral-before-reassignment. The live Simulator route and
+normal relaunch also pass. These results establish code and Simulator
+containment only.
+
+Repeat held-input disconnect, reconnect/reorder, and background/foreground on
+physical hardware. Real two-, three-, and four-controller slots and assignment
+policy remain a separate implementation and physical gate. The neutral
+four-port render diagnostic is not this gate.
 
 #### Lifecycle stall/freeze gate
 

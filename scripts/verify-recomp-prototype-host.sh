@@ -52,6 +52,7 @@ for required_symbol in \
     goldenpad_recomp_set_controller_state \
     goldenpad_recomp_set_right_analog \
     goldenpad_recomp_set_controller_connected \
+    goldenpad_recomp_set_touch_input_port \
     goldenpad_recomp_set_two_player_test_mode \
     goldenpad_recomp_set_four_player_test_mode \
     goldenpad_recomp_set_fire_rate_probe_enabled \

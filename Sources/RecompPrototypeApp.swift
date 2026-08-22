@@ -97,7 +97,7 @@ struct GoldenPadApp: App {
                         onDone: { isEditingTouchLayout = false }
                     )
                     .ignoresSafeArea()
-                } else if input.externalControllerName == nil || input.twoPlayerTestModeActive {
+                } else if input.touchControlsVisible {
                     RecompPrototypeTouchControls(
                         input: input,
                         placements: touchLayout.placements(for: touchDeviceClass),
@@ -153,20 +153,21 @@ struct GoldenPadApp: App {
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
                 case .active:
+                    input.setSceneInputSuspended(false)
                     surface.setAppActive(true)
                     audio.activate()
                 case .inactive:
                     // Screenshots and system overlays briefly make the scene
                     // inactive without backgrounding it. Suspending RT64 here
                     // can strand an in-flight drawable acquisition.
-                    input.releaseTouchInput()
+                    input.setSceneInputSuspended(true)
                     surface.noteTransientInactive()
                 case .background:
-                    input.releaseTouchInput()
+                    input.setSceneInputSuspended(true)
                     audio.deactivate()
                     surface.setAppActive(false)
                 @unknown default:
-                    input.releaseTouchInput()
+                    input.setSceneInputSuspended(true)
                     audio.deactivate()
                     surface.setAppActive(false)
                 }

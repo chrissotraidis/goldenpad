@@ -61,6 +61,7 @@ std::atomic<bool> unlockAllMissions = false;
 std::atomic<bool> returnToTitleRequested = false;
 std::atomic<bool> appActive = true;
 std::atomic<bool> controllerConnected = false;
+std::atomic<int32_t> touchInputPort = -1;
 std::atomic<bool> twoPlayerTestMode = false;
 std::atomic<bool> fourPlayerTestMode = false;
 std::atomic<uint64_t> rt64DisplayListCount = 0;
@@ -365,7 +366,9 @@ void monitorGameState(uint8_t *rdram) {
                 static_cast<unsigned long long>(audioUnderrunCallbacks.load(std::memory_order_relaxed)),
                 fourPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2+neutral-p3/p4" :
                     (twoPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2" :
-                        (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" : "touch-p1")),
+                        (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" :
+                            (touchInputPort.load(std::memory_order_relaxed) == 0 ?
+                                "touch-p1" : "neutral-awaiting-controller"))),
                 controllerLookX[0].load(std::memory_order_relaxed),
                 controllerLookY[0].load(std::memory_order_relaxed),
                 controllerLookX[1].load(std::memory_order_relaxed),
@@ -735,6 +738,20 @@ extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
         logEvent("input", "external controller %s; touch overlay %s",
             next ? "connected" : "disconnected",
             next && !twoPlayerTestMode.load(std::memory_order_relaxed) ? "hidden" : "visible");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_touch_input_port(int32_t port) {
+    const int32_t normalizedPort = port >= 0 && port < static_cast<int32_t>(kControllerPorts)
+        ? port : -1;
+    const int32_t previousPort = touchInputPort.exchange(
+        normalizedPort, std::memory_order_relaxed);
+    if (previousPort != normalizedPort) {
+        if (normalizedPort < 0) {
+            logEvent("input-ownership", "touch is neutral and owns no player port");
+        } else {
+            logEvent("input-ownership", "touch owns player %d", normalizedPort + 1);
+        }
     }
 }
 

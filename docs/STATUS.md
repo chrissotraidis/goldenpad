@@ -9,12 +9,12 @@ Updated: 2026-08-22
 | Public release | Preview 2 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, saves/preferences preservation, and the bounded four-view experimental render repair. |
-| Major gameplay debt | Native-60-Hz automatic-fire cadence and modern sidestep semantics are not yet corrected. |
+| Major gameplay debt | Fire-rate authenticity remains blocked; the isolated modern-sidestep candidate passes code/Simulator gates but not physical acceptance. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
-| Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
+| Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Record deterministic player/guard fire-rate cadence on the unchanged baseline. |
-| Immediate user-facing repair | Fix modern MOVE strafe / LOOK turn semantics while preserving menus and original C-button mode. |
+| Immediate engineering gate | Physically accept the TD-02 controls and TD-07 lifecycle candidates; independently collect TD-04/05/06 discriminators. |
+| Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
 
@@ -44,7 +44,9 @@ source mechanisms that can stall presentation/audio during drawable
 backpressure, and two counter-invisible audio-risk classes. The exact priority,
 certainty, smallest next test, and acceptance gate for each item now live in the
 technical-debt ledger; the 1,668-line external review itself is supporting
-analysis, not a runtime acceptance artifact.
+analysis, not a runtime acceptance artifact. Subsequent isolated branches add a
+Simulator-validated modern sidestep candidate and a controller-disconnect
+containment candidate; neither has been merged into the Preview 2 baseline.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -613,12 +615,16 @@ evidence ledger below is preserved as historical validation for
 - The primary runtime runs GoldenEye's simulation at native 60 Hz but does not
   carry MGB64's source-level player/guard automatic-fire authenticity repair.
   The pinned lineages identify this as roughly a three-times-fast automatic
-  cadence. GoldenPad has not yet recorded its own deterministic shots-per-tick
-  number, so the next gate is the measurement probe before behavior changes.
-- Modern touch/controller movement does not provide modern-FPS sidestep
-  semantics. Original N64 C-button mode restores physical-controller sidestep,
-  but modern MOVE horizontal still turns and touch has no equivalent mapping.
-  This is the open, source-confirmed [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8).
+  cadence. GoldenPad's opt-in probe recorded one ordinary Dam guard at 13, 17,
+  and 18 committed events per 100 ticks. Three player tap windows matched ammo
+  to events, but the sustained player gate is formally blocked until an
+  ordinary setup provides at least 34 KF7 rounds without state injection.
+- Preview 2 modern touch/controller movement does not provide modern-FPS
+  sidestep semantics. The isolated TD-02 candidate maps live Modern MOVE-X to
+  native C-left/C-right while preserving menus, watch, settings, LOOK, and
+  Original mode in code/Simulator gates. Physical iPhone/iPad and controller
+  acceptance remains, so [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8)
+  stays open and Preview 2 remains the release control.
 - The published Preview 1 artifact crashes deterministically at the first RT64
   rendered frame on a reported A12X iPad Pro. A12X meets the declared ARM64,
   Metal, device-family, and OS requirements; treat [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)
@@ -639,6 +645,12 @@ evidence ledger below is preserved as historical validation for
   physical four-player run kept every quadrant coherent and is accepted as a
   stable experimental render baseline. Real Player 3/4 controller routing is
   not implemented or accepted.
+- The isolated TD-07 candidate prevents paired-controller loss from silently
+  moving touch to Player 1, publishes a neutral boundary before reassignment,
+  retains the active controller across enumeration reorder, and separates
+  overlay from scene suspension. Its red/green model and controller-P1/touch-P2
+  Simulator integration pass. Physical disconnect/reconnect timing and stable
+  real P2-P4 controller slots remain open.
 - Screenshot/background resume has previously frozen gameplay and needs a
   dedicated physical lifecycle pass.
 - A small amount of audible static has been reported during otherwise working
@@ -657,12 +669,12 @@ evidence ledger below is preserved as historical validation for
 
 Preview 2 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
-passed the same package verifiers as the local artifacts. The next engineering
-gate is a deterministic player/guard fire-rate probe. In parallel, the next
-bounded user-facing repair is modern sidestep semantics with menu and original
-C-button regression tests, while issue #9 artifact/A12 reproduction proceeds as
-an evidence-only lane. After the probe, land and physically reaccept the
-fire-rate authenticity repair; then add controller-lifecycle ownership tests and
-collect failing-session lifecycle/audio/flicker evidence before broad
-multiplayer or renderer changes. Do not import matching-target SDK
-implementation sources or Xbox/XBLA material.
+passed the same package verifiers as the local artifacts. TD-01's measurement
+probe is retained, but its sustained-player baseline is formally blocked until
+an ordinary setup provides at least 34 KF7 rounds. The immediate human gates are
+TD-02 touch/controller feel and TD-07 held-input disconnect/reconnect/lifecycle.
+Independent unattended work should collect bounded TD-04/05/06 discriminators
+before selecting renderer or audio fixes, while issue #9 remains evidence-only.
+Do not begin network transport before stable local ownership and deterministic
+state hashes, and do not import matching-target SDK implementation sources or
+Xbox/XBLA material.

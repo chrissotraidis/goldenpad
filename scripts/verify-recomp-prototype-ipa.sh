@@ -79,6 +79,7 @@ for required_symbol in \
   _goldenpad_recomp_start_game \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
+  _goldenpad_recomp_set_touch_input_port \
   _goldenpad_recomp_set_four_player_test_mode \
   _goldenpad_recomp_set_fire_rate_probe_enabled \
   _goldenpad_recomp_set_sidestep_probe_enabled \

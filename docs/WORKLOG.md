@@ -1,5 +1,26 @@
 # Worklog
 
+## 2026-08-22 — autonomous TD-01, TD-02, and TD-07 evidence loop
+
+- Added the read-only native-60-Hz fire-rate probe. Ordinary Dam guard windows
+  recorded 13/17/18 committed events per 100 ticks; three player tap windows
+  matched ammo and events, but sustained player discrimination is formally
+  blocked until ordinary play provides at least 34 KF7 rounds. No timing repair
+  was applied.
+- Implemented the isolated TD-02 modern sidestep candidate. Its unchanged
+  red/green mapper probe, live C-left/C-right publication, menu/watch/settings
+  isolation, focused build, layout, and preservation gates pass. Physical touch
+  and controller feel remains before promotion or issue closure.
+- Implemented the isolated TD-07 disconnect-containment candidate. The initial
+  ownership probe failed on implicit touch-to-Player-1 fallback; explicit routes,
+  neutral-before-reassignment, held-input release-before-activation, stable
+  controller retention, and independent overlay/scene suspension now pass the
+  same synthetic gate.
+- The opt-in Simulator integration reached controller Player 1 plus touch
+  Player 2; a clean ordinary relaunch returned to controller Player 1 only.
+  ROM, active save, backup save, and preferences remained byte-identical. Real
+  disconnect/reconnect timing and explicit physical P2-P4 slots remain open.
+
 ## 2026-08-22 — harden the documentation into an execution control plane
 
 - Added exact project/upstream evidence seams and closure tests for every TD-01

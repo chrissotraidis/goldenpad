@@ -29,10 +29,10 @@ service.
 
 | Work | Size | Primary risk |
 | --- | ---: | --- |
-| TD-01 measurement probe | S | Probe observes the wrong game-side event |
-| TD-02 modern sidestep repair | M | Gameplay fix leaks into menus or original C-button mode |
+| TD-01 measurement probe | S | Guard probe passes; sustained player baseline is blocked on ordinary ammunition |
+| TD-02 modern sidestep repair | M | Code/Simulator pass; physical touch/controller feel remains |
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
-| TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
+| TD-07 disconnect neutralization/probe | S | Code/Simulator pass; physical notification timing remains |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
 | TD-04/TD-05/TD-06 discriminators | S each | Instrumentation changes timing or logs the wrong boundary |
 | TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
@@ -62,9 +62,10 @@ Execute and land these as separate review units:
 | 2 | **TD-02 modern sidestep repair** | Current public issue; traced, bounded input/gameplay seam | Modern MOVE strafes, LOOK turns; original C-button mode and all menus remain unchanged | Synthetic mapping test plus physical touch and controller acceptance |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, Preview 2 reproduction, affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
-The fire-rate probe and A12 evidence work can proceed without changing accepted
-controls. Sidestep must land and be reaccepted before the later controller-
-lifecycle change because both can touch input publication.
+The TD-01 probe, TD-02 sidestep candidate, and TD-07 disconnect-containment
+candidate are isolated review units. TD-02 and TD-07 remain unpromoted until
+their separate physical gates pass. A12 evidence work can proceed without
+changing accepted controls.
 
 ### Wave 2 — major behavior and reliability corrections
 
@@ -72,9 +73,9 @@ lifecycle change because both can touch input publication.
    the player and guard timing seams as a matched generated patch set. Require
    before/after cadence evidence, semi-automatic regression checks, and hands-on
    combat reacceptance.
-2. **TD-07 disconnect neutralization and lifecycle probe:** make a lost
-   controller publish neutral, prevent implicit touch reassignment, and freeze
-   the ownership invariants before implementing real controller slots.
+2. **TD-07 disconnect neutralization and lifecycle probe:** code and Simulator
+   gates pass. Physically test held-input loss, reconnect/reorder, and lifecycle
+   suspension before separately designing real controller slots.
 3. **TD-04 lifecycle instrumentation:** add only bounded drawable, present-wait,
    fence-wait, VI, input-timer, and audio counters. Run the physical transition
    matrix before selecting a repair.

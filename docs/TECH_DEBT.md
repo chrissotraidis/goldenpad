@@ -133,7 +133,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Leading hypothesis** | RT64 present backpressure explains recoverable multi-second simulation/audio stalls; a permanent freeze would require a different failure such as the unbounded Metal fence wait | Bounded nil-drawable, present-wait, VI, and fence-duration breadcrumbs plus the physical lifecycle matrix |
 | TD-05 | P1 | Intermittent audible static | **Observed report**, cause unknown | Healthy underrun/drop counters do not exclude rate mismatch, a discontinuity, route change, or the lifecycle-thread ring-reset race | Read the requested-Hz and counter lines from a failing session; then use a synthetic non-game signal and discontinuity detector |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed**; aliased-depth churn is the **leading hypothesis** | Overlapping lower-player depth ranges can invalidate and rebuild sibling depth every multiplayer frame; the final perceptual link is unproven | Count depth `formatChanged` rebuilds in equivalent single- and multiplayer runs, then use a fixed render-order diagnostic only if needed |
-| TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed design gap** | Primary runtime has one controller binding plus diagnostic flags, not stable multi-controller slots; disconnecting the test controller can leak touch back to Player 1 | Synthetic connect/disconnect/sleep/reconnect ownership probe, neutral-on-collapse fix, then physical 2–4 controller acceptance |
+| TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Disconnect-containment candidate; code + Simulator pass** | Explicit routes now neutralize paired-controller loss, retain the active controller across enumeration reorder, separate overlay/scene suspension, and prove controller-P1/touch-P2 without persisting test mode. Stable real P2-P4 controller slots are still absent | Physical held-input disconnect/reconnect/background acceptance, then design and prove explicit real P2-P4 slots and assignment policy |
 | TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Confirmed** arithmetically from both clamps | Queue saturation and the `[-1, 1]` consumer clamp cap turn rate and discard faster deltas; sensitivity cannot solve the structural loss | Measure host delta versus consumed look, then widen both clamps behind `GOLDENPAD_RECOMP_MAC` and run the Mac input/render gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
@@ -195,16 +195,18 @@ before combat ended repeated runs. The authenticity repair remains gated.
 TD-02 now has an isolated implementation candidate whose code-level, live
 publication, menu, watch-transition, settings-isolation, layout, build, and
 preservation gates pass. It still needs human physical acceptance, so it must be
-pushed for review without merging or closing issue #8. While that human gate is
-pending, the smartest independent repair is **TD-07 controller ownership and
-disconnect neutralization** on a new review unit. TD-03 remains evidence-only;
+pushed for review without merging or closing issue #8. TD-07 now has a separate
+disconnect-containment candidate: its red/green lifecycle model, focused build,
+paired Simulator integration, normal-launch isolation, and preservation gates
+pass. It still needs physical lifecycle acceptance, and real P2-P4 controller
+slots remain a later, separately designed unit. TD-03 remains evidence-only;
 no A12 change is selected without a full artifact and reproduction. The next
 landing sequence is:
 
 1. preserve the fire-rate probe and formal sustained-player blocker;
-2. push the TD-02 candidate and complete physical touch/controller acceptance;
-3. add the TD-07 synthetic lifecycle probe and neutral-on-disconnect repair on
-   a separate branch while TD-02 physical acceptance is pending;
+2. retain the pushed TD-02 candidate and complete physical touch/controller acceptance;
+3. physically accept TD-07 held-input disconnect/reconnect/background behavior,
+   then design real P2-P4 slots as a separate review unit;
 4. resume the sustained player baseline only with at least 34 ordinary-input
    KF7 rounds, then apply the authenticity patch only if the probe proves the
    current and expected numbers and obtain hands-on combat acceptance;
