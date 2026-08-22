@@ -28,17 +28,17 @@ Ignore rules are necessary but are not a substitute for a staged-file audit.
 
 ## Practical decision
 
-Development may continue with MGB64 under the same disclosed community-decomp
-boundary used by comparable ports. Supplying a user's own ROM keeps retail data
-out of the repository and package, but it does not itself grant redistribution
-rights in decompiled game code. An upstream MIT license covers upstream-authored
-port work; it cannot license copyrights held by the game's rights holders. This
-is a release-risk disclosure, not a production stop. Paid access, store release,
-or claims of fully cleared redistribution remain behind qualified legal review.
-Using MGB64's ROM-free diagnostic contracts for private validation does not cure
-or expand those redistribution rights; it only supplies engineering evidence.
-Reusing an upstream controller-input schedule as behavioral test evidence also
-does not change this boundary or transfer any game-content rights.
+Development may continue with the primary GoldenEye64Recomp/N64ModernRuntime/
+RT64 path and with MGB64 Legacy under the same disclosed community decomp/static-
+recomp boundary used by comparable ports. Supplying a user's own ROM keeps
+retail data out of the repository and package, but it does not itself grant
+redistribution rights in reconstructed or translated game code. Upstream
+licenses cover their authors' work; they cannot license copyrights held by the
+game's rights holders. This is a release-risk disclosure, not a production
+stop. Paid access, store release, or claims of fully cleared redistribution
+remain behind qualified legal review. ROM-free diagnostic contracts and
+behavioral test schedules provide engineering evidence only; they do not cure
+or expand redistribution rights.
 
 ## Source boundary
 
@@ -47,7 +47,15 @@ does not change this boundary or transfer any game-content rights.
   project license does not grant rights in the original game. That uncertainty
   is disclosed here; it is not treated as a GoldenEye-specific development
   blocker.
-- MGB64 is the selected production-core candidate. Its MIT license applies to
+- The shipped Preview 2 runtime uses statically generated GoldenEye64Recomp game
+  code, N64ModernRuntime, N64Recomp components, RT64, Plume, and their transitive
+  dependencies. The distributed package must carry its required notices and
+  exact GPL text, and the corresponding-source boundary must remain available
+  for distributed GPL components. No dependency license authorizes publishing
+  retail-derived inputs; if a distribution obligation cannot be satisfied
+  without exposing them, distribution requires qualified legal review or must
+  stop.
+- MGB64 is the legacy comparison/fallback core. Its MIT license applies to
   first-party port work, while the decompiled game remains attributed to its
   rights holders. GoldenPad may build that independently reconstructed retail
   N64 code under the same noncommercial research/developer-preview model used
@@ -62,12 +70,13 @@ does not change this boundary or transfer any game-content rights.
   documented native build surface rather than directly packaging the matching
   N64 source tree.
 - HarkinianPad integration code/art is all rights reserved and is reference-only.
-- GoldenRecomp and N64ModernRuntime are GPL-3.0; N64Recomp and RT64 are MIT.
-  If used, GoldenPad must satisfy the combined license obligations and publish
-  corresponding source for distributed GPL binaries.
-- Every incorporated production source must remain classified in
-  `docs/source-license-manifest.tsv`; `docs/SOURCE_LICENSES.md` explains the
-  boundaries and regeneration gate.
+- GoldenEye64Recomp and N64ModernRuntime carry GPL-3.0 obligations; N64Recomp,
+  RT64, Plume, and other dependencies retain their own terms. GoldenPad must
+  satisfy the combined obligations for every distributed binary.
+- `docs/source-license-manifest.tsv` machine-classifies the configured MGB64
+  Legacy source target. The primary AOT package has a different dependency
+  boundary enforced by `scripts/verify-recomp-prototype-ipa.sh` and the exact
+  notice/license set described in `docs/SOURCE_LICENSES.md`.
 
 The current touch editor and input mapper are original Swift implementation.
 HarkinianPad was used only to identify product-level control requirements, and
@@ -77,8 +86,11 @@ no reference source was copied into GoldenPad.
 The tracked RT64/Plume/MGB64 patches and GoldenPad RT64/MGB64 bridge/shim files are
 narrow integration work against the exact commits in `RESEARCH.md`. They
 contain no ROM data, extracted media or generated shader output. The MGB64 core
-itself is compiled only from an ignored exact upstream checkout and is never
-copied into this repository.
+and the public source inputs for the primary runtime are compiled from ignored
+exact upstream checkouts and are never copied wholesale into this repository.
+
+The following MGB64 audio, volatile-ROM, asset-placeholder, and SDK-source guard
+details apply to `GoldenPad Legacy`, not to the primary Preview 2 runtime.
 The mobile audio build compiles MGB64's native clean-room synth, decoder and
 sequence modules. Matching-target Nintendo/SGI/Rare SDK-lineage audio
 implementations remain excluded by the same source guard as the rest of the SDK
@@ -115,9 +127,12 @@ Before any IPA/archive is shared:
 4. verify the installed app requires user-selected retail data;
 5. record the audit command and result in `docs/WORKLOG.md`.
 
-The game-bearing IPA must also carry `ThirdPartyNotices.txt`. The package
-verifier rejects a production archive that omits the required MGB64,
-n64-fast3d-engine, cgltf, jsmn or stb_image notices.
+Every game-bearing IPA must carry `ThirdPartyNotices.txt`. The primary package
+verifier also requires `COPYING-GPL-3.0.txt` and notices for
+GoldenEye64Recomp, N64ModernRuntime, N64Recomp, RT64, Plume, re-spirv, and
+Zstandard. The separate Legacy verifier requires the MGB64,
+n64-fast3d-engine, cgltf, jsmn, and stb_image notices. A notice set from one
+runtime does not satisfy the other runtime's package gate.
 
 This policy is conservative engineering guidance, not legal advice. Development,
 private builds, source publication, and a clearly labelled free ROM-free

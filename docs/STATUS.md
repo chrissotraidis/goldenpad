@@ -2,6 +2,31 @@
 
 Updated: 2026-08-22
 
+## Current at a glance
+
+| Surface | Current truth |
+| --- | --- |
+| Public release | Preview 2 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
+| Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, saves/preferences preservation, and the bounded four-view experimental render repair. |
+| Major gameplay debt | Native-60-Hz automatic-fire cadence and modern sidestep semantics are not yet corrected. |
+| Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
+| Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
+| Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
+| Immediate engineering gate | Record deterministic player/guard fire-rate cadence on the unchanged baseline. |
+| Immediate user-facing repair | Fix modern MOVE strafe / LOOK turn semantics while preserving menus and original C-button mode. |
+
+Documentation ownership:
+
+- [`STATUS.md`](STATUS.md) states what is true now.
+- [`TECH_DEBT.md`](TECH_DEBT.md) owns defect priority, evidence, and closure.
+- [`PLAN.md`](PLAN.md) owns implementation order and stop rules.
+- [`NEXT_STEPS.md`](NEXT_STEPS.md) is the short operational queue.
+- [`TESTING.md`](TESTING.md) owns proof and acceptance procedures.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) owns runtime and subsystem boundaries.
+- [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md) owns local/network scope and
+  the network go/no-go decision.
+
 ## Summary
 
 The statically recompiled GoldenEye + N64ModernRuntime + RT64/Metal app is now
@@ -10,6 +35,16 @@ buildable as `GoldenPad Legacy` for regression comparison and fallback. The
 detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
+
+The 2026-08-22 source review has been reconciled into
+[`TECH_DEBT.md`](TECH_DEBT.md). It independently confirmed a global native-60-Hz
+automatic-fire timing defect, the absence of a primary-runtime multi-controller
+ownership layer, the modern sidestep mapping omission reported in issue #8, the
+source mechanisms that can stall presentation/audio during drawable
+backpressure, and two counter-invisible audio-risk classes. The exact priority,
+certainty, smallest next test, and acceptance gate for each item now live in the
+technical-debt ledger; the 1,668-line external review itself is supporting
+analysis, not a runtime acceptance artifact.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -26,19 +61,19 @@ lighting flicker and real three/four-controller routing remain open.
 The first physical-iPad viewport follow-up was rejected after two-player still
 flashed in Player 2 and four-player corruption also reached the upper-right
 view. Live video then showed the corruption recover and migrate between lower
-views while the game loop remained healthy. A follow-up candidate now matches
+views while the game loop remained healthy. The accepted repair matches
 GoldenEye's shifted lower-player depth-image address during each clear, which is
-required by RT64's exact-address depth-clear tracking. It passed a 43.87-second
-four-player Simulator regression recording and is installed on the paired iPad
-at executable SHA-256
+required by RT64's exact-address depth-clear tracking. Its physical render-
+control executable had SHA-256
 `0976dcdfd17de60beda8e8e60ccff3fc81da7da0b2ef43f159cdea061149677d`.
-Physical four-player testing kept all four views coherent and did not reproduce
+It passed a 43.87-second four-player Simulator regression recording. Physical
+four-player testing kept all four views coherent and did not reproduce
 the former black/checkerboard corruption. The user rated it the best build so
 far, with only slight residual lighting flicker. A 59.33-second device recording
 remained coherent across 3,336 consecutive frame comparisons, while the paired
-log reached 54,652 presented VI updates with zero audio drops or underruns.
-Freeze this executable as the Preview 2 stable experimental multiplayer
-baseline. Multiplayer is not yet bug-free or fully accepted pending the residual
+log reached 54,652 presented VI updates with zero audio drops or underruns. This
+establishes the Preview 2 stable experimental multiplayer baseline. Multiplayer
+is not yet bug-free or fully accepted pending the residual
 flicker investigation and real three/four-controller routing.
 
 GoldenPad officially supports Apple Silicon Macs in **Alpha** status. This is
@@ -575,6 +610,22 @@ evidence ledger below is preserved as historical validation for
 
 ## Failed or blocked
 
+- The primary runtime runs GoldenEye's simulation at native 60 Hz but does not
+  carry MGB64's source-level player/guard automatic-fire authenticity repair.
+  The pinned lineages identify this as roughly a three-times-fast automatic
+  cadence. GoldenPad has not yet recorded its own deterministic shots-per-tick
+  number, so the next gate is the measurement probe before behavior changes.
+- Modern touch/controller movement does not provide modern-FPS sidestep
+  semantics. Original N64 C-button mode restores physical-controller sidestep,
+  but modern MOVE horizontal still turns and touch has no equivalent mapping.
+  This is the open, source-confirmed [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8).
+- The published Preview 1 artifact crashes deterministically at the first RT64
+  rendered frame on a reported A12X iPad Pro. A12X meets the declared ARM64,
+  Metal, device-family, and OS requirements; treat [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)
+  as an unresolved A12/RT64 compatibility defect or support-floor decision, not
+  a signing or CPU-architecture failure. A complete redacted `.ips` and a
+  Preview 2 A12-family reproduction remain open.
+
 - Local multiplayer remains experimental. The earlier crash and large physical
   split-screen corruption are repaired in the frozen Preview 2 baseline, but
   slight lighting flicker remains. Enhanced multiplayer visuals and networking
@@ -606,8 +657,12 @@ evidence ledger below is preserved as historical validation for
 
 Preview 2 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
-passed the same package verifiers as the local artifacts. Next, prioritize the
-documented lifecycle/audio, residual multiplayer flicker/routing and Mac Alpha
-input/edge/performance debt without changing the accepted single-player, touch,
-controller, save or settings baseline. Do not import matching-target SDK
+passed the same package verifiers as the local artifacts. The next engineering
+gate is a deterministic player/guard fire-rate probe. In parallel, the next
+bounded user-facing repair is modern sidestep semantics with menu and original
+C-button regression tests, while issue #9 artifact/A12 reproduction proceeds as
+an evidence-only lane. After the probe, land and physically reaccept the
+fire-rate authenticity repair; then add controller-lifecycle ownership tests and
+collect failing-session lifecycle/audio/flicker evidence before broad
+multiplayer or renderer changes. Do not import matching-target SDK
 implementation sources or Xbox/XBLA material.

@@ -1,4 +1,4 @@
-# RT64 + N64Recomp prototype
+# RT64 + N64Recomp runtime record
 
 The accepted physical-iPad baseline and its bounded next-day worklist are
 recorded in
@@ -24,7 +24,10 @@ tasks through RT64 on iPhone and iPad hardware.
 
 ## Dependency record and license boundary
 
-Verified on 2026-08-20 using public primary repositories:
+Initial public pins were verified on 2026-08-20. The accepted private AOT build
+later advanced N64ModernRuntime to the exact reference shown below; the runtime,
+its embedded N64Recomp sources, generated output, and tracked AOT patch must move
+as one dependency set.
 
 | Dependency | Commit | License/status | Prototype use |
 | --- | --- | --- | --- |
@@ -32,16 +35,16 @@ Verified on 2026-08-20 using public primary repositories:
 | `cblock85/GoldenEye64Recomp` | `a787fe0d95e8278fcba5ba2d768fa6a606e75f55` | GPL-3.0 | Static configuration, conversion and fix reference; isolate any reuse |
 | `kholdfuzion/GoldenRecomp` | `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 | Historical/static-recomp reference only |
 | `N64Recomp/N64Recomp` | `ffb39cdad1da5de07eaaa48bd1db4a89a7986771` | MIT | Static generator/tooling |
-| `N64Recomp/N64ModernRuntime` | `589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` | GPL-3.0 | Runtime, input/audio/queues/saves |
+| `N64Recomp/N64ModernRuntime` | `e75e0de77e8377d4954fe7b511c0d1cf608e7ded` | GPL-3.0 | Accepted private AOT runtime reference; input/audio/queues/saves |
 | `rt64/rt64` | `5473732a822a4423b5696e7cb18fecc425a59875` | MIT | RDP renderer; Plume submodule `d890ac899e505fb30040e037a4037cdeca68f033` |
 | `Kenix3/libultraship` | `7eb555d06656271556efc9cb9b23fc39b31b9aef` | MIT | Fast3D design reference only |
 | `perfect-dark-pc-port/perfect_dark` | `32a1cb9f268dd3ac73016801025c6bbbfa20130f` | MIT | Sky conversion reference only |
 
-Linking N64ModernRuntime or GoldenEye64Recomp-derived code creates a GPL-3.0
-prototype distribution obligation. Therefore it must remain a separately
-documented target and cannot be folded into production MGB64 without a separate
-licensing and migration decision. The N64 decomp's public readability does not
-place game code or assets in the public domain.
+Linking N64ModernRuntime or GoldenEye64Recomp-derived code creates GPL-3.0
+distribution obligations. The primary Preview 2 and Mac Alpha packages therefore
+carry the exact GPL text and required notices, and remain separately documented
+from MGB64 Legacy. The N64 decomp's public readability does not place game code
+or assets in the public domain.
 
 ## ROM and generated-code boundary
 
@@ -49,7 +52,7 @@ Only the normalized US retail dump with SHA-1
 `abe01e4aeb033b6c0836819f549c791b26cfde83` is in scope. Retail ROM bytes,
 TLB-free converted ROM bytes, extracted assets, AOT-generated game functions,
 RSP output, saves and captures stay in ignored local storage. They must never
-be committed, packaged or cited in public evidence. The planned conversion uses
+be committed, packaged or cited in public evidence. The conversion uses
 GoldenEye64Recomp's local, pinned `vanilla_to_tlbfree.xdelta` input and writes
 only outside the repository. N64Recomp then consumes the private TLB-free ROM
 and `us.toml`; the generated `RecompiledFuncs/` directory remains private.
@@ -67,24 +70,24 @@ patch [`patches/n64modernruntime-ios-aot.patch`](../patches/n64modernruntime-ios
 skips that live-recompiler dependency when the runtime is only used with static
 generated C/C++. It applies and reverses cleanly against the exact ignored
 checkout, and produced ARM64 Simulator and iPhoneOS `libultramodern.a` and
-`liblibrecomp.a`. The private AOT build now uses those archives in the
-isolated prototype target.
+`liblibrecomp.a`. The private AOT build uses those archives in the primary
+runtime target.
 
 ## RT64/UIKit host
 
 `GoldenPadRecompPrototype` is an independent CMake/Xcode target. Its SwiftUI
 host owns an `MTKView`/`CAMetalLayer` and uses its own C++ bridge to create
 RT64's Plume Metal interface and swapchain. The ARM64 Simulator and iPhoneOS
-builds use the unique bundle identifier and contain neither production MGB64
-runtime nor production app state. The target now submits the recompiled game's
+builds use the unique bundle identifier and contain neither MGB64 Legacy runtime
+nor Legacy app state. The target now submits the recompiled game's
 real display lists to RT64; synthetic render tests are not used as gameplay
 evidence.
 
 ## Required game path and carried fixes
 
-The prototype registers a UIKit-native N64ModernRuntime renderer context and
-calls RT64's `loadUCodeGBI` plus `processDisplayLists` with actual `OSTask`
-RSP/DP data and RDRAM from the recompiled game. It also has prototype-local
+The primary runtime registers a UIKit-native N64ModernRuntime renderer context
+and calls RT64's `loadUCodeGBI` plus `processDisplayLists` with actual `OSTask`
+RSP/DP data and RDRAM from the recompiled game. It also has primary-runtime-local
 AVAudioEngine, GameController/touch snapshots, private config/log storage and
 scene lifecycle rather than transplanting the macOS AppKit/SDL host.
 
@@ -139,12 +142,12 @@ subjective smoothness or presentation cadence as frame-time proof.
 | Touch and controller input | The legacy touch tuning was carried over. Physical iPhone/iPad touch and Xbox/MFi Player 1 control were accepted; the final build adds separate persisted layouts and per-control size/opacity. | Single-player accepted; multi-controller multiplayer remains open. |
 | Saves and lifecycle | In-place updates preserve both ROM copies, active/backup saves and preferences byte-for-byte. Cross-runtime save compatibility and the complete screenshot/background/foreground matrix are not fully accepted. | Preservation confirmed; compatibility/lifecycle matrix remains open. |
 
-The migration recommendation is **use RT64/N64Recomp as GoldenPad's primary
+The current decision is **use RT64/N64Recomp as GoldenPad's primary
 runtime while retaining MGB64 as the deprecated GoldenPad Legacy fallback**.
 That decision is based on physical single-player stability, accepted controls
 and the high-resolution RT64 result—not on missing quantitative cache or FPS
-measurements. It does not authorize a public binary until the remaining release
-gates and user-ROM import boundary are closed.
+measurements. Preview 2 is now public; future releases still require the package,
+data-boundary, and hands-on gates in `RELEASE_CHECKLIST.md`.
 
 ## Build and Simulator instructions
 
@@ -192,9 +195,9 @@ Simulator-only static archive now removes unused extended/ray-tracing bindings,
 aliases the remaining samplers, and bypasses unavailable counter sampling. It
 renders real GoldenEye frames from the user-supplied input. Hardware validation
 has since advanced through intro, menus and playable stages. This remains a
-private prototype result, not a claim that every stage or effect is complete.
+private AOT result, not a claim that every stage or effect is complete.
 
-The prototype has independent input plumbing using the production GoldenPad
+The primary runtime has independent input plumbing using the GoldenPad
 touch placement and tuning: move, relative look, fire, aim, action, duck,
 weapon and Start. AIM supports toggle or hold and has a distinct yellow active
 state; DUCK is a yellow C-button-style action. Look uses the production 1.5x
@@ -202,7 +205,7 @@ swipe accumulation, 4x default sensitivity and one-third-speed precision while
 aiming. Settings include aim behavior, optional aim-only vertical inversion,
 an optional centered reticle, resolution, 2x MSAA, and three-point filtering.
 Renderer-quality changes are persisted for the next app launch instead of
-rebuilding the active RT64 session. A prototype-only
+rebuilding the active RT64 session. A testing-only
 `Unlock all missions` setting uses GoldenEye's existing mission-availability
 predicate without marking missions complete or writing EEPROM. It is intended
 for later-stage rendering tests and leaves the user's real save progression
@@ -211,8 +214,8 @@ N64ModernRuntime bridge explicitly advertises a normal controller in port 1,
 matching the reference implementation; it previously reported `Device::None`,
 which caused GoldenEye's controller-socket error. A Simulator UI gesture on A
 was verified in the native log as button bit `0x8000` followed by release. The
-bridge is prototype-local and does not use or change the production MGB64 input
-system.
+bridge is primary-runtime-local and does not use or change the MGB64 Legacy
+input system.
 
 The native GameController map supports Xbox/MFi-style hardware. Its default is:
 left stick moves, right stick supplies modern analog look, LT aims, RT fires,
@@ -276,7 +279,7 @@ reference GoldenEye64Recomp host's stereo-pair swap required by
 N64ModernRuntime's RDRAM address ordering; queue health alone could not detect
 that channel-order defect.
 
-For runtime diagnosis, the prototype also applies a temporary,
+For runtime diagnosis, the primary runtime also applies a temporary,
 reversible trace at the reference RT64 render-context seam. It reports the
 first display list and every 300 thereafter, alongside the equivalent VI
 presentation count. Physical soaks have reached tens of thousands of processed
@@ -301,7 +304,7 @@ session ended unexpectedly and directs the tester to the previous log and the
 iPadOS crash report. This adds crash visibility without streaming a console or
 recording gameplay.
 
-An in-place hardware update on 2026-08-20 preserved prototype database UUID
+An in-place hardware update on 2026-08-20 preserved the runtime database UUID
 `D2F4E1F3-F310-4A01-8ED7-65B907FAA17B`. A subsequent 34.7-second QuickTime
 capture showed playable full-frame RT64 output with no visible right-edge blue
 strip. During the same title/demo progression, native counters exceeded four

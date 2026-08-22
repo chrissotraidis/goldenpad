@@ -1,125 +1,257 @@
-# Local multiplayer roadmap
+# Multiplayer roadmap
 
-Updated: 2026-08-21
+Updated: 2026-08-22
 
-## Immediate Preview 2 priority
+GoldenPad currently has **experimental local split-screen in one runtime**. It
+does not have peer-to-peer, LAN, internet, relay, dedicated-server, or rollback
+multiplayer. This document separates the accepted render work from controller
+ownership and from future network simulation.
 
-GoldenPad's immediate multiplayer goal is deliberately narrow: a stable,
-playable two-player local match on iOS and iPadOS using an external controller
-for Player 1 and touch controls for Player 2. The original multiplayer menus,
-horizontal split-screen layout, match rules and save behavior must remain owned
-by GoldenEye.
+## Current product boundary
 
-The former RT64 KSEG1 address-mask crash is repaired. Source tracing found that
-the GoldenEye64Recomp sky, scissor, fade and depth-clear patches could affect the
-full framebuffer while GoldenEye renders players sequentially into separate
-viewports. Because the player render order is shuffled each frame, one player's
-work could erase the other and produce the observed flashing, black frame
-regions and partial geometry.
+| Capability | Current status | Evidence boundary |
+| --- | --- | --- |
+| Original GoldenEye multiplayer menus and match rules | Present | Owned by the game runtime |
+| Two-player controller P1 + touch P2 diagnostic | Implemented, experimental | Simulator interaction and bounded physical use; not reconnect acceptance |
+| Four-player render diagnostic | Stable experimental baseline | Physical iPad kept four neutral/test views coherent; slight lighting flicker remains |
+| Real controller ports 2–4 | Not implemented in the primary host | Core ports exist, but Swift binds only the first extended controller |
+| Controller disconnect/reconnect ownership | Not accepted | Disconnect can collapse test mode and route touch back to P1 |
+| Apple-Silicon Mac multiplayer assignment | Not implemented | Mac has no touch-P2 policy and also binds one controller |
+| LAN or peer-to-peer play | Not implemented | No protocol or synchronized-simulation layer |
+| Internet matchmaking/relay | Not implemented | No transport service or session identity handshake |
+| Savestate/rollback | No validated seam | Do not describe rollback as available or near-complete |
 
-The Preview 2 candidate now constrains those operations to the active player
-viewport and preserves the selected game framebuffer. On 2026-08-21, an ARM64
-iPad Simulator build entered and sustained a real two-player Temple match using
-controller Player 1 plus touch Player 2. Both horizontal views remained visible
-through more than 11,000 presented VI updates, Player 1 movement changed only
-its camera, and Player 2 FIRE registered independently. A later physical-iPad
-four-player run of executable SHA-256
+## Frozen Preview 2 rendering baseline
+
+The former RT64 KSEG1 address-mask crash and the large black/checkerboard
+split-screen corruption have targeted repairs. GoldenEye renders players
+sequentially into a shared framebuffer; the accepted patch scopes sky,
+background, fade, and depth-clear work to the active viewport and makes each
+lower-player clear use the same shifted depth-image address used for rendering.
+
+Physical four-player testing of executable SHA-256
 `0976dcdfd17de60beda8e8e60ccff3fc81da7da0b2ef43f159cdea061149677d`
-kept all four views coherent and did not reproduce the former large
-black/checkerboard corruption. Slight lighting flicker remained, so this is a
-stable experimental render baseline rather than final multiplayer acceptance.
+kept all four quadrants coherent across 3,336 consecutive frame comparisons and
+54,652 presented VI updates, with zero reported audio drops or underruns in that
+run. Slight lighting flicker remained. This establishes a stable experimental
+render baseline, not complete multiplayer acceptance.
 
-The repair gate is:
+Do not reopen the depth-address repair unless the former large corruption
+returns or a bounded trace directly implicates it. The leading residual-flicker
+hypothesis is separate: overlapping aliased depth ranges may force a quantized
+depth rebuild from RDRAM every multiplayer frame. First count those rebuilds in
+matched single- and multiplayer runs; do not begin with renderer surgery.
 
-1. preserve GoldenEye's selected back framebuffer during every player pass;
-2. constrain sky, background, fade and depth-clear operations to the current
-   player's logical viewport;
-3. enter and sustain a real two-player match with both views continuously
-   visible and independently controlled;
-4. preserve accepted single-player rendering, controls, audio, saves and
-   lifecycle behavior; and
-5. preserve the accepted physical-iPad render baseline and complete normal
-   physical iPhone/iPad input-routing checks before local multiplayer is
-   described as fully supported.
+## Local multiplayer blockers
 
-Three/four-player layout, online networking and enhanced multiplayer graphics
-are not part of this first repair.
+### 1. Stable controller ownership
 
-## Validation matrix for the immediate repair
+The primary iPhone/iPad input host selects
+`GCController.controllers().first(where: { $0.extendedGamepad != nil })`. The
+two-player mode is a flag-controlled diagnostic: controller P1 plus touch P2.
+The four-player mode advertises neutral P3/P4 ports for render testing. The
+four-slot model in the legacy MGB64 `InputCoordinator` is not wired to this
+runtime.
 
-- Temple: baseline horizontal split-screen and sustained movement in both views.
-- Facility or Bunker: indoor portals, doors and fade transitions.
-- Cradle or another outdoor map: fog, sky fill and long-distance geometry.
-- Pause/watch, death/fade and return-to-menu paths.
-- Native N64 and Automatic high-resolution output; 2x MSAA on and off.
-- iPad and iPhone landscape layouts, without a live console or long recording
-  during hands-on performance acceptance.
+The production ownership model needs:
 
-Build/install/process evidence proves only that the candidate runs. Acceptance
-requires both views to remain visually stable while Player 1 controller and
-Player 2 touch input operate simultaneously.
+- deterministic first-free assignment for up to four extended controllers;
+- stable identity when devices sleep, disconnect, reconnect, or reorder;
+- no duplicate port ownership and no array-index-as-player assumption;
+- a neutral frame on loss before any reassignment;
+- explicit touch ownership that never moves mid-match implicitly;
+- foreground reconciliation without replaying held buttons; and
+- a separate Mac policy, because Mac has no touch player.
 
-## Deferred local multiplayer work
+The first gate is a synthetic lifecycle probe, followed by physical two-, three-,
+and four-controller acceptance. Build success or the neutral four-port render
+test does not establish this.
 
-The following work is valuable but must not delay the two-player repair.
+### 2. Residual lighting flicker
 
-### Three and four players
+The old large corruption is closed for the frozen baseline. The remaining
+flicker must be treated as a temporal defect:
 
-GoldenEye uses half-width left/right viewports for three- and four-player
-matches. RT64 may require explicit extended-GBI viewport origins so the left and
-right players remain anchored to their widescreen halves. This is a separate
-gate after horizontal two-player split-screen is accepted.
+1. count RT64 depth `formatChanged` clear/re-read events for equivalent single-
+   and multiplayer sessions;
+2. if the count supports aliased-depth churn, decide whether the visual severity
+   justifies an RT64 framebuffer-tracking change;
+3. if it does not, use a fixed player render order as a diagnostic, not a fix;
+4. capture continuous video and a bounded post-run log; a clean still is
+   insufficient; and
+5. re-run the exact two-/four-player and single-player regression gates after
+   any candidate.
 
-The iOS/iPadOS test build now includes an opt-in **Experimental four-player
-render test** beneath the existing two-player input test. It advertises controller
-Player 1, touch Player 2 and neutral Players 3/4 through the same bounded port
-bridge. It never injects host button presses and makes the extra ports visible
-only while explicitly enabled.
+### 3. Gameplay input semantics
 
-On 2026-08-21, the ARM64 iPad Simulator reported all four ports, GoldenEye
-selected four players, and a real Temple match opened with four correctly placed
-quadrants. Controller Player 1 movement and touch Player 2 FIRE/ACTION registered
-independently; neutral Players 3/4 remained stationary. Player 1's pause/watch
-UI stayed confined to the upper-left quadrant while the other three views
-remained intact. All four views were still intact after 10,773 presented VI
-updates. The later physical-iPad run kept every quadrant coherent across 3,336
-consecutive frame comparisons and 54,652 presented VI updates, with zero audio
-drops or underruns. Real Player 3/4 controller routing remains open; macOS still
-needs platform-appropriate assignments because it has no touch input.
+GitHub issue #8 is independent of multi-controller ownership. Modern MOVE
+horizontal input should strafe while LOOK horizontal input turns; the original
+N64 C-button mode must remain available separately. Fix and accept this before
+using movement traces as a multiplayer determinism signal.
 
-### Enhanced multiplayer visuals
+## Network feasibility
 
-The current recomp already disables distance-based model LOD almost everywhere;
-Jungle remains an unexplained exception. GoldenEye also applies independent
-multiplayer reductions to fog/view distance, flying debris, shattered glass,
-smoke lifetime, scorch marks, cartridge casings and stage props.
+### The hard problem
 
-These should be evaluated as three independently measurable groups:
+Discovery and packet transport are feasible on Apple platforms. The hard problem
+is deciding who owns simulation state and keeping two native game runtimes in
+agreement. Current local multiplayer has one process, one game clock, one RNG
+stream, and one shared memory image. Network play would split those assumptions.
+
+The current runtime exposes frame/controller polling, but no validated complete
+state serialization, deterministic state hash, rewind, or rollback restore.
+Therefore a matchmaking UI or packet demo would not demonstrate playable
+network multiplayer.
+
+### Feasibility matrix
+
+| Model | Technical feasibility | Missing foundation | Recommended disposition |
+| --- | --- | --- | --- |
+| Same-device 2–4 player split-screen | High | Real controller ownership, lifecycle acceptance, residual flicker decision | Finish first |
+| Two iPads on one LAN, input-delay lockstep | Plausible, unproven | Determinism proof, frame protocol, stall/timeout policy, desync detection | First network experiment after local gates |
+| Direct internet peer-to-peer | Plausible transport, high product complexity | Everything above plus discovery, NAT traversal/relay fallback, authentication, reconnect, latency adaptation | Do not start before LAN proof |
+| GameKit real-time match | Plausible Apple-only transport/matchmaking | Same synchronization work; GameKit does not make simulations deterministic | Evaluate only after protocol proof |
+| Relay-assisted internet sessions | Plausible | Protocol, relay service, operations, abuse controls, privacy, monitoring | Later product phase |
+| Authoritative hosted game server | Theoretically possible, major rearchitecture | Headless authoritative runtime, state replication, reconciliation, server fleet | Not a near-term GoldenPad feature |
+| Rollback netcode | Blocked today | Deterministic savestate, restore, rewind, side-effect control, resimulation budget | Do not promise |
+
+### Recommended transport direction
+
+For the first two-device LAN experiment, use Apple's Network framework with
+Bonjour discovery, a versioned application protocol, encrypted connections, and
+peer-to-peer interface support. It keeps transport separate from simulation and
+does not require an internet service. GameKit can be evaluated later for Apple-
+ecosystem matchmaking and relay-like connectivity, but it does not replace the
+protocol, compatibility, determinism, or state-ownership work.
+
+Multipeer Connectivity should not be the initial architecture. A convenient
+discovery API is not worth coupling the simulation protocol to a legacy
+high-level session abstraction before determinism is proven.
+
+### Required session handshake
+
+Before a peer can join, both sides must agree on:
+
+- protocol and state-schema version;
+- GoldenPad build and patch-set identity;
+- exact generated-runtime and upstream dependency identities;
+- supported retail revision / converted runtime identity;
+- gameplay-affecting settings, cheats, region/timing policy, and enabled mods;
+- player count, port ownership, match rules, stage, and seed policy; and
+- transport capabilities and maximum accepted input delay.
+
+No ROM bytes, extracted assets, saves, or signing data may cross the network.
+Reject an incompatible peer with a specific reason before starting simulation.
+
+### Synchronization experiments
+
+The first protocol should be disposable and measurement-focused:
+
+1. run the same build and supported data on two local devices;
+2. exchange frame-numbered neutral/controller inputs with a fixed input delay;
+3. record compact state hashes at stable game-thread boundaries;
+4. start in a deterministic menu or controlled match setup;
+5. fail closed on a missing frame or hash mismatch and preserve the first
+   divergent frame number;
+6. test latency, duplication, reordering, packet loss, backgrounding, and peer
+   disconnect without attempting silent recovery; and
+7. only after repeatable agreement, decide between delayed lockstep, an
+   authoritative peer, state replication, or the much larger rollback path.
+
+An input exchange that renders two screens is research evidence. It is not
+online-multiplayer acceptance until real matches, reconnect policy, long-session
+desync checks, compatibility rejection, and adverse-network tests pass.
+
+## Network go/no-go gate
+
+Network implementation is a **go for the bounded M3 research experiment only**
+when every condition below is true:
+
+- real two- to four-controller local ownership is deterministic and physically
+  accepted, including disconnect/reconnect and foreground recovery;
+- TD-01 timing authenticity and TD-02 modern movement semantics are either fixed
+  and frozen or explicitly encoded in the compatibility handshake;
+- a stable frame number and compact state hash remain identical across at least
+  three repeated controlled local matches of the target duration;
+- the current build has no unresolved permanent lifecycle freeze, and network
+  background/disconnect policy is fail-closed;
+- the two target devices have measured CPU, memory, thermal, and frame-time
+  headroom for hashing and input exchange;
+- protocol, build, runtime, ROM-revision, patch, settings, mod, and match identity
+  fields are documented before connection; and
+- no ROM bytes, extracted data, save payload, device identifier, or signing data
+  is required by the protocol.
+
+The decision is **no-go** if identical local runs diverge without a diagnosable
+frame, controller ownership can change implicitly, the only proposal is
+transport without state ownership, or success depends on unvalidated savestate/
+rollback behavior.
+
+Passing this gate authorizes a disposable two-device LAN protocol and evidence
+collection. It does not authorize public matchmaking, an internet service, or a
+multiplayer support claim.
+
+## Enhanced local visuals
+
+GoldenEye applies multiplayer reductions to view distance, fog, debris, glass,
+smoke, scorch marks, casings, and decorative stage props. Higher RT64 output
+resolution does not remove the original stage, effect, vertex, display-list, or
+memory limits.
+
+Evaluate separately:
 
 1. view distance and model LOD;
-2. transient effects and their fixed buffers; and
-3. decorative world props omitted by multiplayer setup data.
+2. transient effects and fixed buffers; and
+3. decorative props omitted by multiplayer setup data.
 
-Higher RT64 output resolution does not remove the original game-side memory,
-display-list or per-frame work limits. Before lifting a limit, record remaining
-stage-pool memory, graphics/vertex buffer headroom, peak active effect counts,
-frame cadence and physical-device thermal behavior. Do not restore AI, collision,
-paths, spawn logic or other gameplay-bearing single-player objects under a
-visual-quality setting.
+Never restore AI, collision, paths, spawns, or gameplay-bearing single-player
+objects under a visual-quality label. Visual enhancement comes after local
+ownership/flicker acceptance and must not be bundled with network work.
 
-### Network multiplayer
+## Milestones and gates
 
-Online and peer-to-peer play require deterministic simulation, ROM/build/mod
-compatibility, synchronized input and lifecycle/reconnect behavior. They remain
-research work only. No network compatibility claim should be made until local
-two-, three- and four-player behavior is stable and deterministic.
+### M0 — Preserve the render baseline
 
-## Sequencing
+- Old black/checkerboard corruption does not recur in two- or four-player video.
+- Single-player rendering, audio, touch, controller P1, saves, and lifecycle stay
+  unchanged.
+- Residual flicker remains disclosed until its own gate closes.
 
-1. Preserve the physically coherent experimental render baseline and complete
-   the remaining two-player input/lifecycle matrix.
-2. Validate real three/four-controller routing separately from the accepted
-   neutral-port four-player render diagnostic.
-3. Extend the diagnostic to macOS with platform-appropriate assignments.
-4. Restore enhanced visual groups individually behind instrumentation.
-5. Reassess networking only after local multiplayer is reliable.
+### M1 — Production local ownership
+
+- Synthetic lifecycle probe passes every connect/disconnect/reconnect order.
+- Touch never changes player implicitly and all lost ports publish neutral.
+- Two to four physical controllers retain stable ports on supported devices.
+- iPhone/iPad and Mac policies are tested separately.
+
+### M2 — Determinism observability
+
+- A stable frame number and compact game-state hash are defined.
+- Identical local runs remain hash-identical for the target match interval.
+- Timing-authenticity and modern movement fixes are frozen before the baseline.
+
+### M3 — Two-device LAN research
+
+- Exact handshake rejects mismatches.
+- Frame-numbered input exchange and desync detection work on two physical iPads.
+- Loss, delay, reorder, app-switch, and disconnect tests fail safely.
+- No claim beyond research is made.
+
+### M4 — Product network decision
+
+Choose internet P2P/GameKit/relay/authoritative direction only from M3 evidence.
+Document service cost, privacy, abuse handling, reconnect behavior, latency
+budget, compatibility policy, and an explicit rollback decision before building
+public matchmaking.
+
+## Current sequence
+
+1. Preserve the accepted Preview 2 viewport/depth repair.
+2. Fix modern sidestep semantics and add the controller-lifecycle probe.
+3. Implement and physically accept stable real 2–4 controller ownership.
+4. Run the depth-rebuild flicker discriminator and decide whether a renderer
+   repair is proportionate.
+5. Add deterministic frame/state observability.
+6. Run a two-device LAN input/hash experiment.
+7. Decide whether internet multiplayer is justified.
+8. Consider enhanced visuals independently.

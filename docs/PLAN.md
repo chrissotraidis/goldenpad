@@ -15,7 +15,140 @@ The native Apple-Silicon macOS extension is a separate gated product track. Its
 research decision, architecture and implementation gates are recorded in
 [`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
-## Milestones
+## Current execution plan (2026-08-22)
+
+Preview 2 is published. The current objective is to repair major single-player
+gameplay and compatibility defects, then harden local multiplayer ownership,
+then decide whether network multiplayer deserves implementation. The historical
+foundation milestones below remain evidence, but they do not set today's order.
+
+Relative sizes are scope indicators, not calendar promises: **S** is one bounded
+seam/probe, **M** crosses a game/host or generated-patch boundary, **L** adds a
+subsystem plus physical matrix, and **XL** adds a supported network product or
+service.
+
+| Work | Size | Primary risk |
+| --- | ---: | --- |
+| TD-01 measurement probe | S | Probe observes the wrong game-side event |
+| TD-02 modern sidestep repair | M | Gameplay fix leaks into menus or original C-button mode |
+| TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
+| TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
+| TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
+| TD-04/TD-05/TD-06 discriminators | S each | Instrumentation changes timing or logs the wrong boundary |
+| TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
+| Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
+| Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
+| Public internet multiplayer product | XL | Synchronization, service, security, reconnect, operations, and support |
+
+### Wave 0 — freeze evidence and scope
+
+Status: **complete for documentation**.
+
+- The accepted mobile single-player and experimental multiplayer render hashes
+  remain regression controls.
+- `TECH_DEBT.md` owns priority and evidence state; `TESTING.md` owns closure
+  gates; `STATUS.md` owns current results.
+- Every implementation change receives one debt ID and an independent rollback.
+- No ROM, save, preference, signing, generated AOT, or unrelated Android work is
+  changed by these repairs.
+
+### Wave 1 — measurement plus the smallest user-facing repairs
+
+Execute and land these as separate review units:
+
+| Order | Work package | Why now | Required output | Promotion gate |
+| ---: | --- | --- | --- | --- |
+| 1 | **TD-01 fire-rate probe** | Global gameplay defect; measurement is behavior-neutral and gates the real fix | Player and guard shots/ammo delta per fixed 100-tick interval on the unmodified baseline | Deterministic repeated numbers recorded in `STATUS.md`; no gameplay behavior change |
+| 2 | **TD-02 modern sidestep repair** | Current public issue; traced, bounded input/gameplay seam | Modern MOVE strafes, LOOK turns; original C-button mode and all menus remain unchanged | Synthetic mapping test plus physical touch and controller acceptance |
+| Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, Preview 2 reproduction, affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
+
+The fire-rate probe and A12 evidence work can proceed without changing accepted
+controls. Sidestep must land and be reaccepted before the later controller-
+lifecycle change because both can touch input publication.
+
+### Wave 2 — major behavior and reliability corrections
+
+1. **TD-01 authenticity patch:** only after Wave 1 records the baseline. Port
+   the player and guard timing seams as a matched generated patch set. Require
+   before/after cadence evidence, semi-automatic regression checks, and hands-on
+   combat reacceptance.
+2. **TD-07 disconnect neutralization and lifecycle probe:** make a lost
+   controller publish neutral, prevent implicit touch reassignment, and freeze
+   the ownership invariants before implementing real controller slots.
+3. **TD-04 lifecycle instrumentation:** add only bounded drawable, present-wait,
+   fence-wait, VI, input-timer, and audio counters. Run the physical transition
+   matrix before selecting a repair.
+4. **TD-05 audio evidence:** read requested frequency and counters from a failing
+   session, then run the ROM-free synthetic discontinuity test. Move ring reset
+   to consumer ownership or honor the requested rate only if the test implicates
+   that seam.
+5. **TD-06 flicker discriminator:** count matched single-/multiplayer depth
+   rebuilds. Do not modify the frozen depth alias repair. Renderer surgery is a
+   go only if the counter and physical video establish the perceptual link.
+
+These packages may gather evidence concurrently, but behavioral repairs land
+one at a time against a freshly accepted baseline.
+
+### Wave 3 — platform hardening
+
+- Resolve TD-03 on affected A12 hardware or publish an evidence-backed support
+  floor.
+- Take the Mac-only TD-08 mouse-clamp repair and TD-09 trailing-edge mask as
+  independent changes behind the native Mac regression gate.
+- Reduce each stage/effect report under TD-10 to one deterministic camera,
+  stage, settings, and expected-reference case before changing game or renderer
+  code.
+- Re-run preservation and package checks after any dependency or generated-patch
+  update.
+
+### Wave 4 — multiplayer readiness and network decision
+
+1. Implement stable primary-runtime controller slots only after Wave 1's
+   lifecycle invariants exist.
+2. Physically accept real two-, three-, and four-controller ownership on mobile;
+   accept a separate no-touch Mac policy.
+3. Define a stable frame number and compact state hash; prove repeated local
+   deterministic matches.
+4. Run the bounded two-iPad LAN input/hash experiment.
+5. Decide whether GameKit, direct P2P with relay fallback, or no network product
+   is justified. Rollback remains blocked until complete state serialization and
+   restore are proven.
+
+The network go/no-go gate is in
+[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md#network-gono-go-gate). No
+discovery, matchmaking, relay, or public online UI begins before it passes.
+
+### Anti-stall and stop rules
+
+- If the unchanged baseline fails a new gate, stop and classify environment,
+  stale generated inputs, or a real regression before implementing the fix.
+- If a diagnostic contradicts the leading hypothesis, update `TECH_DEBT.md` and
+  choose the next discriminator; do not force the planned patch.
+- If a candidate changes an unrelated accepted surface, revert or split it.
+- If required physical hardware or a reporter artifact is unavailable, keep the
+  item open and advance an independent work package rather than guessing.
+- Do not weaken acceptance criteria to make networking, a release, or a support
+  claim appear complete.
+
+### Completion criteria for this plan
+
+This plan is complete only when:
+
+- TD-01 and TD-02 are closed with objective and hands-on evidence;
+- TD-03 has either a verified repair on affected hardware or a deliberate,
+  tested, consistently documented support floor;
+- TD-04 through TD-06 have been reproduced/classified with their discriminating
+  evidence, and any justified repair has passed its physical gate;
+- TD-07 supports stable real local controller ownership on the claimed
+  platforms; and
+- the network go/no-go decision is recorded from determinism and LAN evidence,
+  even if the correct product decision is **no network multiplayer**.
+
+## Historical foundation milestones
+
+The following R–P milestones preserve the project's original bring-up and
+release evidence. Completed boxes are historical facts; open boxes do not
+override the current execution plan above.
 
 ### R — Research and provenance
 
@@ -186,7 +319,7 @@ will be accepted through hands-on touch and controller play.
 ### I — Input and touch
 
 - [x] I1: common normalized input snapshots for touch and controllers.
-- [x] I2: N64-equivalent controls plus modern dual-stick FPS mapping.
+- [ ] I2: N64-equivalent controls plus complete modern dual-stick FPS semantics.
 - [x] I3: movable/resizable/opacity-adjustable phone and tablet layouts.
 - [x] I4: touch editor, persistence, safe areas and sensitivity/dead zones.
 - [ ] I5: validate menu, aim, fire, reload, interact, crouch, weapon, pause and
@@ -195,10 +328,13 @@ will be accepted through hands-on touch and controller play.
 
 Gate: a mission is completable with touch alone and with a physical controller.
 
-I1-I4 are core-connected: exact libultra masks, modern/southpaw dual-stick input,
-four deterministic controller slots, touch/controller merge and independent
-phone/tablet layouts were exercised through the real mobile `osCont*` boundary
-and accepted on physical iPhone and iPad hardware. The editor persists dragged
+I1, I3, and I4 are core-connected: exact libultra masks, modern/southpaw
+touch/look input, controller Player 1, touch/controller diagnostic merge, and
+independent phone/tablet layouts were exercised through the real primary-runtime
+boundary and accepted on physical iPhone and iPad hardware. I2 remains open
+because modern MOVE horizontal still follows the original turn behavior rather
+than strafing; original C-button mode and modern menu behavior must remain
+separate. The editor persists dragged
 positions, per-control scale and global opacity while clamping controls to the
 safe area. Physical gyro remains a separate open gate. The v4 modern defaults use a broad direct-swipe
 look surface whose deltas accumulate until they are consumed once, larger
@@ -270,27 +406,21 @@ and physical-device acceptance keep the performance gate open.
 Gate: four-player iPad match where core support allows it.
 
 M1 now has a substantial Simulator subgate: the Controllers page shows the
-four player slots, keeps touch explicitly on Player 1, and lets a person move a
-connected controller to any slot with occupied destinations swapping. The same
-binary changed the Simulator MFi controller from Player 1 to Player 2 on iPhone
-and iPad, while a linked pure-input probe proved touch never enters Players
-2–4. Real multi-controller hardware acceptance remains open, so M1 stays open.
-The selected desktop core also passed a reproducible two-player Temple
-deathmatch startup smoke with distinct split-screen views and an elapsed match
-timer. That proves the core path beneath M2, not a human-completed match.
-The authentic mobile mode-select menu now has an explicit preparation path too:
-with touch and the gamepad both on Player 1 its Multiplayer row stays disabled,
-as the original game expects only one connected player. Moving the gamepad to
-Player 2 enables the row, and the native Controllers page now explains that
-requirement and confirms when touch + gamepad is ready. Match setup and
-completion remain open.
+four player slots and deterministic swapping for the **legacy MGB64** target.
+That work is a design reference, not evidence that the primary RT64/AOT host has
+multi-controller ownership. The primary host binds one real extended controller;
+its two-player mode is controller P1 plus touch P2, and its four-player mode
+advertises neutral P3/P4 ports only for rendering diagnostics. M1 therefore
+remains open pending a primary-runtime lifecycle probe and physical two- to
+four-controller acceptance.
 
-Preview 2 prioritizes M2 before M3. The immediate repair is limited to stable
-two-player controller Player 1 plus touch Player 2 rendering and input on iOS/
-iPadOS. The deferred four-port diagnostic, enhanced multiplayer visuals and
-network research are recorded in
-[`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md) and must not expand the first
-repair.
+Preview 2 completed the bounded M2/M3 rendering repair: physical four-player
+video kept all quadrants coherent without the former large black/checkerboard
+corruption. Slight lighting flicker and real P2–P4 controller ownership remain
+open, so local multiplayer is still experimental. Network play is a later
+program with determinism, compatibility-handshake, synchronization, transport,
+and adverse-network gates in [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md);
+it must not be bundled into local ownership or renderer work.
 
 ### P — Package and publish
 
@@ -312,10 +442,10 @@ third-party notice and license set. The audited archive is
 `GoldenPad-0.1.0-preview.2-unsigned.ipa`, SHA-256
 `704bdf68f67d1f0925fd1844ab865c263a79e105a6349ef410f365602e6c77e3`.
 
-The exact signed candidate was installed in place on the connected iPhone as
-build 2 without changing its app container or any ROM, save or preference
-payload. It launched successfully; hands-on gameplay approval of this final
-rebuild is the remaining publication gate. Local multiplayer ships only as an
+The exact signed candidate was installed in place on the connected iPhone and
+iPad as build 2 without changing either app container or any ROM, save, or
+preference payload. It launched successfully, received hands-on gameplay
+approval, and Preview 2 was published. Local multiplayer ships only as an
 experimental render baseline with residual flicker and real Player 3/4 routing
 disclosed. The native arm64 Mac app is packaged separately as Alpha.
 
