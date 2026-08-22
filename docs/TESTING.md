@@ -381,8 +381,9 @@ After any later repair, the following full gate still applies.
 For TD-09, first capture the unchanged accepted Mac control at fixed Dam and
 Surface cameras. Measure the suspect far-right strip in physical pixels and
 retain the full frame, not only a crop. A menu or black intro frame is not a
-valid reproduction. If the control cannot reach gameplay or its window becomes
-inaccessible, stop and classify that baseline failure before adding a mask.
+valid reproduction. If the automation path loses window access, stop the exact
+process, inspect bounded post-run progress, and classify tool visibility
+separately from app/runtime health before adding a mask.
 Only after reproduction may a Mac-only opaque one-point SwiftUI overlay be
 compared against the same cameras. Reject it if it hides more than the measured
 host seam, changes any other pixel region, affects input/hit testing, or requires

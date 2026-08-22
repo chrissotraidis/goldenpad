@@ -13,7 +13,7 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, listen to TD-05, and capture TD-06. TD-08/TD-09 source boundaries are isolated, but both live Mac gates wait on a healthy unchanged runtime that reaches gameplay. |
+| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, listen to TD-05, and capture TD-06. TD-08/TD-09 source boundaries are isolated; their live Mac gates need a capture/input route that survives pointer/menu interaction. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
@@ -117,11 +117,12 @@ claimed.
 
 TD-09 is likewise source-bounded but unchanged. Mobile masks one trailing
 SwiftUI point after presentation; Mac does not, while the recorded drawable-
-size substitution remains prohibited. The current build reached file select
-and the exact accepted `7c78b72f...` control reached the mission menu, but both
-lost their accessible window on the first selection/click attempt. Neither
-reached the required fixed Dam/Surface capture, so no Mac mask is implemented
-or accepted.
+size substitution remains prohibited. Computer Use lost access after file/menu
+selection, but bounded logs show the current and exact accepted `7c78b72f...`
+controls continued presenting at `5420/5420/5419` and `2914/2914/2913`
+display-list/VI/presented counts. This is a tool-visibility limitation, not a
+confirmed app stall. No fixed Dam/Surface capture exists, so no Mac mask is
+implemented or accepted.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and

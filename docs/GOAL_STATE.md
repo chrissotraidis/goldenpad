@@ -11,8 +11,8 @@ Updated: 2026-08-22 19:25 CEST
 | Branch | `codex/td09-edge-measurement` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-09 Mac trailing-edge measurement; host ownership isolated, Dam/Surface capture blocked by pre-existing Mac window loss |
-| Phase | L13 source/visual audit: no mask applied; exact accepted control repeated the interaction blocker |
+| Active debt | TD-09 Mac trailing-edge measurement; host ownership isolated, Dam/Surface capture blocked by Computer Use visibility loss |
+| Phase | L13 source/visual audit: no mask applied; bounded logs prove both Mac controls kept presenting |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -25,12 +25,14 @@ blue geometry.
 
 The visual acceptance gate could not be reached. The current diagnostic build
 rendered through file select, and the exact retained Mac Alpha control
-`7c78b72f...` rendered through the main mission menu. On the first
-selection/click attempt, each process remained alive while its window became
-inaccessible. Neither produced a fixed Dam/Surface frame, so the reported strip
-was not measured and no one-point mask was applied. Both exact processes were
-stopped with SIGTERM; protected ROM/save/backup hashes remain unchanged and the
-stale active-session marker is retained.
+`7c78b72f...` rendered through the main mission menu. Computer Use then lost
+window access on the first selection/click attempt. Bounded logs correct the
+initial interpretation: the two sessions kept advancing to
+`dl/vi/presented=5420/5420/5419` and `2914/2914/2913`, so this is tool visibility
+loss rather than evidence of an app/runtime stall. Neither produced a fixed
+Dam/Surface frame, so the reported strip was not measured and no one-point mask
+was applied. Both exact processes were stopped with SIGTERM; protected
+ROM/save/backup hashes remain unchanged and the stale marker is retained.
 
 TD-08's loss boundary is now exact. `NSEvent.deltaX/Y` accumulates until the
 60 Hz Swift publisher multiplies it by `1680 × sensitivity`; the default 2.5
@@ -249,8 +251,8 @@ control.
 | TD-08 live input sampling | BLOCKED BY UNCHANGED BASELINE | Mac process reproduced its existing runtime/UI stall before samples; `dl=0 vi=0 presented=0`. No clamp repair is selected |
 | TD-08 commit/push | PASS | Implementation and evidence commit `b21a327` is pushed on `origin/codex/td08-mouse-clamp-measurement`; `main` was not changed |
 | TD-09 source ownership | PASS | Mobile has a final one-point SwiftUI mask; Mac does not. No RT64/window-size change is required to test the hypothesis |
-| TD-09 current-build reachability | BASELINE FAILED | Current diagnostic build rendered intro/file select, then remained alive with no accessible window on the first selection attempt |
-| TD-09 accepted-control reachability | BASELINE FAILED | Exact `7c78b72f...` Mac Alpha rendered through the mission menu, then remained alive with no accessible window on the first click attempt |
+| TD-09 current-build reachability | RUNTIME PROGRESSED; TOOL LOST VISIBILITY | Current diagnostic build reached file select; bounded log advanced to `dl/vi/presented=5420/5420/5419` after Computer Use lost the window |
+| TD-09 accepted-control reachability | RUNTIME PROGRESSED; TOOL LOST VISIBILITY | Exact `7c78b72f...` Mac Alpha reached the mission menu; bounded log advanced to `2914/2914/2913` after Computer Use lost the window |
 | TD-09 Dam/Surface capture | NOT RUN | Baselines did not reach stable gameplay; menu frames cannot establish the reported strip or accept a mask |
 | TD-09 preservation | PASS | ROMs `7ec491ee...`, save `36d67fe...`, and backup `c01d4013...` remained exact; no source behavior was changed |
 | TD-09 commit/push | PASS | Documentation-only evidence commit `bcb2823` is pushed on `origin/codex/td09-edge-measurement`; `main` was not changed |
@@ -267,7 +269,7 @@ control.
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
 | TD-06 physical flicker localization | WAITING FOR HUMAN/DEVICE INPUT | Depth churn and a broad fixed-render-order effect are rejected; Simulator screenshots cannot close a subtle temporal physical symptom | Record the exact accepted Preview 2 build continuously and identify a repeatable frame/viewport/state transition before more renderer code |
 | TD-08 live Mac clamp trace | BASELINE BLOCKED | Detector/build/mobile-isolation gates pass, but the unchanged Mac runtime stalled before mouse input and yielded no live samples | Recover ordinary uninstrumented Mac gameplay, then run matched slow/medium/fast publisher/queue/consumer measurement before changing behavior |
-| TD-09 Mac edge capture | BASELINE BLOCKED | Current and exact accepted Mac builds both lost their accessible window before fixed Dam/Surface captures | Recover ordinary accepted-control gameplay, quantify the far-right strip, then compare the independent one-point host mask without altering RT64/window sizing |
+| TD-09 Mac edge capture | TOOLING BLOCKED | Both Mac controls continued presenting, but Computer Use lost visibility before fixed Dam/Surface captures | Use a capture route that survives interaction, quantify the unchanged far-right strip, then compare the independent one-point host mask without altering RT64/window sizing |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
 block promotion of their respective candidates; neither justifies starting a
@@ -369,9 +371,9 @@ never writes the saved two- or four-player preferences.
 
 Keep TD-06 unmerged and preserve its exact reverted `5022ffc...` baseline. Do
 not add another lighting or renderer patch until continuous physical Preview 2
-video localizes the symptom. TD-08 and TD-09 now share a precondition: restore
-ordinary interaction/gameplay on the exact accepted Mac control. Then collect
-TD-08 host-to-consumer mouse loss and TD-09 fixed Dam/Surface edge captures as
-separate evidence runs. Until that baseline passes, change neither clamp nor
-mask. Advance only an independent evidence-only lane, and keep networking gated
-behind stable local ownership and deterministic state.
+video localizes the symptom. For TD-08 and TD-09, do not treat Computer Use
+window loss as a runtime failure: bounded counters continued advancing. Use a
+capture/input route that survives pointer/menu interaction, then collect TD-08
+host-to-consumer mouse loss and TD-09 fixed Dam/Surface edge captures as
+separate evidence runs. Until those gates pass, change neither clamp nor mask.
+Keep networking gated behind stable local ownership and deterministic state.

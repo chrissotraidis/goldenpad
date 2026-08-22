@@ -12,14 +12,16 @@
   control at exact executable SHA-256 `7c78b72f4d6fd1697a5fb0572dfe22de6a8680d7df784ceb0752ef7b9527c35d`.
   Both rendered intro/menu frames. The current build reached file select; the
   accepted control reached the main mission menu.
-- Both processes then remained alive while their windows became inaccessible on
-  the first selection/click attempt. Each exact PID was stopped with SIGTERM.
-  This repeats the pre-existing Mac interaction/runtime blocker and prevented
-  the required fixed-camera Dam/Surface capture.
+- Computer Use lost access to each window on the first selection/click attempt.
+  Bounded post-run logs show this was not a runtime stall: the two sessions
+  advanced to `dl/vi/presented=5420/5420/5419` and `2914/2914/2913`. Each exact
+  PID was stopped with SIGTERM. The automation-visibility failure still
+  prevented the required fixed-camera Dam/Surface capture, but it must not be
+  reported as an app-window or renderer failure.
 - No mask, Metal layer, window-size, viewport, or renderer behavior was changed.
   A menu capture cannot establish a gameplay-only blue edge or validate a
-  one-point mask. TD-09 remains open until an unchanged accepted control reaches
-  Dam/Surface and produces a matched capture.
+  one-point mask. TD-09 remains open until a capture path that survives menu
+  interaction records unchanged Dam/Surface and a matched candidate.
 - Both ROM copies remained SHA-256 `7ec491ee...`; the save and backup remained
   `36d67fe...` and `c01d4013...`. The stale `active-session.marker` is retained
   as evidence of the forced diagnostic stops.
