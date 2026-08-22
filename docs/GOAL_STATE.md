@@ -12,7 +12,7 @@ Updated: 2026-08-22 18:05 CEST
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
 | Active debt | TD-06 matched depth discriminator complete; aliased-depth churn rejected; shared lighting/render order remains |
-| Phase | L10 evidence complete; documentation and checkpoint push in progress |
+| Phase | L10 complete: TD-06 evidence review unit committed and pushed |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
@@ -187,6 +187,7 @@ control.
 | TD-06 normal-launch isolation | PASS | Exact final binary returned to `input=external-p1` with no depth-probe or neutral-P3/P4 log entries |
 | ROM-free host verification | PASS | Fresh temporary ARM64 Simulator build passed with the complete inert-stub symbol surface |
 | Mac Alpha rebuild | BLOCKED BEFORE COMPILE | Existing private generated `patches.c` lacks the earlier TD-01 probe symbol; CMake correctly stopped before compiling/linking TD-06. The RT64 query is compiled out under `GOLDENPAD_RECOMP_MAC`; a fresh matched generation campaign is still required |
+| TD-06 commit/push | PASS | Evidence commit `db19f54` is pushed on `origin/codex/td06-depth-rebuild-discriminator`; `main` was not changed |
 
 ## Blocker ledger
 
@@ -297,8 +298,8 @@ never writes the saved two- or four-player preferences.
 
 ## Exact next action
 
-Checkpoint and push TD-06 without merging it. Then start the next independent
-TD-06 unit at the game/renderer boundary: locate shared lighting state that
+Keep TD-06 unmerged. Start the next independent TD-06 unit at the game/renderer
+boundary: locate shared lighting state that
 persists across sequential player passes and add only a fixed-render-order
 discriminator. Do not change the frozen Preview 2 depth-address repair, and do
 not promote a lighting repair without continuous physical four-view evidence.
