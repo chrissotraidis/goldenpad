@@ -255,7 +255,7 @@ control.
 | TD-09 accepted-control reachability | RUNTIME PROGRESSED; TOOL LOST VISIBILITY | Exact `7c78b72f...` Mac Alpha reached the mission menu; bounded log advanced to `2914/2914/2913` after Computer Use lost the window |
 | TD-09 Dam/Surface capture | NOT RUN | Baselines did not reach stable gameplay; menu frames cannot establish the reported strip or accept a mask |
 | TD-09 preservation | PASS | ROMs `7ec491ee...`, save `36d67fe...`, and backup `c01d4013...` remained exact; no source behavior was changed |
-| TD-09 commit/push | PASS | Documentation-only evidence commit `bcb2823` is pushed on `origin/codex/td09-edge-measurement`; `main` was not changed |
+| TD-09 commit/push | PASS | Evidence commit `bcb2823` and runtime-log correction `86f3190` are pushed on `origin/codex/td09-edge-measurement`; `main` was not changed |
 
 ## Blocker ledger
 
