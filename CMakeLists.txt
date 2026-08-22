@@ -132,6 +132,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         Sources/Mac/RecompMacInput.swift
         Sources/Mac/RecompMacMetalCanvas.swift
         Sources/Mac/RecompMacROMStore.swift
+        Support/RecompPrototype/recomp_mac_mouse_clamp_probe.cpp
         Support/RecompPrototype/recomp_rt64_surface_bridge.cpp
         ${goldenpad_mac_patch_sources}
         ${goldenpad_mac_aot_c}

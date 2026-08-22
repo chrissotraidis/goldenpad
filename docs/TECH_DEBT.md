@@ -134,7 +134,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-05 | P1 | Intermittent audible static | **Synthetic discriminator implemented; normal Simulator underruns reproduced; physical symptom still unclassified** | Final chain is requested/source 22.05 kHz through AVAudioEngine's 48 kHz session/mixer. 1,110,144 synthetic frames had zero ring errors, >0.05 jumps, or drops but 4,480 underrun frames/37 callbacks. A matched normal run reproduced nearly the same cadence (3,335/26 versus 3,195/27 near 605k rendered frames). Rate mismatch/ring corruption are rejected; cadence/reserve is the leading seam | Run the same synthetic probe with physical listening across speaker, Bluetooth, route/interruption, and retained lifecycle; tune reserve only if the audible event aligns with underruns and latency remains acceptable |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed; two runtime hypotheses rejected** | Matched single-player/four-player runs recorded zero RT64 depth `formatChanged` rebuilds. A launch-only fixed-`lvlRender` order produced no systematic four-view luminance improvement and looked worse to the user, so it was reverted. The physical perceptual cause remains open | Record the exact accepted Preview 2 baseline continuously on a physical device and identify a repeatable frame-local symptom before adding any further lighting/renderer patch; keep the depth-address repair frozen |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Disconnect-containment candidate; code + Simulator pass** | Explicit routes now neutralize paired-controller loss, retain the active controller across enumeration reorder, separate overlay/scene suspension, and prove controller-P1/touch-P2 without persisting test mode. Stable real P2-P4 controller slots are still absent | Physical held-input disconnect/reconnect/background acceptance, then design and prove explicit real P2-P4 slots and assignment policy |
-| TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Confirmed** arithmetically from both clamps | Queue saturation and the `[-1, 1]` consumer clamp cap turn rate and discard faster deltas; sensitivity cannot solve the structural loss | Measure host delta versus consumed look, then widen both clamps behind `GOLDENPAD_RECOMP_MAC` and run the Mac input/render gate |
+| TD-08 | P2 | Mac mouse ceiling and discarded fast motion | **Source-confirmed; Mac-only detector implemented; repair not selected** | At default 2.5 sensitivity the Swift publisher saturates at about 7.8 host-delta units per 60 Hz interval, then the atomic queue clamps again to `±32767` before the `[-1, 1]` consumer. The opt-in observer is mobile-binary-neutral, but the current Mac runtime stalled before live samples | Recover a healthy unchanged Mac baseline, record raw/published/consumed evidence, then widen only the proven lossy seam and run the complete Mac input/render/performance gate |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Reports are not reduced; pinned sky is a partial reconstruction and water handling is absent, so Frigate water is known upstream incompleteness rather than a generic geometry regression | One issue per stage/settings/camera reproduction; compare against original behavior and pinned upstream limitation before changing code |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; no synchronization, handshake, savestate, rollback, matchmaking, or transport layer exists | Complete TD-07, prove deterministic state hashes, then run the two-device LAN experiment in `MULTIPLAYER_ROADMAP.md` |
@@ -154,7 +154,7 @@ or changed. Pinned-upstream paths refer to the exact revisions in
 | TD-05 | `Sources/RecompPrototypeAudio.swift`; `Support/RecompPrototype/recomp_game_start.cpp` | Reference host honors `set_frequency`; accepted runs had healthy counters but did not capture reported static | [`TESTING.md` audio discontinuity gate](TESTING.md#audio-discontinuity-gate) plus listening acceptance |
 | TD-06 | Preview 2 viewport/depth patch and RT64 diagnostic bridge | RT64 `rt64_framebuffer_manager.cpp` and `rt64_state.cpp`; physical video observed slight flicker | [`TESTING.md` residual flicker gate](TESTING.md#residual-flicker-gate) and continuous physical video |
 | TD-07 | `Sources/RecompPrototypeInput.swift`; `Support/RecompPrototype/recomp_game_start.cpp` | Single `GCController.controllers().first` binding; diagnostic port flags; legacy slots are not connected | [`TESTING.md` controller ownership lifecycle gate](TESTING.md#controller-ownership-lifecycle-gate) plus physical 2–4 controller runs |
-| TD-08 | `queueClampedAxis`; `recomp_get_camera_inputs`; `Sources/Mac/RecompMacInput.swift` | Fixed 3°/frame game-side look step and two source-confirmed clamps | Mac input/render gate in [`TESTING.md`](TESTING.md#native-macos-regression-gate) |
+| TD-08 | `Sources/Mac/RecompMacInput.swift`; `Support/RecompPrototype/recomp_mac_mouse_clamp_probe.cpp`; `queueClampedAxis`; `recomp_get_camera_inputs` | Default publisher threshold ≈7.8 host-delta units/interval; opt-in detector self-check; exact unchanged `5022ffc...` mobile executable | TD-08 measurement gate plus Mac input/render gate in [`TESTING.md`](TESTING.md#native-macos-regression-gate) |
 | TD-09 | `Sources/Mac/GoldenPadMacApp.swift` | Mobile one-point seam mask in `Sources/RecompPrototypeApp.swift`; observed Mac edge | Fixed-camera Dam/Surface before/after captures with no other pixel-region regression |
 | TD-10 | Stage-specific game patches and RT64 effect support | Pinned partial sky reconstruction, absent water handling, unreduced user reports | One deterministic stage/settings/camera reproducer per claimed defect |
 | TD-11 | No current implementation seam | Controller polling exists; serialization, rollback, handshake, transport, and state hashes do not | M0–M3 gates in [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md#milestones-and-gates) |
@@ -215,7 +215,8 @@ landing sequence is:
    physical Preview 2 recording before further renderer instrumentation;
 6. act on the A12X evidence with a bounded repair or tested support-floor
    decision;
-7. take the contained Mac-only TD-08/TD-09 fixes; and
+7. recover a healthy Mac baseline, complete TD-08 live loss measurement, then
+   take any TD-08/TD-09 Mac-only fixes independently; and
 8. implement stable real multi-controller ownership before any network layer.
 
 Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
@@ -236,10 +237,11 @@ evidence.
 
 The remaining Mac alpha debt is explicit:
 
-- mouse look works but the relative-delta queue and consumer both clamp it,
-  imposing an approximately 180°/s hip-fire and 60°/s aiming ceiling at the
-  60 Hz game loop while discarding faster motion; this needs a Mac-gated seam
-  repair rather than a wider sensitivity slider;
+- mouse look works but the Swift publisher and relative-delta queue both clamp
+  to `±32767`; at default sensitivity the first clamp saturates at about 7.8
+  host-delta units per 60 Hz interval. An opt-in Mac-only loss detector now exists and is
+  proven absent from the exact mobile baseline, but the current Mac runtime
+  stalled before live sampling. No clamp has been widened;
 - a thin blue strip remains at the far-right render edge;
 - the Mac build performs below the iPhone/iPad versions, and prior iterations
   have staggered or frozen under load, so sustained gameplay still needs a

@@ -39,6 +39,17 @@ private func goldenPadRecompRequestReturnToTitle()
 @_silgen_name("goldenpad_recomp_desktop_gameplay_active")
 private func goldenPadRecompDesktopGameplayActive() -> Int32
 
+@_silgen_name("goldenpad_recomp_set_mac_mouse_clamp_probe_enabled")
+private func goldenPadRecompSetMacMouseClampProbeEnabled(_ enabled: Int32)
+
+@_silgen_name("goldenpad_recomp_note_mac_mouse_publish")
+private func goldenPadRecompNoteMacMousePublish(
+    _ rawX: Float,
+    _ rawY: Float,
+    _ publishedX: Int32,
+    _ publishedY: Int32
+)
+
 enum RecompMacBindableKey: UInt16, CaseIterable, Identifiable {
     case a = 0, s = 1, d = 2, f = 3, h = 4, g = 5
     case z = 6, x = 7, c = 8, v = 9, b = 11
@@ -187,11 +198,15 @@ final class RecompMacInput: ObservableObject {
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
     private var mouseSensitivity: Float = 2.5
+    private let mouseClampProbeEnabled = ProcessInfo.processInfo.arguments.contains(
+        "--mouse-clamp-probe"
+    )
     private var keyboardBindings = RecompMacKeyboardBindings.load()
     private var observers: [NSObjectProtocol] = []
     private var ticker: Timer?
 
     init() {
+        goldenPadRecompSetMacMouseClampProbeEnabled(mouseClampProbeEnabled ? 1 : 0)
         let center = NotificationCenter.default
         for name in [Notification.Name.GCControllerDidConnect, .GCControllerDidDisconnect] {
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
@@ -500,8 +515,13 @@ final class RecompMacInput: ObservableObject {
         // The previous desktop rate remained too slow in physical play. Keep
         // the setting adjustable while doubling the actual mouse response.
         let scale = 1_680 * mouseSensitivity
-        let x = Int32(max(-32_767, min(32_767, delta.x * scale)))
-        let y = Int32(max(-32_767, min(32_767, -delta.y * scale)))
+        let rawX = delta.x * scale
+        let rawY = -delta.y * scale
+        let x = Int32(max(-32_767, min(32_767, rawX)))
+        let y = Int32(max(-32_767, min(32_767, rawY)))
+        if mouseClampProbeEnabled {
+            goldenPadRecompNoteMacMousePublish(rawX, rawY, x, y)
+        }
         goldenPadRecompQueueRelativeLook(0, x, y)
     }
 

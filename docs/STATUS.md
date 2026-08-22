@@ -13,7 +13,7 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works. An isolated disconnect-containment candidate passes code/Simulator gates; physical reconnect, real P2-P4 slots, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, and listen to the TD-05 synthetic probe; TD-06 depth churn and fixed render order are rejected, so exact physical frame-local capture is next. |
+| Immediate engineering gate | Physically accept TD-02/TD-07, classify TD-04, listen to TD-05, and capture TD-06. TD-08's Mac-only clamp observer is built and mobile-neutral, but live measurement waits on a healthy unchanged Mac runtime. |
 | Immediate user-facing repair | TD-02 code/Simulator work is complete; physical touch/controller feel remains before promotion. |
 
 Documentation ownership:
@@ -104,6 +104,16 @@ enough to retain as the Mac alpha baseline, but it is not at iPhone/iPad quality
 mouse look remains too slow, desktop controls remain less polished, a thin blue
 strip persists at the far-right render edge, and longer performance testing is
 still open.
+
+TD-08 is now source-narrowed without a behavior change. At the default 2.5
+sensitivity, the Swift mouse publisher reaches `±32767` at about 7.8 host-delta units per
+60 Hz interval, and the atomic queue clamps to the same range again. An opt-in
+Mac-only detector records publisher saturation/loss; the rebuilt full RT64
+Simulator executable returned exactly to `5022ffc...` with neither detector
+symbol. The diagnostic Mac target builds at SHA-256 `1d49e815...`, but its
+current run reproduced a pre-existing runtime/UI stall before live mouse
+samples. The ceiling is not repaired and no end-to-end runtime result is
+claimed.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and

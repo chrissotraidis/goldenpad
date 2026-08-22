@@ -26,6 +26,7 @@ For a long-running unattended implementation session, follow
 | 2 | **TD-04 physical lifecycle classification** | The opt-in bounded discriminator and an intermittent Simulator freeze reproduction are complete. Run the physical matrix; route all-flat counters to runtime resume and presentation-only stalls to matched RT64/Plume timing instrumentation. No repair is selected yet. |
 | 3 | **TD-05 physical audio classification** | Synthetic rate/ring checks pass; Simulator underruns remain without detected jumps. Listen on speaker/Bluetooth through route/interruption/lifecycle before selecting cadence, reserve, or reset ownership work. |
 | 4 | **TD-06 physical flicker capture** | Depth rebuild churn and a broad fixed-`lvlRender` order effect are rejected. Capture the exact accepted Preview 2 build continuously on a physical device and reduce the shimmer to a repeatable frame/viewport/state transition before adding another renderer patch. |
+| 5 | **TD-08 healthy Mac baseline + live clamp measurement** | The Mac-only observer builds and the exact mobile executable is unchanged. Recover ordinary Mac gameplay first, then collect matched slow/medium/fast raw, published, queued, and consumed look evidence. Do not widen a clamp from source arithmetic alone. |
 | Blocked timing lane | **Finish TD-01 sustained fire-rate baseline** | The probe and three guard windows pass (13/17/18 events per 100 ticks). Three player tap-response windows also pass ammo/event agreement but are not sustained. Resume only with a repeatable ordinary setup providing at least 34 KF7 rounds; do not inject inventory. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
@@ -64,7 +65,8 @@ one at a time against a freshly accepted baseline.
 
 - Resolve or deliberately document the A12-family support floor from affected
   hardware evidence.
-- Take Mac mouse and edge-mask repairs independently.
+- After TD-08 live evidence, take any Mac mouse repair independently from the
+  TD-09 edge-mask repair.
 - Reduce stage/effect reports to deterministic reproductions.
 - Implement stable real two- to four-controller ownership.
 - Add deterministic frame numbers and state hashes.

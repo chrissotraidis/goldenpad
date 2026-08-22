@@ -1,6 +1,6 @@
 # Autonomous goal state
 
-Updated: 2026-08-22 18:52 CEST
+Updated: 2026-08-22 19:10 CEST
 
 ## Session identity
 
@@ -8,14 +8,36 @@ Updated: 2026-08-22 18:52 CEST
 | --- | --- |
 | Goal | Evidence-gated GoldenPad improvement loop |
 | Goal thread | `01a028b2-77e4-7441-b0cd-d02a1a9950a5` |
-| Branch | `codex/td06-lighting-render-order` |
+| Branch | `codex/td08-mouse-clamp-measurement` |
 | Starting main | `788667eb6b34ad0ca6154c96b2503db5ede73c1f` |
 | Release control | `v0.1.0-preview.2` |
-| Active debt | TD-06 depth churn and broad fixed-render-order effects rejected; physical frame-local capture remains |
-| Phase | L11 complete: failed render-order experiment reverted, documented, and pushed |
+| Active debt | TD-08 Mac mouse-delta loss measurement; source ownership isolated, live runtime sampling blocked by pre-existing Mac stall |
+| Phase | L12 evidence checkpoint: Mac-only detector built, exact mobile baseline preserved, no behavior repair selected |
 | Merge policy | Push topic branch; no merge to `main` without user review |
 
 ## Current determination
+
+TD-08's loss boundary is now exact. `NSEvent.deltaX/Y` accumulates until the
+60 Hz Swift publisher multiplies it by `1680 × sensitivity`; the default 2.5
+setting reaches `±32767` at about 7.8 host-delta units per interval. The atomic queue
+applies the same range again, and `recomp_get_camera_inputs` converts the result
+to `[-1, 1]`. Sensitivity changes where loss begins but cannot preserve motion
+past either fixed-width boundary.
+
+The opt-in `--mouse-clamp-probe` observes raw versus published values without
+changing them. Its native implementation is a separate Mac-only file. An
+initial shared-runtime layout was discarded when mobile hash parity failed;
+the isolated design regenerated the exact accepted `5022ffc...` full RT64
+Simulator executable and exports no Mac probe symbols there. The native Mac
+target builds, exports both hooks, and has diagnostic executable SHA-256
+`1d49e815c42bef08e8df72f5ee980e6acd4da3d00ba52c54e4ab371f1c7d7b18`.
+
+Live measurement remains open. The current Mac Alpha stayed active but stalled
+before mouse sampling, with RT64 at `dl=0 vi=0 presented=0` and its UI
+inaccessible. The diagnostic process was stopped; its stale active-session
+marker remains evidence, and protected ROM/save/backup hashes were unchanged.
+This establishes detector readiness and source arithmetic, not a successful
+runtime input trace and not permission to widen a clamp.
 
 TD-06 now has a bounded counter at the exact pinned RT64 depth
 `formatChanged` seam. It counts total rebuilds and width, size, and RDRAM
@@ -202,9 +224,14 @@ control.
 | Baseline restoration | PASS | Removing the experiment regenerated executable SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface` exactly; no toolchain drift |
 | Render-order preservation/clean end | PASS | Both ROMs, active/backup saves, and preferences remained byte-identical; Home removed `active-session.marker` |
 | ROM-free host verification | PASS | Fresh temporary ARM64 Simulator build passed with the complete inert-stub symbol surface |
-| Mac Alpha rebuild | BLOCKED BEFORE COMPILE | Existing private generated `patches.c` lacks the earlier TD-01 probe symbol; CMake correctly stopped before compiling/linking TD-06. The RT64 query is compiled out under `GOLDENPAD_RECOMP_MAC`; a fresh matched generation campaign is still required |
+| TD-06-era Mac build directory | HISTORICAL INPUT BLOCKER | Its private generated `patches.c` lacked the earlier TD-01 probe. This did not persist: the current matched Mac source built successfully for TD-08 below |
 | TD-06 commit/push | PASS | Evidence commit `db19f54` is pushed on `origin/codex/td06-depth-rebuild-discriminator`; `main` was not changed |
 | TD-06 render-order commit/push | PASS | Experiment `cc1cea0`, revert `74646c3`, and evidence commit `5c0f41f` are pushed on `origin/codex/td06-lighting-render-order`; `main` was not changed |
+| TD-08 ownership audit | PASS | Host publisher, atomic queue, normalized consumer, and fixed game-side turn steps are traced; default publisher saturation begins at about 7.8 host-delta units per interval |
+| TD-08 Mac-only observer | PASS | `--mouse-clamp-probe` records raw/published saturation and lost units without changing published values; detector self-check reports `PASS` |
+| TD-08 mobile isolation | PASS | Full RT64 Simulator rebuilt to exact SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface`; neither Mac probe symbol is present |
+| TD-08 Mac build | PASS | Native target exports both probe hooks; diagnostic executable SHA-256 `1d49e815c42bef08e8df72f5ee980e6acd4da3d00ba52c54e4ab371f1c7d7b18` |
+| TD-08 live input sampling | BLOCKED BY UNCHANGED BASELINE | Mac process reproduced its existing runtime/UI stall before samples; `dl=0 vi=0 presented=0`. No clamp repair is selected |
 
 ## Blocker ledger
 
@@ -217,6 +244,7 @@ control.
 | TD-05 physical audio | WAITING FOR HUMAN/DEVICE INPUT | Simulator rejects rate mismatch/ring corruption but observes underruns without detected jumps | Listen to the synthetic probe on speaker and Bluetooth across route/interruption/lifecycle; retain the same-session counters when static is heard |
 | TD-03 A12-family compatibility | EVIDENCE BLOCKED | No full redacted `.ips` or local A12 reproduction | Obtain the complete crash artifact and reproduce Preview 2 before selecting a renderer change or support floor |
 | TD-06 physical flicker localization | WAITING FOR HUMAN/DEVICE INPUT | Depth churn and a broad fixed-render-order effect are rejected; Simulator screenshots cannot close a subtle temporal physical symptom | Record the exact accepted Preview 2 build continuously and identify a repeatable frame/viewport/state transition before more renderer code |
+| TD-08 live Mac clamp trace | BASELINE BLOCKED | Detector/build/mobile-isolation gates pass, but the unchanged Mac runtime stalled before mouse input and yielded no live samples | Recover ordinary uninstrumented Mac gameplay, then run matched slow/medium/fast publisher/queue/consumer measurement before changing behavior |
 
 TD-02's physical gate and TD-07's physical lifecycle gate are independent. Both
 block promotion of their respective candidates; neither justifies starting a
@@ -318,9 +346,10 @@ never writes the saved two- or four-player preferences.
 
 Keep TD-06 unmerged and preserve its exact reverted `5022ffc...` baseline. Do
 not add another lighting or renderer patch until continuous physical Preview 2
-video localizes the symptom to a repeatable frame/viewport/state transition.
-With TD-01 formally blocked and TD-02/TD-03/TD-04/TD-05/TD-06/TD-07 waiting on
-physical or external evidence, re-audit the next independently testable item.
-TD-08 is the earliest contained source-backed candidate; isolate its Mac-only
-mouse-delta clamp measurement before any behavior change. Keep networking
-gated behind stable local ownership and deterministic state.
+video localizes the symptom. TD-08's detector is ready, but the unchanged Mac
+runtime must first reach ordinary gameplay without the probe. When it does,
+collect matched slow/medium/fast raw, published, queued, and consumed look
+values; change only the boundary proven to discard motion. If that baseline
+stall repeats, leave TD-08 behavior unchanged and advance TD-09's independent
+measurement or another evidence-only lane. Keep networking gated behind stable
+local ownership and deterministic state.

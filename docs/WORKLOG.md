@@ -1,5 +1,36 @@
 # Worklog
 
+## 2026-08-22 — TD-08 Mac mouse-clamp ownership isolated
+
+- Traced relative mouse input from `NSEvent.deltaX/Y` through the 60 Hz Swift
+  publisher, `goldenpad_recomp_queue_touch_look`, the atomic queue, and
+  `recomp_get_camera_inputs`. At the default 2.5 sensitivity, Swift reaches its
+  `±32767` publication clamp at only about 7.8 host-delta units per publish interval; the
+  queue applies the same limit again before the game consumes `[-1, 1]` look.
+- Added opt-in `--mouse-clamp-probe`. It observes raw versus published Swift
+  deltas, counts saturated axes/lost units, and changes no look value. Its C++
+  implementation is a separate Mac-only source file. Normal launches perform a
+  one-time disabled reset and no per-sample probe work.
+- Rejected an initial shared-runtime instrumentation layout because the rebuilt
+  mobile executable changed even though its branches were compiled out. After
+  moving the detector out of the shared runtime, the full RT64 Simulator build
+  returned exactly to accepted SHA-256
+  `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface`
+  and contains neither Mac probe symbol.
+- The native Mac target builds successfully and exports both opt-in hooks; its
+  diagnostic executable SHA-256 is
+  `1d49e815c42bef08e8df72f5ee980e6acd4da3d00ba52c54e4ab371f1c7d7b18`.
+  The detector self-check reports `PASS` with behavior unchanged.
+- Live delta sampling is not claimed. The current Mac Alpha reproduced its
+  pre-existing runtime/UI stall before mouse input could be exercised: the
+  process remained active while RT64 stayed at `dl=0 vi=0 presented=0` and the
+  UI became inaccessible. The exact diagnostic process was stopped; the stale
+  `active-session.marker` is retained as evidence. ROMs, save, and backup
+  remained byte-identical.
+- TD-08 is therefore narrowed, not fixed. Do not widen either clamp until a
+  healthy unchanged Mac baseline can produce matched raw/published/consumed
+  samples and pass the full native input/render/performance gate.
+
 ## 2026-08-22 — TD-06 render-order hypothesis rejected and reverted
 
 - Confirmed from the matched GoldenEye source that `shuffle_player_ids()`

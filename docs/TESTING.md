@@ -362,6 +362,22 @@ generation rather than calling A12X non-ARM64.
 
 ### Native macOS regression gate
 
+For TD-08 measurement, launch only a diagnostic Mac build with
+`--mouse-clamp-probe`. First require the detector self-check to report `PASS`
+and `behavior=unchanged`. In live Dam gameplay, record at least slow, medium,
+and fast horizontal and vertical sweeps and retain raw maximum, published
+sample count, saturated-axis count, and lost units. Pair those observations with
+the queue/consumer values from the same interval before changing a limit. A
+source calculation or detector self-check proves the observer, not live input
+loss. If the unchanged Mac baseline stalls before gameplay, stop and classify
+that baseline failure; do not use stalled or zero-sample output to authorize a
+mouse repair.
+
+The diagnostic must remain Mac-only. Rebuild the full RT64 Simulator product
+and require both absence of the two Mac probe symbols and exact accepted
+executable SHA-256 `5022ffc...`. Normal Mac launches must not enable the probe.
+After any later repair, the following full gate still applies.
+
 Before promoting a native `GoldenPad.app`, test without a recorder, live log
 stream, profiler, or background Simulator control:
 

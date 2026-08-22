@@ -35,7 +35,7 @@ service.
 | TD-07 disconnect neutralization/probe | S | Code/Simulator pass; physical notification timing remains |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
 | TD-04/TD-05/TD-06 discriminators | S each | TD-04/TD-05 host probes are implemented; TD-06 depth churn and a broad fixed-render-order effect are rejected, leaving physical frame-local capture |
-| TD-08/TD-09 Mac-only repairs | S each | Cross-platform leakage or renderer coverage regression |
+| TD-08 measurement/repair and TD-09 repair | S each | TD-08 observer is isolated and mobile-neutral; live evidence is blocked by a pre-existing Mac stall. Any behavior change still risks input/render regression |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
 | Two-device deterministic LAN experiment | L | Simulation divergence despite working transport |
 | Public internet multiplayer product | XL | Synchronization, service, security, reconnect, operations, and support |
@@ -99,8 +99,10 @@ one at a time against a freshly accepted baseline.
 
 - Resolve TD-03 on affected A12 hardware or publish an evidence-backed support
   floor.
-- Take the Mac-only TD-08 mouse-clamp repair and TD-09 trailing-edge mask as
-  independent changes behind the native Mac regression gate.
+- TD-08's Mac-only publisher observer and mobile-isolation gate pass. Restore a
+  healthy unchanged Mac gameplay baseline, collect live host-to-consumer loss,
+  and only then take the smallest proven clamp repair. Keep TD-09's trailing-
+  edge mask independent behind the native Mac regression gate.
 - Reduce each stage/effect report under TD-10 to one deterministic camera,
   stage, settings, and expected-reference case before changing game or renderer
   code.
