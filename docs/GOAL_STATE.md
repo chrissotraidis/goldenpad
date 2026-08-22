@@ -232,6 +232,7 @@ control.
 | TD-08 mobile isolation | PASS | Full RT64 Simulator rebuilt to exact SHA-256 `5022ffc11d4d127b1714bd9aa728ea2eb5b2ff4736c656ab7cbd0fb5747fface`; neither Mac probe symbol is present |
 | TD-08 Mac build | PASS | Native target exports both probe hooks; diagnostic executable SHA-256 `1d49e815c42bef08e8df72f5ee980e6acd4da3d00ba52c54e4ab371f1c7d7b18` |
 | TD-08 live input sampling | BLOCKED BY UNCHANGED BASELINE | Mac process reproduced its existing runtime/UI stall before samples; `dl=0 vi=0 presented=0`. No clamp repair is selected |
+| TD-08 commit/push | PASS | Implementation and evidence commit `b21a327` is pushed on `origin/codex/td08-mouse-clamp-measurement`; `main` was not changed |
 
 ## Blocker ledger
 
