@@ -299,11 +299,12 @@ remove that container, so preserve your own source and saves before uninstalling
 
 ## Touch controls
 
-GoldenPad defaults to a modern dual-stick FPS layout:
+GoldenPad defaults to its current touch template, combining the original
+GoldenEye movement semantics with modern relative look:
 
 | Control | Behavior |
 |---|---|
-| **MOVE** | Large left virtual stick |
+| **MOVE** | Large left virtual stick; forward/back and turn, with no sidestep in the current template |
 | **LOOK** | Relative right-thumb swipe region; movement stops when the swipe stops |
 | **FIRE** | N64 Z / primary fire |
 | **AIM** | N64 R; Toggle by default, with Hold available |
@@ -323,6 +324,12 @@ Touch Controls also contains:
 - Toggle or Hold aim behavior;
 - the current iPhone or iPad touch layout.
 
+The current touch template does not expose GoldenEye's native C-left/C-right
+sidestep inputs. A future sidestep-capable touch template or control submenu is
+tracked in [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8). The
+accepted iPhone and iPad layouts remain unchanged while that design and its
+physical-device behavior are evaluated.
+
 In edit mode, drag a control directly over the running game. The selected
 control receives a yellow outline and the always-visible top slider resizes it
 from 55–160%; the opacity slider adjusts that selected control from 20–100%.
@@ -341,7 +348,10 @@ accepted tablet profile.
 The primary build automatically uses the first Xbox/MFi extended gamepad for
 Player 1 and hides the touch overlay while it is connected. Movement, modern
 right-stick look, aim, fire, action, weapon, crouch and Start are physically
-accepted. **Settings → Controller → Button mapping** can reassign the face
+accepted. **Settings → Controller → Right stick → Original N64 C-buttons**
+restores GoldenEye's native C-left/C-right sidestep input, but replaces modern
+analog right-stick look with the original C-button behavior. **Settings →
+Controller → Button mapping** can reassign the face
 buttons, bumpers, and triggers; sticks, D-pad, and Menu/Start retain their
 standard roles. For hardware-limited testing, **Cheats & Testing → Two-player input
 test** keeps the attached controller as Player 1 and exposes touch controls as
