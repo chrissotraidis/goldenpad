@@ -17,13 +17,14 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
-| 2 | **TD-02 modern sidestep repair** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus and Original N64 C-button mode remain unchanged. |
+| 1 | **Preview 3 Mac control acceptance** | Confirm the rebuilt input-only candidate: Control crouch, R reload, right mouse Action, middle/wheel cycling, 1–9/0 inventory, Space unassigned, Shift+W/S neutral, slightly lower mouse sensitivity, unchanged Dam/Surface rendering, and sustained responsiveness. |
+| 2 | **TD-02 modern sidestep acceptance** | Modern MOVE horizontal strafes and LOOK horizontal turns on touch and controller; menus, multiplayer fallback, and Original N64 C-button mode remain unchanged. |
+| 3 | **TD-01 fire-rate measurement probe** | Repeatable player and guard shots/ammo delta over a fixed 100-tick interval on the unchanged baseline. No gameplay behavior change. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, Preview 2 reproduction on A12-family hardware, and comparison with a newer accepted device. No speculative renderer patch. |
 
-Land TD-01 and TD-02 as separate review units. The fire-rate probe can be built
-without changing controls. A12 evidence collection can proceed independently of
-both.
+Do not merge the Mac candidate or TD-02 because it builds. Each remains isolated
+until its physical control matrix passes. Land the fire-rate probe separately;
+A12 evidence collection can proceed independently of all three.
 
 ## Do immediately after
 

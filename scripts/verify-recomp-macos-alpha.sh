@@ -88,6 +88,11 @@ for required_symbol in \
   _goldenpad_recomp_set_controller_state \
   _goldenpad_recomp_set_right_analog \
   _goldenpad_recomp_request_crouch_toggle \
+  _goldenpad_recomp_request_inventory_slot \
+  _goldenpad_recomp_request_reload \
+  _goldenpad_recomp_consume_crouch_toggle \
+  _goldenpad_recomp_consume_inventory_slot \
+  _goldenpad_recomp_consume_reload \
   _goldenpad_recomp_queue_mouse_look \
   _goldenpad_recomp_desktop_gameplay_active
 do

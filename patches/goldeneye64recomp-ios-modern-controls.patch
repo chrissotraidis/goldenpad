@@ -14,7 +14,7 @@ diff --git a/patches/patches.h b/patches/patches.h
 index 77b502e..f952ae0 100644
 --- a/patches/patches.h
 +++ b/patches/patches.h
-@@ -117,6 +117,10 @@ int recomp_printf(const char* fmt, ...);
+@@ -117,6 +117,21 @@ int recomp_printf(const char* fmt, ...);
      extern u8 identifier[]
  
  float recomp_get_aspect_ratio(float);
@@ -22,6 +22,17 @@ index 77b502e..f952ae0 100644
 +s32 goldenpad_recomp_consume_crouch_toggle(s32 controllernum);
 +s32 goldenpad_recomp_unlock_all_missions_enabled(void);
 +s32 goldenpad_recomp_consume_return_to_title(void);
++s32 goldenpad_recomp_consume_reload(s32 controllernum);
++s32 goldenpad_recomp_consume_inventory_slot(s32 controllernum);
++s32 currentPlayerGetCrouchPos(void);
++void currentPlayerAdjustCrouchPos(s32 value);
++u32 bondwalkItemCheckBitflags(s32 item, u32 mask);
++s32 getCurrentPlayerWeaponId(s32 hand);
++void attempt_reload_item_in_hand(s32 hand);
++s32 bondinvCountTotalItemsInInv(void);
++s32 bondinvGetTextbyInvIndex(s32 index);
++void currentPlayerUnEquipWeaponWrapper(s32 hand, s32 item);
++void bondinvSetCurEquippedItem(s32 index);
  void recomp_crash(const char* err);
  
  #endif
@@ -29,7 +40,7 @@ diff --git a/patches/syms.ld b/patches/syms.ld
 index 31e51b1..b028f61 100644
 --- a/patches/syms.ld
 +++ b/patches/syms.ld
-@@ -76,4 +76,7 @@ boot_osPiRawStartDma = 0x8F000100;
+@@ -76,4 +76,9 @@ boot_osPiRawStartDma = 0x8F000100;
  osGetCount_recomp = 0x8F000104;
  sprintf_recomp = 0x8F000108;
  osPfsInit_recomp = 0x8F00010C;
@@ -39,11 +50,13 @@ index 31e51b1..b028f61 100644
 +goldenpad_recomp_consume_crouch_toggle = 0x8F000114;
 +goldenpad_recomp_unlock_all_missions_enabled = 0x8F000118;
 +goldenpad_recomp_consume_return_to_title = 0x8F00011C;
++goldenpad_recomp_consume_reload = 0x8F000120;
++goldenpad_recomp_consume_inventory_slot = 0x8F000124;
 diff --git a/patches/workbench_theboy.c b/patches/workbench_theboy.c
 index d4424c7..64f6206 100644
 --- a/patches/workbench_theboy.c
 +++ b/patches/workbench_theboy.c
-@@ -473,6 +473,75 @@ void InitFrameRateControl(void)
+@@ -473,6 +473,99 @@ void InitFrameRateControl(void)
  extern s32 g_DebugMode;
  extern s32 g_DebugHighlightedOption;
  
@@ -54,17 +67,15 @@ index d4424c7..64f6206 100644
 +
 +static void goldenpadApplyModernTouchControls(void)
 +{
-+    static s32 crouched[4] = {FALSE, FALSE, FALSE, FALSE};
 +    s32 playernum = get_cur_playernum();
++    s32 inventorySlot;
++    const u32 disableCrouchFlag = 0x8000u;
++    const s32 crouchSquat = 0;
 +    f32 lookX = 0.0f;
 +    f32 lookY = 0.0f;
 +    f32 degreesPerFrame;
 +
 +    if (goldenpad_recomp_consume_return_to_title()) {
-+        crouched[0] = FALSE;
-+        crouched[1] = FALSE;
-+        crouched[2] = FALSE;
-+        crouched[3] = FALSE;
 +        if (g_StageNum != LEVELID_TITLE) {
 +            bossRunTitleStage();
 +        }
@@ -74,9 +85,20 @@ index d4424c7..64f6206 100644
 +    if (playernum < 0 || playernum >= 4 || g_StageNum == LEVELID_TITLE || g_CurrentPlayer == NULL ||
 +        g_CurrentPlayer->prop == NULL || g_CurrentPlayer->bonddead) {
 +        if (playernum >= 0 && playernum < 4) {
-+            crouched[playernum] = FALSE;
 +            goldenpad_recomp_consume_crouch_toggle(playernum);
++            goldenpad_recomp_consume_reload(playernum);
++            goldenpad_recomp_consume_inventory_slot(playernum);
 +        }
++        return;
++    }
++
++    if (lvlGetControlsLockedFlag() || g_CurrentPlayer->watch_animation_state != 0 ||
++        !g_CurrentPlayer->outside_watch_menu || g_CurrentPlayer->open_close_solo_watch_menu != 0 ||
++        g_CurrentPlayer->mpmenuon) {
++        recomp_get_camera_inputs(playernum, &lookX, &lookY);
++        goldenpad_recomp_consume_crouch_toggle(playernum);
++        goldenpad_recomp_consume_reload(playernum);
++        goldenpad_recomp_consume_inventory_slot(playernum);
 +        return;
 +    }
 +
@@ -110,16 +132,31 @@ index d4424c7..64f6206 100644
 +    }
 +
 +    if (goldenpad_recomp_consume_crouch_toggle(playernum)) {
-+        crouched[playernum] = !crouched[playernum];
-+        /* GoldenEye's native crouch enum is squat=0, half=1, stand=2. */
-+        g_CurrentPlayer->crouchpos = crouched[playernum] ? 0 : 2;
++        if (!bondwalkItemCheckBitflags(getCurrentPlayerWeaponId(GUNRIGHT), disableCrouchFlag)) {
++            currentPlayerAdjustCrouchPos(currentPlayerGetCrouchPos() == crouchSquat ? 2 : -2);
++        }
++    }
++
++    if (goldenpad_recomp_consume_reload(playernum)) {
++        attempt_reload_item_in_hand(GUNRIGHT);
++        attempt_reload_item_in_hand(GUNLEFT);
++    }
++
++    inventorySlot = goldenpad_recomp_consume_inventory_slot(playernum);
++    if (inventorySlot >= 0 && inventorySlot < bondinvCountTotalItemsInInv()) {
++        s32 item = bondinvGetTextbyInvIndex(inventorySlot);
++        if (item >= 0 && item != getCurrentPlayerWeaponId(GUNRIGHT)) {
++            currentPlayerUnEquipWeaponWrapper(GUNRIGHT, item);
++            currentPlayerUnEquipWeaponWrapper(GUNLEFT, ITEM_UNARMED);
++            bondinvSetCurEquippedItem(inventorySlot);
++        }
 +    }
 +}
 +
  RECOMP_PATCH void bossMainloop(void) {
      // declarations
  
-@@ -702,6 +771,7 @@ RECOMP_PATCH void bossMainloop(void) {
+@@ -702,6 +795,7 @@ RECOMP_PATCH void bossMainloop(void) {
                                      viSetViewPosition(localPlayer->viewleft, localPlayer->viewtop);
  
                                      lvlViewMoveTick();

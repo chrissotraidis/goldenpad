@@ -256,21 +256,29 @@ Its useful finding is narrower: C-left/C-right is the correct native Honey
 semantic, but wholesale replacement of the established movement axis is not an
 acceptable default.
 
-### Preview 2 / main Mac adapter
+### Preview 3 isolated Mac adapter
 
 `Sources/Mac/RecompMacInput.swift` currently assumes Honey:
 
 - W/S publishes positive/negative N64 analog Y;
 - during gameplay A/D emits digital C-left/C-right; in menus A/D returns to N64
   analog X;
-- Space emits Z (Fire), Shift emits R (Aim), E emits B (Action), Q emits A
-  (Weapon), and Escape emits Start while also releasing mouse capture;
-- C, not Control, is the default crouch key;
-- the bindable-key enum currently has no Control key, so Control cannot be
-  selected for crouch through the UI;
-- mouse left emits Z, mouse right emits B, and the wheel emits A or A+Z weapon
-  pulses;
+- left mouse emits Z (Fire), right mouse emits B (Action), and middle click plus
+  the wheel emit bounded A or A+Z weapon-cycle pulses;
+- Shift emits R (Aim), E emits B (Action), Q emits A (Weapon), R requests a
+  native reload, Control requests crouch, and Escape emits Start while also
+  releasing mouse capture;
+- Space is unassigned by default and Control is bindable. A one-time migration
+  moves the former default Space/Fire and C/Crouch bindings without replacing a
+  different user-selected binding;
+- number keys 1–9 and 0 select owned inventory indices 1–10. Out-of-range slots
+  are ignored and never fabricate an item;
 - mouse motion and controller right-stick motion use the direct-camera bridge.
+
+While Shift is held, W/S is deliberately withheld from the N64 stick. Under
+Honey, GoldenEye reinterprets that stick as manual-aim pitch, which caused the
+reported Shift+W downward movement. Mouse aim remains active; aimed keyboard
+movement is stationary rather than producing a second competing look axis.
 
 The Mac host also switches between menu and gameplay mappings through
 `goldenpad_recomp_desktop_gameplay_active`. That predicate is not identical to
@@ -287,10 +295,10 @@ button is Z. Consequently its aim sensitivity and host vertical adjustment are
 not style-correct outside Honey/Solitaire.
 
 The Mac crouch key uses GoldenPad's direct crouch hook, not native Aim+C-down.
-The hook stores its own per-player stand/squat latch. This makes the command
-independent of the native style, but the host latch can diverge if crouch is
-also changed through native controls or lifecycle transitions. Preview 3 must
-test synchronization rather than treating “hook fired” as acceptance.
+The game-side consumer now reads GoldenEye's current crouch position and calls
+its native crouch adjustment function. It does not keep a second host latch,
+and it respects the weapon flag that disables crouching. Runtime stance still
+requires hands-on acceptance; a linked callback alone is not proof.
 
 ### Direct-camera limitations
 
@@ -438,8 +446,14 @@ narrow control-only candidate:
   are per player and the current host getter cannot safely classify both ports;
 - the host reads the live style from the current GoldenEye player record and
   displays it without changing GoldenEye's saved option;
-- Mac Control is bindable and is the new-install crouch default; an existing
-  saved C binding remains C;
+- Mac Control is bindable and is the crouch default; the candidate migrates
+  only the former C default and preserves any other saved crouch choice;
+- left mouse is Fire, right mouse is Action, Space is unassigned, R reloads,
+  middle click/wheel cycles inventory, and 1–9/0 request owned slots 1–10;
+- the crouch consumer follows GoldenEye's live stance instead of maintaining a
+  separate latch, while reload and slot selection reuse native game functions;
+- Shift aim suppresses keyboard stick movement so Honey cannot reinterpret W/S
+  as a second manual-aim pitch input;
 - keyboard movement wins over idle controller drift;
 - automatic mouse capture reclaims keyboard focus once on its rising edge;
 - the Mac gameplay predicate now rejects GoldenEye control-lock and multiplayer
@@ -448,10 +462,10 @@ narrow control-only candidate:
   not collapsed to one normalized sample, and aimed sensitivity no longer
   inherits an unexplained threefold slowdown.
 
-The isolated ARM64 Simulator host and native ARM64 Mac target compile. These are
-implementation checks, not hands-on control acceptance. Crouch still uses the
-host convenience hook, native Look Ahead can still interact with direct mouse
-pitch, and issue #8 remains open until the physical touch/controller matrix
+The isolated ARM64 Simulator host and native ARM64 Mac target compile. The
+matched MIPS patch also compiles, regenerates, and links all crouch, reload, and
+inventory consumers. These are implementation checks, not hands-on control
+acceptance. Issue #8 remains open until the physical touch/controller matrix
 below passes.
 
 **Multiplayer:** Every translation is per port and per active player. A P1

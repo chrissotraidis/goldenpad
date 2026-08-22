@@ -13,8 +13,9 @@ Updated: 2026-08-22
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Immediate engineering gate | Record deterministic player/guard fire-rate cadence on the unchanged baseline. |
-| Immediate user-facing repair | Fix modern MOVE strafe / LOOK turn semantics while preserving menus and original C-button mode. |
+| Isolated Preview 3 candidate | Input-only branch from Preview 2: opt-in mobile Honey sidestep plus a rebuilt Mac control contract. It is not merged or release-accepted. |
+| Immediate engineering gate | Physically accept or reject the rebuilt Mac control candidate, then record deterministic player/guard fire-rate cadence. |
+| Immediate user-facing repair | Accept Mac desktop controls and modern MOVE strafe / LOOK turn semantics while preserving Preview 2, menus, and original C-button mode. |
 
 Documentation ownership:
 
@@ -88,6 +89,20 @@ enough to retain as the Mac alpha baseline, but it is not at iPhone/iPad quality
 mouse look remains too slow, desktop controls remain less polished, a thin blue
 strip persists at the far-right render edge, and longer performance testing is
 still open.
+
+An isolated Preview 3 Mac candidate now retains that renderer boundary while
+reworking only controls. Its preceding hands-on pass was judged the best Mac
+control version so far. The newly rebuilt follow-up lowers the default mouse
+sensitivity from 2.50× to 2.25×, makes left/right mouse Fire/Action, removes
+Space as Fire, assigns R reload and Control crouch, adds middle/wheel cycling
+and 1–9/0 owned-inventory selection, and neutralizes Honey's Shift+W/S pitch
+conflict. The MIPS patch regenerates, the arm64 app builds, and its ROM-free
+archive audits successfully. Those facts do not replace the required hands-on
+Control/R/mouse/number-key, rendering, and sustained-responsiveness checks.
+The exact candidate executable SHA-256 is
+`09c34871e16215dc8f7b4d588f151a20c11e2b302e8db054ebd2a37c7edc20e0`;
+the audited candidate archive SHA-256 is
+`b4f371e1d26d884d8ccc3f8b2df45081da9009e0434a11a7c6e27356b91c9eb4`.
 
 Earlier Mac iterations are not fallbacks. Direct camera-field writes broke
 input behavior; a mismatched generated patch removed the game-side mouse and

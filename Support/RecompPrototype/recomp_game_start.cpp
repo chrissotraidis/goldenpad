@@ -55,6 +55,8 @@ std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookY{};
 std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookX{};
 std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookY{};
 std::array<std::atomic<bool>, kControllerPorts> crouchToggleRequested{};
+std::array<std::atomic<int32_t>, kControllerPorts> inventorySlotRequested{-1, -1, -1, -1};
+std::array<std::atomic<bool>, kControllerPorts> reloadRequested{};
 std::atomic<bool> prototypeMsaaEnabled = true;
 std::atomic<int32_t> prototypeResolutionMode = 2;
 std::atomic<bool> prototypeThreePointFiltering = true;
@@ -769,6 +771,19 @@ extern "C" void goldenpad_recomp_request_crouch_toggle(int32_t controllerNum) {
     }
 }
 
+extern "C" void goldenpad_recomp_request_inventory_slot(int32_t controllerNum, int32_t slot) {
+    if (controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts) &&
+        slot >= 0 && slot < 10) {
+        inventorySlotRequested[controllerNum].store(slot, std::memory_order_release);
+    }
+}
+
+extern "C" void goldenpad_recomp_request_reload(int32_t controllerNum) {
+    if (controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts)) {
+        reloadRequested[controllerNum].store(true, std::memory_order_release);
+    }
+}
+
 extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t enabled) {
     invertAimY.store(enabled != 0, std::memory_order_relaxed);
 }
@@ -829,6 +844,8 @@ extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
             queuedMouseLookX[port].store(0, std::memory_order_relaxed);
             queuedMouseLookY[port].store(0, std::memory_order_relaxed);
             crouchToggleRequested[port].store(false, std::memory_order_relaxed);
+            inventorySlotRequested[port].store(-1, std::memory_order_relaxed);
+            reloadRequested[port].store(false, std::memory_order_relaxed);
         }
     }
     return active ? 1 : 0;
@@ -914,6 +931,24 @@ extern "C" void goldenpad_recomp_consume_crouch_toggle(uint8_t *rdram, recomp_co
         return;
     }
     ctx->r2 = crouchToggleRequested[controllerNum].exchange(false, std::memory_order_acq_rel) ? 1 : 0;
+}
+
+extern "C" void goldenpad_recomp_consume_inventory_slot(uint8_t *rdram, recomp_context *ctx) {
+    const int32_t controllerNum = _arg<0, int32_t>(rdram, ctx);
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        ctx->r2 = -1;
+        return;
+    }
+    ctx->r2 = inventorySlotRequested[controllerNum].exchange(-1, std::memory_order_acq_rel);
+}
+
+extern "C" void goldenpad_recomp_consume_reload(uint8_t *rdram, recomp_context *ctx) {
+    const int32_t controllerNum = _arg<0, int32_t>(rdram, ctx);
+    if (controllerNum < 0 || controllerNum >= static_cast<int32_t>(kControllerPorts)) {
+        ctx->r2 = 0;
+        return;
+    }
+    ctx->r2 = reloadRequested[controllerNum].exchange(false, std::memory_order_acq_rel) ? 1 : 0;
 }
 
 extern "C" void goldenpad_recomp_unlock_all_missions_enabled(uint8_t *, recomp_context *ctx) {

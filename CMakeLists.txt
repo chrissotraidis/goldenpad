@@ -94,7 +94,9 @@ if(goldenpad_apple_platform STREQUAL "mac")
         goldenpad_mac_patches_text)
     foreach(required_bridge IN ITEMS
             "recomp_get_camera_inputs"
-            "goldenpad_recomp_consume_crouch_toggle")
+            "goldenpad_recomp_consume_crouch_toggle"
+            "goldenpad_recomp_consume_inventory_slot"
+            "goldenpad_recomp_consume_reload")
         string(FIND "${goldenpad_mac_patches_text}"
             "${required_bridge}" goldenpad_mac_bridge_offset)
         if(goldenpad_mac_bridge_offset EQUAL -1)

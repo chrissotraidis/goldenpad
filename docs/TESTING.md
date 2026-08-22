@@ -209,10 +209,14 @@ stream, profiler, or background Simulator control:
    move the selection down.
 2. Start Dam and verify the pointer is captured automatically when live play
    begins. Horizontal and vertical look must remain responsive while moving
-   with WASD. Escape must release the pointer. Crouching must not pull the
-   camera downward without mouse input. If live play receives no mouse motion,
-   first verify generated `RecompiledPatches/patches.c` calls both
-   `recomp_get_camera_inputs` and `goldenpad_recomp_consume_crouch_toggle`.
+   with WASD. Escape must release the pointer. Control must toggle between
+   GoldenEye's live stand/squat state without pulling the camera downward.
+   Shift+W/S must not pitch the camera or move the player while manual aim is
+   held. If live play receives no mouse motion or command request, first verify
+   generated `RecompiledPatches/patches.c` calls all four bridges:
+   `recomp_get_camera_inputs`, `goldenpad_recomp_consume_crouch_toggle`,
+   `goldenpad_recomp_consume_reload`, and
+   `goldenpad_recomp_consume_inventory_slot`.
    Active stage 33 with repeated `p1look=(0,0)` can mean the generated game-side
    consumer is missing; it does not by itself prove an AppKit delivery defect.
    The accepted baseline uses the Metal view's mouse callbacks and must not be
@@ -223,8 +227,11 @@ stream, profiler, or background Simulator control:
 4. Enable **Unlock all missions**, return to mission select, and confirm later
    missions are available immediately. Disable it and confirm the current save
    remains unchanged; the setting must not write completion times to EEPROM.
-5. Confirm mouse sensitivity and every keyboard binding persist after relaunch,
-   and that wheel up/down produces distinct previous/next weapon changes.
+5. Confirm mouse sensitivity and every keyboard binding persist after relaunch.
+   Left mouse must fire, right mouse must perform Action, Space must not fire,
+   and R must reload both hands through GoldenEye's native reload function.
+   Middle click and wheel up/down must produce distinct weapon changes. Number
+   keys 1–9/0 must select existing inventory slots and ignore unavailable slots.
 6. Keep one mission active long enough to reject a delayed freeze. Read the
    bounded session log only after the run: any rising audio-underrun count or
    uneven VI/present progress is a failure even if launch and input initially
