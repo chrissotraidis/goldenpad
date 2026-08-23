@@ -17,6 +17,9 @@ private func goldenPadRecompSetRightAnalog(_ controller: Int32, _ x: Int32, _ y:
 @_silgen_name("goldenpad_recomp_set_controller_connected")
 private func goldenPadRecompSetControllerConnected(_ connected: Int32)
 
+@_silgen_name("goldenpad_recomp_set_touch_input_port")
+private func goldenPadRecompSetTouchInputPort(_ port: Int32)
+
 @_silgen_name("goldenpad_recomp_set_two_player_test_mode")
 private func goldenPadRecompSetTwoPlayerTestMode(_ enabled: Int32)
 
@@ -38,11 +41,24 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
 
+@_silgen_name("goldenpad_recomp_set_fire_rate_probe_enabled")
+private func goldenPadRecompSetFireRateProbeEnabled(_ enabled: Int32)
+
 @_silgen_name("goldenpad_recomp_gameplay_input_active")
 private func goldenPadRecompGameplayInputActive() -> Int32
 
-@_silgen_name("goldenpad_recomp_current_control_style")
-private func goldenPadRecompCurrentControlStyle() -> Int32
+@_silgen_name("goldenpad_recomp_get_input_context")
+private func goldenPadRecompGetInputContext(
+    _ controller: Int32,
+    _ gameplayActive: UnsafeMutablePointer<Int32>,
+    _ controlStyle: UnsafeMutablePointer<Int32>,
+    _ aiming: UnsafeMutablePointer<Int32>,
+    _ tankState: UnsafeMutablePointer<Int32>,
+    _ nativeLookUpright: UnsafeMutablePointer<Int32>
+)
+
+@_silgen_name("goldenpad_recomp_set_sidestep_probe_enabled")
+private func goldenPadRecompSetSidestepProbeEnabled(_ enabled: Int32)
 
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
@@ -67,69 +83,6 @@ enum RecompPrototypeControllerLookMode: String, CaseIterable {
         case .classic: "Original N64 C-buttons"
         case .off: "Off"
         }
-    }
-}
-
-enum RecompPrototypeMovementMode: String, CaseIterable {
-    case previewTwo
-    case honeySidestep
-
-    var title: String {
-        switch self {
-        case .previewTwo: "Preview 2 movement"
-        case .honeySidestep: "Sidestep with left/right"
-        }
-    }
-}
-
-private enum RecompPrototypeMovementMapper {
-    enum Direction {
-        case neutral
-        case left
-        case right
-    }
-
-    private static let pressThreshold: Float = 0.30
-    private static let releaseThreshold: Float = 0.20
-
-    static func map(
-        stick: SIMD2<Float>,
-        buttons: UInt16,
-        mode: RecompPrototypeMovementMode,
-        gameplayActive: Bool,
-        controlStyle: Int32,
-        cLeft: UInt16,
-        cRight: UInt16,
-        direction: inout Direction
-    ) -> (stick: SIMD2<Float>, buttons: UInt16) {
-        guard mode == .honeySidestep, gameplayActive, controlStyle == 0 else {
-            direction = .neutral
-            return (stick, buttons)
-        }
-
-        var mappedStick = stick
-        var mappedButtons = buttons
-        switch direction {
-        case .neutral:
-            if stick.x < -pressThreshold { direction = .left }
-            if stick.x > pressThreshold { direction = .right }
-        case .left:
-            if stick.x > pressThreshold {
-                direction = .right
-            } else if stick.x > -releaseThreshold {
-                direction = .neutral
-            }
-        case .right:
-            if stick.x < -pressThreshold {
-                direction = .left
-            } else if stick.x < releaseThreshold {
-                direction = .neutral
-            }
-        }
-        if direction == .left { mappedButtons |= cLeft }
-        if direction == .right { mappedButtons |= cRight }
-        mappedStick.x = 0
-        return (mappedStick, mappedButtons)
     }
 }
 
@@ -208,24 +161,143 @@ final class RecompPrototypeInput: ObservableObject {
         static let cRight: UInt16 = 0x0001
     }
 
+    private struct InputOwnershipRoute: Equatable {
+        var externalPort: Int32?
+        var touchPort: Int32?
+        var twoPlayerActive: Bool
+    }
+
+    private enum InputOwnershipRouter {
+        static func route(
+            controllerPresent: Bool,
+            twoPlayerRequested: Bool
+        ) -> InputOwnershipRoute {
+            if controllerPresent {
+                return InputOwnershipRoute(
+                    externalPort: 0,
+                    touchPort: twoPlayerRequested ? 1 : nil,
+                    twoPlayerActive: twoPlayerRequested
+                )
+            }
+            return InputOwnershipRoute(
+                externalPort: nil,
+                touchPort: twoPlayerRequested ? nil : 0,
+                twoPlayerActive: false
+            )
+        }
+
+        static var disconnectProbePasses: Bool {
+            let touchOnly = route(controllerPresent: false, twoPlayerRequested: false)
+            let externalOnly = route(controllerPresent: true, twoPlayerRequested: false)
+            let paired = route(controllerPresent: true, twoPlayerRequested: true)
+            let disconnected = route(controllerPresent: false, twoPlayerRequested: true)
+            let reconnected = route(controllerPresent: true, twoPlayerRequested: true)
+            let explicitCollapse = route(controllerPresent: false, twoPlayerRequested: false)
+            return touchOnly == InputOwnershipRoute(
+                externalPort: nil, touchPort: 0, twoPlayerActive: false
+            ) && externalOnly == InputOwnershipRoute(
+                externalPort: 0, touchPort: nil, twoPlayerActive: false
+            ) && paired == InputOwnershipRoute(
+                externalPort: 0, touchPort: 1, twoPlayerActive: true
+            ) && disconnected == InputOwnershipRoute(
+                externalPort: nil, touchPort: nil, twoPlayerActive: false
+            ) && reconnected == paired && explicitCollapse == touchOnly
+        }
+
+        static func retainedController<ID: Equatable>(
+            current: ID?,
+            available: [ID]
+        ) -> ID? {
+            if let current, available.contains(current) { return current }
+            return available.first
+        }
+
+        static var orderingProbePasses: Bool {
+            let controllerA = retainedController(current: nil, available: ["A"])
+            let afterBConnect = retainedController(current: controllerA, available: ["B", "A"])
+            let afterADisconnect = retainedController(current: afterBConnect, available: ["B"])
+            let afterAReconnect = retainedController(
+                current: afterADisconnect,
+                available: ["A", "B"]
+            )
+            return controllerA == "A" && afterBConnect == "A" &&
+                afterADisconnect == "B" && afterAReconnect == "B"
+        }
+    }
+
+    private enum InputSuspensionRouter {
+        static func isSuspended(overlay: Bool, scene: Bool) -> Bool {
+            overlay || scene
+        }
+
+        static var lifecycleProbePasses: Bool {
+            !isSuspended(overlay: false, scene: false) &&
+                isSuspended(overlay: true, scene: false) &&
+                isSuspended(overlay: false, scene: true) &&
+                isSuspended(overlay: true, scene: true)
+        }
+    }
+
+    private enum ControllerActivationGuard {
+        static func waitingForNeutral(
+            current: Bool,
+            controllerChanged: Bool,
+            controllerPresent: Bool,
+            inputIsNeutral: Bool
+        ) -> Bool {
+            if controllerChanged { return controllerPresent }
+            if current && inputIsNeutral { return false }
+            return current
+        }
+
+        static var lifecycleProbePasses: Bool {
+            let afterConnect = waitingForNeutral(
+                current: false,
+                controllerChanged: true,
+                controllerPresent: true,
+                inputIsNeutral: false
+            )
+            let whileHeld = waitingForNeutral(
+                current: afterConnect,
+                controllerChanged: false,
+                controllerPresent: true,
+                inputIsNeutral: false
+            )
+            let afterRelease = waitingForNeutral(
+                current: whileHeld,
+                controllerChanged: false,
+                controllerPresent: true,
+                inputIsNeutral: true
+            )
+            return afterConnect && whileHeld && !afterRelease
+        }
+    }
+
     @Published private(set) var externalControllerName: String?
     @Published private(set) var touchAimActive = false
     @Published private(set) var aimBehavior = RecompPrototypeAimBehavior.toggle
     @Published private(set) var controllerLookMode = RecompPrototypeControllerLookMode.analog
-    @Published private(set) var movementMode = RecompPrototypeMovementMode.previewTwo
     @Published private(set) var activeControlStyle: Int32 = -1
     @Published private(set) var twoPlayerTestModeActive = false
     @Published private(set) var fourPlayerTestModeActive = false
+    @Published private(set) var touchControlsVisible = true
     private var touchButtons: UInt16 = 0
     private var touchMovement = SIMD2<Float>.zero
     private var touchLook = SIMD2<Float>.zero
     private var touchCrouchIsPressed = false
     private var controllerCrouchWasPressed = false
-    private var externalSidestepDirection = RecompPrototypeMovementMapper.Direction.neutral
-    private var touchSidestepDirection = RecompPrototypeMovementMapper.Direction.neutral
-    private var movementNeutralFrames = 0
     private var twoPlayerTestModeRequested = false
     private var fourPlayerTestModeRequested = false
+    private var overlayInputSuspended = false
+    private var sceneInputSuspended = false
+    private var controllerRequiresNeutralRelease = false
+    private var invertAimY = false
+    private let fourPlayerRenderProbeForcesFourPlayer = ProcessInfo.processInfo.arguments.contains(
+        "--four-player-render-probe"
+    )
+    private let ownershipProbeForcesTwoPlayer =
+        ProcessInfo.processInfo.arguments.contains("--controller-ownership-probe") ||
+        ProcessInfo.processInfo.arguments.contains("--four-player-render-probe")
     private var lookSensitivity: Float = 4.0
     private var controller: GCController?
     private var controllerMapping = Dictionary(
@@ -236,10 +308,37 @@ final class RecompPrototypeInput: ObservableObject {
     #if targetEnvironment(simulator)
     private var simulatorKeyboardHeldButtons: UInt16 = 0
     private var simulatorKeyboardPulseFrames: [UInt16: Int] = [:]
+    private var simulatorKeyboardHeldStick: UInt8 = 0
+    private var simulatorKeyboardStickPulseFrames: [UInt8: Int] = [:]
     #endif
 
     init() {
+        let sidestepProbeEnabled = ProcessInfo.processInfo.arguments.contains("--sidestep-probe")
+        let ownershipProbeEnabled = ownershipProbeForcesTwoPlayer
+        goldenPadRecompSetSidestepProbeEnabled(sidestepProbeEnabled ? 1 : 0)
+        if ownershipProbeEnabled {
+            NSLog(
+                "[GoldenPad] Controller ownership lifecycle probe: " +
+                (InputOwnershipRouter.disconnectProbePasses &&
+                    InputOwnershipRouter.orderingProbePasses &&
+                    InputSuspensionRouter.lifecycleProbePasses &&
+                    ControllerActivationGuard.lifecycleProbePasses ? "PASS" : "FAIL")
+            )
+        }
+        goldenPadRecompSetFireRateProbeEnabled(
+            ProcessInfo.processInfo.arguments.contains("--fire-rate-probe") ? 1 : 0
+        )
         refreshController()
+        if ownershipProbeEnabled {
+            // Exercise the real integration route without changing AppStorage:
+            // controller Player 1 plus touch Player 2 for this launch only.
+            configureTwoPlayerTestMode(true)
+        }
+        if fourPlayerRenderProbeForcesFourPlayer {
+            // Extend the launch-only route with neutral Players 3/4. The normal
+            // AppStorage-backed toggle remains unchanged.
+            configureFourPlayerTestMode(true)
+        }
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: .GCControllerDidConnect, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.refreshController() }
@@ -282,18 +381,12 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func configureControllerLookMode(_ rawValue: String) {
-        controllerLookMode = RecompPrototypeControllerLookMode(rawValue: rawValue) ?? .analog
-        publish()
-    }
-
-    func configureMovementMode(_ rawValue: String) {
-        let next = RecompPrototypeMovementMode(rawValue: rawValue) ?? .previewTwo
-        guard movementMode != next else { return }
-        movementMode = next
-        externalSidestepDirection = .neutral
-        touchSidestepDirection = .neutral
-        movementNeutralFrames = 1
-        publish()
+        let next = RecompPrototypeControllerLookMode(rawValue: rawValue) ?? .analog
+        guard next != controllerLookMode else { return }
+        controllerLookMode = next
+        // Give the game one neutral publication when changing semantics so a
+        // held stick cannot carry an old-mode turn/strafe into the new mode.
+        publishController(port: 0, buttons: 0, stick: .zero, look: .zero)
     }
 
     func configureControllerMapping(_ rawValues: [RecompPrototypeControllerControl: String]) {
@@ -308,7 +401,38 @@ final class RecompPrototypeInput: ObservableObject {
         publish()
     }
 
+    func setHostInputSuspended(_ suspended: Bool) {
+        updateInputSuspension(overlay: suspended)
+    }
+
+    func setSceneInputSuspended(_ suspended: Bool) {
+        updateInputSuspension(scene: suspended)
+    }
+
+    private var hostInputSuspended: Bool {
+        InputSuspensionRouter.isSuspended(
+            overlay: overlayInputSuspended,
+            scene: sceneInputSuspended
+        )
+    }
+
+    private func updateInputSuspension(
+        overlay: Bool? = nil,
+        scene: Bool? = nil
+    ) {
+        let wasSuspended = hostInputSuspended
+        if let overlay { overlayInputSuspended = overlay }
+        if let scene { sceneInputSuspended = scene }
+        guard wasSuspended != hostInputSuspended else { return }
+        if hostInputSuspended {
+            clearTouchInputState()
+            controllerCrouchWasPressed = false
+        }
+        publish()
+    }
+
     func configureInvertAimY(_ enabled: Bool) {
+        invertAimY = enabled
         goldenPadRecompSetInvertAimY(enabled ? 1 : 0)
     }
 
@@ -317,26 +441,42 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func configureTwoPlayerTestMode(_ enabled: Bool) {
-        twoPlayerTestModeRequested = enabled
-        updateTestModes()
+        let previousOwnership = ownershipRoute
+        twoPlayerTestModeRequested = ownershipProbeForcesTwoPlayer || enabled
+        updateTestModes(previousOwnership: previousOwnership)
     }
 
     func configureFourPlayerTestMode(_ enabled: Bool) {
-        fourPlayerTestModeRequested = enabled
+        fourPlayerTestModeRequested = fourPlayerRenderProbeForcesFourPlayer || enabled
         updateTestModes()
     }
 
-    private func updateTestModes() {
-        let wasTwoPlayerActive = twoPlayerTestModeActive
-        twoPlayerTestModeActive = twoPlayerTestModeRequested && controller != nil
+    private var ownershipRoute: InputOwnershipRoute {
+        InputOwnershipRouter.route(
+            controllerPresent: controller != nil,
+            twoPlayerRequested: twoPlayerTestModeRequested
+        )
+    }
+
+    private func updateTestModes(
+        previousOwnership: InputOwnershipRoute? = nil,
+        controllerChanged: Bool = false
+    ) {
+        let nextOwnership = ownershipRoute
+        if controllerChanged || previousOwnership.map({ $0 != nextOwnership }) == true {
+            // Route changes publish a neutral boundary before any new owner can
+            // write a held button or stick into a different player port.
+            clearTouchInputState()
+            publishNeutralControllers()
+        }
+        twoPlayerTestModeActive = nextOwnership.twoPlayerActive
         fourPlayerTestModeActive = twoPlayerTestModeActive && fourPlayerTestModeRequested
+        touchControlsVisible = nextOwnership.touchPort != nil
+        goldenPadRecompSetControllerConnected(controller == nil ? 0 : 1)
+        goldenPadRecompSetTouchInputPort(nextOwnership.touchPort ?? -1)
         goldenPadRecompSetTwoPlayerTestMode(twoPlayerTestModeActive ? 1 : 0)
         goldenPadRecompSetFourPlayerTestMode(fourPlayerTestModeActive ? 1 : 0)
-        if wasTwoPlayerActive && !twoPlayerTestModeActive && controller != nil {
-            releaseTouchInput()
-        } else {
-            publish()
-        }
+        publish()
     }
 
     func requestReturnToMainMenu() {
@@ -352,8 +492,8 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func setCrouchPressed(_ pressed: Bool) {
-        if pressed && !touchCrouchIsPressed {
-            goldenPadRecompRequestCrouchToggle(twoPlayerTestModeActive ? 1 : 0)
+        if pressed && !touchCrouchIsPressed, let touchPort = ownershipRoute.touchPort {
+            goldenPadRecompRequestCrouchToggle(touchPort)
         }
         touchCrouchIsPressed = pressed
     }
@@ -378,40 +518,59 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     func releaseTouchInput() {
+        clearTouchInputState()
+        publish()
+    }
+
+    private func clearTouchInputState() {
         touchButtons = 0
         touchAimActive = false
         touchMovement = .zero
         touchLook = .zero
         touchCrouchIsPressed = false
-        publish()
     }
 
     private func refreshController() {
-        controller = GCController.controllers().first(where: { $0.extendedGamepad != nil })
+        let previousOwnership = ownershipRoute
+        let previousController = controller
+        let availableControllers = GCController.controllers().filter { $0.extendedGamepad != nil }
+        if let previousController,
+           availableControllers.contains(where: { $0 === previousController }) {
+            controller = previousController
+        } else {
+            controller = availableControllers.first
+        }
         controllerCrouchWasPressed = false
         externalControllerName = controller.map { $0.vendorName ?? "External controller" }
-        twoPlayerTestModeActive = twoPlayerTestModeRequested && controller != nil
-        fourPlayerTestModeActive = twoPlayerTestModeActive && fourPlayerTestModeRequested
-        if controller != nil && !twoPlayerTestModeActive {
-            releaseTouchInput()
-        }
-        goldenPadRecompSetControllerConnected(controller == nil ? 0 : 1)
-        goldenPadRecompSetTwoPlayerTestMode(twoPlayerTestModeActive ? 1 : 0)
-        goldenPadRecompSetFourPlayerTestMode(fourPlayerTestModeActive ? 1 : 0)
-        publish()
+        controllerRequiresNeutralRelease = ControllerActivationGuard.waitingForNeutral(
+            current: controllerRequiresNeutralRelease,
+            controllerChanged: previousController !== controller,
+            controllerPresent: controller != nil,
+            inputIsNeutral: false
+        )
+        updateTestModes(
+            previousOwnership: previousOwnership,
+            controllerChanged: previousController !== controller
+        )
     }
 
     private func publish() {
-        let gameplayActive = goldenPadRecompGameplayInputActive() != 0
-        let controlStyle = twoPlayerTestModeActive ? -2 : goldenPadRecompCurrentControlStyle()
-        if activeControlStyle != controlStyle {
-            activeControlStyle = controlStyle
+        if hostInputSuspended {
+            touchLook = .zero
+            publishNeutralControllers()
+            return
         }
+
         let queuedTouchLook = clamp(touchLook * lookSensitivity)
         touchLook = .zero
         var externalButtons: UInt16 = 0
         var externalStick = SIMD2<Float>.zero
         var controllerLook = SIMD2<Float>.zero
+        var controllerCrouchIsPressed = false
+        var externalFireActive = false
+        var externalAimActive = false
+        var externalActionActive = false
+        var externalWeaponActive = false
 
         if let gamepad = controller?.extendedGamepad {
             externalStick = SIMD2(gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value)
@@ -421,7 +580,6 @@ final class RecompPrototypeInput: ObservableObject {
             )
                 .applyingRadialDeadZone(0.15)
                 .applyingResponseCurve(1.5)
-            var controllerCrouchIsPressed = false
             let pressedControls: [(RecompPrototypeControllerControl, Bool)] = [
                 (.buttonA, gamepad.buttonA.isPressed),
                 (.buttonB, gamepad.buttonB.isPressed),
@@ -434,20 +592,14 @@ final class RecompPrototypeInput: ObservableObject {
             ]
             for (control, isPressed) in pressedControls where isPressed {
                 switch controllerMapping[control] ?? control.defaultAction {
-                case .fire: externalButtons |= N64.z
-                case .aim: externalButtons |= N64.r
-                case .action: externalButtons |= N64.b
-                case .weapon: externalButtons |= N64.a
+                case .fire: externalFireActive = true
+                case .aim: externalAimActive = true
+                case .action: externalActionActive = true
+                case .weapon: externalWeaponActive = true
                 case .duck: controllerCrouchIsPressed = true
                 case .none: break
                 }
             }
-            if controllerCrouchIsPressed && !controllerCrouchWasPressed {
-                // The external controller remains Player 1 in both normal and
-                // two-player test modes. Touch is the only input routed to P2.
-                goldenPadRecompRequestCrouchToggle(0)
-            }
-            controllerCrouchWasPressed = controllerCrouchIsPressed
             if gamepad.buttonMenu.isPressed { externalButtons |= N64.start }
             if gamepad.dpad.up.isPressed { externalButtons |= N64.dpadUp }
             if gamepad.dpad.down.isPressed { externalButtons |= N64.dpadDown }
@@ -462,11 +614,45 @@ final class RecompPrototypeInput: ObservableObject {
         if simulatorButtons & N64.dpadDown != 0 { externalStick.y = -1 }
         if simulatorButtons & N64.dpadLeft != 0 { externalStick.x = -1 }
         if simulatorButtons & N64.dpadRight != 0 { externalStick.x = 1 }
+        let simulatorStick = consumeSimulatorKeyboardStick()
+        if simulatorStick != .zero { externalStick = simulatorStick }
         #endif
+
+        let controllerInputIsNeutral = externalButtons == 0 &&
+            !externalFireActive && !externalAimActive &&
+            !externalActionActive && !externalWeaponActive &&
+            simd_length(externalStick) <= 0.15 &&
+            controllerLook == .zero &&
+            !controllerCrouchIsPressed
+        let wasWaitingForNeutral = controllerRequiresNeutralRelease
+        controllerRequiresNeutralRelease = ControllerActivationGuard.waitingForNeutral(
+            current: controllerRequiresNeutralRelease,
+            controllerChanged: false,
+            controllerPresent: controller != nil,
+            inputIsNeutral: controllerInputIsNeutral
+        )
+        if wasWaitingForNeutral {
+            // A newly selected or reconnected controller stays neutral until
+            // every held input has been released. This prevents a button held
+            // through disconnect from becoming a fresh press on a new owner.
+            externalButtons = 0
+            externalStick = .zero
+            controllerLook = .zero
+            controllerCrouchIsPressed = false
+            externalFireActive = false
+            externalAimActive = false
+            externalActionActive = false
+            externalWeaponActive = false
+        }
+        if controllerCrouchIsPressed && !controllerCrouchWasPressed {
+            // The external controller remains Player 1 in both normal and
+            // two-player test modes. Touch is the only input routed to P2.
+            goldenPadRecompRequestCrouchToggle(0)
+        }
+        controllerCrouchWasPressed = controllerCrouchIsPressed
 
         switch controllerLookMode {
         case .analog:
-            if !gameplayActive { controllerLook = .zero }
             break
         case .classic:
             let threshold: Float = 0.30
@@ -479,63 +665,163 @@ final class RecompPrototypeInput: ObservableObject {
             controllerLook = .zero
         }
 
-        var mappedExternalMovement = RecompPrototypeMovementMapper.map(
-            stick: externalStick,
-            buttons: externalButtons,
-            mode: movementMode,
-            gameplayActive: gameplayActive && !twoPlayerTestModeActive,
-            controlStyle: controlStyle,
-            cLeft: N64.cLeft,
-            cRight: N64.cRight,
-            direction: &externalSidestepDirection
-        )
-        var mappedTouchMovement = RecompPrototypeMovementMapper.map(
-            stick: touchMovement,
-            buttons: touchButtons,
-            mode: movementMode,
-            gameplayActive: gameplayActive && !twoPlayerTestModeActive,
-            controlStyle: controlStyle,
-            cLeft: N64.cLeft,
-            cRight: N64.cRight,
-            direction: &touchSidestepDirection
-        )
+        let route = ownershipRoute
+        let gameplayActive = goldenPadRecompGameplayInputActive() != 0
 
-        if movementNeutralFrames > 0 {
-            mappedExternalMovement.stick = .zero
-            mappedExternalMovement.buttons &= ~(N64.cLeft | N64.cRight)
-            mappedTouchMovement.stick = .zero
-            mappedTouchMovement.buttons &= ~(N64.cLeft | N64.cRight)
-            movementNeutralFrames -= 1
-        }
-
-        externalStick = mappedExternalMovement.stick
-        externalButtons = mappedExternalMovement.buttons
-
-        // The saved 4x tuning belongs to relative touch deltas. A physical
-        // right stick is an absolute value published every frame; multiplying
-        // it by 4x saturated the camera at roughly one-quarter stick travel.
-        // Keep the post-dead-zone controller value normalized instead.
-        if twoPlayerTestModeActive {
-            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
-            publishController(port: 1, buttons: mappedTouchMovement.buttons, stick: mappedTouchMovement.stick, look: .zero)
-            if fourPlayerTestModeActive {
-                publishController(port: 2, buttons: 0, stick: .zero, look: .zero)
-                publishController(port: 3, buttons: 0, stick: .zero, look: .zero)
+        if !gameplayActive {
+            activeControlStyle = -1
+            // Preserve the physically working Preview 3/P4 menu path exactly.
+            // GoldenEye owns analog menu repeat and button edges; no style,
+            // tank, Aim, or menu-latch translation belongs in this branch.
+            if externalFireActive { externalButtons |= N64.z }
+            if externalAimActive { externalButtons |= N64.r }
+            if externalActionActive { externalButtons |= N64.b }
+            if externalWeaponActive { externalButtons |= N64.a }
+            for port in 0..<4 {
+                let resolvedPort = Int32(port)
+                if route.externalPort == resolvedPort {
+                    publishController(
+                        port: resolvedPort,
+                        buttons: externalButtons,
+                        stick: externalStick,
+                        look: controllerLook
+                    )
+                } else if route.touchPort == resolvedPort {
+                    publishController(
+                        port: resolvedPort,
+                        buttons: touchButtons,
+                        stick: touchMovement,
+                        look: .zero
+                    )
+                } else {
+                    publishController(port: resolvedPort, buttons: 0, stick: .zero, look: .zero)
+                }
             }
-        } else if controller != nil {
-            publishController(port: 0, buttons: externalButtons, stick: externalStick, look: controllerLook)
-            publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
-        } else {
-            publishController(port: 0, buttons: mappedTouchMovement.buttons, stick: mappedTouchMovement.stick, look: .zero)
-            publishController(port: 1, buttons: 0, stick: .zero, look: .zero)
+            if queuedTouchLook != .zero, let touchPort = route.touchPort {
+                goldenPadRecompQueueTouchLook(
+                    touchPort,
+                    Int32((queuedTouchLook.x * 32_767).rounded()),
+                    Int32((queuedTouchLook.y * 32_767).rounded())
+                )
+            }
+            return
         }
-        if gameplayActive && queuedTouchLook != .zero && (controller == nil || twoPlayerTestModeActive) {
+
+        var externalContext = route.externalPort.map(runtimeInputContext) ?? inactiveInputContext
+        var touchContext = route.touchPort.map(runtimeInputContext) ?? inactiveInputContext
+        activeControlStyle = route.externalPort != nil
+            ? externalContext.runtimeStyle : touchContext.runtimeStyle
+        externalContext.gameplayActive = true
+        touchContext.gameplayActive = true
+        let externalMapping = RecompControlMapping(runtimeStyle: externalContext.runtimeStyle)
+        let touchMapping = RecompControlMapping(runtimeStyle: touchContext.runtimeStyle)
+
+        // Use the requested semantic Aim as an immediate safety boundary as
+        // well as the authoritative game state. This prevents a one-frame
+        // synthesized C-button lean before insightaimmode updates.
+        externalContext.aiming = externalContext.aiming || externalAimActive
+        let touchFireActive = touchButtons & N64.z != 0
+        let touchAimRequested = touchButtons & N64.r != 0
+        let touchActionActive = touchButtons & N64.b != 0
+        let touchWeaponActive = touchButtons & N64.a != 0
+        let touchStartActive = touchButtons & N64.start != 0
+        touchContext.aiming = touchContext.aiming || touchAimRequested
+
+        externalButtons |= externalMapping.gameplayButtons(
+            fire: externalFireActive,
+            aim: externalAimActive,
+            action: externalActionActive,
+            weapon: externalWeaponActive,
+            start: externalButtons & N64.start != 0
+        )
+        let resolvedTouchButtons = touchMapping.gameplayButtons(
+            fire: touchFireActive,
+            aim: touchAimRequested,
+            action: touchActionActive,
+            weapon: touchWeaponActive,
+            start: touchStartActive
+        )
+
+        var externalMovement = externalMapping.movement(
+            buttons: externalButtons,
+            stick: externalStick,
+            modern: controllerLookMode == .analog,
+            context: externalContext
+        )
+        var publishedControllerLook = controllerLook
+        if controllerLookMode == .analog,
+           let manualAimStick = externalMapping.manualAimStick(
+               stick: externalStick,
+               invertVertical: invertAimY,
+               context: externalContext) {
+            // GoldenEye's original manual-sight path owns damping, reticle
+            // position, and weapon orientation. Aim mode interprets this N64
+            // stick as sight movement rather than character movement.
+            externalMovement.stick = manualAimStick
+            publishedControllerLook = .zero
+        }
+        let mappedTouchMovement = touchMapping.movement(
+            buttons: resolvedTouchButtons,
+            stick: touchMovement,
+            modern: true,
+            context: touchContext
+        )
+
+        for port in 0..<4 {
+            let resolvedPort = Int32(port)
+            if route.externalPort == resolvedPort {
+                publishController(
+                    port: resolvedPort,
+                    buttons: externalMovement.buttons,
+                    stick: externalMovement.stick,
+                    look: publishedControllerLook
+                )
+            } else if route.touchPort == resolvedPort {
+                publishController(
+                    port: resolvedPort,
+                    buttons: mappedTouchMovement.buttons,
+                    stick: mappedTouchMovement.stick,
+                    look: .zero
+                )
+            } else {
+                publishController(port: resolvedPort, buttons: 0, stick: .zero, look: .zero)
+            }
+        }
+        if queuedTouchLook != .zero, let touchPort = route.touchPort {
             goldenPadRecompQueueTouchLook(
-                twoPlayerTestModeActive ? 1 : 0,
+                touchPort,
                 Int32((queuedTouchLook.x * 32_767).rounded()),
                 Int32((queuedTouchLook.y * 32_767).rounded())
             )
         }
+    }
+
+    private var inactiveInputContext: RecompRuntimeInputContext {
+        RecompRuntimeInputContext(
+            gameplayActive: false,
+            runtimeStyle: -1,
+            aiming: false,
+            tankState: -1,
+            nativeLookUpright: false
+        )
+    }
+
+    private func runtimeInputContext(port: Int32) -> RecompRuntimeInputContext {
+        var gameplayActive: Int32 = 0
+        var controlStyle: Int32 = -1
+        var aiming: Int32 = 0
+        var tankState: Int32 = -1
+        var nativeLookUpright: Int32 = 0
+        goldenPadRecompGetInputContext(
+            port, &gameplayActive, &controlStyle, &aiming, &tankState,
+            &nativeLookUpright)
+        return RecompRuntimeInputContext(
+            gameplayActive: gameplayActive != 0,
+            runtimeStyle: controlStyle,
+            aiming: aiming != 0,
+            tankState: tankState,
+            nativeLookUpright: nativeLookUpright != 0
+        )
     }
 
     private func publishController(
@@ -558,6 +844,12 @@ final class RecompPrototypeInput: ObservableObject {
         )
     }
 
+    private func publishNeutralControllers() {
+        for port in 0..<4 {
+            publishController(port: Int32(port), buttons: 0, stick: .zero, look: .zero)
+        }
+    }
+
     private func clamp(_ value: SIMD2<Float>) -> SIMD2<Float> {
         let magnitude = simd_length(value)
         return magnitude > 1 ? value / magnitude : value
@@ -573,6 +865,15 @@ final class RecompPrototypeInput: ObservableObject {
     }
 
     private func handleSimulatorKey(_ keyCode: GCKeyCode, pressed: Bool) {
+        if let stick = simulatorStickBit(for: keyCode) {
+            if pressed {
+                simulatorKeyboardHeldStick |= stick
+                simulatorKeyboardStickPulseFrames[stick] = 4
+            } else {
+                simulatorKeyboardHeldStick &= ~stick
+            }
+            return
+        }
         guard let button = simulatorButton(for: keyCode) else { return }
         if pressed {
             simulatorKeyboardHeldButtons |= button
@@ -595,6 +896,32 @@ final class RecompPrototypeInput: ObservableObject {
             }
         }
         return buttons
+    }
+
+    private func consumeSimulatorKeyboardStick() -> SIMD2<Float> {
+        var stick = simulatorKeyboardHeldStick
+        for (direction, frames) in Array(simulatorKeyboardStickPulseFrames) {
+            stick |= direction
+            if frames <= 1 {
+                simulatorKeyboardStickPulseFrames.removeValue(forKey: direction)
+            } else {
+                simulatorKeyboardStickPulseFrames[direction] = frames - 1
+            }
+        }
+        return SIMD2(
+            (stick & 0x08 != 0 ? 1 : 0) - (stick & 0x04 != 0 ? 1 : 0),
+            (stick & 0x01 != 0 ? 1 : 0) - (stick & 0x02 != 0 ? 1 : 0)
+        )
+    }
+
+    private func simulatorStickBit(for keyCode: GCKeyCode) -> UInt8? {
+        switch keyCode {
+        case .keyI: 0x01
+        case .keyK: 0x02
+        case .keyJ: 0x04
+        case .keyL: 0x08
+        default: nil
+        }
     }
 
     private func simulatorButton(for keyCode: GCKeyCode) -> UInt16? {

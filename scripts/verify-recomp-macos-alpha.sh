@@ -94,7 +94,7 @@ for required_symbol in \
   _goldenpad_recomp_consume_inventory_slot \
   _goldenpad_recomp_consume_reload \
   _goldenpad_recomp_queue_mouse_look \
-  _goldenpad_recomp_desktop_gameplay_active
+  _goldenpad_recomp_get_input_context
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then
     echo "Mac Alpha is missing required runtime symbol: $required_symbol" >&2

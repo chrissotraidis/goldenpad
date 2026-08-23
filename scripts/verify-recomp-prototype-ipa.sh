@@ -32,7 +32,7 @@ fi
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "3"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "4"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 
@@ -82,6 +82,16 @@ for required_symbol in \
   _goldenpad_recomp_set_four_player_test_mode \
   _goldenpad_recomp_request_crouch_toggle \
   _goldenpad_recomp_consume_crouch_toggle \
+  _goldenpad_recomp_set_fire_rate_probe_enabled \
+  _goldenpad_recomp_set_sidestep_probe_enabled \
+  _goldenpad_recomp_set_lifecycle_probe_enabled \
+  _goldenpad_recomp_set_audio_probe_enabled \
+  _goldenpad_recomp_set_depth_rebuild_probe_enabled \
+  _goldenpad_rt64_depth_format_rebuild_stats \
+  _goldenpad_recomp_note_audio_host_rates \
+  _goldenpad_recomp_audio_probe_stats \
+  _goldenpad_recomp_gameplay_input_active \
+  _goldenpad_recomp_get_input_context \
   _goldenpad_recomp_audio_render \
   _goldenpad_recomp_import_rom \
   _goldenpad_recomp_validate_tlbfree_rom \

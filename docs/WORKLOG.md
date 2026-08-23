@@ -1,5 +1,43 @@
 # Worklog
 
+## 2026-08-23 - accept and publish the Preview 4 tank and shared-controls repair
+
+- Froze the exact physically accepted signed iPad test executable at SHA-256
+  `2b31f8868885712fbad34cef1aea20b1dee48f59fc9d930cbd3fa8b8e82b6b12`
+  before making the final sensitivity adjustment.
+- Replaced the competing Preview 3 movement adapter with one shared mapping for
+  GoldenEye control styles 1.1 through 1.4 on iPhone, iPad, and Mac. Preserved
+  raw non-gameplay input so menu navigation cannot be disabled by gameplay or
+  tank state.
+- Routed held Aim through GoldenEye's native manual-sight semantics: stationary
+  Bond, left-stick sight movement, and neutral right stick until release.
+- Bound the Runway/Streets tank path to GoldenEye's player, prop, and entry-run
+  state. Preserved the hatch transition, left-stick drive/hull turn, native
+  turret state, selected-weapon cycling and firing, and exit/re-entry.
+- The user physically accepted menu, ordinary on-foot, Aim, Runway tank, return
+  to title, and Facility regression behavior. The user also confirmed mounted
+  ordinary weapons are authentic GoldenEye behavior, not simultaneous tank and
+  rifle firing.
+- Applied the requested final 20 percent absolute controller-look increase from
+  1.56 to 1.872 degrees per frame without changing touch, mouse, left movement,
+  manual Aim, or menus.
+- Reconciled the accepted branch with current `main` in an isolated worktree.
+  The clean build caught and removed a duplicated old mobile publisher, restored
+  the independent Preview 3 Mac inventory/reload/mouse commands, restored the
+  lifecycle/audio/depth diagnostic hooks, and regenerated both GoldenEye patch
+  halves together.
+- Added `docs/PREVIEW_4_INPUT_FIX.md`, the executable matrix in
+  `scripts/verify-recomp-input-matrix.sh`, and the shared pure mapping tests so
+  the repair and reversal boundary are explicit.
+- Built the complete unsigned iPhone/iPad app and native arm64 Mac app. The
+  18-member IPA audits at SHA-256
+  `ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`;
+  the 20-member Mac Alpha audits at SHA-256
+  `63bec02ad6e323a213f9cb9d15f763a58d6eb7bd4a1a40af6341a4fb8fb333ba`.
+- Kept issue #17 open for reporter verification. The exact final 1.872-degree
+  unsigned executable has build, matrix, and package proof, not a second
+  physical-device pass.
+
 ## 2026-08-23 — preserve revision-2 review and refresh current documentation
 
 - Preserved the supplied independent review with its source SHA-256 and a

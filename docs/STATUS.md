@@ -6,17 +6,17 @@ Updated: 2026-08-23
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 3 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Public release | Preview 4 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
-| Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, saves/preferences preservation, and the bounded four-view experimental render repair. |
-| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect; Preview 3 ships modern Honey sidestep as an opt-in adapter pending reporter confirmation. |
+| Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, native left-stick Aim, Runway tank controls, saves/preferences preservation, and the bounded four-view experimental render repair. |
+| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect. Preview 4 repairs shared 1.1 through 1.4 and tank input without changing that timing seam. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Preview 3 controls release | Accepted input-only update from Preview 2: opt-in mobile Honey sidestep, clearer setup copy, and the hands-on accepted Mac control build. |
+| Preview 4 controls release | Shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank control repair, and the requested final 20 percent controller-look increase. |
 | Immediate engineering gate | Finish sustained-player fire-rate measurement on Preview 3; isolated guard windows already record 13/17/18 events per 100 ticks. |
-| Immediate user-facing follow-up | Ask the issue #8 reporter to verify touch and controller sidestep behavior; keep the opt-in adapter and Preview 2 default unchanged meanwhile. |
+| Immediate user-facing follow-up | Ask the issue #17 reporter to verify Preview 4 on Mac and provide diagnostics if needed; keep the issue open until reporter confirmation. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -47,6 +47,28 @@ into [`TECH_DEBT.md`](TECH_DEBT.md). It inspected historical commit `788667e`,
 so its source analysis remains supporting evidence while current status comes
 from Preview 3 and later isolated debt experiments. It is not repository
 instructions or a runtime acceptance artifact.
+
+Preview 4 replaces Preview 3's separate movement adapter with one shared input
+mapper that reads GoldenEye's active 1.1 through 1.4 style. Non-gameplay input
+remains raw so title and mission menus cannot inherit modern gameplay or tank
+translation. While Aim is held, the external left stick feeds GoldenEye's
+native manual-sight path, Bond remains stationary, and the external right stick
+is neutral. In the player-enterable Runway and Streets tank, the left stick
+owns drive and hull turning and the right stick updates native turret state only
+after the hatch/start transition reaches running.
+
+On physical iPad, the user accepted the frozen signed test executable
+`2b31f8868885712fbad34cef1aea20b1dee48f59fc9d930cbd3fa8b8e82b6b12`
+for menu navigation, on-foot controls, manual Aim, Runway drive, hull turn,
+turret aim, ordinary-weapon and Tank Shell cycling/firing, exit/re-entry,
+return to title, and a Facility regression pass. The final version `0.1.0`
+build `4` public executable
+`d83361f4daa70014b378aed20b9e26dc7c787d77b0fcd000816d536aecc8e66b`
+adds the user's requested 20 percent absolute controller-look increase from
+1.56 to 1.872 degrees per frame. It passed the complete matrix, device build,
+and package audit, but was not installed for a second physical pass. The native
+Mac target builds and package-audits; issue #17 remains open because reporter
+gameplay verification is still required.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -140,7 +162,21 @@ multiplayer or Mac sustained performance to stable-release status. The
 coordinated repository update produces separate audited platform artifacts: an
 iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
 
-The audited Preview 3 mobile artifact is
+The audited Preview 4 mobile artifact is
+`GoldenPad-0.1.0-preview.4-unsigned.ipa` at SHA-256
+`ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`.
+Its 18-member archive passed the ROM/save/signing/private-path/setup-copy and
+required-symbol audits and has sorted unsigned app-content SHA-256
+`1ec161604af996f30bb3ac1e9c347f7c905623675ca32adf8d2c35a069c6a13c`.
+The audited Preview 4 Mac Alpha artifact is
+`GoldenPad-0.1.0-preview.4-macos-arm64-alpha.zip` at SHA-256
+`63bec02ad6e323a213f9cb9d15f763a58d6eb7bd4a1a40af6341a4fb8fb333ba`;
+its 20-member archive has sorted app-content SHA-256
+`d2d0824047061b81ad3ef1b2fd2fd61fde09fc759176b782209c41279217a341`.
+Neither artifact contains ROM, save, provisioning, signing identity, or private
+build-path data.
+
+The historical audited Preview 3 mobile artifact is
 `GoldenPad-0.1.0-preview.3-unsigned.ipa` at SHA-256
 `ef2ab9575d5a9df5d7d8d4138caa789625be3407ebc796a4d9339ea1fe6ba777`.
 Its 18-member archive passed the ROM/save/signing/private-path/setup-copy audit
@@ -664,10 +700,10 @@ evidence ledger below is preserved as historical validation for
   The pinned source establishes the cadence mechanism. An isolated probe
   recorded guard windows of 13/17/18 events per 100 ticks; sustained player
   magnitude remains unmeasured, so no timing repair is authorized yet.
-- Preview 3 ships an opt-in 1.1 Honey sidestep adapter for touch and controller
-  while preserving Preview 2 movement as the default. Issue #8 remains open for
-  reporter confirmation and the wider physical style/lifecycle matrix; it is no
-  longer accurate to call sidestep wholly unimplemented.
+- Preview 4 supersedes the opt-in sidestep adapter with automatic shared
+  mappings for all four GoldenEye control styles. The full matrix is automated;
+  ordinary on-foot, Aim, and Runway tank behavior received physical iPad
+  acceptance. Issue #17 remains open for Mac reporter confirmation.
 - The published Preview 1 artifact crashes deterministically at the first RT64
   rendered frame on a reported A12X iPad Pro. A12X meets the declared ARM64,
   Metal, device-family, and OS requirements; treat [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)
@@ -693,7 +729,7 @@ evidence ledger below is preserved as historical validation for
 - Settings/share presentation does not explicitly release latched primary-host
   touch, disconnect-to-none can collapse held diagnostic touch onto Player 1,
   and the mobile publisher can pause in default run-loop tracking. These are
-  active TD-14/TD-07 gaps despite Preview 3's accepted ordinary controls.
+  active TD-14/TD-07 gaps despite Preview 4's accepted ordinary controls.
 - A small amount of audible static has been reported during otherwise working
   audio. Game, runtime, and host agree at 22,050 Hz, so rate mismatch is ruled
   out; long-session speaker, route-change, reset-race, and discontinuity
@@ -717,7 +753,7 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 3 is published as a prerelease with separately audited mobile and Mac
+Preview 4 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
 passed the same package verifiers as the local artifacts. The next engineering
 gate is sustained-player fire-rate measurement using the isolated read-only

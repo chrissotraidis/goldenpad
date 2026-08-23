@@ -45,8 +45,15 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
 
-@_silgen_name("goldenpad_recomp_desktop_gameplay_active")
-private func goldenPadRecompDesktopGameplayActive() -> Int32
+@_silgen_name("goldenpad_recomp_get_input_context")
+private func goldenPadRecompGetInputContext(
+    _ controller: Int32,
+    _ gameplayActive: UnsafeMutablePointer<Int32>,
+    _ controlStyle: UnsafeMutablePointer<Int32>,
+    _ aiming: UnsafeMutablePointer<Int32>,
+    _ tankState: UnsafeMutablePointer<Int32>,
+    _ nativeLookUpright: UnsafeMutablePointer<Int32>
+)
 
 enum RecompMacBindableKey: UInt16, CaseIterable, Identifiable {
     case a = 0, s = 1, d = 2, f = 3, h = 4, g = 5
@@ -184,20 +191,6 @@ final class RecompMacInput: ObservableObject {
         static let rightControl: UInt16 = 62
     }
 
-    private enum N64 {
-        static let a: UInt16 = 0x8000
-        static let b: UInt16 = 0x4000
-        static let z: UInt16 = 0x2000
-        static let start: UInt16 = 0x1000
-        static let dpadUp: UInt16 = 0x0800
-        static let dpadDown: UInt16 = 0x0400
-        static let dpadLeft: UInt16 = 0x0200
-        static let dpadRight: UInt16 = 0x0100
-        static let r: UInt16 = 0x0010
-        static let cLeft: UInt16 = 0x0002
-        static let cRight: UInt16 = 0x0001
-    }
-
     @Published private(set) var externalControllerName: String?
     @Published private(set) var mouseCaptured = false
 
@@ -216,11 +209,16 @@ final class RecompMacInput: ObservableObject {
     private var menuMouseStep = SIMD2<Float>.zero
     private var menuMouseStepFrames = 0
     private var menuMouseNeutralFrames = 0
+    private var menuStickLatch = RecompMenuStickLatch()
     private var viewMouseFireHeld = false
     private var viewMouseActionHeld = false
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
-    private var mouseSensitivity: Float = 2.25
+    private var mouseSensitivity: Float = 2.5
+    private var invertAimY = false
+    private let mouseClampProbeEnabled = ProcessInfo.processInfo.arguments.contains(
+        "--mouse-clamp-probe"
+    )
     private var keyboardBindings = RecompMacKeyboardBindings.load()
     private var observers: [NSObjectProtocol] = []
     private var ticker: Timer?
@@ -362,6 +360,7 @@ final class RecompMacInput: ObservableObject {
         menuMouseStep = .zero
         menuMouseStepFrames = 0
         menuMouseNeutralFrames = 0
+        menuStickLatch.reset()
         viewMouseFireHeld = false
         viewMouseActionHeld = false
         pendingMouseDelta = .zero
@@ -371,6 +370,7 @@ final class RecompMacInput: ObservableObject {
     }
 
     func configureInvertAimY(_ enabled: Bool) {
+        invertAimY = enabled
         goldenPadRecompSetInvertAimY(enabled ? 1 : 0)
     }
 
@@ -402,69 +402,116 @@ final class RecompMacInput: ObservableObject {
     }
 
     private func publish() {
-        refreshRuntimeInputMode()
+        var context = runtimeInputContext(port: 0)
+        refreshRuntimeInputMode(context: context)
+        let mapping = RecompControlMapping(runtimeStyle: context.runtimeStyle)
         var buttons: UInt16 = 0
-        var movement = keyboardMovement
+        var movement = gameplayMovement(includeHorizontal: true)
+        var controllerManualAimStick: SIMD2<Float>?
         var rightStick = SIMD2<Float>.zero
+        var fireActive = actionIsActive(.fire)
+        var aimActive = actionIsActive(.aim)
+        var actionActive = actionIsActive(.action)
+        var weaponActive = actionIsActive(.changeWeapon)
+        let startActive = actionIsActive(.start)
 
-        if actionIsActive(.action) { buttons |= N64.b }
-        if actionIsActive(.changeWeapon) { buttons |= N64.a }
-        if actionIsActive(.fire) { buttons |= N64.z }
-        if actionIsActive(.start) { buttons |= N64.start }
-        if actionIsActive(.aim) { buttons |= N64.r }
-        // Live play uses GoldenEye's native C-button sidestep so A/D never
-        // fights mouse yaw. Menus always retain the full four-way N64 stick.
         if gameplayInputActive {
-            if actionIsActive(.moveLeft) { buttons |= N64.cLeft }
-            if actionIsActive(.moveRight) { buttons |= N64.cRight }
             beginWeaponWheelPulseIfNeeded()
             if weaponWheelPulseFrames > 0 {
-                buttons |= N64.a
-                if weaponWheelDirection < 0 { buttons |= N64.z }
+                weaponActive = true
+                if weaponWheelDirection < 0 { fireActive = true }
             }
-        }
+            if mouseCaptured {
+                fireActive = fireActive || viewMouseFireHeld || mouseFirePulseFrames > 0
+                actionActive = actionActive || viewMouseActionHeld || mouseActionPulseFrames > 0
+            }
+        } else {
+            // Menu/watch navigation is digital and edge-triggered by the game.
+            // Full analog W/S crossed GoldenEye's repeat threshold every tick,
+            // allowing a short key press to skip 1.2 and 1.3 entirely.
+            if actionIsActive(.changeWeapon) || menuConfirmPulseFrames > 0 {
+                buttons |= RecompN64Button.a
+            }
+            if actionIsActive(.action) || menuBackPulseFrames > 0 {
+                buttons |= RecompN64Button.b
+            }
+            if startActive { buttons |= RecompN64Button.start }
 
-        if gameplayInputActive, mouseCaptured {
-            if viewMouseFireHeld || mouseFirePulseFrames > 0 {
-                buttons |= N64.z
-            }
-            if viewMouseActionHeld || mouseActionPulseFrames > 0 {
-                buttons |= N64.b
-            }
-        } else if !gameplayInputActive {
-            if menuConfirmPulseFrames > 0 { buttons |= N64.a }
-            if menuBackPulseFrames > 0 { buttons |= N64.b }
-            if movement == .zero {
-                movement = nextMenuMouseMovement()
-            } else {
-                // A deliberate keyboard/menu command owns this interval. Drop
-                // incidental pointer travel so it cannot add a second step.
+            let keyboardOwnsNavigation = actionIsActive(.moveForward)
+                || actionIsActive(.moveBackward)
+                || actionIsActive(.moveLeft)
+                || actionIsActive(.moveRight)
+            if keyboardOwnsNavigation {
                 pendingMenuMouseDelta = .zero
                 menuMouseStep = .zero
                 menuMouseStepFrames = 0
                 menuMouseNeutralFrames = 0
+            } else {
+                buttons |= nextMenuMouseButtons()
             }
         }
 
         if let gamepad = controller?.extendedGamepad {
             let controllerMovement = SIMD2(gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value)
-            if movement == .zero, simd_length(controllerMovement) > 0.15 {
-                movement = controllerMovement.applyingRadialDeadZone(0.15)
+            controllerManualAimStick = controllerMovement
+            if simd_length(controllerMovement) > 0.08 {
+                movement = controllerMovement
             }
-            rightStick = SIMD2(gamepad.rightThumbstick.xAxis.value, gamepad.rightThumbstick.yAxis.value)
-                .applyingRadialDeadZone(0.15)
-                .applyingResponseCurve(1.5)
-            if gamepad.buttonA.isPressed || gamepad.buttonY.isPressed || gamepad.rightShoulder.isPressed {
-                buttons |= N64.a
+            if gameplayInputActive {
+                rightStick = SIMD2(gamepad.rightThumbstick.xAxis.value, gamepad.rightThumbstick.yAxis.value)
+                    .applyingRadialDeadZone(0.15)
+                    .applyingResponseCurve(1.5)
+                weaponActive = weaponActive || gamepad.buttonA.isPressed
+                    || gamepad.buttonY.isPressed || gamepad.rightShoulder.isPressed
+                actionActive = actionActive || gamepad.buttonB.isPressed || gamepad.buttonX.isPressed
+                aimActive = aimActive || gamepad.leftTrigger.value > 0.25
+                fireActive = fireActive || gamepad.rightTrigger.value > 0.25
+            } else {
+                if gamepad.buttonA.isPressed || gamepad.buttonY.isPressed || gamepad.rightShoulder.isPressed {
+                    buttons |= RecompN64Button.a
+                }
+                if gamepad.buttonB.isPressed || gamepad.buttonX.isPressed {
+                    buttons |= RecompN64Button.b
+                }
             }
-            if gamepad.buttonB.isPressed || gamepad.buttonX.isPressed { buttons |= N64.b }
-            if gamepad.leftTrigger.value > 0.25 { buttons |= N64.r }
-            if gamepad.rightTrigger.value > 0.25 { buttons |= N64.z }
-            if gamepad.buttonMenu.isPressed { buttons |= N64.start }
-            if gamepad.dpad.up.isPressed { buttons |= N64.dpadUp }
-            if gamepad.dpad.down.isPressed { buttons |= N64.dpadDown }
-            if gamepad.dpad.left.isPressed { buttons |= N64.dpadLeft }
-            if gamepad.dpad.right.isPressed { buttons |= N64.dpadRight }
+            if gamepad.buttonMenu.isPressed { buttons |= RecompN64Button.start }
+            if gamepad.dpad.up.isPressed { buttons |= RecompN64Button.dpadUp }
+            if gamepad.dpad.down.isPressed { buttons |= RecompN64Button.dpadDown }
+            if gamepad.dpad.left.isPressed { buttons |= RecompN64Button.dpadLeft }
+            if gamepad.dpad.right.isPressed { buttons |= RecompN64Button.dpadRight }
+        }
+
+        if gameplayInputActive {
+            buttons |= mapping.gameplayButtons(
+                fire: fireActive,
+                aim: aimActive,
+                action: actionActive,
+                weapon: weaponActive,
+                start: startActive
+            )
+            // Suppress synthesized movement immediately on the frame Aim is
+            // requested, before GoldenEye updates insightaimmode.
+            context.aiming = context.aiming || aimActive
+            let resolved = mapping.movement(
+                buttons: buttons,
+                stick: movement,
+                modern: true,
+                context: context
+            )
+            buttons = resolved.buttons
+            movement = resolved.stick
+            if let controllerManualAimStick,
+               let manualAimStick = mapping.manualAimStick(
+                   stick: controllerManualAimStick,
+                   invertVertical: invertAimY,
+                   context: context) {
+                movement = manualAimStick
+                rightStick = .zero
+            }
+            menuStickLatch.reset()
+        } else {
+            buttons |= menuStickLatch.buttons(for: movement)
+            movement = .zero
         }
 
         if !gameplayInputActive {
@@ -481,8 +528,8 @@ final class RecompMacInput: ObservableObject {
         advanceWeaponWheelPulse()
     }
 
-    private func refreshRuntimeInputMode() {
-        let nextGameplayInputActive = goldenPadRecompDesktopGameplayActive() != 0
+    private func refreshRuntimeInputMode(context: RecompRuntimeInputContext) {
+        let nextGameplayInputActive = context.gameplayActive
         guard nextGameplayInputActive != gameplayInputActive else { return }
         gameplayInputActive = nextGameplayInputActive
         pendingMouseDelta = .zero
@@ -490,6 +537,7 @@ final class RecompMacInput: ObservableObject {
         menuMouseStep = .zero
         menuMouseStepFrames = 0
         menuMouseNeutralFrames = 0
+        menuStickLatch.reset()
         if gameplayInputActive {
             // A mission transition should immediately hand the pointer to
             // camera look. Requiring a click after every load left motion in
@@ -498,6 +546,24 @@ final class RecompMacInput: ObservableObject {
         } else {
             releaseMouseCapture()
         }
+    }
+
+    private func runtimeInputContext(port: Int32) -> RecompRuntimeInputContext {
+        var gameplayActive: Int32 = 0
+        var controlStyle: Int32 = -1
+        var aiming: Int32 = 0
+        var tankState: Int32 = -1
+        var nativeLookUpright: Int32 = 0
+        goldenPadRecompGetInputContext(
+            port, &gameplayActive, &controlStyle, &aiming, &tankState,
+            &nativeLookUpright)
+        return RecompRuntimeInputContext(
+            gameplayActive: gameplayActive != 0,
+            runtimeStyle: controlStyle,
+            aiming: aiming != 0,
+            tankState: tankState,
+            nativeLookUpright: nativeLookUpright != 0
+        )
     }
 
     private func keyIsActive(_ code: UInt16) -> Bool {
@@ -542,18 +608,11 @@ final class RecompMacInput: ObservableObject {
         return keyIsActive(configured)
     }
 
-    private var keyboardMovement: SIMD2<Float> {
-        // In GoldenEye's 1.1 Honey layout the N64 stick becomes the manual-aim
-        // axis while R is held. Mouse look already owns that axis on desktop,
-        // so forwarding W/S as well makes Shift+W pitch the view downward.
-        // Keep Honey aim stationary and predictable instead.
-        if gameplayInputActive, actionIsActive(.aim) {
-            return .zero
-        }
+    private func gameplayMovement(includeHorizontal: Bool) -> SIMD2<Float> {
         var movement = SIMD2<Float>.zero
         if actionIsActive(.moveForward) { movement.y += 1 }
         if actionIsActive(.moveBackward) { movement.y -= 1 }
-        if !gameplayInputActive {
+        if includeHorizontal {
             if actionIsActive(.moveLeft) { movement.x -= 1 }
             if actionIsActive(.moveRight) { movement.x += 1 }
         }
@@ -587,19 +646,23 @@ final class RecompMacInput: ObservableObject {
         goldenPadRecompQueueMouseLook(0, x, y)
     }
 
-    private func nextMenuMouseMovement() -> SIMD2<Float> {
+    private func nextMenuMouseButtons() -> UInt16 {
         if menuMouseStepFrames > 0 {
             menuMouseStepFrames -= 1
-            return menuMouseStep
+            if menuMouseStep.x < 0 { return RecompN64Button.dpadLeft }
+            if menuMouseStep.x > 0 { return RecompN64Button.dpadRight }
+            if menuMouseStep.y > 0 { return RecompN64Button.dpadUp }
+            if menuMouseStep.y < 0 { return RecompN64Button.dpadDown }
+            return 0
         }
         if menuMouseNeutralFrames > 0 {
             menuMouseNeutralFrames -= 1
-            return .zero
+            return 0
         }
 
         let threshold: Float = 18
         let delta = pendingMenuMouseDelta
-        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return .zero }
+        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return 0 }
         if abs(delta.x) > abs(delta.y) {
             menuMouseStep = SIMD2(delta.x < 0 ? -1 : 1, 0)
         } else {
@@ -610,7 +673,7 @@ final class RecompMacInput: ObservableObject {
         pendingMenuMouseDelta = .zero
         menuMouseStepFrames = 2
         menuMouseNeutralFrames = 2
-        return menuMouseStep
+        return nextMenuMouseButtons()
     }
 
     private func beginWeaponWheelPulseIfNeeded() {

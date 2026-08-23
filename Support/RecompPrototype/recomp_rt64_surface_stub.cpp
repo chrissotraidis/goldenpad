@@ -19,6 +19,22 @@ extern "C" void goldenpad_recomp_set_right_analog(int32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_set_controller_connected(int32_t) {}
 extern "C" void goldenpad_recomp_set_two_player_test_mode(int32_t) {}
 extern "C" void goldenpad_recomp_set_four_player_test_mode(int32_t) {}
+extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_note_audio_host_rates(uint32_t, uint32_t, uint32_t) {}
+extern "C" int32_t goldenpad_recomp_gameplay_input_active() { return 0; }
+extern "C" void goldenpad_recomp_get_input_context(
+    int32_t, int32_t *gameplay, int32_t *style, int32_t *aiming,
+    int32_t *tankState, int32_t *nativeLookUpright) {
+    if (gameplay != nullptr) { *gameplay = 0; }
+    if (style != nullptr) { *style = -1; }
+    if (aiming != nullptr) { *aiming = 0; }
+    if (tankState != nullptr) { *tankState = -1; }
+    if (nativeLookUpright != nullptr) { *nativeLookUpright = 0; }
+}
 extern "C" void goldenpad_recomp_set_app_active(int32_t) {}
 extern "C" void goldenpad_recomp_note_transient_inactive() {}
 extern "C" void goldenpad_recomp_queue_touch_look(int32_t, int32_t, int32_t) {}
@@ -30,9 +46,6 @@ extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t) {}
 extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t) {}
 extern "C" void goldenpad_recomp_request_return_to_title() {}
 extern "C" int32_t goldenpad_recomp_previous_session_ended_unexpectedly() { return 0; }
-extern "C" int32_t goldenpad_recomp_gameplay_input_active() { return 0; }
-extern "C" int32_t goldenpad_recomp_current_control_style() { return -1; }
-extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() { return 0; }
 
 extern "C" uint32_t goldenpad_recomp_audio_render(
     float *left, float *right, uint32_t frames) {
