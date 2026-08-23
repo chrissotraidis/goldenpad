@@ -39,7 +39,6 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.lookSensitivity") private var lookSensitivity = 4.0
     @AppStorage("recomp.aimBehavior") private var aimBehavior = RecompPrototypeAimBehavior.toggle.rawValue
     @AppStorage("recomp.controllerLookMode") private var controllerLookMode = RecompPrototypeControllerLookMode.analog.rawValue
-    @AppStorage("recomp.movementMode") private var movementMode = RecompPrototypeMovementMode.previewTwo.rawValue
     @AppStorage("recomp.controllerMap.buttonA") private var controllerButtonA = RecompPrototypeControllerControl.buttonA.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonB") private var controllerButtonB = RecompPrototypeControllerControl.buttonB.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonX") private var controllerButtonX = RecompPrototypeControllerControl.buttonX.defaultAction.rawValue
@@ -119,7 +118,6 @@ struct GoldenPadApp: App {
                 input.configureLookSensitivity(lookSensitivity)
                 input.configureAimBehavior(aimBehavior)
                 input.configureControllerLookMode(controllerLookMode)
-                input.configureMovementMode(movementMode)
                 input.configureControllerMapping(controllerMapping)
                 input.configureInvertAimY(invertAimY)
                 input.configureUnlockAllMissions(unlockAllMissions)
@@ -136,9 +134,6 @@ struct GoldenPadApp: App {
             }
             .onChange(of: controllerLookMode) { _, value in
                 input.configureControllerLookMode(value)
-            }
-            .onChange(of: movementMode) { _, value in
-                input.configureMovementMode(value)
             }
             .onChange(of: controllerMappingRawValues) { _, _ in
                 input.configureControllerMapping(controllerMapping)
@@ -186,7 +181,6 @@ struct GoldenPadApp: App {
                         ),
                         aimBehavior: $aimBehavior,
                         controllerLookMode: $controllerLookMode,
-                        movementMode: $movementMode,
                         controllerButtonA: $controllerButtonA,
                         controllerButtonB: $controllerButtonB,
                         controllerButtonX: $controllerButtonX,
@@ -268,7 +262,6 @@ struct GoldenPadApp: App {
                     lookSensitivity: lookSensitivity,
                     aimBehavior: aimBehavior,
                     controllerLookMode: controllerLookMode,
-                    movementMode: movementMode,
                     activeControlStyle: input.activeControlStyle,
                     controllerMapping: controllerMapping,
                     invertAimY: invertAimY,
@@ -343,7 +336,6 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var lookSensitivity: Double
     @Binding var aimBehavior: String
     @Binding var controllerLookMode: String
-    @Binding var movementMode: String
     @Binding var controllerButtonA: String
     @Binding var controllerButtonB: String
     @Binding var controllerButtonX: String
@@ -425,15 +417,7 @@ private struct RecompPrototypeSettingsView: View {
                 }
                 Section("GoldenEye Controls") {
                     LabeledContent("Active in-game style", value: controlStyleTitle(activeControlStyle))
-                    Picker("Movement adapter", selection: $movementMode) {
-                        ForEach(RecompPrototypeMovementMode.allCases, id: \.rawValue) { mode in
-                            Text(mode.title).tag(mode.rawValue)
-                        }
-                    }
-                    Text("Sidestep mode maps horizontal movement to GoldenEye's C-left and C-right actions for both touch and connected controllers. It activates only during single-player gameplay with 1.1 Honey. Preview 2 movement remains the default and is unchanged.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Text("GoldenEye's own control style and aim options are changed inside the watch menu. GoldenPad does not replace those game settings.")
+                    Text("GoldenPad follows GoldenEye's active 1.1-1.4 control style automatically. The game's own control style and aim options remain in the watch menu.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -578,7 +562,6 @@ private enum RecompPrototypeDiagnostics {
         lookSensitivity: Double,
         aimBehavior: String,
         controllerLookMode: String,
-        movementMode: String,
         activeControlStyle: Int32,
         controllerMapping: [RecompPrototypeControllerControl: String],
         invertAimY: Bool,
@@ -609,7 +592,6 @@ private enum RecompPrototypeDiagnostics {
         Look sensitivity: \(String(format: "%.2f", lookSensitivity))x
         Aim behavior: \(aimBehavior)
         Controller right stick: \((RecompPrototypeControllerLookMode(rawValue: controllerLookMode) ?? .analog).title)
-        Movement adapter: \((RecompPrototypeMovementMode(rawValue: movementMode) ?? .previewTwo).title)
         Active GoldenEye control style: \(controlStyleTitle(activeControlStyle))
         Controller mapping: \(controllerMappingSummary(controllerMapping))
         Invert vertical while aiming: \(invertAimY ? "On" : "Off")

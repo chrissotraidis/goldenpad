@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 3 is the current coordinated release. It is a
+GoldenPad 0.1.0 Preview 4 is the current coordinated release. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 
@@ -97,6 +97,37 @@ drawable-size and direct-camera experiments caused much larger regressions.
   acceptance does not close those transitions.
 - [x] Obtain user approval to merge and publish Preview 3.
 
+## Coordinated Preview 4 shared-controls and tank update
+
+- [x] Freeze the exact physically accepted iPad test executable at SHA-256
+  `2b31f8868885712fbad34cef1aea20b1dee48f59fc9d930cbd3fa8b8e82b6b12`.
+- [x] Preserve raw non-gameplay controller passthrough so the tank repair cannot
+  disable title or mission-menu navigation.
+- [x] Use one shared 1.1 through 1.4 mapping on mobile and Mac, with native
+  left-stick manual Aim and no platform-specific control interpretation.
+- [x] Gate tank behavior on GoldenEye's live player/tank/entry state and retain
+  the native hatch transition, drive/hull path, turret state, selected-weapon
+  cycling, firing, and exit/re-entry behavior.
+- [x] Obtain physical iPad acceptance for menu, on-foot controls, Aim, Runway
+  tank drive/turn/turret/weapons, return to title, and a Facility regression
+  pass.
+- [x] Apply the user's final requested 20 percent absolute controller-look
+  increase from 1.56 to 1.872 degrees per frame without changing touch, mouse,
+  manual Aim, left movement, or menus.
+- [x] Rebuild both generated GoldenEye patch halves together and prove tracked
+  patch parity plus tank-state markers.
+- [x] Pass the shared 1.1 through 1.4 matrix, complete unsigned device build,
+  complete native arm64 Mac build, and both package audits.
+- [x] Package the 18-member unsigned IPA at SHA-256
+  `ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`.
+- [x] Package the 20-member Mac Alpha at SHA-256
+  `63bec02ad6e323a213f9cb9d15f763a58d6eb7bd4a1a40af6341a4fb8fb333ba`.
+- [ ] Keep issue #17 open until the reporter verifies Preview 4 on Mac. Do not
+  treat iPad acceptance or Mac package proof as reporter acceptance.
+- [ ] The final 1.872-degree unsigned release executable has build and static
+  verification, not a second physical-device pass. Keep that distinction in
+  release notes and status.
+
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
 
@@ -150,11 +181,11 @@ plus warm performance checks on the target hardware.
   ```sh
   ./scripts/package-recomp-prototype-ipa.sh
   ./scripts/verify-recomp-prototype-ipa.sh \
-    dist/GoldenPad-0.1.0-preview.3-unsigned.ipa
+    dist/GoldenPad-0.1.0-preview.4-unsigned.ipa
 
   ./scripts/package-recomp-macos-alpha.sh
   ./scripts/verify-recomp-macos-alpha.sh \
-    dist/GoldenPad-0.1.0-preview.3-macos-arm64-alpha.zip
+    dist/GoldenPad-0.1.0-preview.4-macos-arm64-alpha.zip
   ```
 
 - Keep the README's install table and limitations accurate.

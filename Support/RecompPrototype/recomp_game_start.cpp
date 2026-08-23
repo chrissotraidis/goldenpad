@@ -29,6 +29,14 @@
 extern RspUcodeFunc aspMain;
 gpr get_entrypoint_address();
 
+#if !defined(GOLDENPAD_RECOMP_MAC)
+extern "C" uint64_t goldenpad_rt64_depth_format_rebuild_stats(
+    uint64_t *widthChanges,
+    uint64_t *sizeChanges,
+    uint64_t *rdramChanges,
+    uint32_t *latestAddress);
+#endif
+
 namespace zelda64 {
 void register_overlays();
 void register_patches();
@@ -65,6 +73,7 @@ std::atomic<bool> unlockAllMissions = false;
 std::atomic<bool> returnToTitleRequested = false;
 std::atomic<bool> appActive = true;
 std::atomic<bool> controllerConnected = false;
+std::atomic<int32_t> touchInputPort = -1;
 std::atomic<bool> twoPlayerTestMode = false;
 std::atomic<bool> fourPlayerTestMode = false;
 std::atomic<uint64_t> rt64DisplayListCount = 0;
@@ -76,6 +85,27 @@ std::atomic<uint8_t> inputStateReported = 0;
 std::atomic<bool> audioCallbackReported = false;
 std::atomic<bool> stateProbeStarted = false;
 std::atomic<uint8_t> invalidInputPortsReported = 0;
+std::atomic<bool> fireRateProbeEnabled = false;
+std::atomic<bool> sidestepProbeEnabled = false;
+std::atomic<bool> lifecycleProbeEnabled = false;
+std::atomic<bool> audioProbeEnabled = false;
+std::atomic<bool> depthRebuildProbeEnabled = false;
+std::atomic<uint32_t> audioRequestedFrequency = 0;
+std::atomic<uint32_t> audioHostSourceFrequency = 0;
+std::atomic<uint32_t> audioHostSessionFrequency = 0;
+std::atomic<uint32_t> audioHostMixerFrequency = 0;
+std::atomic<uint64_t> audioProbeObservedFrames = 0;
+std::atomic<uint64_t> audioProbeLargeJumps = 0;
+std::atomic<uint64_t> audioProbeSequenceErrors = 0;
+std::atomic<uint64_t> lifecycleProgressSequence = 0;
+std::atomic<uint64_t> lifecycleProgressStartedMs = 0;
+std::atomic<uint64_t> lifecycleProgressBaselineDisplayLists = 0;
+std::atomic<uint64_t> lifecycleProgressBaselineScreenUpdates = 0;
+std::atomic<uint64_t> lifecycleProgressBaselinePresented = 0;
+std::atomic<int32_t> lifecycleProgressKind = 0;
+std::atomic<int32_t> gameplayInputModeReported = -1;
+std::atomic<uint64_t> fireRateProbeSimulationTicks = 0;
+std::atomic<uint32_t> fireRateProbeRawGuardSamples = 0;
 std::mutex statusMutex;
 std::mutex diagnosticsMutex;
 std::string runtimeStatus = "AOT runtime: waiting for imported user ROM";
@@ -102,6 +132,108 @@ bool audioPlaybackPrimed = false;
 uint32_t audioFadeInFramesRemaining = 0;
 float audioLastLeft = 0.0f;
 float audioLastRight = 0.0f;
+bool audioProbeHasLastOutput = false;
+float audioProbeLastLeft = 0.0f;
+float audioProbeLastRight = 0.0f;
+
+constexpr float kAudioProbeJumpThreshold = 0.05f;
+
+uint64_t queryDepthFormatRebuildStats(
+    uint64_t *widthChanges,
+    uint64_t *sizeChanges,
+    uint64_t *rdramChanges,
+    uint32_t *latestAddress) {
+#if defined(GOLDENPAD_RECOMP_MAC)
+    *widthChanges = 0;
+    *sizeChanges = 0;
+    *rdramChanges = 0;
+    *latestAddress = 0;
+    return 0;
+#else
+    return goldenpad_rt64_depth_format_rebuild_stats(
+        widthChanges, sizeChanges, rdramChanges, latestAddress);
+#endif
+}
+
+int16_t audioProbeSample(uint64_t frame) {
+    // A 200-frame triangle stays continuous across its wrap and is cheap
+    // enough not to perturb the producer/consumer timing being measured.
+    constexpr uint64_t period = 200;
+    constexpr uint64_t halfPeriod = period / 2;
+    constexpr int32_t amplitude = 16'000;
+    constexpr int32_t step = amplitude * 2 / static_cast<int32_t>(halfPeriod);
+    const uint64_t phase = frame % period;
+    const int32_t value = phase < halfPeriod
+        ? -amplitude + static_cast<int32_t>(phase) * step
+        : amplitude - static_cast<int32_t>(phase - halfPeriod) * step;
+    return static_cast<int16_t>(value);
+}
+
+bool audioProbeStepIsLarge(float previous, float current) {
+    return std::abs(current - previous) > kAudioProbeJumpThreshold;
+}
+
+bool audioProbeDetectorSelfTestPasses() {
+    return !audioProbeStepIsLarge(0.10f, 0.12f) &&
+        audioProbeStepIsLarge(-0.45f, 0.45f);
+}
+
+void observeAudioProbeOutput(const float *left, const float *right, uint32_t frames) {
+    if (!audioProbeEnabled.load(std::memory_order_relaxed)) { return; }
+    uint64_t jumps = 0;
+    for (uint32_t frame = 0; frame < frames; ++frame) {
+        if (audioProbeHasLastOutput &&
+            (audioProbeStepIsLarge(audioProbeLastLeft, left[frame]) ||
+                audioProbeStepIsLarge(audioProbeLastRight, right[frame]))) {
+            ++jumps;
+        }
+        audioProbeHasLastOutput = true;
+        audioProbeLastLeft = left[frame];
+        audioProbeLastRight = right[frame];
+    }
+    audioProbeObservedFrames.fetch_add(frames, std::memory_order_relaxed);
+    audioProbeLargeJumps.fetch_add(jumps, std::memory_order_relaxed);
+}
+
+enum class LifecycleProgressState {
+    noRuntimeProgress,
+    presentationStalled,
+    recovered,
+};
+
+LifecycleProgressState classifyLifecycleProgress(
+    uint64_t displayListDelta,
+    uint64_t screenUpdateDelta,
+    uint64_t presentedDelta
+) {
+    if (presentedDelta != 0) {
+        return LifecycleProgressState::recovered;
+    }
+    if (displayListDelta != 0 || screenUpdateDelta != 0) {
+        return LifecycleProgressState::presentationStalled;
+    }
+    return LifecycleProgressState::noRuntimeProgress;
+}
+
+bool lifecycleProgressClassifierProbePasses() {
+    return classifyLifecycleProgress(0, 0, 0) == LifecycleProgressState::noRuntimeProgress &&
+        classifyLifecycleProgress(0, 12, 0) == LifecycleProgressState::presentationStalled &&
+        classifyLifecycleProgress(12, 12, 12) == LifecycleProgressState::recovered;
+}
+
+const char *lifecycleProgressStateName(LifecycleProgressState state) {
+    switch (state) {
+    case LifecycleProgressState::noRuntimeProgress: return "no-runtime-progress";
+    case LifecycleProgressState::presentationStalled: return "presentation-stalled";
+    case LifecycleProgressState::recovered: return "recovered";
+    }
+    return "unknown";
+}
+
+uint64_t monotonicMilliseconds() {
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
 void logEvent(const char *event, const char *format, ...) {
     char detail[768];
@@ -143,6 +275,7 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
         std::filesystem::rename(latest, previous, error);
     }
     diagnosticsLogPath = latest;
+    gameplayInputModeReported.store(-1, std::memory_order_relaxed);
     std::ofstream log(diagnosticsLogPath, std::ios::trunc);
     log << "[GoldenPadRecomp] diagnostics: private current-session log started\n";
     if (unexpectedPreviousEnd) {
@@ -150,6 +283,47 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     }
     std::ofstream marker(diagnosticsSessionMarkerPath, std::ios::trunc);
     marker << "GoldenPad foreground session active\n";
+    if (lifecycleProbeEnabled.load(std::memory_order_relaxed)) {
+        log << "[GoldenPadRecomp] lifecycle-probe: classifier="
+            << (lifecycleProgressClassifierProbePasses() ? "PASS" : "FAIL") << '\n';
+    }
+    if (audioProbeEnabled.load(std::memory_order_relaxed)) {
+        log << "[GoldenPadRecomp] audio-probe: detector="
+            << (audioProbeDetectorSelfTestPasses() ? "PASS" : "FAIL") << '\n';
+    }
+    if (depthRebuildProbeEnabled.load(std::memory_order_relaxed)) {
+        uint64_t widthChanges = 0;
+        uint64_t sizeChanges = 0;
+        uint64_t rdramChanges = 0;
+        uint32_t latestAddress = 0;
+        const uint64_t rebuilds = queryDepthFormatRebuildStats(
+            &widthChanges, &sizeChanges, &rdramChanges, &latestAddress);
+        log << "[GoldenPadRecomp] depth-rebuild-probe: counter=READY"
+            << " baseline=" << rebuilds
+            << " causes=(width=" << widthChanges
+            << " size=" << sizeChanges
+            << " rdram=" << rdramChanges << ')'
+            << " latest=0x" << std::hex << latestAddress << std::dec << '\n';
+    }
+}
+
+void startLifecycleProgressWindow(int32_t kind, const char *kindName) {
+    if (!lifecycleProbeEnabled.load(std::memory_order_relaxed)) { return; }
+    const uint64_t displayLists = rt64DisplayListCount.load(std::memory_order_relaxed);
+    const uint64_t screenUpdates = rt64ScreenUpdateCount.load(std::memory_order_relaxed);
+    const uint64_t presented = rt64PresentedCount.load(std::memory_order_relaxed);
+    lifecycleProgressBaselineDisplayLists.store(displayLists, std::memory_order_relaxed);
+    lifecycleProgressBaselineScreenUpdates.store(screenUpdates, std::memory_order_relaxed);
+    lifecycleProgressBaselinePresented.store(presented, std::memory_order_relaxed);
+    lifecycleProgressStartedMs.store(monotonicMilliseconds(), std::memory_order_relaxed);
+    lifecycleProgressKind.store(kind, std::memory_order_relaxed);
+    const uint64_t sequence = lifecycleProgressSequence.fetch_add(1, std::memory_order_release) + 1;
+    logEvent("lifecycle-progress",
+        "sequence=%llu transition=%s baseline=(dl=%llu vi=%llu presented=%llu)",
+        static_cast<unsigned long long>(sequence), kindName,
+        static_cast<unsigned long long>(displayLists),
+        static_cast<unsigned long long>(screenUpdates),
+        static_cast<unsigned long long>(presented));
 }
 
 void markDiagnosticsSessionActive() {
@@ -245,6 +419,62 @@ float readGameFloat(uint8_t *rdram, uint32_t address) {
     return std::bit_cast<float>(static_cast<uint32_t>(readGameWord(rdram, address)));
 }
 
+constexpr uint32_t kFireRateWindowTicks = 100;
+constexpr uint32_t kFireRateProbeRunLimit = 3;
+constexpr uint8_t kKf7SovietItem = 8;
+constexpr uint8_t kKf7SovietRawRate = 3;
+
+struct PlayerFireRateWindow {
+    bool active = false;
+    uint32_t runs = 0;
+    uint32_t ticks = 0;
+    int32_t lastWeapon = -1;
+    int32_t lastAmmo = -1;
+    int32_t player = -1;
+    int32_t weapon = -1;
+    int32_t startingAmmo = -1;
+    int32_t endingAmmo = -1;
+    int32_t startingCounter = -1;
+    int32_t endingCounter = -1;
+    uint32_t shotEvents = 0;
+};
+
+struct GuardFireRateWindow {
+    bool active = false;
+    uint32_t runs = 0;
+    uint32_t guardKey = 0;
+    uint64_t startingTick = 0;
+    uint8_t startingCounter = 0;
+    uint8_t endingCounter = 0;
+    uint32_t shotEvents = 0;
+};
+
+PlayerFireRateWindow playerFireRateWindow;
+GuardFireRateWindow guardFireRateWindow;
+
+bool isAutomaticPlayerWeapon(int32_t weapon) {
+    // GoldenEye's full-auto group runs from the Skorpion through the RC-P90.
+    return weapon >= 7 && weapon <= 14;
+}
+
+void completeGuardFireRateWindow(uint64_t simulationTick) {
+    if (!guardFireRateWindow.active ||
+        simulationTick - guardFireRateWindow.startingTick < kFireRateWindowTicks) {
+        return;
+    }
+    logEvent("fire-rate-probe",
+        "guard run=%u complete ticks=%u item=%u rawRate=%u events=%u counter=%u->%u",
+        guardFireRateWindow.runs + 1,
+        kFireRateWindowTicks,
+        kKf7SovietItem,
+        kKf7SovietRawRate,
+        guardFireRateWindow.shotEvents,
+        guardFireRateWindow.startingCounter,
+        guardFireRateWindow.endingCounter);
+    ++guardFireRateWindow.runs;
+    guardFireRateWindow.active = false;
+}
+
 size_t getQueuedFrames();
 
 void monitorGameState(uint8_t *rdram) {
@@ -255,6 +485,9 @@ void monitorGameState(uint8_t *rdram) {
     uint64_t previousScreenUpdates = 0;
     uint64_t previousPresented = 0;
     int stalledActiveSamples = 0;
+    uint64_t observedLifecycleSequence = 0;
+    uint64_t nextLifecycleSampleMs = 0;
+    int lifecycleProgressSamples = 0;
     int heartbeat = 0;
     while (runtimeStarted.load(std::memory_order_relaxed)) {
         const int32_t menu = readGameWord(rdram, 0x8002A6C0);
@@ -276,6 +509,44 @@ void monitorGameState(uint8_t *rdram) {
         const uint64_t screenUpdates = rt64ScreenUpdateCount.load(std::memory_order_relaxed);
         const uint64_t presented = rt64PresentedCount.load(std::memory_order_relaxed);
         const bool active = appActive.load(std::memory_order_relaxed);
+        if (lifecycleProbeEnabled.load(std::memory_order_relaxed) && active) {
+            const uint64_t sequence = lifecycleProgressSequence.load(std::memory_order_acquire);
+            if (sequence != observedLifecycleSequence) {
+                observedLifecycleSequence = sequence;
+                lifecycleProgressSamples = 0;
+                nextLifecycleSampleMs = lifecycleProgressStartedMs.load(
+                    std::memory_order_relaxed) + 2'000;
+            }
+            const uint64_t nowMs = monotonicMilliseconds();
+            if (sequence != 0 && lifecycleProgressSamples < 5 &&
+                nowMs >= nextLifecycleSampleMs) {
+                const uint64_t displayListDelta = displayLists -
+                    lifecycleProgressBaselineDisplayLists.load(std::memory_order_relaxed);
+                const uint64_t screenUpdateDelta = screenUpdates -
+                    lifecycleProgressBaselineScreenUpdates.load(std::memory_order_relaxed);
+                const uint64_t presentedDelta = presented -
+                    lifecycleProgressBaselinePresented.load(std::memory_order_relaxed);
+                const LifecycleProgressState progress = classifyLifecycleProgress(
+                    displayListDelta, screenUpdateDelta, presentedDelta);
+                const int32_t kind = lifecycleProgressKind.load(std::memory_order_relaxed);
+                const uint64_t ageMs = nowMs -
+                    lifecycleProgressStartedMs.load(std::memory_order_relaxed);
+                logEvent("lifecycle-progress",
+                    "sequence=%llu transition=%s ageMs=%llu delta=(dl=%llu vi=%llu presented=%llu) state=%s sample=%d/5",
+                    static_cast<unsigned long long>(sequence),
+                    kind == 1 ? "transient-inactive" : "foreground-resume",
+                    static_cast<unsigned long long>(ageMs),
+                    static_cast<unsigned long long>(displayListDelta),
+                    static_cast<unsigned long long>(screenUpdateDelta),
+                    static_cast<unsigned long long>(presentedDelta),
+                    lifecycleProgressStateName(progress), lifecycleProgressSamples + 1);
+                ++lifecycleProgressSamples;
+                nextLifecycleSampleMs += 2'000;
+                if (progress == LifecycleProgressState::recovered || ageMs >= 10'000) {
+                    lifecycleProgressSamples = 5;
+                }
+            }
+        }
         if (heartbeat == 0) {
             const uint32_t player = static_cast<uint32_t>(readGameWord(rdram, 0x80079EB0));
             const bool playerValid = player >= 0x80000000u && player < 0xA0000000u;
@@ -307,7 +578,9 @@ void monitorGameState(uint8_t *rdram) {
                 static_cast<unsigned long long>(audioUnderrunCallbacks.load(std::memory_order_relaxed)),
                 fourPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2+neutral-p3/p4" :
                     (twoPlayerTestMode.load(std::memory_order_relaxed) ? "external-p1+touch-p2" :
-                        (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" : "touch-p1")),
+                        (controllerConnected.load(std::memory_order_relaxed) ? "external-p1" :
+                            (touchInputPort.load(std::memory_order_relaxed) == 0 ?
+                                "touch-p1" : "neutral-awaiting-controller"))),
                 controllerLookX[0].load(std::memory_order_relaxed),
                 controllerLookY[0].load(std::memory_order_relaxed),
                 controllerLookX[1].load(std::memory_order_relaxed),
@@ -326,6 +599,30 @@ void monitorGameState(uint8_t *rdram) {
                 playerValid ? readGameFloat(rdram, player + 0x158) : 0.0f,
                 basisValid ? "valid" : "unavailable",
                 viewX, viewY, viewZ, upX, upY, upZ);
+            if (audioProbeEnabled.load(std::memory_order_relaxed)) {
+                logEvent("audio-probe",
+                    "observedFrames=%llu largeJumps=%llu sequenceErrors=%llu",
+                    static_cast<unsigned long long>(
+                        audioProbeObservedFrames.load(std::memory_order_relaxed)),
+                    static_cast<unsigned long long>(
+                        audioProbeLargeJumps.load(std::memory_order_relaxed)),
+                    static_cast<unsigned long long>(
+                        audioProbeSequenceErrors.load(std::memory_order_relaxed)));
+            }
+            if (depthRebuildProbeEnabled.load(std::memory_order_relaxed)) {
+                uint64_t widthChanges = 0;
+                uint64_t sizeChanges = 0;
+                uint64_t rdramChanges = 0;
+                uint32_t latestAddress = 0;
+                const uint64_t rebuilds = queryDepthFormatRebuildStats(
+                    &widthChanges, &sizeChanges, &rdramChanges, &latestAddress);
+                logEvent("depth-rebuild-probe",
+                    "total=%llu causes=(width=%llu size=%llu rdram=%llu) latest=0x%08X",
+                    static_cast<unsigned long long>(rebuilds),
+                    static_cast<unsigned long long>(widthChanges),
+                    static_cast<unsigned long long>(sizeChanges),
+                    static_cast<unsigned long long>(rdramChanges), latestAddress);
+            }
         }
         const bool rendererHadStarted = displayLists != 0 || screenUpdates != 0;
         const bool rendererAdvanced = displayLists != previousDisplayLists ||
@@ -398,6 +695,7 @@ void queueSamples(int16_t *samples, size_t sampleCount) {
 
     const uint64_t readFrame = audioReadFrame.load(std::memory_order_acquire);
     uint64_t writeFrame = audioWriteFrame.load(std::memory_order_relaxed);
+    const bool probeEnabled = audioProbeEnabled.load(std::memory_order_relaxed);
     const uint64_t queuedFrames = std::min(writeFrame - std::min(writeFrame, readFrame), kAudioRingFrames);
     const uint64_t availableFrames = kAudioRingFrames - queuedFrames;
     if (incomingFrames > availableFrames) {
@@ -410,8 +708,14 @@ void queueSamples(int16_t *samples, size_t sampleCount) {
         const uint64_t destination = ((writeFrame + frame) % kAudioRingFrames) * 2;
         // Match GoldenEye64Recomp's reference host: N64ModernRuntime's RDRAM
         // address XOR leaves each interleaved stereo pair in reversed order.
-        audioRing[destination] = samples[frame * 2 + 1];
-        audioRing[destination + 1] = samples[frame * 2];
+        if (probeEnabled) {
+            const int16_t probeSample = audioProbeSample(writeFrame + frame);
+            audioRing[destination] = probeSample;
+            audioRing[destination + 1] = static_cast<int16_t>(-probeSample);
+        } else {
+            audioRing[destination] = samples[frame * 2 + 1];
+            audioRing[destination + 1] = samples[frame * 2];
+        }
     }
     audioWriteFrame.store(writeFrame + incomingFrames, std::memory_order_release);
 }
@@ -428,7 +732,15 @@ size_t getFramesRemaining() {
     return queued > kAudioPrebufferFrames ? queued - kAudioPrebufferFrames : 0;
 }
 void setFrequency(uint32_t frequency) {
+    audioRequestedFrequency.store(frequency, std::memory_order_relaxed);
     logEvent("audio", "game requested %u Hz output", frequency);
+    const uint32_t source = audioHostSourceFrequency.load(std::memory_order_relaxed);
+    if (source != 0) {
+        logEvent("audio-rates", "requested=%u source=%u session=%u mixer=%u",
+            frequency, source,
+            audioHostSessionFrequency.load(std::memory_order_relaxed),
+            audioHostMixerFrequency.load(std::memory_order_relaxed));
+    }
 }
 void pollInput() {
     if (!inputPollReported.exchange(true)) {
@@ -490,6 +802,12 @@ void runRuntime(ultramodern::renderer::WindowHandle window, std::filesystem::pat
     try {
         configureDiagnostics(configPath);
         logEvent("runtime", "worker started");
+        if (fireRateProbeEnabled.load(std::memory_order_acquire)) {
+            logEvent("fire-rate-probe",
+                "enabled; observation only, %u-tick windows, maximum %u player and guard runs",
+                kFireRateWindowTicks,
+                kFireRateProbeRunLimit);
+        }
         std::filesystem::create_directories(configPath);
         recomp::register_config_path(std::move(configPath));
         configurePrototypeGraphics();
@@ -621,6 +939,12 @@ extern "C" void goldenpad_recomp_set_controller_state(int32_t controllerNum, uin
     const size_t port = static_cast<size_t>(controllerNum);
     const uint32_t normalizedButtons = buttons & 0xFFFFu;
     const uint32_t previousButtons = controllerButtons[port].exchange(normalizedButtons, std::memory_order_relaxed);
+    if (sidestepProbeEnabled.load(std::memory_order_relaxed) &&
+        (normalizedButtons & 0x0003u) != 0 &&
+        (previousButtons & 0x0003u) == 0) {
+        logEvent("sidestep-probe", "controller=%d buttons=0x%04X stick=(%d,%d)",
+            controllerNum + 1, normalizedButtons, stickX, stickY);
+    }
     if (previousButtons != normalizedButtons) {
         const uint32_t transition = controllerButtonTransitions[port].fetch_add(1) + 1;
         if (transition <= 12 || transition % 120 == 0) {
@@ -628,8 +952,19 @@ extern "C" void goldenpad_recomp_set_controller_state(int32_t controllerNum, uin
                 controllerNum + 1, normalizedButtons, transition);
         }
     }
-    controllerStickX[port].store(std::clamp(stickX, -80, 80), std::memory_order_relaxed);
-    controllerStickY[port].store(std::clamp(stickY, -80, 80), std::memory_order_relaxed);
+    const int32_t normalizedStickX = std::clamp(stickX, -80, 80);
+    const int32_t normalizedStickY = std::clamp(stickY, -80, 80);
+    const int32_t previousStickX = controllerStickX[port].exchange(
+        normalizedStickX, std::memory_order_relaxed);
+    const int32_t previousStickY = controllerStickY[port].exchange(
+        normalizedStickY, std::memory_order_relaxed);
+    const bool stickWasActive = std::abs(previousStickX) > 8 || std::abs(previousStickY) > 8;
+    const bool stickIsActive = std::abs(normalizedStickX) > 8 || std::abs(normalizedStickY) > 8;
+    if (stickWasActive != stickIsActive) {
+        logEvent("input", "controller %d left stick %s at (%d,%d)",
+            controllerNum + 1, stickIsActive ? "active" : "neutral",
+            normalizedStickX, normalizedStickY);
+    }
 }
 
 extern "C" void goldenpad_recomp_set_right_analog(int32_t controllerNum, int32_t lookX, int32_t lookY) {
@@ -665,6 +1000,159 @@ extern "C" void goldenpad_recomp_set_controller_connected(int32_t connected) {
         logEvent("input", "external controller %s; touch overlay %s",
             next ? "connected" : "disconnected",
             next && !twoPlayerTestMode.load(std::memory_order_relaxed) ? "hidden" : "visible");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_touch_input_port(int32_t port) {
+    const int32_t normalizedPort = port >= 0 && port < static_cast<int32_t>(kControllerPorts)
+        ? port : -1;
+    const int32_t previousPort = touchInputPort.exchange(
+        normalizedPort, std::memory_order_relaxed);
+    if (previousPort != normalizedPort) {
+        if (normalizedPort < 0) {
+            logEvent("input-ownership", "touch is neutral and owns no player port");
+        } else {
+            logEvent("input-ownership", "touch owns player %d", normalizedPort + 1);
+        }
+    }
+}
+
+extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t enabled) {
+    const bool next = enabled != 0;
+    fireRateProbeEnabled.store(next, std::memory_order_release);
+    if (next) {
+        fireRateProbeSimulationTicks.store(0, std::memory_order_relaxed);
+        fireRateProbeRawGuardSamples.store(0, std::memory_order_relaxed);
+        playerFireRateWindow = {};
+        guardFireRateWindow = {};
+    }
+}
+
+extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t enabled) {
+    sidestepProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_fire_rate_player_sample(
+    uint8_t *rdram, recomp_context *ctx) {
+    if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {
+        return;
+    }
+    const int32_t player = _arg<0, int32_t>(rdram, ctx);
+    const int32_t weapon = _arg<1, int32_t>(rdram, ctx);
+    const int32_t ammo = _arg<2, int32_t>(rdram, ctx);
+    const int32_t counter = _arg<3, int32_t>(rdram, ctx);
+    if (player != 0) {
+        return;
+    }
+
+    const uint64_t simulationTick =
+        fireRateProbeSimulationTicks.fetch_add(1, std::memory_order_relaxed) + 1;
+    completeGuardFireRateWindow(simulationTick);
+
+    if (!isAutomaticPlayerWeapon(weapon)) {
+        playerFireRateWindow.active = false;
+        playerFireRateWindow.lastWeapon = weapon;
+        playerFireRateWindow.lastAmmo = ammo;
+        return;
+    }
+    const int32_t previousAmmo = playerFireRateWindow.lastAmmo;
+    const uint32_t shotEvents = playerFireRateWindow.lastWeapon == weapon &&
+        previousAmmo > ammo ? static_cast<uint32_t>(previousAmmo - ammo) : 0;
+    playerFireRateWindow.lastWeapon = weapon;
+    playerFireRateWindow.lastAmmo = ammo;
+    if (!playerFireRateWindow.active) {
+        if (shotEvents == 0 ||
+            playerFireRateWindow.runs >= kFireRateProbeRunLimit) {
+            return;
+        }
+        playerFireRateWindow.active = true;
+        playerFireRateWindow.ticks = 1;
+        playerFireRateWindow.player = player;
+        playerFireRateWindow.weapon = weapon;
+        playerFireRateWindow.startingAmmo = previousAmmo;
+        playerFireRateWindow.endingAmmo = ammo;
+        playerFireRateWindow.startingCounter = counter;
+        playerFireRateWindow.endingCounter = counter;
+        playerFireRateWindow.shotEvents = shotEvents;
+        logEvent("fire-rate-probe",
+            "player run=%u begin ticks=%u weapon=%d ammo=%d counter=%d",
+            playerFireRateWindow.runs + 1,
+            kFireRateWindowTicks,
+            weapon,
+            previousAmmo,
+            counter);
+        return;
+    }
+    if (playerFireRateWindow.weapon != weapon) {
+        playerFireRateWindow.active = false;
+        return;
+    }
+    playerFireRateWindow.shotEvents += shotEvents;
+    playerFireRateWindow.endingAmmo = ammo;
+    playerFireRateWindow.endingCounter = counter;
+    ++playerFireRateWindow.ticks;
+    if (playerFireRateWindow.ticks >= kFireRateWindowTicks) {
+        logEvent("fire-rate-probe",
+            "player run=%u complete ticks=%u weapon=%d events=%u ammo=%d->%d counter=%d->%d",
+            playerFireRateWindow.runs + 1,
+            playerFireRateWindow.ticks,
+            playerFireRateWindow.weapon,
+            playerFireRateWindow.shotEvents,
+            playerFireRateWindow.startingAmmo,
+            playerFireRateWindow.endingAmmo,
+            playerFireRateWindow.startingCounter,
+            playerFireRateWindow.endingCounter);
+        ++playerFireRateWindow.runs;
+        playerFireRateWindow.active = false;
+    }
+}
+
+extern "C" void goldenpad_recomp_fire_rate_guard_sample(
+    uint8_t *rdram, recomp_context *ctx) {
+    if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {
+        return;
+    }
+    const int32_t item = _arg<0, int32_t>(rdram, ctx);
+    const uint8_t before = static_cast<uint8_t>(_arg<1, int32_t>(rdram, ctx));
+    const uint8_t after = static_cast<uint8_t>(_arg<2, int32_t>(rdram, ctx));
+    const uint32_t guardKey = _arg<3, uint32_t>(rdram, ctx);
+    const uint32_t rawSample =
+        fireRateProbeRawGuardSamples.fetch_add(1, std::memory_order_relaxed);
+    if (rawSample < 8) {
+        logEvent("fire-rate-probe",
+            "guard raw=%u item=%d counter=%u->%u key=0x%08X",
+            rawSample + 1,
+            item,
+            before,
+            after,
+            guardKey);
+    }
+    const bool committedGate = item == kKf7SovietItem &&
+        after == static_cast<uint8_t>(before + 1u) &&
+        after % kKf7SovietRawRate == 0;
+    if (!committedGate) {
+        return;
+    }
+
+    if (!guardFireRateWindow.active && guardFireRateWindow.runs < kFireRateProbeRunLimit) {
+        guardFireRateWindow.active = true;
+        guardFireRateWindow.guardKey = guardKey;
+        guardFireRateWindow.startingTick =
+            fireRateProbeSimulationTicks.load(std::memory_order_relaxed);
+        guardFireRateWindow.startingCounter = after;
+        guardFireRateWindow.endingCounter = after;
+        guardFireRateWindow.shotEvents = 1;
+        logEvent("fire-rate-probe",
+            "guard run=%u begin ticks=%u item=%d rawRate=%u counter=%u",
+            guardFireRateWindow.runs + 1,
+            kFireRateWindowTicks,
+            item,
+            kKf7SovietRawRate,
+            after);
+    } else if (guardFireRateWindow.active &&
+        guardFireRateWindow.guardKey == guardKey) {
+        ++guardFireRateWindow.shotEvents;
+        guardFireRateWindow.endingCounter = after;
     }
 }
 
@@ -713,6 +1201,7 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t active) {
         }
         if (next) {
             markDiagnosticsSessionActive();
+            startLifecycleProgressWindow(2, "foreground-resume");
         }
         logEvent("lifecycle", "host became %s; RT64 presentation %s",
             next ? "active" : "inactive", next ? "resumed" : "suspended");
@@ -728,6 +1217,31 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t active) {
 
 extern "C" void goldenpad_recomp_note_transient_inactive() {
     logEvent("lifecycle", "transient inactive state observed; RT64 presentation kept active");
+    if (appActive.load(std::memory_order_relaxed)) {
+        startLifecycleProgressWindow(1, "transient-inactive");
+    }
+}
+
+extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t enabled) {
+    lifecycleProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t enabled) {
+    audioProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t enabled) {
+    depthRebuildProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_note_audio_host_rates(
+    uint32_t source, uint32_t session, uint32_t mixer
+) {
+    audioHostSourceFrequency.store(source, std::memory_order_relaxed);
+    audioHostSessionFrequency.store(session, std::memory_order_relaxed);
+    audioHostMixerFrequency.store(mixer, std::memory_order_relaxed);
+    logEvent("audio-rates", "requested=%u source=%u session=%u mixer=%u",
+        audioRequestedFrequency.load(std::memory_order_relaxed), source, session, mixer);
 }
 
 extern "C" int32_t goldenpad_recomp_is_app_active() {
@@ -804,72 +1318,131 @@ extern "C" void goldenpad_recomp_request_return_to_title() {
     logEvent("navigation", "return to main menu requested");
 }
 
-namespace {
-uint32_t currentPlayerAddress(uint8_t *rdram) {
-    const uint32_t player = static_cast<uint32_t>(readGameWord(rdram, 0x80079EB0));
-    return player >= 0x80000000 && player <= 0x9FFFFFFF ? player : 0;
-}
+extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
+    const auto reportMode = [](int32_t active) {
+        const int32_t previous = gameplayInputModeReported.exchange(
+            active, std::memory_order_relaxed);
+        if (previous != active) {
+            logEvent("input-mode", "mobile mapping uses %s semantics",
+                active != 0 ? "live-gameplay strafe" : "menu/watch stick");
+        }
+        return active;
+    };
 
-bool gameplayInputActive(uint8_t *rdram) {
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
     if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
-        return false;
+        return reportMode(0);
     }
 
     constexpr int32_t kTitleStage = 90;
-    if (readGameWord(rdram, 0x80023FA8) == kTitleStage) {
-        return false;
+    const int32_t stage = readGameWord(rdram, 0x80023FA8);
+    if (stage == kTitleStage) {
+        return reportMode(0);
     }
 
-    const uint32_t playerAddress = currentPlayerAddress(rdram);
-    if (playerAddress == 0) {
-        return false;
+    const uint32_t playerAddress = static_cast<uint32_t>(
+        readGameWord(rdram, 0x80079EB0));
+    if (playerAddress < 0x80000000 || playerAddress > 0x9FFFFFFF) {
+        return reportMode(0);
     }
 
+    // These are GoldenEye's own watch-state fields. Switch away from gameplay
+    // semantics as soon as a watch transition begins; waiting for
+    // outside_watch_menu to clear allowed the first watch-navigation sample to
+    // leak through as a strafe during the opening animation.
     const int32_t watchAnimationState = readGameWord(rdram, playerAddress + 0x1C8);
     const int32_t outsideWatchMenu = readGameWord(rdram, playerAddress + 0x1CC);
     const int32_t openCloseSoloWatchMenu = readGameWord(rdram, playerAddress + 0x1D0);
-    const int32_t controlsLocked = readGameWord(rdram, 0x80048170);
-    const int32_t multiplayerMenuOpen = readGameWord(rdram, playerAddress + 0x29C4);
-    return watchAnimationState == 0 && outsideWatchMenu != 0 && openCloseSoloWatchMenu == 0 &&
-        controlsLocked == 0 && multiplayerMenuOpen == 0;
+    return reportMode(
+        watchAnimationState == 0 &&
+        outsideWatchMenu != 0 &&
+        openCloseSoloWatchMenu == 0 ? 1 : 0);
 }
-} // namespace
 
-extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
-    const bool active = gameplayInputActive(activeRdram.load(std::memory_order_acquire));
-    if (!active) {
-        for (size_t port = 0; port < kControllerPorts; port++) {
-            queuedTouchLookX[port].store(0, std::memory_order_relaxed);
-            queuedTouchLookY[port].store(0, std::memory_order_relaxed);
-            queuedMouseLookX[port].store(0, std::memory_order_relaxed);
-            queuedMouseLookY[port].store(0, std::memory_order_relaxed);
-            crouchToggleRequested[port].store(false, std::memory_order_relaxed);
-            inventorySlotRequested[port].store(-1, std::memory_order_relaxed);
-            reloadRequested[port].store(false, std::memory_order_relaxed);
+extern "C" void goldenpad_recomp_get_input_context(
+    int32_t controllerNum,
+    int32_t *gameplayActiveOut,
+    int32_t *controlStyleOut,
+    int32_t *aimingOut,
+    int32_t *tankStateOut,
+    int32_t *nativeLookUprightOut
+) {
+    int32_t gameplayActive = 0;
+    int32_t controlStyle = -1;
+    int32_t aiming = 0;
+    int32_t tankState = -1;
+    int32_t nativeLookUpright = 0;
+
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (runtimeStarted.load(std::memory_order_relaxed) && rdram != nullptr &&
+        controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts)) {
+        constexpr uint32_t kTitleStage = 90;
+        constexpr uint32_t kStageAddress = 0x80023FA8;
+        constexpr uint32_t kPlayerPointersAddress = 0x80079CE0;
+        constexpr uint32_t kInsightAimModeOffset = 0x124;
+        constexpr uint32_t kWatchAnimationStateOffset = 0x1C8;
+        constexpr uint32_t kOutsideWatchMenuOffset = 0x1CC;
+        constexpr uint32_t kOpenCloseSoloWatchMenuOffset = 0x1D0;
+        constexpr uint32_t kControlStyleOffset = 0x2A58;
+        constexpr uint32_t kPlayerIsInTankAddress = 0x80036248;
+        constexpr uint32_t kPlayerTankPropAddress = 0x80036250;
+        constexpr uint32_t kEnterTankStateAddress = 0x800797B8;
+        // game_options_entries[PLAYER_OPTION_LOOK].current_value:
+        // 0 is Reverse and 1 is Upright in GoldenEye's own menu.
+        constexpr uint32_t kNativeLookOptionAddress = 0x80040884;
+
+        const uint32_t playerAddress = static_cast<uint32_t>(readGameWord(
+            rdram, kPlayerPointersAddress + static_cast<uint32_t>(controllerNum) * 4));
+        if (readGameWord(rdram, kStageAddress) != static_cast<int32_t>(kTitleStage) &&
+            playerAddress >= 0x80000000 && playerAddress <= 0x9FFFFFFF) {
+            const int32_t style = readGameWord(rdram, playerAddress + kControlStyleOffset);
+            controlStyle = style >= 0 && style <= 3 ? style : -1;
+            aiming = readGameWord(rdram, playerAddress + kInsightAimModeOffset) != 0 ? 1 : 0;
+            nativeLookUpright = readGameWord(rdram, kNativeLookOptionAddress) == 1 ? 1 : 0;
+            gameplayActive =
+                readGameWord(rdram, playerAddress + kWatchAnimationStateOffset) == 0 &&
+                readGameWord(rdram, playerAddress + kOutsideWatchMenuOffset) != 0 &&
+                readGameWord(rdram, playerAddress + kOpenCloseSoloWatchMenuOffset) == 0 ? 1 : 0;
+
+            // GoldenEye exposes one mission tank through global state. It exists
+            // only in the single-player Runway and Streets setups, so associate
+            // it with Player 1 and require both the flag and live prop pointer.
+            if (controllerNum == 0 && readGameWord(rdram, kPlayerIsInTankAddress) == 1) {
+                const uint32_t tankProp = static_cast<uint32_t>(
+                    readGameWord(rdram, kPlayerTankPropAddress));
+                if (tankProp >= 0x80000000 && tankProp <= 0x9FFFFFFF) {
+                    const int32_t candidateState = readGameWord(rdram, kEnterTankStateAddress);
+                    tankState = candidateState >= 0 && candidateState <= 2
+                        ? candidateState : 0;
+                }
+            }
         }
     }
-    return active ? 1 : 0;
-}
 
-extern "C" int32_t goldenpad_recomp_current_control_style() {
-    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
-    if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
-        return -1;
-    }
-    const uint32_t playerAddress = currentPlayerAddress(rdram);
-    if (playerAddress == 0) {
-        return -1;
-    }
-    const int32_t style = readGameWord(rdram, playerAddress + 0x2A58);
-    return style >= 0 && style <= 7 ? style : -1;
-}
+    if (gameplayActiveOut != nullptr) { *gameplayActiveOut = gameplayActive; }
+    if (controlStyleOut != nullptr) { *controlStyleOut = controlStyle; }
+    if (aimingOut != nullptr) { *aimingOut = aiming; }
+    if (tankStateOut != nullptr) { *tankStateOut = tankState; }
+    if (nativeLookUprightOut != nullptr) { *nativeLookUprightOut = nativeLookUpright; }
 
-extern "C" int32_t goldenpad_recomp_desktop_gameplay_active() {
-#if defined(GOLDENPAD_RECOMP_MAC)
-    return goldenpad_recomp_gameplay_input_active();
-#else
-    return 1;
-#endif
+    if (controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts)) {
+        static std::array<std::atomic<uint32_t>, kControllerPorts> reported{};
+        const uint32_t encoded = 0x80000000u |
+            (static_cast<uint32_t>(gameplayActive) << 12) |
+            (static_cast<uint32_t>(controlStyle + 1) << 8) |
+            (static_cast<uint32_t>(aiming) << 4) |
+            (static_cast<uint32_t>(nativeLookUpright) << 3) |
+            static_cast<uint32_t>(tankState + 1);
+        const uint32_t previous = reported[static_cast<size_t>(controllerNum)].exchange(
+            encoded, std::memory_order_relaxed);
+        if (previous != encoded) {
+            const char *tankLabel = tankState < 0 ? "outside" :
+                tankState == 0 ? "entering" : tankState == 1 ? "starting" : "running";
+            logEvent("input-context", "player=%d gameplay=%d style=%d aim=%d look=%s tank=%s",
+                controllerNum + 1, gameplayActive, controlStyle, aiming,
+                nativeLookUpright != 0 ? "upright" : "reverse", tankLabel);
+        }
+    }
 }
 
 extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
@@ -882,42 +1455,42 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
         return;
     }
     const size_t port = static_cast<size_t>(controllerNum);
-    const bool aiming = (controllerButtons[port].load(std::memory_order_relaxed) & 0x0010u) != 0;
-    // Port the working MGB64 controller rate exactly while leaving the tuned
-    // relative-touch path unchanged. MGB64 resolves to 1.2 degrees/frame at
-    // full hip-fire deflection and about 0.133 degrees/frame while aiming;
-    // the recomp gameplay patch applies 3 and 1 degrees respectively.
-    const float controllerScale = aiming ? (0.13333334f / 1.0f) : (1.2f / 3.0f);
+    int32_t aimingValue = 0;
+    goldenpad_recomp_get_input_context(
+        controllerNum, nullptr, nullptr, &aimingValue, nullptr, nullptr);
+    const bool aiming = aimingValue != 0;
+    // Physical testing accepted the MGB64-derived 1.56 degree baseline, then
+    // requested one final 20 percent increase. Raise only absolute controller
+    // look while preserving relative touch, mouse input, the 0.15 dead zone,
+    // and the existing response curve.
+    constexpr float kControllerHipDegreesPerFrame = 1.872f;
+    // Modern right-stick Aim must retain the accepted normal-look response.
+    // The game patch multiplies Aim samples by 1 and hip samples by 3, so the
+    // bridge compensates for that implementation detail while producing the
+    // same final 1.872 degrees per frame in both states.
+    constexpr float kControllerAimDegreesPerFrame = kControllerHipDegreesPerFrame;
+    const float controllerScale = aiming
+        ? (kControllerAimDegreesPerFrame / 1.0f)
+        : (kControllerHipDegreesPerFrame / 3.0f);
     float x = static_cast<float>(controllerLookX[port].load(std::memory_order_relaxed)) /
             32'767.0f * controllerScale +
         static_cast<float>(queuedTouchLookX[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
     float y = static_cast<float>(controllerLookY[port].load(std::memory_order_relaxed)) /
             32'767.0f * controllerScale +
         static_cast<float>(queuedTouchLookY[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
-    x = std::clamp(x, -1.0f, 1.0f);
-    y = std::clamp(y, -1.0f, 1.0f);
-#if defined(GOLDENPAD_RECOMP_MAC)
-    // Mouse movement is relative, so preserve every queued unit instead of
-    // collapsing fast sweeps to the same normalized maximum. Compensate for
-    // the game patch's 3 degrees hip-fire / 1 degree aimed multiplier so the
-    // selected mouse sensitivity stays consistent while aiming.
+    // Desktop mouse deltas are relative rather than bounded stick positions.
+    // Preserve every queued unit and compensate for the patch's lower Aim
+    // multiplier so the configured mouse sensitivity remains consistent.
     const float mouseAimCompensation = aiming ? 3.0f : 1.0f;
     x += static_cast<float>(queuedMouseLookX[port].exchange(0, std::memory_order_acq_rel)) /
         32'767.0f * mouseAimCompensation;
     y += static_cast<float>(queuedMouseLookY[port].exchange(0, std::memory_order_acq_rel)) /
         32'767.0f * mouseAimCompensation;
-#endif
-    // GoldenEye's sight-aim camera applies the opposite vertical convention
-    // from normal free look. Normalize that by default, while retaining an
-    // explicit setting for players who prefer inverted aiming.
-#if defined(GOLDENPAD_RECOMP_MAC)
-    // On Mac the native setting follows its label: normal vertical aim is the
-    // default, and enabling "Invert vertical aim" performs the inversion.
+    x = std::clamp(x, -1.0f, 1.0f);
+    y = std::clamp(y, -1.0f, 1.0f);
+    // Relative touch and mouse look use the same host setting on every target.
+    // External gamepads use GoldenEye's native manual-sight path while aiming.
     if (aiming && invertAimY.load(std::memory_order_relaxed)) {
-#else
-    // Preserve the already tuned iPhone/iPad behavior.
-    if (aiming && !invertAimY.load(std::memory_order_relaxed)) {
-#endif
         y = -y;
     }
     *xOut = x;
@@ -969,12 +1542,14 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
     }
     const uint64_t readFrame = audioReadFrame.load(std::memory_order_relaxed);
     const uint64_t writeFrame = audioWriteFrame.load(std::memory_order_acquire);
+    const bool probeEnabled = audioProbeEnabled.load(std::memory_order_relaxed);
     const uint64_t queued = std::min(
         writeFrame - std::min(writeFrame, readFrame), kAudioRingFrames);
     if (!audioPlaybackPrimed) {
         if (queued < kAudioPrebufferFrames) {
             std::fill(left, left + frames, 0.0f);
             std::fill(right, right + frames, 0.0f);
+            observeAudioProbeOutput(left, right, frames);
             return 0;
         }
         audioPlaybackPrimed = true;
@@ -998,6 +1573,7 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
         audioLastLeft = 0.0f;
         audioLastRight = 0.0f;
         audioPlaybackPrimed = false;
+        observeAudioProbeOutput(left, right, frames);
         return 0;
     }
 
@@ -1015,13 +1591,35 @@ extern "C" uint32_t goldenpad_recomp_audio_render(float *left, float *right, uin
         right[frame] = static_cast<float>(audioRing[source + 1]) / 32768.0f * gain;
         nonzero += audioRing[source] != 0;
         nonzero += audioRing[source + 1] != 0;
+        if (probeEnabled) {
+            const int16_t expected = audioProbeSample(readFrame + frame);
+            if (audioRing[source] != expected ||
+                audioRing[source + 1] != static_cast<int16_t>(-expected)) {
+                audioProbeSequenceErrors.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
     }
     audioLastLeft = left[produced - 1];
     audioLastRight = right[produced - 1];
     audioReadFrame.store(readFrame + produced, std::memory_order_release);
     audioRenderedFrames.fetch_add(produced, std::memory_order_relaxed);
     audioNonzeroSamples.fetch_add(nonzero, std::memory_order_relaxed);
+    observeAudioProbeOutput(left, right, produced);
     return produced;
+}
+
+extern "C" void goldenpad_recomp_audio_probe_stats(
+    uint64_t *observedFrames, uint64_t *largeJumps, uint64_t *sequenceErrors
+) {
+    if (observedFrames != nullptr) {
+        *observedFrames = audioProbeObservedFrames.load(std::memory_order_relaxed);
+    }
+    if (largeJumps != nullptr) {
+        *largeJumps = audioProbeLargeJumps.load(std::memory_order_relaxed);
+    }
+    if (sequenceErrors != nullptr) {
+        *sequenceErrors = audioProbeSequenceErrors.load(std::memory_order_relaxed);
+    }
 }
 
 extern "C" void goldenpad_recomp_audio_stats(

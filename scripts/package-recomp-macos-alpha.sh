@@ -2,8 +2,10 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
+"$repo_root/scripts/verify-recomp-input-matrix.sh"
+
 app_path=${GOLDENPAD_RECOMP_MAC_APP:-"$repo_root/build-recomp-macos-stable/Release/GoldenPad.app"}
-release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.3}
+release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.4}
 output_name="GoldenPad-${release_name}-macos-arm64-alpha.zip"
 output_path="$repo_root/dist/$output_name"
 

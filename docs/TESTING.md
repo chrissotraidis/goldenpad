@@ -393,6 +393,49 @@ boundary and user acceptance recorded for Preview 3. They do not close the
 known multiplayer, blue-edge, fire-rate, audio, lifecycle, A12X, or broader
 long-session performance debt.
 
+Preview 4 release evidence:
+
+- `scripts/verify-recomp-input-matrix.sh` passes all 1.1 through 1.4 shared
+  control-style cases, raw mobile menu passthrough, external-controller native
+  manual Aim, the exact 1.872-degree controller-look rate, tracked upstream
+  patch parity, and generated tank-state markers;
+- the physically accepted signed iPad test executable SHA-256 is
+  `2b31f8868885712fbad34cef1aea20b1dee48f59fc9d930cbd3fa8b8e82b6b12`;
+- that physical pass covered title/mission navigation, ordinary on-foot
+  movement/right look, left-trigger stationary left-stick manual Aim, Runway
+  tank entry, drive, hull turn, turret aim, ordinary weapon and Tank Shell
+  cycling/firing, exit/re-entry, return to title, and a Facility regression;
+- the accepted test executable used 1.56 degrees per frame. The final version
+  `0.1.0` build `4` public executable applies the user's requested 20 percent
+  increase to 1.872 degrees
+  per frame and has SHA-256
+  `d83361f4daa70014b378aed20b9e26dc7c787d77b0fcd000816d536aecc8e66b`;
+- the complete unsigned device app and native arm64 Mac app both compile against
+  the same regenerated GoldenEye patch pair;
+- `patches.c` and `patches_bin.c` SHA-256 values are
+  `4a829165889a4e736199841c4c4237ee6a03ed97fa1ce6d891dfc864634862ff`
+  and `cb3e439a8eb1587ac11b7fa29551b3f204860f993b9114ebd5331c179bc92bc6`;
+- `scripts/verify-recomp-prototype-ipa.sh` passes the 18-member unsigned IPA at
+  SHA-256
+  `ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`,
+  with sorted unsigned app-content SHA-256
+  `1ec161604af996f30bb3ac1e9c347f7c905623675ca32adf8d2c35a069c6a13c`;
+- `scripts/verify-recomp-macos-alpha.sh` passes the 20-member arm64 Alpha archive
+  at SHA-256
+  `63bec02ad6e323a213f9cb9d15f763a58d6eb7bd4a1a40af6341a4fb8fb333ba`,
+  with sorted app-content SHA-256
+  `d2d0824047061b81ad3ef1b2fd2fd61fde09fc759176b782209c41279217a341`;
+- the final unsigned release executable was not installed for a second physical
+  pass after the requested 20 percent response increase; and
+- Mac build/package proof does not close issue #17. Keep it open until the
+  reporter verifies gameplay and supplies diagnostics if a problem remains.
+
+Run the focused input gate before every Preview 4 package:
+
+```sh
+./scripts/verify-recomp-input-matrix.sh
+```
+
 ## Desktop baseline
 
 ```sh

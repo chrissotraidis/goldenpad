@@ -96,7 +96,9 @@ if(goldenpad_apple_platform STREQUAL "mac")
             "recomp_get_camera_inputs"
             "goldenpad_recomp_consume_crouch_toggle"
             "goldenpad_recomp_consume_inventory_slot"
-            "goldenpad_recomp_consume_reload")
+            "goldenpad_recomp_consume_reload"
+            "goldenpad_recomp_fire_rate_player_sample"
+            "goldenpad_recomp_fire_rate_guard_sample")
         string(FIND "${goldenpad_mac_patches_text}"
             "${required_bridge}" goldenpad_mac_bridge_offset)
         if(goldenpad_mac_bridge_offset EQUAL -1)
@@ -104,6 +106,34 @@ if(goldenpad_apple_platform STREQUAL "mac")
                 "Generated Mac patches.c is missing ${required_bridge}; regenerate the modern-controls patch pair before building GoldenPad.")
         endif()
     endforeach()
+    foreach(required_tank_marker IN ITEMS
+            "MEM_W(ctx->r1, 0X6248)"
+            "MEM_W(ctx->r23, 0X6250)"
+            "MEM_W(0X6284"
+            "MEM_W(0X6274"
+            "MEM_W(0X6278"
+            "MEM_W(ctx->r1, -0X6848)")
+        string(FIND "${goldenpad_mac_patches_text}"
+            "${required_tank_marker}" goldenpad_mac_tank_marker_offset)
+        if(goldenpad_mac_tank_marker_offset EQUAL -1)
+            message(FATAL_ERROR
+                "Generated Mac patches.c is missing mounted-turret marker ${required_tank_marker}; apply the tracked modern-controls patch and regenerate patches.c plus patches_bin.c together.")
+        endif()
+    endforeach()
+    set(goldenpad_mac_patch_source
+        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/patches/workbench_theboy.c")
+    set(goldenpad_mac_patch_binary
+        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/patches/patches.bin")
+    if("${goldenpad_mac_patch_source}" IS_NEWER_THAN
+            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c")
+        message(FATAL_ERROR
+            "GoldenEye64Recomp Mac patches.c is stale. Regenerate the matched patch outputs before building GoldenPad.")
+    endif()
+    if("${goldenpad_mac_patch_binary}" IS_NEWER_THAN
+            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches_bin.c")
+        message(FATAL_ERROR
+            "GoldenEye64Recomp Mac patches_bin.c is stale. Regenerate the matched patch outputs before building GoldenPad.")
+    endif()
 
     set(goldenpad_mac_runtime_archives
         "${GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR}/ultramodern/libultramodern.a"
@@ -128,6 +158,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         Config/ThirdPartyNotices.txt
         Sources/Mac/GoldenPadMacApp.swift
         Sources/Mac/RecompMacAudio.swift
+        Sources/RecompControlMapping.swift
         Sources/Mac/RecompMacDiagnostics.swift
         Sources/Mac/RecompMacInput.swift
         Sources/Mac/RecompMacMetalCanvas.swift
@@ -293,7 +324,11 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             goldenpad_recomp_patches_text)
         foreach(required_bridge IN ITEMS
                 "recomp_get_camera_inputs"
-                "goldenpad_recomp_consume_crouch_toggle")
+                "goldenpad_recomp_consume_crouch_toggle"
+                "goldenpad_recomp_consume_inventory_slot"
+                "goldenpad_recomp_consume_reload"
+                "goldenpad_recomp_fire_rate_player_sample"
+                "goldenpad_recomp_fire_rate_guard_sample")
             string(FIND "${goldenpad_recomp_patches_text}"
                 "${required_bridge}" goldenpad_recomp_bridge_offset)
             if(goldenpad_recomp_bridge_offset EQUAL -1)
@@ -310,6 +345,20 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             if(goldenpad_recomp_multiplayer_patch_offset EQUAL -1)
                 message(FATAL_ERROR
                     "Generated RecompiledPatches/patches.c is missing the Preview 2 depth-alias repair marker ${required_multiplayer_patch}. Regenerate patches.c plus patches_bin.c from the patched GoldenEye64Recomp source before building mobile GoldenPad.")
+            endif()
+        endforeach()
+        foreach(required_tank_marker IN ITEMS
+                "MEM_W(ctx->r1, 0X6248)"
+                "MEM_W(ctx->r23, 0X6250)"
+                "MEM_W(0X6284"
+                "MEM_W(0X6274"
+                "MEM_W(0X6278"
+                "MEM_W(ctx->r1, -0X6848)")
+            string(FIND "${goldenpad_recomp_patches_text}"
+                "${required_tank_marker}" goldenpad_recomp_tank_marker_offset)
+            if(goldenpad_recomp_tank_marker_offset EQUAL -1)
+                message(FATAL_ERROR
+                    "Generated RecompiledPatches/patches.c is missing mounted-turret marker ${required_tank_marker}. Apply the tracked modern-controls patch and regenerate both embedded patch halves.")
             endif()
         endforeach()
         set(goldenpad_recomp_patch_source
@@ -386,6 +435,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Config/ThirdPartyNotices.txt
         Sources/RecompPrototypeApp.swift
         Sources/RecompPrototypeAudio.swift
+        Sources/RecompControlMapping.swift
         Sources/RecompPrototypeInput.swift
         Sources/RecompPrototypeMetalCanvas.swift
         Sources/RecompPrototypeROMStore.swift
@@ -399,7 +449,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "3"
+        MACOSX_BUNDLE_BUNDLE_VERSION "4"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_recomp_code_signing_required}"
@@ -407,6 +457,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${GOLDENPAD_DEVELOPMENT_TEAM}"
         XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
         XCODE_ATTRIBUTE_GENERATE_INFOPLIST_FILE "NO"
+        XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad"
         XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0"
         XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"

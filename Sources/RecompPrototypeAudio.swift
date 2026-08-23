@@ -18,6 +18,23 @@ private func goldenPadRecompAudioStats(
     _ underrunCallbacks: UnsafeMutablePointer<UInt64>?
 )
 
+@_silgen_name("goldenpad_recomp_set_audio_probe_enabled")
+private func goldenPadRecompSetAudioProbeEnabled(_ enabled: Int32)
+
+@_silgen_name("goldenpad_recomp_note_audio_host_rates")
+private func goldenPadRecompNoteAudioHostRates(
+    _ source: UInt32,
+    _ session: UInt32,
+    _ mixer: UInt32
+)
+
+@_silgen_name("goldenpad_recomp_audio_probe_stats")
+private func goldenPadRecompAudioProbeStats(
+    _ observedFrames: UnsafeMutablePointer<UInt64>?,
+    _ largeJumps: UnsafeMutablePointer<UInt64>?,
+    _ sequenceErrors: UnsafeMutablePointer<UInt64>?
+)
+
 @MainActor
 final class RecompPrototypeAudio: ObservableObject {
     @Published private(set) var status = "audio: inactive"
@@ -26,8 +43,12 @@ final class RecompPrototypeAudio: ObservableObject {
     private var sourceNode: AVAudioSourceNode?
     private var observers: [NSObjectProtocol] = []
     private var statsTimer: Timer?
+    private let audioProbeEnabled = ProcessInfo.processInfo.arguments.contains("--audio-probe")
+
+    private static let sourceSampleRate = 22_050.0
 
     init() {
+        goldenPadRecompSetAudioProbeEnabled(audioProbeEnabled ? 1 : 0)
         let center = NotificationCenter.default
         observers.append(center.addObserver(
             forName: AVAudioSession.interruptionNotification,
@@ -57,6 +78,11 @@ final class RecompPrototypeAudio: ObservableObject {
             try session.setCategory(.ambient, mode: .default)
             try session.setActive(true)
             try startEngine()
+            goldenPadRecompNoteAudioHostRates(
+                UInt32(Self.sourceSampleRate),
+                UInt32(session.sampleRate.rounded()),
+                UInt32(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate.rounded())
+            )
             status = "audio: native PCM ready"
             startStatsPolling()
             print("[GoldenPadRecomp] audio: AVAudioEngine active at \(session.sampleRate) Hz")
@@ -81,7 +107,7 @@ final class RecompPrototypeAudio: ObservableObject {
         if sourceNode == nil {
             guard let format = AVAudioFormat(
                 commonFormat: .pcmFormatFloat32,
-                sampleRate: 22_050,
+                sampleRate: Self.sourceSampleRate,
                 channels: 2,
                 interleaved: false
             ) else {
@@ -123,10 +149,18 @@ final class RecompPrototypeAudio: ObservableObject {
                 var dropped: UInt64 = 0
                 var underrunFrames: UInt64 = 0
                 var underrunCallbacks: UInt64 = 0
+                var probeObserved: UInt64 = 0
+                var probeLargeJumps: UInt64 = 0
+                var probeSequenceErrors: UInt64 = 0
                 goldenPadRecompAudioStats(
                     &queued, &rendered, &nonzero, &dropped,
                     &underrunFrames, &underrunCallbacks
                 )
+                if self.audioProbeEnabled {
+                    goldenPadRecompAudioProbeStats(
+                        &probeObserved, &probeLargeJumps, &probeSequenceErrors
+                    )
+                }
                 if rendered > 0 && nonzero > 0 {
                     self.status = "audio: playing"
                 }
@@ -135,6 +169,12 @@ final class RecompPrototypeAudio: ObservableObject {
                     "nonzero=\(nonzero) dropped=\(dropped) " +
                     "underrunFrames=\(underrunFrames) underrunCallbacks=\(underrunCallbacks)"
                 )
+                if self.audioProbeEnabled {
+                    print(
+                        "[GoldenPadRecomp] audio-probe: observedFrames=\(probeObserved) " +
+                        "largeJumps=\(probeLargeJumps) sequenceErrors=\(probeSequenceErrors)"
+                    )
+                }
             }
         }
     }
