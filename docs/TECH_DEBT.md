@@ -96,9 +96,10 @@ the isolated debt branches:
   #8 reporter verification, settings/share touch latch, controller-collapse
   neutral frame, multi-controller ownership, or physical lifecycle acceptance.
 - The fire-rate mechanism remains confirmed. Preview 4 retains the default-off
-  read-only probe that measured guard windows of 13/17/18 events per 100 ticks,
-  but sustained player evidence remains blocked on an ordinary setup with
-  enough ammunition.
+  read-only probe; three player magazines measured 34.4828 events per 100 ticks
+  with zero range and guard windows measured 13/17/18. The isolated shared-
+  getter candidate then produced the exact expected 12 player events/100 ticks
+  and received hands-on core-gameplay acceptance. Preview 5 releases that repair.
 - Matched isolated TD-06 runs recorded zero depth-`formatChanged` rebuilds, and
   a fixed-player-order diagnostic showed no systematic improvement and was
   reverted. The zero did not support predicted per-frame churn, but the counter
@@ -124,7 +125,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed**: Preview 4 guard windows recorded 13/17/18 events per 100 ticks and three physical-iPad Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828 with zero range | Primary runtime lacks the authenticity repair; measured player cadence is about 3.05 times the pinned 11.3 N64-equivalent reference, while presentation's “Original refresh” setting does not change simulation cadence | Align one source-derived player-and-guard repair, add deterministic before/after checks, preserve Preview 4 input, then re-accept combat before merge |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Repaired in Preview 5**: Preview 4 measured 34.4828 player events/100 ticks; Preview 5 telemetry recorded the exact expected 12/100 and the user accepted navigation, movement, gameplay, and runtime quality | Root cause was the native-60-Hz host consuming N64-frame automatic-rate divisors without the frame-cost conversion; shared player/guard getter, nonpositive pass-through, generated MIPS, deterministic cadence, input/tank, iOS, Mac, package, and physical player gates pass | Retain the independently revertible repair and default-off diagnostic. No complete candidate guard window or explicit PP7 sequence was logged, so do not misstate those as physical evidence |
 | TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Repair released in Preview 4; reporter verification open** | Preview 4 replaces the opt-in Honey adapter with one shared 1.1 through 1.4 mapping and preserves raw menus, native left-stick Aim, and tank semantics; the user physically accepted the iPad control matrix | Ask the reporter to verify Preview 4 touch and controller behavior; do not change the accepted mapping without a new reproduction and the full regression gate |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; cause unknown; full `.ips` and local A12 reproduction remain absent | A12X is inside the declared ARM64/Metal/iPadOS envelope. Plume's non-Metal3 descriptor-binding path is a strong diagnostic lead, not a proven cause | Obtain the full redacted `.ips` and A12 reproduction; separately force non-direct/Tier-1 binding paths in diagnostic-only builds on accepted hardware before selecting a repair or floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Isolated discriminator evidence; physical classification open** | One experimental Simulator run recovered and another held all runtime-progress counters flat while diagnostics stayed live. This is not proof of a drawable-only stall; unbounded fence and queue waits remain | Run the opt-in physical transition matrix, then add only the wait-point instrumentation selected by the observed counter class |
@@ -189,12 +190,12 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **design the TD-01 authenticity
-repair from the confirmed baseline**. Three ordinary-input Phantom magazines
-were identical at 20 events over 58 ticks, normalized to 34.4828 per 100 ticks;
-the retained guard windows are 13/17/18. Preserve Preview 4's controls, patch
-the source-derived player and guard timing seams together, and require
-deterministic before/after discrimination plus hands-on combat reacceptance.
+The smartest next engineering action is to **keep released TD-01 frozen and
+take TD-14 modal/run-loop neutralization as a separate review unit**, followed
+by TD-07 disconnect containment. Preview 5 recorded the exact expected 12
+Phantom events/100 ticks versus Preview 4's 34.4828 and retained accepted core
+controls. The absent complete guard window and explicit PP7 sequence remain
+disclosed rather than retroactively represented as physical evidence.
 
 The smartest next user-facing actions are **issue #8 and issue #17 reporter
 confirmation against Preview 4**. Internal iPad acceptance does not close either

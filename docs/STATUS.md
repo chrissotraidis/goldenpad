@@ -1,22 +1,22 @@
 # Status
 
-Updated: 2026-08-23
+Updated: 2026-08-24
 
 ## Current at a glance
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 4 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Public release | Preview 5 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, native left-stick Aim, Runway tank controls, saves/preferences preservation, and the bounded four-view experimental render repair. |
-| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect. Three physical-iPad Phantom windows each measured 20 shots in 58 ticks, or 34.4828 per 100 ticks, about 3.05 times the pinned authentic reference. |
+| Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Preview 4 controls release | Shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank control repair, and the requested final 20 percent controller-look increase. |
-| Immediate engineering gate | Preserve the exact Preview 4 controls and design one source-derived, independently revertible player-and-guard timing repair from the confirmed 34.4828 player and 13/17/18 guard baselines. Do not implement before review alignment. |
-| Immediate user-facing follow-up | Ask the issue #8 reporter to verify Preview 4 touch/controller sidestepping and the issue #17 reporter to verify Mac tank controls; keep both open until reporter confirmation. |
+| Preview 5 controls | Preview 4's shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank repair, and final controller sensitivity are retained unchanged. |
+| Immediate engineering gate | Take TD-14 modal/run-loop neutralization and TD-07 controller-collapse containment as separate input-lifecycle units; do not combine them with the released TD-01 timing repair. |
+| Immediate user-facing follow-up | Ask the issue #8 reporter to verify touch/controller sidestepping and the issue #17 reporter to verify Mac tank controls against Preview 5; keep both open until reporter confirmation. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -35,6 +35,8 @@ Documentation ownership:
   accepted controls, artifacts, diagnostic boundary, and rollback identity.
 - [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) owns the bounded TD-01
   measurement sequence and mandatory gameplay stop gate.
+- [`RELEASE_NOTES_0.1.0-preview.5.md`](RELEASE_NOTES_0.1.0-preview.5.md) records
+  Preview 5's public delta, artifact identities, acceptance, and rollback.
 
 ## Summary
 
@@ -73,6 +75,15 @@ adds the user's requested 20 percent absolute controller-look increase from
 and package audit, but was not installed for a second physical pass. The native
 Mac target builds and package-audits; issue #17 remains open because reporter
 gameplay verification is still required.
+
+Preview 5 retains that complete control boundary and fixes TD-01 at the shared
+GoldenEye weapon-stat getter. Positive automatic-fire intervals are multiplied
+by the original N64 frame cost of three for both player and guard paths; zero
+and negative classifications are returned unchanged. Physical iPad telemetry
+recorded 12 Phantom shots/100 ticks versus Preview 4's 20/58-tick magazine,
+with accepted navigation, movement, controls, gameplay, and runtime quality.
+The production mobile build advances to version `0.1.0` build `5`; its bounded
+fire-rate diagnostic remains off by default.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -166,7 +177,22 @@ multiplayer or Mac sustained performance to stable-release status. The
 coordinated repository update produces separate audited platform artifacts: an
 iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
 
-The audited Preview 4 mobile artifact is
+The audited Preview 5 mobile artifact is
+`GoldenPad-0.1.0-preview.5-unsigned.ipa` at SHA-256
+`d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`.
+Its 18-member archive passed the ROM/save/signing/private-path/setup-copy and
+required-symbol audits and has sorted unsigned app-content SHA-256
+`4753f0814823aeecc545b5f33eea9d1bf2da0e7b93874e34ad5f6a0e8358981b`.
+The audited Preview 5 Mac Alpha artifact is
+`GoldenPad-0.1.0-preview.5-macos-arm64-alpha.zip` at SHA-256
+`3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`;
+its 20-member archive has sorted app-content SHA-256
+`0221a39c5137dec3a923b1e5c80b30886f4604486a9c3f23eeb1bcedfeb0ed8a`.
+Two independent packaging passes produced byte-identical files. Neither
+artifact contains ROM, save, provisioning, signing identity, generated source,
+or private build-path data.
+
+The historical audited Preview 4 mobile artifact is
 `GoldenPad-0.1.0-preview.4-unsigned.ipa` at SHA-256
 `ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`.
 Its 18-member archive passed the ROM/save/signing/private-path/setup-copy and
@@ -699,11 +725,6 @@ evidence ledger below is preserved as historical validation for
 
 ## Failed or blocked
 
-- The primary runtime runs GoldenEye's simulation at native 60 Hz but does not
-  carry MGB64's source-level player/guard automatic-fire authenticity repair.
-  The pinned source establishes the cadence mechanism. An isolated probe
-  recorded guard windows of 13/17/18 events per 100 ticks; sustained player
-  magnitude remains unmeasured, so no timing repair is authorized yet.
 - Preview 4 supersedes the opt-in sidestep adapter with automatic shared
   mappings for all four GoldenEye control styles. The full matrix is automated;
   ordinary on-foot, Aim, and Runway tank behavior received physical iPad
@@ -757,18 +778,14 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 4 is published as a prerelease with separately audited mobile and Mac
-Alpha artifacts. The hosted downloads matched their published checksums and
-passed the same package verifiers as the local artifacts. Its exact source,
-artifact, accepted-behavior, and rollback identities are frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The sustained-player baseline
-is now confirmed at three identical 20-event, 58-tick Phantom magazines,
-normalized to 34.4828 events per 100 ticks. The next engineering gate is to
-align the smallest source-derived player-and-guard timing repair, add
-deterministic before/after discrimination, and stop again for hands-on combat
-acceptance before merge. In parallel, obtain issue #8 and issue #17 reporter
-confirmation against Preview 4 and issue #9 `.ips`/A12 evidence. Then
-take TD-14 modal neutralization, TD-07 controller containment, physical
+Preview 5 is published as a prerelease with separately audited mobile and Mac
+Alpha artifacts. Its shared automatic-rate repair passed source, generated-
+patch, deterministic, full input/tank, platform-build, package, preservation,
+and physical player-cadence gates. Preview 4's exact rollback identity remains
+frozen in [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). In parallel, obtain
+issue #8 and issue #17 reporter confirmation against Preview 5 and issue #9
+`.ips`/A12 evidence. Then take TD-14 modal neutralization, TD-07 controller
+containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad
 multiplayer or renderer changes. Do not import matching-target SDK

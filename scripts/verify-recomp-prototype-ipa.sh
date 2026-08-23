@@ -32,7 +32,7 @@ fi
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "4"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "5"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 

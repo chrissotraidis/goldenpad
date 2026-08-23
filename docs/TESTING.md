@@ -115,11 +115,12 @@ player baseline is now complete: three clean Phantom magazines each recorded 20
 events over 58 ticks, normalized to 34.4828 events per 100 ticks with zero
 observed range.
 
-Before launching any app, run:
+Before launching any app for the repair candidate, run:
 
 ```sh
-scripts/verify-preview4-baseline.sh
+scripts/verify-preview4-baseline.sh --allow-td01-repair
 scripts/verify-fire-rate-probe-contract.sh
+scripts/verify-fire-rate-authenticity-repair.sh
 scripts/verify-recomp-input-matrix.sh
 git diff --check
 ```
@@ -157,11 +158,23 @@ GoldenPad's measured 34.4828 result is close to the unscaled reference and about
 any explained setup variance. Event count and ammo delta must agree or the
 observation is invalid.
 
-Stop after the unchanged measurement. A later, separate repair passes only if
+The selected repair scales the one shared positive automatic-rate getter by
+three, so the player and guard paths cannot drift. Zero and negative values,
+including the semi-automatic classification, are unchanged. It passes only if
 its before/after ratio matches the source-derived expectation, player and guard
 timing are changed as one coherent decision, semi-automatic and menu behavior
 remain unchanged, the complete Preview 4 input/tank matrix passes, and hands-on
 combat feel is explicitly re-accepted.
+
+For the physical candidate stop gate, normally launch `GoldenPad P4 Test`; do
+not use remote `devicectl` activation. On Frigate/Agent, continuously empty the
+first 20-round Phantom magazine once. The fixed 100-tick observation window
+should report approximately 11-12 shots instead of the Preview 4 magazine
+emptying at 20 shots/58 ticks. Then confirm: one PP7 shot per trigger press; one
+ordinary enemy automatic encounter is slower but functional; menu navigation,
+normal movement/look, and held-Aim left-stick sight control remain unchanged.
+One clean magazine is sufficient for this acceptance pass; do not repeat three
+baseline runs unless the result is inconsistent.
 
 #### Modern sidestep gate
 
@@ -468,11 +481,41 @@ Preview 4 release evidence:
 - Mac build/package proof does not close issue #17. Keep it open until the
   reporter verifies gameplay and supplies diagnostics if a problem remains.
 
-Run the focused input gate before every Preview 4 package:
+Run the focused input gate before every package that retains the Preview 4
+control boundary:
 
 ```sh
 ./scripts/verify-recomp-input-matrix.sh
 ```
+
+Preview 5 fire-rate release evidence:
+
+- `scripts/verify-fire-rate-authenticity-repair.sh` proves the frozen Preview 4
+  measurement control lacks the repair, positive automatic rates scale by
+  three in tracked source and generated MIPS, and zero/negative classifications
+  remain unchanged;
+- physical iPad telemetry recorded 12 Phantom events over 100 ticks, ammo 20 to
+  8, versus Preview 4's 20 events over 58 ticks. The user accepted navigation,
+  movement, controls, gameplay, and runtime quality;
+- the production mobile app is version `0.1.0` build `5`, ARM64, probe-off by
+  default, with unsigned executable SHA-256
+  `dff62592f42eede6d6865c12bb35ff97c6f548975d7c3903289f6d09fc462491`;
+- two independent packaging runs produced byte-identical 18-member unsigned
+  IPAs at SHA-256
+  `d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`,
+  sorted app-content SHA-256
+  `4753f0814823aeecc545b5f33eea9d1bf2da0e7b93874e34ad5f6a0e8358981b`;
+- two independent packaging runs produced byte-identical 20-member native arm64
+  Mac Alpha archives at SHA-256
+  `3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`,
+  sorted app-content SHA-256
+  `0221a39c5137dec3a923b1e5c80b30886f4604486a9c3f23eeb1bcedfeb0ed8a`;
+- both archive verifiers passed their architecture, bundle, symbol, license,
+  signing, ROM/save, private-path, and generated-asset boundaries; and
+- no complete candidate guard fixed window or explicit PP7 sequence was
+  physically captured. The shared getter and unchanged nonpositive path provide
+  source/deterministic coverage; do not describe them as separate physical
+  evidence.
 
 ## Desktop baseline
 

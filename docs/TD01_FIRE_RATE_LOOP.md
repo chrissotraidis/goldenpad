@@ -1,6 +1,6 @@
 # TD-01 fire-rate measurement loop
 
-Status: **Preview 4 player baseline confirmed; stopped before timing repair**
+Status: **Released in Preview 5**
 
 Updated: 2026-08-23
 
@@ -116,17 +116,25 @@ Only after T4 is CONFIRMED:
 - regenerate both embedded patch halves together when applicable; and
 - stop again for hands-on combat acceptance before merge or release.
 
+The selected repair replaces the shared
+`bondwalkItemGetAutomaticFiringRate` getter. Positive automatic rates are
+multiplied by the N64 frame cost of three; zero and negative classifications
+are returned unchanged. The same getter feeds player and guard automatic-fire
+modulo tests, so this changes both together without duplicating policy. It does
+not change the first-shot path, semi-automatic classification, weapon damage,
+ammo, input, Aim, tank, menu, renderer, or host timing.
+
 ## Current checkpoint
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/td01-magazine-measurement` |
+| Branch | `codex/td01-fire-rate-repair` |
 | Starting source | `54474a40e93b77259d10c7594919e6a05f5e276d` |
 | Active debt | TD-01 |
-| Current phase | T4 CONFIRMED; stopped before T5 repair |
-| Runtime behavior change | Observation-only magazine completion and reload rejection; no game-state writes |
+| Current phase | T5 accepted and released in Preview 5 |
+| Runtime behavior change | Positive automatic-fire interval only: shared player/guard value multiplied by 3 |
 | Simulator/device/GUI use | No Simulator or desktop GUI; separately authorized physical iPad only |
-| Next mandatory stop | Align the smallest source-derived player-and-guard repair before implementation |
+| Next mandatory stop | Retain as frozen rollback control; any new timing report starts a separate evidence unit |
 | Later rollback | Revert the single TD-01 repair commit; Preview 4 remains intact |
 
 Update this checkpoint and the authoritative status documents after every phase
@@ -181,3 +189,62 @@ remain private local evidence and are not committed.
 Remote `devicectl` activation caused severe controller/menu latency on this
 iPad. That path is rejected for future hands-on controller measurements; use a
 normally launched diagnostic artifact instead.
+
+## T5 candidate evidence
+
+- The complete decompiled-call-site audit found the shared getter used as the
+  positive modulo divisor by both player and guard automatic firing. Other
+  callers only classify nonpositive values.
+- `scripts/verify-fire-rate-authenticity-repair.sh` proves the measurement
+  control lacks the repair, verifies the tracked source and generated MIPS
+  instructions, checks representative positive rates `2/3/4/5/11` become
+  `6/9/12/15/33`, and proves `0` and `-1` remain unchanged.
+- `scripts/verify-preview4-baseline.sh --allow-td01-repair`, the probe contract,
+  and the complete shared input/tank matrix pass.
+- Regenerated private patch hashes are `11696e2a55d16ddb334cdcaf7b760b27c8b99e82afc577be85419ce14c69bde5`
+  for `patches.bin`, `5e559e3a218c06cc54ead26f73a05f19f6095a542adbaeff664c19187f025217`
+  for `patches.c`, and `86113c9d63c92c5a1a7d394de32dd478042e50a9dece10085e93aba3f57ad52d`
+  for `patches_bin.c`.
+- Signed device candidate executable SHA-256 is
+  `146f3f37d568620ce55910ec2a09bc912336ba56b8afc9183862636e5d81015d`.
+  Its observation probe is temporarily default-on in that artifact only; the
+  tracked source remains default-off.
+- That candidate was installed in place only over side-by-side bundle
+  `com.chrissotraidis.goldenpad.preview4test`, displayed as `GoldenPad P4 Test`.
+  Fresh pre/post readbacks proved both ROM copies, active save, backup save, and
+  preferences byte-identical. The ordinary GoldenPad app was not targeted, and
+  the candidate was not remotely launched.
+- The native arm64 Mac Release build passed with executable SHA-256
+  `0c883f0dfff5f11254f81297f050084b9b6ba1641a9c13f594eacf1a90aca38b`.
+
+The candidate is not accepted, merged, released, or grounds to close TD-01
+until the physical stop gate passes. Revert the single repair commit to recover
+the frozen Preview 4 behavior.
+
+## T5 physical result
+
+The user normally launched the installed P4 Test candidate, navigated to
+Frigate/Agent, and accepted menu navigation, movement, general gameplay, and
+overall runtime quality with no observed regression. The retrieved bounded log
+then supplied the primary cadence discriminator:
+
+| Build | Weapon | Window | Events | Ammo | Result |
+| --- | ---: | ---: | ---: | --- | --- |
+| Preview 4 control | 11 | 58 ticks | 20 | 20 to 0 | Unscaled fast baseline |
+| TD-01 candidate | 11 | 100 ticks | 12 | 20 to 8 | Exact expected scaled interval including the immediate first shot |
+
+The candidate log SHA-256 is
+`9cce343d3be6ef7fa187cde59657365a990e4df28dfa91bbeedd1c221a58bfd6`;
+the preserved prior-session comparator is
+`65fda523ac0773e333eccd05222bbba325b3c6e5f55f0e0a3455db8743fe85f0`.
+The runtime advanced to 13,723 display lists, VI updates, and presentations,
+with zero audio drops and zero underrun frames/callbacks. No fatal, assertion,
+exception, or current-session crash marker appeared. The log did not contain a
+complete guard fixed window or an explicit PP7 sequence; guard behavior remains
+covered by the same getter, and nonpositive semi-automatic values remain
+byte-for-byte unchanged plus deterministically verified. This limitation is
+recorded rather than represented as physical evidence.
+
+The physical stop gate passed and the isolated repair ships in Preview 5. Its
+release artifacts, package hashes, and public limitations are recorded in
+[`RELEASE_NOTES_0.1.0-preview.5.md`](RELEASE_NOTES_0.1.0-preview.5.md).

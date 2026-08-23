@@ -19,10 +19,10 @@ index 609e348..6d1ac4d 100644
  extern s32 cameraFrameCounter2;
  extern s32 cameraBufferToggle;
 diff --git a/patches/patches.h b/patches/patches.h
-index 77b502e..9c0ca27 100644
+index 77b502e..4584b42 100644
 --- a/patches/patches.h
 +++ b/patches/patches.h
-@@ -117,6 +117,22 @@ int recomp_printf(const char* fmt, ...);
+@@ -117,6 +117,23 @@ int recomp_printf(const char* fmt, ...);
      extern u8 identifier[]
  
  float recomp_get_aspect_ratio(float);
@@ -36,6 +36,7 @@ index 77b502e..9c0ca27 100644
 +    s32 playernum, s32 weapon, s32 ammo, s32 counter);
 +void goldenpad_recomp_fire_rate_guard_sample(
 +    s32 item, s32 before, s32 after, u32 guardKey);
++void* get_ptr_item_statistics(s32 item);
 +s32 getCurrentPlayerWeaponId(s32 hand);
 +void attempt_reload_item_in_hand(s32 hand);
 +s32 bondinvCountTotalItemsInInv(void);
@@ -64,13 +65,31 @@ index 31e51b1..b1c0697 100644
 +goldenpad_recomp_consume_reload = 0x8F000128;
 +goldenpad_recomp_consume_inventory_slot = 0x8F00012C;
 diff --git a/patches/workbench_theboy.c b/patches/workbench_theboy.c
-index d4424c7..aeb865b 100644
+index d4424c7..53ae2b6 100644
 --- a/patches/workbench_theboy.c
 +++ b/patches/workbench_theboy.c
-@@ -473,6 +473,182 @@ void InitFrameRateControl(void)
+@@ -473,6 +473,200 @@ void InitFrameRateControl(void)
  extern s32 g_DebugMode;
  extern s32 g_DebugHighlightedOption;
  
++#define GOLDENPAD_AUTHENTIC_FRAME_COST 3
++#define GOLDENPAD_AUTOMATIC_RATE_OFFSET 0x22
++
++static s32 goldenpadScaleAutomaticFiringRate(s32 rawRate)
++{
++    return rawRate > 0 ? rawRate * GOLDENPAD_AUTHENTIC_FRAME_COST : rawRate;
++}
++
++/* The shared getter feeds Bond's and guards' positive automatic modulo gates.
++ * Its other retail call sites only test the sign, so preserving zero/negative
++ * values keeps semi-automatic, accuracy, animation, and first-shot behavior. */
++RECOMP_PATCH s8 bondwalkItemGetAutomaticFiringRate(ITEM_IDS item)
++{
++    const s8 rawRate = ((s8*) get_ptr_item_statistics(item))[GOLDENPAD_AUTOMATIC_RATE_OFFSET];
++
++    return (s8) goldenpadScaleAutomaticFiringRate(rawRate);
++}
++
 +RECOMP_PATCH s32 get_debug_enable_all_levels_flag(void)
 +{
 +    return goldenpad_recomp_unlock_all_missions_enabled();
@@ -250,7 +269,7 @@ index d4424c7..aeb865b 100644
  RECOMP_PATCH void bossMainloop(void) {
      // declarations
  
-@@ -702,6 +878,12 @@ RECOMP_PATCH void bossMainloop(void) {
+@@ -702,6 +896,12 @@ RECOMP_PATCH void bossMainloop(void) {
                                      viSetViewPosition(localPlayer->viewleft, localPlayer->viewtop);
  
                                      lvlViewMoveTick();

@@ -7,9 +7,9 @@ baseline_tree=4232141f9d14d2f6197e43173694f649828e730f
 mode=${1:-strict}
 
 case "$mode" in
-    strict|--allow-td01-probe) ;;
+    strict|--allow-td01-probe|--allow-td01-repair) ;;
     *)
-        echo "Usage: $0 [--allow-td01-probe]" >&2
+        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair]" >&2
         exit 2
         ;;
 esac
@@ -30,8 +30,13 @@ fi
 runtime_paths='CMakeLists.txt Config Sources Support Tests patches'
 runtime_diff=$(git -C "$repo_root" diff --name-only "$baseline_commit" -- $runtime_paths)
 if [ -n "$runtime_diff" ]; then
-    if [ "$mode" != "--allow-td01-probe" ] ||
-        [ "$runtime_diff" != "Support/RecompPrototype/recomp_game_start.cpp" ]; then
+    probe_diff='Support/RecompPrototype/recomp_game_start.cpp'
+    repair_diff='CMakeLists.txt
+Config/RecompPrototypeInfo.plist.in
+Support/RecompPrototype/recomp_game_start.cpp
+patches/goldeneye64recomp-ios-modern-controls.patch'
+    if ! { [ "$mode" = "--allow-td01-probe" ] && [ "$runtime_diff" = "$probe_diff" ]; } &&
+        ! { [ "$mode" = "--allow-td01-repair" ] && [ "$runtime_diff" = "$repair_diff" ]; }; then
         echo "FAIL: runtime diff exceeds the selected Preview 4 measurement boundary" >&2
         printf '%s\n' "$runtime_diff" >&2
         exit 1
@@ -64,7 +69,9 @@ do
 done
 
 echo "PASS: current branch descends from the exact Preview 4 tree"
-if [ "$mode" = "--allow-td01-probe" ]; then
+if [ "$mode" = "--allow-td01-repair" ]; then
+    echo "PASS: runtime diff is limited to Preview 5 identity, the TD-01 observation body, and shared fire-rate patch"
+elif [ "$mode" = "--allow-td01-probe" ]; then
     echo "PASS: runtime diff is limited to the TD-01 host observation body"
 else
     echo "PASS: runtime source is unchanged from Preview 4 before TD-01 measurement"

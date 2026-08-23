@@ -15,11 +15,11 @@ The native Apple-Silicon macOS extension is a separate gated product track. Its
 research decision, architecture and implementation gates are recorded in
 [`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
-## Current execution plan (2026-08-23)
+## Current execution plan (2026-08-24)
 
-Preview 4 is published and frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The current objective is to
-measure and repair major single-player gameplay and compatibility defects, then
+Preview 5 is published with the frozen Preview 4 control boundary and released
+TD-01 authenticity repair. The current objective is to
+harden the remaining input-lifecycle and compatibility defects, then
 harden local multiplayer ownership,
 then decide whether network multiplayer deserves implementation. The historical
 foundation milestones below remain evidence, but they do not set today's order.
@@ -32,8 +32,8 @@ service.
 | Work | Size | Primary risk |
 | --- | ---: | --- |
 | TD-01 sustained-player measurement | Complete | Three physical-iPad Phantom magazines were identical at 20 events over 58 ticks |
-| TD-02/issue #17 Preview 4 reporter verification | S | Reporter-specific touch/controller/Mac behavior differs from the accepted iPad setup |
-| TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
+| TD-02/issue #17 Preview 5 reporter verification | S | Reporter-specific touch/controller/Mac behavior differs from the accepted iPad setup |
+| TD-01 authenticity patch | Released in Preview 5 | Retain its isolated rollback and evidence boundary |
 | TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
 | TD-14 modal/run-loop neutralization | S | Replayed input or menu/watch regression across presentation boundaries |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
@@ -47,7 +47,7 @@ service.
 
 ### Wave 0 — freeze evidence and scope
 
-Status: **complete for Preview 4 identity and TD-01 baseline; terminal-only
+Status: **complete for Preview 4 identity and Preview 5 TD-01 release; terminal-only
 revalidation required before each repair phase**.
 
 - The exact source, package, release executable, physically accepted control,
@@ -66,23 +66,24 @@ Execute and land these as separate review units:
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
 | 1 | **TD-01 sustained-player probe completion** | Complete; player magnitude now distinguishes the current cadence from the authentic target | Three ordinary-input Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828; retained guard evidence is 13/17/18 per 100 ticks | PASS: three identical player numbers, matching ammo deltas, no gameplay-state writes, and protected data preserved |
-| Parallel user-facing lane | **Preview 4 reporter verification** | Issues #8 and #17 remain open after internal iPad acceptance | Issue #8 reporter confirms touch/controller sidestep behavior; issue #17 reporter confirms Mac Runway tank behavior or supplies diagnostics | Do not reinterpret the accepted mapping without a new reproduction and the full regression matrix |
+| Parallel user-facing lane | **Preview 5 reporter verification** | Issues #8 and #17 remain open after internal iPad acceptance | Issue #8 reporter confirms touch/controller sidestep behavior; issue #17 reporter confirms Mac Runway tank behavior or supplies diagnostics | Do not reinterpret the accepted mapping without a new reproduction and the full regression matrix |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, current Preview 4 reproduction, original-signature comparison, and affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
 Reporter confirmation and A12 evidence work can proceed without changing
-accepted Preview 4 controls. Follow
-[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) for the completed measurement
-and stop before any repair until the exact source-derived timing seam is
-reviewed. Any later input change must
+accepted Preview 5 controls. Follow
+[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) for the completed measurement,
+repair, acceptance, and rollback record. Any later input change must
 be reviewed separately from controller-lifecycle work because both touch input
 publication.
 
 ### Wave 2 — major behavior and reliability corrections
 
-1. **TD-01 authenticity patch:** only after Wave 1 records the baseline. Port
-   the player and guard timing seams as a matched generated patch set. Require
-   before/after cadence evidence, semi-automatic regression checks, and hands-on
-   combat reacceptance.
+1. **TD-01 authenticity patch:** released in Preview 5 from the completed baseline.
+   The shared positive player/guard automatic-rate getter is scaled by three;
+   zero and negative classifications are unchanged. Deterministic, generated-
+   patch, input/tank, platform-build, exact Phantom cadence, and hands-on core-
+   controls gates pass. No complete candidate guard
+   window or explicit PP7 sequence was logged; retain that evidence boundary.
 2. **TD-14 modal/run-loop neutralization:** add the failing held-input boundary
    gate, neutralize settings/share presentation, and prove watch/pause plus
    scroll tracking cannot replay latched input.

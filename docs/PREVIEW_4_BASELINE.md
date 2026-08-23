@@ -92,6 +92,20 @@ the window; it does not change game timing or input.
 The probe's presence and default-off wiring can be checked without launching
 the game. Its measurements cannot.
 
+## Isolated TD-01 repair delta
+
+Branch `codex/td01-fire-rate-repair` leaves this published baseline immutable.
+Its only gameplay change replaces the shared automatic-rate getter: positive
+values are multiplied by the N64 frame cost of three, while zero and negative
+values are returned unchanged. Player and guard modulo paths therefore change
+together. Input mapping, controller sensitivity, native Aim, tank behavior,
+menus, damage, ammo, first-shot behavior, renderer, and host timing are outside
+the repair.
+
+The candidate is not part of Preview 4 and is not accepted until the physical
+stop gate in [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) passes. Reverting
+the single repair commit restores the identities and behavior recorded above.
+
 ## Change and rollback rules
 
 1. Start each TD-01 review unit from the frozen source merge above.
@@ -117,6 +131,10 @@ scripts/verify-fire-rate-probe-contract.sh
 scripts/verify-recomp-input-matrix.sh
 git diff --check
 ```
+
+For the isolated candidate, replace the first command with
+`scripts/verify-preview4-baseline.sh --allow-td01-repair` and add
+`scripts/verify-fire-rate-authenticity-repair.sh`.
 
 The first two checks require no Simulator, device, ROM, app launch, or GUI. The
 input matrix is also command-line-only but needs the pinned reference checkout;

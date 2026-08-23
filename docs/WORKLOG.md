@@ -1,5 +1,71 @@
 # Worklog
 
+## 2026-08-24 - package and publish Preview 5 automatic-fire repair
+
+- Advanced only the primary iPhone/iPad bundle identity from build `4` to build
+  `5`; the public release name is `0.1.0-preview.5`. Preview 4's controls, Aim,
+  tank mapping, sensitivity, renderer, audio, ROM import, saves, and storage
+  behavior remain unchanged.
+- Built a fresh production-bundle ARM64 device app from probe-off source. Its
+  unsigned public executable SHA-256 is
+  `dff62592f42eede6d6865c12bb35ff97c6f548975d7c3903289f6d09fc462491`.
+- Built the native arm64 Mac target from the same regenerated GoldenEye patch.
+  The packaged ad-hoc-signed executable SHA-256 is
+  `5960150d9eb668b814973045fdfe054240f7c9ef11ff2be9025957884c758bca`.
+- Two independent packaging passes produced byte-identical 18-member unsigned
+  IPAs at SHA-256
+  `d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`
+  and byte-identical 20-member Mac Alpha archives at SHA-256
+  `3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`.
+  Both package verifiers passed architecture, bundle identity, symbols,
+  licenses, ROM/save/signing, generated-asset, and private-path boundaries.
+- Reconciled README, status, testing, technical debt, plan, next steps,
+  building, release checklist, TD-01 loop, and public Preview 5 release notes.
+  The absent complete candidate guard window and explicit PP7 physical sequence
+  remain disclosed; source/shared-getter and deterministic evidence are not
+  represented as separate physical tests.
+
+## 2026-08-23 - build the isolated TD-01 authenticity candidate
+
+- Audited every decompiled caller of `bondwalkItemGetAutomaticFiringRate`.
+  Player and guard automatic-fire paths use its positive result as their modulo
+  divisor; the remaining callers only classify nonpositive values.
+- Added one shared game-side repair that multiplies positive automatic rates by
+  the N64 frame cost of three and returns zero/negative values unchanged. This
+  preserves semi-automatic classification and avoids separate player/guard
+  policies. No input, Aim, tank, menu, damage, ammo, renderer, or host-timing
+  code changed.
+- Regenerated the private `patches.bin`, `patches.c`, and `patches_bin.c` pair
+  together. Added stale-pair CMake ratchets and a deterministic verifier that
+  proves representative positive rates triple, nonpositive values do not, and
+  the frozen measurement commit lacks the repair.
+- Passed the repair-aware Preview 4 baseline guard, probe contract, complete
+  shared input/tank matrix, signed iOS device build, and native arm64 Mac
+  Release build. The signed P4 Test executable is
+  `146f3f37d568620ce55910ec2a09bc912336ba56b8afc9183862636e5d81015d`;
+  its probe is temporarily default-on only in the artifact, and source was
+  immediately restored to default-off.
+- Installed that candidate in place over only
+  `com.chrissotraidis.goldenpad.preview4test`. Read-only inventory confirmed
+  `GoldenPad P4 Test` version `0.1.0` build `4`. Fresh pre/post readbacks proved
+  both ROM copies, active save, backup save, and preferences byte-identical.
+  The ordinary GoldenPad app was not targeted, and the candidate was not
+  remotely launched because that path previously caused controller latency.
+- Stopped before commit, merge, release, or TD-01 closure. The next gate is one
+  physical Phantom magazine, PP7 semi-auto check, enemy automatic encounter,
+  and core Preview 4 controls regression. Revert the single repair commit to
+  return to the published Preview 4 behavior.
+- The user then normally launched P4 Test and accepted navigation, movement,
+  general gameplay, and runtime quality with no observed regression. The
+  bounded diagnostic recorded the primary Phantom result at 12 events over 100
+  ticks, ammo 20 to 8, exactly matching the scaled interval including the
+  immediate first shot; Preview 4 had recorded 20 events over 58 ticks.
+- The session advanced to 13,723 display lists/VI updates/presentations with
+  zero audio drops or underruns and no fatal/current-session crash marker. No
+  complete guard window or explicit PP7 sequence was captured, so those remain
+  source/deterministic rather than physical evidence. The candidate is accepted
+  for commit/review, but remains uncommitted, unmerged, and unreleased.
+
 ## 2026-08-23 - confirm Preview 4 sustained-player fire-rate baseline
 
 - Kept the accepted Preview 4 controls frozen and changed only the bounded
