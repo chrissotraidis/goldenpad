@@ -2,7 +2,7 @@
 
 Updated: 2026-08-23
 
-This is the short operational queue for GoldenPad after Preview 3. It does not
+This is the short operational queue for GoldenPad after Preview 4. It does not
 replace the authoritative documents:
 
 - [`TECH_DEBT.md`](TECH_DEBT.md) owns priority, evidence, and closure state;
@@ -17,14 +17,17 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 sustained-player measurement** | Rebase the isolated read-only probe, retain the 13/17/18 guard windows, and obtain a repeatable ordinary-input setup with at least 34 rounds. No timing repair yet. |
-| Parallel user-facing lane | **TD-02 reporter confirmation** | Ask issue #8's reporter to verify the released opt-in sidestep adapter with touch and a connected controller; keep it opt-in until the full gate passes. |
+| 1 | **TD-01 sustained-player measurement** | Freeze Preview 4, use its existing default-off read-only probe, retain the 13/17/18 guard windows, and obtain three complete 100-tick player windows from one repeatable ordinary-input setup with at least 34 rounds. No timing repair yet. |
+| Parallel user-facing lane | **Preview 4 reporter confirmation** | Ask issue #8's reporter to verify touch/controller sidestepping and issue #17's reporter to verify Mac Runway tank controls against Preview 4. Require diagnostics and exact settings for any remaining failure. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, A12-family reproduction, and diagnostic-only non-direct/Tier-1 Plume binding builds on accepted hardware. No speculative shipping patch. |
 
-Preview 3 is the accepted release baseline. The historical stacked debt branch
-is evidence only; rebase one bounded probe or repair at a time. TD-02 reporter
-confirmation and A12 evidence collection can proceed without changing released
-control defaults.
+Preview 4 is the accepted release baseline. Its source, package, behavior, and
+rollback identities are frozen in
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The probe is already present;
+do not rebase or rewrite it before measurement. Follow
+[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) and stop at its real-gameplay
+gate. Reporter confirmation and A12 evidence collection can proceed without
+changing released controls.
 
 ## Do immediately after
 
@@ -61,8 +64,9 @@ one at a time against a freshly accepted baseline.
 
 - Resolve or deliberately document the A12-family support floor from affected
   hardware evidence.
-- Keep the accepted Preview 3 Mac input baseline; take only the edge-mask repair
-  independently if fixed-scene captures justify it.
+- Keep Preview 4's shared mapping and the accepted Preview 3 Mac relative-input
+  baseline; take only the edge-mask repair independently if fixed-scene captures
+  justify it.
 - Reduce stage/effect reports to deterministic reproductions.
 - Implement stable real two- to four-controller ownership.
 - Add deterministic frame numbers and state hashes.

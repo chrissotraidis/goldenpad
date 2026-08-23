@@ -4,7 +4,7 @@ set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 test_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-input-matrix.XXXXXX")
 trap 'rm -rf "$test_root"' EXIT HUP INT TERM
-reference_root="$repo_root/ref/goldeneye64recomp"
+reference_root=${GOLDENPAD_RECOMP_REFERENCE_ROOT:-"$repo_root/ref/goldeneye64recomp"}
 tracked_patch="$repo_root/patches/goldeneye64recomp-ios-modern-controls.patch"
 generated_patch="$reference_root/RecompiledPatches/patches.c"
 

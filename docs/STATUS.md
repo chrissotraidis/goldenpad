@@ -15,8 +15,8 @@ Updated: 2026-08-23
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
 | Preview 4 controls release | Shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank control repair, and the requested final 20 percent controller-look increase. |
-| Immediate engineering gate | Finish sustained-player fire-rate measurement on Preview 3; isolated guard windows already record 13/17/18 events per 100 ticks. |
-| Immediate user-facing follow-up | Ask the issue #17 reporter to verify Preview 4 on Mac and provide diagnostics if needed; keep the issue open until reporter confirmation. |
+| Immediate engineering gate | Preserve the exact Preview 4 control and finish sustained-player fire-rate measurement with its existing default-off probe; isolated guard windows already record 13/17/18 events per 100 ticks. |
+| Immediate user-facing follow-up | Ask the issue #8 reporter to verify Preview 4 touch/controller sidestepping and the issue #17 reporter to verify Mac tank controls; keep both open until reporter confirmation. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -31,6 +31,10 @@ Documentation ownership:
   the network go/no-go decision.
 - [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md) preserves the
   independent snapshot and current disposition; it is supporting evidence.
+- [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md) freezes the current release,
+  accepted controls, artifacts, diagnostic boundary, and rollback identity.
+- [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) owns the bounded TD-01
+  measurement sequence and mandatory gameplay stop gate.
 
 ## Summary
 
@@ -45,7 +49,7 @@ The independent revision-2 review is retained at
 [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md) and reconciled
 into [`TECH_DEBT.md`](TECH_DEBT.md). It inspected historical commit `788667e`,
 so its source analysis remains supporting evidence while current status comes
-from Preview 3 and later isolated debt experiments. It is not repository
+from Preview 4 and later isolated debt experiments. It is not repository
 instructions or a runtime acceptance artifact.
 
 Preview 4 replaces Preview 3's separate movement adapter with one shared input
@@ -755,10 +759,13 @@ evidence ledger below is preserved as historical validation for
 
 Preview 4 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
-passed the same package verifiers as the local artifacts. The next engineering
-gate is sustained-player fire-rate measurement using the isolated read-only
-probe; do not apply the timing repair until that baseline exists. In parallel,
-obtain issue #8 reporter confirmation and issue #9 `.ips`/A12 evidence. Then
+passed the same package verifiers as the local artifacts. Its exact source,
+artifact, accepted-behavior, and rollback identities are frozen in
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The next engineering gate is
+sustained-player fire-rate measurement using Preview 4's already-integrated,
+default-off read-only probe; do not rebase the probe or apply the timing repair
+until that baseline exists. In parallel, obtain issue #8 and issue #17 reporter
+confirmation against Preview 4 and issue #9 `.ips`/A12 evidence. Then
 take TD-14 modal neutralization, TD-07 controller containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad

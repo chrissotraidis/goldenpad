@@ -17,8 +17,10 @@ research decision, architecture and implementation gates are recorded in
 
 ## Current execution plan (2026-08-23)
 
-Preview 3 is published. The current objective is to repair major single-player
-gameplay and compatibility defects, then harden local multiplayer ownership,
+Preview 4 is published and frozen in
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The current objective is to
+measure and repair major single-player gameplay and compatibility defects, then
+harden local multiplayer ownership,
 then decide whether network multiplayer deserves implementation. The historical
 foundation milestones below remain evidence, but they do not set today's order.
 
@@ -30,13 +32,13 @@ service.
 | Work | Size | Primary risk |
 | --- | ---: | --- |
 | TD-01 sustained-player measurement | S | Ordinary setup does not provide enough ammunition for a discriminating window |
-| TD-02 released sidestep verification | S | Reporter-specific touch/controller behavior differs from the accepted setup |
+| TD-02/issue #17 Preview 4 reporter verification | S | Reporter-specific touch/controller/Mac behavior differs from the accepted iPad setup |
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
 | TD-14 modal/run-loop neutralization | S | Replayed input or menu/watch regression across presentation boundaries |
 | TD-03 A12 evidence | S | Hardware/artifact availability; repair size remains unknown |
 | TD-04/TD-05/TD-06 physical classification | S each | Instrumentation changes timing or logs the wrong boundary |
-| TD-09 Mac-only edge repair | S | Renderer coverage regression; Preview 3 input is already accepted |
+| TD-09 Mac-only edge repair | S | Renderer coverage regression; keep it independent from Preview 4 input |
 | TD-12 storage/package hygiene | S | User-data migration or backup attributes damage a valid runtime copy |
 | TD-13 game-bearing build proof | S-M | Private inputs make provenance checks environment-dependent |
 | Production 2–4 controller ownership | L | Device identity/lifecycle and touch ownership interactions |
@@ -45,10 +47,12 @@ service.
 
 ### Wave 0 — freeze evidence and scope
 
-Status: **complete for documentation**.
+Status: **complete for Preview 4 identity; terminal-only revalidation required
+before each TD-01 phase**.
 
-- The accepted mobile single-player and experimental multiplayer render hashes
-  remain regression controls.
+- The exact source, package, release executable, physically accepted control,
+  and rollback hashes are frozen in
+  [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md).
 - `TECH_DEBT.md` owns priority and evidence state; `TESTING.md` owns closure
   gates; `STATUS.md` owns current results.
 - Every implementation change receives one debt ID and an independent rollback.
@@ -61,14 +65,16 @@ Execute and land these as separate review units:
 
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
-| 1 | **TD-01 sustained-player probe completion** | Guard mechanism is measured; player magnitude still gates the real fix | Ordinary-input player ammo/event slope over a sustained fixed-tick window, retaining the existing guard evidence | Repeatable numbers recorded with at least 34 starting rounds; no gameplay behavior change |
-| Parallel user-facing lane | **TD-02 released sidestep verification** | Preview 3 ships the bounded adapter opt-in; issue closure still needs reporter evidence | Reporter confirms touch and controller MOVE strafe / LOOK turn behavior | Keep the adapter opt-in until reporter confirmation and the full regression matrix pass |
-| Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, Preview 2 reproduction, affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
+| 1 | **TD-01 sustained-player probe completion** | Guard mechanism is measured; player magnitude still gates the real fix | Use Preview 4's existing default-off probe for ordinary-input player ammo/event slope over a sustained fixed-tick window, retaining the existing guard evidence | Three repeatable 100-tick numbers recorded with at least 34 starting rounds; no gameplay behavior change |
+| Parallel user-facing lane | **Preview 4 reporter verification** | Issues #8 and #17 remain open after internal iPad acceptance | Issue #8 reporter confirms touch/controller sidestep behavior; issue #17 reporter confirms Mac Runway tank behavior or supplies diagnostics | Do not reinterpret the accepted mapping without a new reproduction and the full regression matrix |
+| Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, current Preview 4 reproduction, original-signature comparison, and affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
-The sustained fire-rate run, TD-02 reporter confirmation, and A12 evidence work can
-proceed without changing accepted Preview 3 controls. Any later sidestep default
-change must be reviewed separately from controller-lifecycle work because both
-touch input publication.
+The sustained fire-rate run, reporter confirmation, and A12 evidence work can
+proceed without changing accepted Preview 4 controls. Follow
+[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) and stop before real gameplay
+when no Simulator, device, or GUI use is authorized. Any later input change must
+be reviewed separately from controller-lifecycle work because both touch input
+publication.
 
 ### Wave 2 — major behavior and reliability corrections
 
@@ -101,7 +107,8 @@ one at a time against a freshly accepted baseline.
 
 - Resolve TD-03 on affected A12 hardware or publish an evidence-backed support
   floor.
-- Keep Preview 3's accepted Mac relative-input repair frozen. Take a TD-09
+- Keep Preview 4's shared input mapping and Preview 3's accepted Mac relative-
+  input repair frozen. Take a TD-09
   trailing-edge mask only after fixed-scene captures isolate the strip.
 - Reduce each stage/effect report under TD-10 to one deterministic camera,
   stage, settings, and expected-reference case before changing game or renderer

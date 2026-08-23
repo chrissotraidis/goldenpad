@@ -623,8 +623,10 @@ override those current authority documents.
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Clean-checkout, package, signing, and publication gates |
 | [`docs/RELEASE_NOTES_0.1.0-preview.3.md`](docs/RELEASE_NOTES_0.1.0-preview.3.md) | Preview 3 downloads, checksums, controls update and disclosed limitations |
 | [`docs/RELEASE_NOTES_0.1.0-preview.4.md`](docs/RELEASE_NOTES_0.1.0-preview.4.md) | Preview 4 tank, Aim, shared control mapping, checksums, and acceptance boundary |
+| [`docs/PREVIEW_4_BASELINE.md`](docs/PREVIEW_4_BASELINE.md) | Frozen Preview 4 source, artifact, accepted-behavior, diagnostic, and rollback identity |
+| [`docs/TD01_FIRE_RATE_LOOP.md`](docs/TD01_FIRE_RATE_LOOP.md) | Bounded fire-rate measurement sequence and mandatory gameplay stop gate |
 | [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Local ownership, determinism, LAN research, network feasibility, and go/no-go gates |
-| [`docs/EXTERNAL_REVIEW_2026-08-22.md`](docs/EXTERNAL_REVIEW_2026-08-22.md) | Preserved independent revision-2 review plus maintained disposition against Preview 3; supporting evidence, not current authority |
+| [`docs/EXTERNAL_REVIEW_2026-08-22.md`](docs/EXTERNAL_REVIEW_2026-08-22.md) | Preserved independent revision-2 review; supporting evidence reconciled by current authority documents |
 | [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |

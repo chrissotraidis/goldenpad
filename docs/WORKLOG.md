@@ -1,5 +1,30 @@
 # Worklog
 
+## 2026-08-23 - freeze Preview 4 and stop TD-01 at the gameplay gate
+
+- Created an isolated `codex/preview4-td01-baseline` worktree from published
+  merge `54474a40e93b77259d10c7594919e6a05f5e276d`, leaving the existing dirty
+  `codex/mac-wasd-focus` checkout untouched.
+- Verified remote `main`, tag `v0.1.0-preview.4`, and the published prerelease
+  all identify that merge. Re-hashed the retained hosted-release artifacts to
+  IPA SHA-256
+  `ff163b0af6b54596590da8e39cbaff0b388b69f1607ca34f62ce61e7fe144130`
+  and Mac archive SHA-256
+  `63bec02ad6e323a213f9cb9d15f763a58d6eb7bd4a1a40af6341a4fb8fb333ba`.
+- Added `PREVIEW_4_BASELINE.md` as the immutable source, artifact, accepted-
+  behavior, diagnostic, and rollback record. Reconciled current status, debt,
+  plan, queue, and testing documents from stale Preview 3 wording to Preview 4.
+- Added `TD01_FIRE_RATE_LOOP.md` with explicit freeze, containment, terminal-
+  verification, measurement, decision, repair, rollback, and stop phases.
+- Added default-off probe and frozen-baseline guards. Tightened the mobile,
+  native Mac, and future host package audits so the fire-rate control symbol
+  cannot disappear silently. No runtime source or gameplay behavior changed.
+- Passed the baseline guard, probe contract, full shared input/tank matrix,
+  IPA audit, Mac archive audit, and a command-line arm64 Mac Release rebuild.
+- Stopped at the first evidence that requires real GoldenEye input: three
+  complete 100-tick player windows from one ordinary setup with at least 34
+  rounds. No Simulator, app launch, iPad access, or GUI automation occurred.
+
 ## 2026-08-23 - accept and publish the Preview 4 tank and shared-controls repair
 
 - Froze the exact physically accepted signed iPad test executable at SHA-256

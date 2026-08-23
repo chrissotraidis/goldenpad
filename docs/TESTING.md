@@ -107,23 +107,56 @@ that merely repeats the proposed implementation is insufficient.
 
 #### Native-60-Hz fire-rate gate
 
-The isolated read-only probe and three guard windows already pass at 13, 17,
-and 18 committed automatic-fire events per 100 ticks. Three short player
-tap-response windows matched ammo delta to event count, but they are not a
-sustained-fire baseline. Resume the probe only through the ordinary game input
-boundary, on a repeatable setup with at least 34 rounds, and record:
+The exact control is [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md), and the
+bounded procedure is [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md).
+Preview 4 already contains the default-off read-only probe; do not rebase or
+rewrite it before measurement. Three guard windows already pass at 13, 17, and
+18 committed automatic-fire events per 100 ticks. Three short player tap-
+response windows matched ammo delta to event count, but they are not a
+sustained-fire baseline.
 
+Before launching any app, run:
+
+```sh
+scripts/verify-preview4-baseline.sh
+scripts/verify-fire-rate-probe-contract.sh
+scripts/verify-recomp-input-matrix.sh
+git diff --check
+```
+
+These terminal checks prove source identity, default-off wiring, observation
+containment, and the accepted input mapping. They do not prove cadence or
+gameplay. The runtime source diff from Preview 4 must be empty at this stage.
+
+When real-gameplay use is separately authorized, enable only
+`--fire-rate-probe`. Use one repeatable ordinary-input setup with one automatic
+weapon and at least 34 starting rounds. Obtain three complete player windows
+through the ordinary game input boundary and record:
+
+- source commit and executable identity;
+- platform, stage, difficulty, control style, weapon, and input device;
 - simulation ticks;
 - weapon and starting/ending ammo;
 - player automatic-shot events; and
-- a fixed-line-of-sight guard's automatic-shot events in a separate run.
+- starting/ending player fire counter.
+
+Then record three fixed-line-of-sight guard windows separately. Do not inject
+inventory, mutate a save, force a transform, move the player, alter mission or
+enemy state, or publish input below the ordinary host boundary. Reject a run if
+the weapon changes, the 100-tick completion line is absent, starting ammunition
+is below the discrimination requirement, or another probe is enabled.
 
 Run the unmodified baseline first. The pinned MGB64 reference measured AK-47 at
 33.3 shots per 100 locked-60-Hz ticks without authenticity scaling and 11.3 at
 the N64-equivalent cadence; GoldenPad's own result must be recorded rather than
-assumed. A later repair passes only if its before/after ratio matches the
-source-derived expectation, semi-automatic and menu behavior remain unchanged,
-and hands-on combat feel is explicitly re-accepted.
+assumed. Record every complete run, mean, range, and any explained setup
+variance. Event count and ammo delta must agree or the observation is invalid.
+
+Stop after the unchanged measurement. A later, separate repair passes only if
+its before/after ratio matches the source-derived expectation, player and guard
+timing are changed as one coherent decision, semi-automatic and menu behavior
+remain unchanged, the complete Preview 4 input/tank matrix passes, and hands-on
+combat feel is explicitly re-accepted.
 
 #### Modern sidestep gate
 
@@ -151,7 +184,7 @@ pause, and a scroll-tracking gesture. Assert that:
 - the 60 Hz mobile publisher remains scheduled through common-mode UI tracking,
   or the UI explicitly suspends and resumes it with a neutral boundary;
 - native menu/watch navigation remains unchanged; and
-- ordinary Preview 3 touch/controller gameplay resumes only after fresh input.
+- ordinary Preview 4 touch/controller gameplay resumes only after fresh input.
 
 Run the gate in normal single-player and the controller-P1/touch-P2 diagnostic.
 Scene-inactive release alone does not pass sheet presentation, because a SwiftUI
