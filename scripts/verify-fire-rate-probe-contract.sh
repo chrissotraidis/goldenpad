@@ -20,6 +20,7 @@ require_marker 'std::atomic<bool> fireRateProbeEnabled = false;' "$runtime_sourc
 require_marker 'ProcessInfo.processInfo.arguments.contains("--fire-rate-probe") ? 1 : 0' "$mobile_source"
 require_marker 'constexpr uint32_t kFireRateWindowTicks = 100;' "$runtime_source"
 require_marker 'constexpr uint32_t kFireRateProbeRunLimit = 3;' "$runtime_source"
+require_marker 'constexpr uint32_t kFireRateMinimumMagazineEvents = 15;' "$runtime_source"
 require_marker 'if (!fireRateProbeEnabled.load(std::memory_order_acquire)) {' "$runtime_source"
 require_marker 'extern "C" void goldenpad_recomp_fire_rate_player_sample(' "$runtime_source"
 require_marker 'extern "C" void goldenpad_recomp_fire_rate_guard_sample(' "$runtime_source"
@@ -27,6 +28,9 @@ require_marker 'extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int
 require_marker 'goldenpad_recomp_fire_rate_player_sample(' "$tracked_patch"
 require_marker 'goldenpad_recomp_fire_rate_guard_sample(' "$tracked_patch"
 require_marker 'chrlvFireWeaponRelated(chr, hand);' "$tracked_patch"
+require_marker 'completePlayerFireRateWindow("magazine-empty");' "$runtime_source"
+require_marker 'completePlayerFireRateWindow("fixed-window");' "$runtime_source"
+require_marker 'abort reason=reload' "$runtime_source"
 
 probe_bodies=$(sed -n \
     '/extern "C" void goldenpad_recomp_fire_rate_player_sample(/,/extern "C" void goldenpad_recomp_set_two_player_test_mode(/p' \
@@ -44,6 +48,6 @@ do
 done
 
 echo "PASS: TD-01 probe defaults off and requires the explicit launch argument"
-echo "PASS: player and guard observation hooks, bounded windows, and ROM-free stub are present"
+echo "PASS: player and guard hooks, fixed/magazine windows, reload rejection, and ROM-free stub are present"
 echo "PASS: observation bodies contain no RDRAM or recompiled return-value writes"
 echo "NOTE: this static contract does not prove cadence, gameplay feel, or physical behavior"

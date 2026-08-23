@@ -109,11 +109,11 @@ that merely repeats the proposed implementation is insufficient.
 
 The exact control is [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md), and the
 bounded procedure is [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md).
-Preview 4 already contains the default-off read-only probe; do not rebase or
-rewrite it before measurement. Three guard windows already pass at 13, 17, and
-18 committed automatic-fire events per 100 ticks. Three short player tap-
-response windows matched ammo delta to event count, but they are not a
-sustained-fire baseline.
+Preview 4 contains the default-off read-only probe. Three guard windows recorded
+13, 17, and 18 committed automatic-fire events per 100 ticks. The physical iPad
+player baseline is now complete: three clean Phantom magazines each recorded 20
+events over 58 ticks, normalized to 34.4828 events per 100 ticks with zero
+observed range.
 
 Before launching any app, run:
 
@@ -126,12 +126,15 @@ git diff --check
 
 These terminal checks prove source identity, default-off wiring, observation
 containment, and the accepted input mapping. They do not prove cadence or
-gameplay. The runtime source diff from Preview 4 must be empty at this stage.
+gameplay. For the recorded measurement branch, use
+`scripts/verify-preview4-baseline.sh --allow-td01-probe`; it permits only the
+documented observation-body delta and still rejects input or timing changes.
 
-When real-gameplay use is separately authorized, enable only
-`--fire-rate-probe`. Use one repeatable ordinary-input setup with one automatic
-weapon and at least 34 starting rounds. Obtain three complete player windows
-through the ordinary game input boundary and record:
+When real-gameplay use is separately authorized, enable only the fire-rate
+probe. Use one repeatable ordinary-input setup with one automatic weapon.
+Obtain three complete player windows through the ordinary game input boundary.
+A valid window is either 100 sampled ticks or a continuous magazine-to-empty
+window containing at least 15 shot events. Record:
 
 - source commit and executable identity;
 - platform, stage, difficulty, control style, weapon, and input device;
@@ -143,14 +146,16 @@ through the ordinary game input boundary and record:
 Then record three fixed-line-of-sight guard windows separately. Do not inject
 inventory, mutate a save, force a transform, move the player, alter mission or
 enemy state, or publish input below the ordinary host boundary. Reject a run if
-the weapon changes, the 100-tick completion line is absent, starting ammunition
-is below the discrimination requirement, or another probe is enabled.
+the weapon changes, a reload occurs inside the window, neither valid completion
+reason is present, a magazine window has fewer than 15 events, or another
+behavior probe is enabled. Normalize magazine results to events per 100 ticks.
 
-Run the unmodified baseline first. The pinned MGB64 reference measured AK-47 at
-33.3 shots per 100 locked-60-Hz ticks without authenticity scaling and 11.3 at
-the N64-equivalent cadence; GoldenPad's own result must be recorded rather than
-assumed. Record every complete run, mean, range, and any explained setup
-variance. Event count and ammo delta must agree or the observation is invalid.
+The pinned MGB64 reference measured AK-47 at 33.3 shots per 100 locked-60-Hz
+ticks without authenticity scaling and 11.3 at the N64-equivalent cadence.
+GoldenPad's measured 34.4828 result is close to the unscaled reference and about
+3.05 times the authentic target. Record every complete run, mean, range, and
+any explained setup variance. Event count and ammo delta must agree or the
+observation is invalid.
 
 Stop after the unchanged measurement. A later, separate repair passes only if
 its before/after ratio matches the source-derived expectation, player and guard

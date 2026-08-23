@@ -17,22 +17,22 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-01 sustained-player measurement** | Freeze Preview 4, use its existing default-off read-only probe, retain the 13/17/18 guard windows, and obtain three complete 100-tick player windows from one repeatable ordinary-input setup with at least 34 rounds. No timing repair yet. |
+| 1 | **TD-01 repair design review** | Preserve the completed baseline: three identical Phantom windows at 20 events/58 ticks (34.4828 per 100) plus guard windows 13/17/18. Specify the smallest source-derived player-and-guard repair and deterministic before/after gate before changing timing. |
 | Parallel user-facing lane | **Preview 4 reporter confirmation** | Ask issue #8's reporter to verify touch/controller sidestepping and issue #17's reporter to verify Mac Runway tank controls against Preview 4. Require diagnostics and exact settings for any remaining failure. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, A12-family reproduction, and diagnostic-only non-direct/Tier-1 Plume binding builds on accepted hardware. No speculative shipping patch. |
 
 Preview 4 is the accepted release baseline. Its source, package, behavior, and
 rollback identities are frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The probe is already present;
-do not rebase or rewrite it before measurement. Follow
-[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) and stop at its real-gameplay
-gate. Reporter confirmation and A12 evidence collection can proceed without
-changing released controls.
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The player measurement is
+complete and its observation branch remains separate from gameplay repair.
+Follow [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) and stop before
+implementing timing until the exact repair is reviewed. Reporter confirmation
+and A12 evidence collection can proceed without changing released controls.
 
 ## Do immediately after
 
 1. **TD-01 fire-rate authenticity repair**
-   - Use the probe's before/after numbers.
+   - Use the confirmed 34.4828 player and 13/17/18 guard baselines.
    - Patch player and guard cadence together as one timing decision.
    - Recheck semi-automatic behavior and obtain hands-on combat acceptance.
 2. **TD-14 modal/run-loop neutralization**

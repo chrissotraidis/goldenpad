@@ -1,5 +1,33 @@
 # Worklog
 
+## 2026-08-23 - confirm Preview 4 sustained-player fire-rate baseline
+
+- Kept the accepted Preview 4 controls frozen and changed only the bounded
+  TD-01 observation body: continuous magazine-to-empty windows require at least
+  15 shot events, identify their completion reason, and reject reload crossings.
+  The probe still writes no game state and remains off by default in source.
+- Rejected the first attempted session because intermittent firing and reload
+  contaminated its fixed windows. On physical iPad, the user then completed
+  three ordinary-controller Phantom magazines on Frigate/Agent. Every valid run
+  recorded 20 events, ammo 20 to 0, and 58 simulation ticks: 34.4828 events per
+  100 ticks, mean 34.4828, range 0.0000.
+- The result is close to the pinned unscaled reference of approximately 33.3
+  and about 3.05 times the pinned N64-equivalent reference of approximately
+  11.3. T4 is therefore CONFIRMED, authorizing repair design but not merge,
+  release, or TD-01 closure.
+- Remote `devicectl` activation caused severe controller/menu latency on this
+  iPad. Replaced it with a temporary signed P4 Test artifact that defaulted the
+  same observation-only probe on and was launched normally by the user. The
+  temporary source line was reverted immediately after building.
+- Installed only the side-by-side `com.chrissotraidis.goldenpad.preview4test`
+  bundle. The ordinary GoldenPad app remained untouched. Both ROM copies,
+  active and backup saves, and preferences were byte-identical after in-place
+  installation; raw logs and game data remain private local evidence.
+- Stopped before timing repair. The next unit must align one source-derived,
+  independently revertible player-and-guard repair, add deterministic
+  before/after discrimination, preserve the full Preview 4 input/tank matrix,
+  and stop again for hands-on combat acceptance.
+
 ## 2026-08-23 - freeze Preview 4 and stop TD-01 at the gameplay gate
 
 - Created an isolated `codex/preview4-td01-baseline` worktree from published

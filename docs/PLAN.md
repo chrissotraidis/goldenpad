@@ -31,7 +31,7 @@ service.
 
 | Work | Size | Primary risk |
 | --- | ---: | --- |
-| TD-01 sustained-player measurement | S | Ordinary setup does not provide enough ammunition for a discriminating window |
+| TD-01 sustained-player measurement | Complete | Three physical-iPad Phantom magazines were identical at 20 events over 58 ticks |
 | TD-02/issue #17 Preview 4 reporter verification | S | Reporter-specific touch/controller/Mac behavior differs from the accepted iPad setup |
 | TD-01 authenticity patch | M | Deliberately changes accepted combat feel and generated patch inputs |
 | TD-07 disconnect neutralization/probe | S | Regresses normal touch/controller P1 publication |
@@ -47,8 +47,8 @@ service.
 
 ### Wave 0 — freeze evidence and scope
 
-Status: **complete for Preview 4 identity; terminal-only revalidation required
-before each TD-01 phase**.
+Status: **complete for Preview 4 identity and TD-01 baseline; terminal-only
+revalidation required before each repair phase**.
 
 - The exact source, package, release executable, physically accepted control,
   and rollback hashes are frozen in
@@ -65,14 +65,15 @@ Execute and land these as separate review units:
 
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
-| 1 | **TD-01 sustained-player probe completion** | Guard mechanism is measured; player magnitude still gates the real fix | Use Preview 4's existing default-off probe for ordinary-input player ammo/event slope over a sustained fixed-tick window, retaining the existing guard evidence | Three repeatable 100-tick numbers recorded with at least 34 starting rounds; no gameplay behavior change |
+| 1 | **TD-01 sustained-player probe completion** | Complete; player magnitude now distinguishes the current cadence from the authentic target | Three ordinary-input Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828; retained guard evidence is 13/17/18 per 100 ticks | PASS: three identical player numbers, matching ammo deltas, no gameplay-state writes, and protected data preserved |
 | Parallel user-facing lane | **Preview 4 reporter verification** | Issues #8 and #17 remain open after internal iPad acceptance | Issue #8 reporter confirms touch/controller sidestep behavior; issue #17 reporter confirms Mac Runway tank behavior or supplies diagnostics | Do not reinterpret the accepted mapping without a new reproduction and the full regression matrix |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, current Preview 4 reproduction, original-signature comparison, and affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
-The sustained fire-rate run, reporter confirmation, and A12 evidence work can
-proceed without changing accepted Preview 4 controls. Follow
-[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) and stop before real gameplay
-when no Simulator, device, or GUI use is authorized. Any later input change must
+Reporter confirmation and A12 evidence work can proceed without changing
+accepted Preview 4 controls. Follow
+[`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) for the completed measurement
+and stop before any repair until the exact source-derived timing seam is
+reviewed. Any later input change must
 be reviewed separately from controller-lifecycle work because both touch input
 publication.
 

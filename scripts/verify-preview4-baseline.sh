@@ -4,6 +4,15 @@ set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 baseline_commit=54474a40e93b77259d10c7594919e6a05f5e276d
 baseline_tree=4232141f9d14d2f6197e43173694f649828e730f
+mode=${1:-strict}
+
+case "$mode" in
+    strict|--allow-td01-probe) ;;
+    *)
+        echo "Usage: $0 [--allow-td01-probe]" >&2
+        exit 2
+        ;;
+esac
 
 git -C "$repo_root" cat-file -e "$baseline_commit^{commit}"
 
@@ -19,15 +28,19 @@ if ! git -C "$repo_root" merge-base --is-ancestor "$baseline_commit" HEAD; then
 fi
 
 runtime_paths='CMakeLists.txt Config Sources Support Tests patches'
-if ! git -C "$repo_root" diff --quiet "$baseline_commit" -- $runtime_paths; then
-    echo "FAIL: runtime source differs from frozen Preview 4 before measurement" >&2
-    git -C "$repo_root" diff --name-only "$baseline_commit" -- $runtime_paths >&2
-    exit 1
+runtime_diff=$(git -C "$repo_root" diff --name-only "$baseline_commit" -- $runtime_paths)
+if [ -n "$runtime_diff" ]; then
+    if [ "$mode" != "--allow-td01-probe" ] ||
+        [ "$runtime_diff" != "Support/RecompPrototype/recomp_game_start.cpp" ]; then
+        echo "FAIL: runtime diff exceeds the selected Preview 4 measurement boundary" >&2
+        printf '%s\n' "$runtime_diff" >&2
+        exit 1
+    fi
 fi
 
-untracked_runtime=$(git -C "$repo_root" status --porcelain --untracked-files=all -- $runtime_paths)
+untracked_runtime=$(git -C "$repo_root" ls-files --others --exclude-standard -- $runtime_paths)
 if [ -n "$untracked_runtime" ]; then
-    echo "FAIL: untracked or staged runtime files exist before measurement" >&2
+    echo "FAIL: untracked runtime files exist before measurement" >&2
     printf '%s\n' "$untracked_runtime" >&2
     exit 1
 fi
@@ -51,5 +64,9 @@ do
 done
 
 echo "PASS: current branch descends from the exact Preview 4 tree"
-echo "PASS: runtime source is unchanged from Preview 4 before TD-01 measurement"
+if [ "$mode" = "--allow-td01-probe" ]; then
+    echo "PASS: runtime diff is limited to the TD-01 host observation body"
+else
+    echo "PASS: runtime source is unchanged from Preview 4 before TD-01 measurement"
+fi
 echo "PASS: Preview 4 source, package, release executable, and physical-control identities are recorded"

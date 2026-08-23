@@ -68,23 +68,26 @@ verification does not authorize another input rewrite.
 
 ## TD-01 diagnostic boundary
 
-Preview 4 already contains the TD-01 read-only observation hooks. Do not rebase,
-reimplement, or change them before collecting the missing baseline.
+Preview 4 contains the TD-01 read-only observation hooks. The completed
+measurement branch changes only the host observation window so a continuous
+magazine of at least 15 shots can finish before 100 ticks and a reload rejects
+the window; it does not change game timing or input.
 
 - Normal launch initializes `fireRateProbeEnabled` to false.
 - Only the explicit `--fire-rate-probe` launch argument in the mobile host
   enables it. Mac contains the runtime symbol but does not provide the current
   gameplay-measurement activation route.
-- The probe observes at most three 100-tick player windows and three guard
-  windows.
+- The probe observes at most three player windows and three 100-tick guard
+  windows. A player window completes at 100 ticks or when at least 15 continuous
+  shots empty the magazine; magazine results are normalized per 100 ticks.
 - It records player weapon, magazine ammo, fire counter, and ordinary ammo
   consumption. The guard wrapper calls GoldenEye's original firing routine and
   then records the resulting counter transition.
 - It does not alter timing, inventory, saves, mission state, transforms,
   player state, guard state, input mapping, or renderer state.
-- Existing evidence contains three guard windows at 13, 17, and 18 committed
-  events per 100 ticks. The missing evidence is three complete sustained-player
-  windows from one repeatable ordinary-input setup with at least 34 rounds.
+- Evidence contains three guard windows at 13, 17, and 18 committed events per
+  100 ticks and three identical physical-iPad player windows at 20 events over
+  58 ticks, normalized to 34.4828 per 100 ticks.
 
 The probe's presence and default-off wiring can be checked without launching
 the game. Its measurements cannot.

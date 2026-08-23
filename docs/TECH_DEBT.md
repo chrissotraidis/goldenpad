@@ -124,7 +124,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; Preview 4's default-off guard probe recorded 13/17/18 events per 100 ticks, while sustained player magnitude remains unmeasured | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Use the unchanged Preview 4 probe with one ordinary setup holding at least 34 rounds; then patch player and guard seams together and re-accept combat |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed**: Preview 4 guard windows recorded 13/17/18 events per 100 ticks and three physical-iPad Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828 with zero range | Primary runtime lacks the authenticity repair; measured player cadence is about 3.05 times the pinned 11.3 N64-equivalent reference, while presentation's “Original refresh” setting does not change simulation cadence | Align one source-derived player-and-guard repair, add deterministic before/after checks, preserve Preview 4 input, then re-accept combat before merge |
 | TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Repair released in Preview 4; reporter verification open** | Preview 4 replaces the opt-in Honey adapter with one shared 1.1 through 1.4 mapping and preserves raw menus, native left-stick Aim, and tank semantics; the user physically accepted the iPad control matrix | Ask the reporter to verify Preview 4 touch and controller behavior; do not change the accepted mapping without a new reproduction and the full regression gate |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; cause unknown; full `.ips` and local A12 reproduction remain absent | A12X is inside the declared ARM64/Metal/iPadOS envelope. Plume's non-Metal3 descriptor-binding path is a strong diagnostic lead, not a proven cause | Obtain the full redacted `.ips` and A12 reproduction; separately force non-direct/Tier-1 binding paths in diagnostic-only builds on accepted hardware before selecting a repair or floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Isolated discriminator evidence; physical classification open** | One experimental Simulator run recovered and another held all runtime-progress counters flat while diagnostics stayed live. This is not proof of a drawable-only stall; unbounded fence and queue waits remain | Run the opt-in physical transition matrix, then add only the wait-point instrumentation selected by the observed counter class |
@@ -189,12 +189,12 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **finish the TD-01 sustained-player
-measurement** on the frozen Preview 4 baseline. Preview 4 already contains the
-default-off read-only probe and three guard windows; no rebase or runtime change
-is required before measurement. No player timing repair is authorized until an
-ordinary-input setup provides at least 34 rounds and three complete repeatable
-100-tick windows.
+The smartest next engineering action is to **design the TD-01 authenticity
+repair from the confirmed baseline**. Three ordinary-input Phantom magazines
+were identical at 20 events over 58 ticks, normalized to 34.4828 per 100 ticks;
+the retained guard windows are 13/17/18. Preserve Preview 4's controls, patch
+the source-derived player and guard timing seams together, and require
+deterministic before/after discrimination plus hands-on combat reacceptance.
 
 The smartest next user-facing actions are **issue #8 and issue #17 reporter
 confirmation against Preview 4**. Internal iPad acceptance does not close either
@@ -202,10 +202,11 @@ reporter's setup. TD-03 crash-artifact collection and A12-family reproduction
 can run as an evidence-only lane; no A12 code change is selected without that
 evidence. The next landing sequence is:
 
-1. freeze Preview 4 and finish sustained player cadence with its existing probe;
+1. preserve Preview 4 and the completed sustained-player/guard measurements;
 2. obtain issue #8 and issue #17 reporter confirmation against Preview 4;
-3. apply the fire-rate authenticity patch only after the probe proves the
-   current and expected numbers, then obtain hands-on combat acceptance;
+3. apply one independently revertible fire-rate authenticity patch only after
+   its exact player-and-guard mechanism is reviewed, then obtain hands-on combat
+   acceptance;
 4. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
    separate input-lifecycle units;
 5. run the already-defined physical audio/lifecycle/flicker evidence gates and

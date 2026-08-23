@@ -9,13 +9,13 @@ Updated: 2026-08-23
 | Public release | Preview 4 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, native left-stick Aim, Runway tank controls, saves/preferences preservation, and the bounded four-view experimental render repair. |
-| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect. Preview 4 repairs shared 1.1 through 1.4 and tank input without changing that timing seam. |
+| Major gameplay debt | Native-60-Hz automatic-fire cadence remains incorrect. Three physical-iPad Phantom windows each measured 20 shots in 58 ticks, or 34.4828 per 100 ticks, about 3.05 times the pinned authentic reference. |
 | Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
 | Preview 4 controls release | Shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank control repair, and the requested final 20 percent controller-look increase. |
-| Immediate engineering gate | Preserve the exact Preview 4 control and finish sustained-player fire-rate measurement with its existing default-off probe; isolated guard windows already record 13/17/18 events per 100 ticks. |
+| Immediate engineering gate | Preserve the exact Preview 4 controls and design one source-derived, independently revertible player-and-guard timing repair from the confirmed 34.4828 player and 13/17/18 guard baselines. Do not implement before review alignment. |
 | Immediate user-facing follow-up | Ask the issue #8 reporter to verify Preview 4 touch/controller sidestepping and the issue #17 reporter to verify Mac tank controls; keep both open until reporter confirmation. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
@@ -761,10 +761,12 @@ Preview 4 is published as a prerelease with separately audited mobile and Mac
 Alpha artifacts. The hosted downloads matched their published checksums and
 passed the same package verifiers as the local artifacts. Its exact source,
 artifact, accepted-behavior, and rollback identities are frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The next engineering gate is
-sustained-player fire-rate measurement using Preview 4's already-integrated,
-default-off read-only probe; do not rebase the probe or apply the timing repair
-until that baseline exists. In parallel, obtain issue #8 and issue #17 reporter
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). The sustained-player baseline
+is now confirmed at three identical 20-event, 58-tick Phantom magazines,
+normalized to 34.4828 events per 100 ticks. The next engineering gate is to
+align the smallest source-derived player-and-guard timing repair, add
+deterministic before/after discrimination, and stop again for hands-on combat
+acceptance before merge. In parallel, obtain issue #8 and issue #17 reporter
 confirmation against Preview 4 and issue #9 `.ips`/A12 evidence. Then
 take TD-14 modal neutralization, TD-07 controller containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
