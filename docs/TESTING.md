@@ -107,23 +107,74 @@ that merely repeats the proposed implementation is insufficient.
 
 #### Native-60-Hz fire-rate gate
 
-The isolated read-only probe and three guard windows already pass at 13, 17,
-and 18 committed automatic-fire events per 100 ticks. Three short player
-tap-response windows matched ammo delta to event count, but they are not a
-sustained-fire baseline. Resume the probe only through the ordinary game input
-boundary, on a repeatable setup with at least 34 rounds, and record:
+The exact control is [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md), and the
+bounded procedure is [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md).
+Preview 4 contains the default-off read-only probe. Three guard windows recorded
+13, 17, and 18 committed automatic-fire events per 100 ticks. The physical iPad
+player baseline is now complete: three clean Phantom magazines each recorded 20
+events over 58 ticks, normalized to 34.4828 events per 100 ticks with zero
+observed range.
 
+Before launching any app for the repair candidate, run:
+
+```sh
+scripts/verify-preview4-baseline.sh --allow-td01-repair
+scripts/verify-fire-rate-probe-contract.sh
+scripts/verify-fire-rate-authenticity-repair.sh
+scripts/verify-recomp-input-matrix.sh
+git diff --check
+```
+
+These terminal checks prove source identity, default-off wiring, observation
+containment, and the accepted input mapping. They do not prove cadence or
+gameplay. For the recorded measurement branch, use
+`scripts/verify-preview4-baseline.sh --allow-td01-probe`; it permits only the
+documented observation-body delta and still rejects input or timing changes.
+
+When real-gameplay use is separately authorized, enable only the fire-rate
+probe. Use one repeatable ordinary-input setup with one automatic weapon.
+Obtain three complete player windows through the ordinary game input boundary.
+A valid window is either 100 sampled ticks or a continuous magazine-to-empty
+window containing at least 15 shot events. Record:
+
+- source commit and executable identity;
+- platform, stage, difficulty, control style, weapon, and input device;
 - simulation ticks;
 - weapon and starting/ending ammo;
 - player automatic-shot events; and
-- a fixed-line-of-sight guard's automatic-shot events in a separate run.
+- starting/ending player fire counter.
 
-Run the unmodified baseline first. The pinned MGB64 reference measured AK-47 at
-33.3 shots per 100 locked-60-Hz ticks without authenticity scaling and 11.3 at
-the N64-equivalent cadence; GoldenPad's own result must be recorded rather than
-assumed. A later repair passes only if its before/after ratio matches the
-source-derived expectation, semi-automatic and menu behavior remain unchanged,
-and hands-on combat feel is explicitly re-accepted.
+Then record three fixed-line-of-sight guard windows separately. Do not inject
+inventory, mutate a save, force a transform, move the player, alter mission or
+enemy state, or publish input below the ordinary host boundary. Reject a run if
+the weapon changes, a reload occurs inside the window, neither valid completion
+reason is present, a magazine window has fewer than 15 events, or another
+behavior probe is enabled. Normalize magazine results to events per 100 ticks.
+
+The pinned MGB64 reference measured AK-47 at 33.3 shots per 100 locked-60-Hz
+ticks without authenticity scaling and 11.3 at the N64-equivalent cadence.
+GoldenPad's measured 34.4828 result is close to the unscaled reference and about
+3.05 times the authentic target. Record every complete run, mean, range, and
+any explained setup variance. Event count and ammo delta must agree or the
+observation is invalid.
+
+The selected repair scales the one shared positive automatic-rate getter by
+three, so the player and guard paths cannot drift. Zero and negative values,
+including the semi-automatic classification, are unchanged. It passes only if
+its before/after ratio matches the source-derived expectation, player and guard
+timing are changed as one coherent decision, semi-automatic and menu behavior
+remain unchanged, the complete Preview 4 input/tank matrix passes, and hands-on
+combat feel is explicitly re-accepted.
+
+For the physical candidate stop gate, normally launch `GoldenPad P4 Test`; do
+not use remote `devicectl` activation. On Frigate/Agent, continuously empty the
+first 20-round Phantom magazine once. The fixed 100-tick observation window
+should report approximately 11-12 shots instead of the Preview 4 magazine
+emptying at 20 shots/58 ticks. Then confirm: one PP7 shot per trigger press; one
+ordinary enemy automatic encounter is slower but functional; menu navigation,
+normal movement/look, and held-Aim left-stick sight control remain unchanged.
+One clean magazine is sufficient for this acceptance pass; do not repeat three
+baseline runs unless the result is inconsistent.
 
 #### Modern sidestep gate
 
@@ -151,7 +202,7 @@ pause, and a scroll-tracking gesture. Assert that:
 - the 60 Hz mobile publisher remains scheduled through common-mode UI tracking,
   or the UI explicitly suspends and resumes it with a neutral boundary;
 - native menu/watch navigation remains unchanged; and
-- ordinary Preview 3 touch/controller gameplay resumes only after fresh input.
+- ordinary Preview 4 touch/controller gameplay resumes only after fresh input.
 
 Run the gate in normal single-player and the controller-P1/touch-P2 diagnostic.
 Scene-inactive release alone does not pass sheet presentation, because a SwiftUI
@@ -430,11 +481,41 @@ Preview 4 release evidence:
 - Mac build/package proof does not close issue #17. Keep it open until the
   reporter verifies gameplay and supplies diagnostics if a problem remains.
 
-Run the focused input gate before every Preview 4 package:
+Run the focused input gate before every package that retains the Preview 4
+control boundary:
 
 ```sh
 ./scripts/verify-recomp-input-matrix.sh
 ```
+
+Preview 5 fire-rate release evidence:
+
+- `scripts/verify-fire-rate-authenticity-repair.sh` proves the frozen Preview 4
+  measurement control lacks the repair, positive automatic rates scale by
+  three in tracked source and generated MIPS, and zero/negative classifications
+  remain unchanged;
+- physical iPad telemetry recorded 12 Phantom events over 100 ticks, ammo 20 to
+  8, versus Preview 4's 20 events over 58 ticks. The user accepted navigation,
+  movement, controls, gameplay, and runtime quality;
+- the production mobile app is version `0.1.0` build `5`, ARM64, probe-off by
+  default, with unsigned executable SHA-256
+  `dff62592f42eede6d6865c12bb35ff97c6f548975d7c3903289f6d09fc462491`;
+- two independent packaging runs produced byte-identical 18-member unsigned
+  IPAs at SHA-256
+  `d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`,
+  sorted app-content SHA-256
+  `4753f0814823aeecc545b5f33eea9d1bf2da0e7b93874e34ad5f6a0e8358981b`;
+- two independent packaging runs produced byte-identical 20-member native arm64
+  Mac Alpha archives at SHA-256
+  `3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`,
+  sorted app-content SHA-256
+  `0221a39c5137dec3a923b1e5c80b30886f4604486a9c3f23eeb1bcedfeb0ed8a`;
+- both archive verifiers passed their architecture, bundle, symbol, license,
+  signing, ROM/save, private-path, and generated-asset boundaries; and
+- no complete candidate guard fixed window or explicit PP7 sequence was
+  physically captured. The shared getter and unchanged nonpositive path provide
+  source/deterministic coverage; do not describe them as separate physical
+  evidence.
 
 ## Desktop baseline
 

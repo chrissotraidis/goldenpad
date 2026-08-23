@@ -4,7 +4,7 @@ set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 test_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-input-matrix.XXXXXX")
 trap 'rm -rf "$test_root"' EXIT HUP INT TERM
-reference_root="$repo_root/ref/goldeneye64recomp"
+reference_root=${GOLDENPAD_RECOMP_REFERENCE_ROOT:-"$repo_root/ref/goldeneye64recomp"}
 tracked_patch="$repo_root/patches/goldeneye64recomp-ios-modern-controls.patch"
 generated_patch="$reference_root/RecompiledPatches/patches.c"
 
@@ -85,6 +85,10 @@ for marker in \
   'goldenpad_recomp_consume_inventory_slot' \
   'goldenpad_recomp_fire_rate_player_sample' \
   'goldenpad_recomp_fire_rate_guard_sample' \
+  'RECOMP_FUNC void bondwalkItemGetAutomaticFiringRate' \
+  'MEM_B(ctx->r2, 0X22)' \
+  'ctx->r1 = S32(ctx->r2 << 1)' \
+  'ctx->r2 = ADD32(ctx->r1, ctx->r2)' \
   'MEM_W(ctx->r1, 0X6248)' \
   'MEM_W(ctx->r23, 0X6250)' \
   'MEM_W(0X6284' \
@@ -98,4 +102,4 @@ do
   fi
 done
 
-echo "PASS: tracked patch matches build input and generated control/tank markers are present"
+echo "PASS: tracked patch matches build input and generated control/tank/fire-rate markers are present"

@@ -106,6 +106,18 @@ if(goldenpad_apple_platform STREQUAL "mac")
                 "Generated Mac patches.c is missing ${required_bridge}; regenerate the modern-controls patch pair before building GoldenPad.")
         endif()
     endforeach()
+    foreach(required_fire_rate_marker IN ITEMS
+            "RECOMP_FUNC void bondwalkItemGetAutomaticFiringRate"
+            "MEM_B(ctx->r2, 0X22)"
+            "ctx->r1 = S32(ctx->r2 << 1)"
+            "ctx->r2 = ADD32(ctx->r1, ctx->r2)")
+        string(FIND "${goldenpad_mac_patches_text}"
+            "${required_fire_rate_marker}" goldenpad_mac_fire_rate_offset)
+        if(goldenpad_mac_fire_rate_offset EQUAL -1)
+            message(FATAL_ERROR
+                "Generated Mac patches.c is missing the TD-01 authentic-rate marker ${required_fire_rate_marker}; regenerate both embedded patch halves together.")
+        endif()
+    endforeach()
     foreach(required_tank_marker IN ITEMS
             "MEM_W(ctx->r1, 0X6248)"
             "MEM_W(ctx->r23, 0X6250)"
@@ -336,6 +348,18 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
                     "Generated RecompiledPatches/patches.c is missing ${required_bridge}. Apply patches/goldeneye64recomp-ios-modern-controls.patch and regenerate patches.c plus patches_bin.c together.")
             endif()
         endforeach()
+        foreach(required_fire_rate_marker IN ITEMS
+                "RECOMP_FUNC void bondwalkItemGetAutomaticFiringRate"
+                "MEM_B(ctx->r2, 0X22)"
+                "ctx->r1 = S32(ctx->r2 << 1)"
+                "ctx->r2 = ADD32(ctx->r1, ctx->r2)")
+            string(FIND "${goldenpad_recomp_patches_text}"
+                "${required_fire_rate_marker}" goldenpad_recomp_fire_rate_offset)
+            if(goldenpad_recomp_fire_rate_offset EQUAL -1)
+                message(FATAL_ERROR
+                    "Generated RecompiledPatches/patches.c is missing the TD-01 authentic-rate marker ${required_fire_rate_marker}; regenerate both embedded patch halves together.")
+            endif()
+        endforeach()
         foreach(required_multiplayer_patch IN ITEMS
                 "viGetViewTop"
                 "0XFFFE << 16"
@@ -449,7 +473,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "4"
+        MACOSX_BUNDLE_BUNDLE_VERSION "5"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_recomp_code_signing_required}"

@@ -421,6 +421,7 @@ float readGameFloat(uint8_t *rdram, uint32_t address) {
 
 constexpr uint32_t kFireRateWindowTicks = 100;
 constexpr uint32_t kFireRateProbeRunLimit = 3;
+constexpr uint32_t kFireRateMinimumMagazineEvents = 15;
 constexpr uint8_t kKf7SovietItem = 8;
 constexpr uint8_t kKf7SovietRawRate = 3;
 
@@ -455,6 +456,22 @@ GuardFireRateWindow guardFireRateWindow;
 bool isAutomaticPlayerWeapon(int32_t weapon) {
     // GoldenEye's full-auto group runs from the Skorpion through the RC-P90.
     return weapon >= 7 && weapon <= 14;
+}
+
+void completePlayerFireRateWindow(const char *reason) {
+    logEvent("fire-rate-probe",
+        "player run=%u complete reason=%s ticks=%u weapon=%d events=%u ammo=%d->%d counter=%d->%d",
+        playerFireRateWindow.runs + 1,
+        reason,
+        playerFireRateWindow.ticks,
+        playerFireRateWindow.weapon,
+        playerFireRateWindow.shotEvents,
+        playerFireRateWindow.startingAmmo,
+        playerFireRateWindow.endingAmmo,
+        playerFireRateWindow.startingCounter,
+        playerFireRateWindow.endingCounter);
+    ++playerFireRateWindow.runs;
+    playerFireRateWindow.active = false;
 }
 
 void completeGuardFireRateWindow(uint64_t simulationTick) {
@@ -1058,6 +1075,19 @@ extern "C" void goldenpad_recomp_fire_rate_player_sample(
     const int32_t previousAmmo = playerFireRateWindow.lastAmmo;
     const uint32_t shotEvents = playerFireRateWindow.lastWeapon == weapon &&
         previousAmmo > ammo ? static_cast<uint32_t>(previousAmmo - ammo) : 0;
+
+    if (playerFireRateWindow.active &&
+        playerFireRateWindow.lastWeapon == weapon &&
+        previousAmmo >= 0 && ammo > previousAmmo) {
+        logEvent("fire-rate-probe",
+            "player run=%u abort reason=reload ticks=%u weapon=%d ammo=%d->%d",
+            playerFireRateWindow.runs + 1,
+            playerFireRateWindow.ticks,
+            weapon,
+            previousAmmo,
+            ammo);
+        playerFireRateWindow.active = false;
+    }
     playerFireRateWindow.lastWeapon = weapon;
     playerFireRateWindow.lastAmmo = ammo;
     if (!playerFireRateWindow.active) {
@@ -1091,19 +1121,11 @@ extern "C" void goldenpad_recomp_fire_rate_player_sample(
     playerFireRateWindow.endingAmmo = ammo;
     playerFireRateWindow.endingCounter = counter;
     ++playerFireRateWindow.ticks;
-    if (playerFireRateWindow.ticks >= kFireRateWindowTicks) {
-        logEvent("fire-rate-probe",
-            "player run=%u complete ticks=%u weapon=%d events=%u ammo=%d->%d counter=%d->%d",
-            playerFireRateWindow.runs + 1,
-            playerFireRateWindow.ticks,
-            playerFireRateWindow.weapon,
-            playerFireRateWindow.shotEvents,
-            playerFireRateWindow.startingAmmo,
-            playerFireRateWindow.endingAmmo,
-            playerFireRateWindow.startingCounter,
-            playerFireRateWindow.endingCounter);
-        ++playerFireRateWindow.runs;
-        playerFireRateWindow.active = false;
+    if (playerFireRateWindow.endingAmmo == 0 &&
+        playerFireRateWindow.shotEvents >= kFireRateMinimumMagazineEvents) {
+        completePlayerFireRateWindow("magazine-empty");
+    } else if (playerFireRateWindow.ticks >= kFireRateWindowTicks) {
+        completePlayerFireRateWindow("fixed-window");
     }
 }
 

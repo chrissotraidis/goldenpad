@@ -28,8 +28,9 @@ The current preview line deliberately leaves the following primary-runtime
 debt visible:
 
 - native-60-Hz player/guard automatic-fire cadence is not timing-authentic;
-- Preview 2 movement remains the default; Preview 3's opt-in Honey sidestep
-  adapter still needs issue-reporter and broader physical/style confirmation;
+- Preview 4 supersedes Preview 3's opt-in Honey sidestep adapter with one shared
+  1.1 through 1.4 mapping; issue #8 reporter confirmation remains open, but no
+  additional input rewrite is selected;
 - A12-family RT64/Metal compatibility is unresolved after the deterministic
   issue #9 first-frame crash report;
 - local multiplayer has a physically coherent experimental baseline, but slight
@@ -65,36 +66,40 @@ original turn behavior and does not expose native sidestepping.
 Physical controllers have a separate **Original N64 C-buttons** right-stick
 configuration. It emits C-left/C-right and restores GoldenEye's native
 sidestepping, but it replaces the modern analog right-stick look path. Preview 2
-has no corresponding touch template; Preview 3 adds a style-gated opt-in Honey
-adapter without changing that default.
+had no corresponding touch template; Preview 3 added a style-gated opt-in Honey
+adapter. Preview 4 supersedes both paths with one shared mapping for mobile and
+Mac that reads the active 1.1 through 1.4 style, keeps raw menu input, and
+preserves native left-stick Aim and tank semantics.
 
-The verified product decision is to correct the existing modern semantics, not
-add four visible C buttons or another preset first: modern MOVE horizontal
-strafes while LOOK horizontal turns. The explicit Original N64 C-button mode
-remains separate. The repair must keep menu navigation unchanged, avoid silently
-changing unrelated saved preferences, and pass hands-on iPhone, iPad, and
-physical-controller testing before becoming the default behavior.
+The verified product decision was to correct the existing modern semantics, not
+add four visible C buttons or another preset. Preview 4 implements and
+physically accepts that decision on iPad, including menus, native Aim, and the
+Runway tank path. Issue #8 remains open for its reporter and broader claimed-
+platform confirmation against the superseding Preview 4 release. That open
+verification is not evidence for another mapping change.
 
 ## External review disposition — 2026-08-23
 
 The attached independent revision-2 review is retained in
 [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md). It inspected
 historical baseline `788667e`; it is supporting evidence, not repository
-instructions or a substitute for Preview 3 verification. Its source findings
+instructions or a substitute for Preview 4 verification. Its source findings
 remain useful, while its baseline statements and line references are frozen to
 that older tree.
 
 The review's documentation corrections are incorporated into the current
-authority documents. Its code findings were reconciled against Preview 3 and
+authority documents. Its code findings were reconciled against Preview 4 and
 the isolated debt branches:
 
-- Preview 3 adds game-state/watch guards to the sidestep adapter, releases the
-  opt-in Honey adapter, and replaces the Mac relative-mouse clamp path. It does
-  not close the settings/share touch latch, controller-collapse neutral frame,
-  issue #8, multi-controller ownership, or physical lifecycle acceptance.
-- The fire-rate mechanism remains confirmed. An isolated read-only probe later
-  measured guard windows of 13/17/18 events per 100 ticks, but sustained player
-  evidence remains blocked on an ordinary setup with enough ammunition.
+- Preview 4 supersedes the opt-in sidestep adapter with one shared 1.1 through
+  1.4 input mapping and accepted iPad Aim/tank behavior. It does not close issue
+  #8 reporter verification, settings/share touch latch, controller-collapse
+  neutral frame, multi-controller ownership, or physical lifecycle acceptance.
+- The fire-rate mechanism remains confirmed. Preview 4 retains the default-off
+  read-only probe; three player magazines measured 34.4828 events per 100 ticks
+  with zero range and guard windows measured 13/17/18. The isolated shared-
+  getter candidate then produced the exact expected 12 player events/100 ticks
+  and received hands-on core-gameplay acceptance. Preview 5 releases that repair.
 - Matched isolated TD-06 runs recorded zero depth-`formatChanged` rebuilds, and
   a fixed-player-order diagnostic showed no systematic improvement and was
   reverted. The zero did not support predicted per-frame churn, but the counter
@@ -120,8 +125,8 @@ bundle unrelated changes. Every repair must be independently revertible.
 
 | ID | Priority | Problem | Evidence status | Current conclusion | Next gate before promotion |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Confirmed** in both pinned recomp lineages; isolated GoldenPad guard-probe windows recorded 13/17/18 events per 100 ticks, while sustained player magnitude remains unmeasured | Primary runtime lacks the authenticity repair; presentation's “Original refresh” setting does not change simulation cadence | Resume the read-only sustained-player probe only with an ordinary setup holding at least 34 rounds; then patch player and guard seams together and re-accept combat |
-| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Opt-in adapter released; reporter verification open** | Preview 3 adds an opt-in, Honey-only touch/controller C-left/right adapter while preserving Preview 2 as default; the user accepted Preview 3 as stable for publication, but the issue reporter has not confirmed both input paths | Ask the reporter to verify touch and controller behavior; retain the full menu/watch/aim/style/lifecycle regression gate before changing the default |
+| TD-01 | P0 | Automatic weapons and guard cadence at native 60 Hz | **Repaired in Preview 5**: Preview 4 measured 34.4828 player events/100 ticks; Preview 5 telemetry recorded the exact expected 12/100 and the user accepted navigation, movement, gameplay, and runtime quality | Root cause was the native-60-Hz host consuming N64-frame automatic-rate divisors without the frame-cost conversion; shared player/guard getter, nonpositive pass-through, generated MIPS, deterministic cadence, input/tank, iOS, Mac, package, and physical player gates pass | Retain the independently revertible repair and default-off diagnostic. No complete candidate guard window or explicit PP7 sequence was logged, so do not misstate those as physical evidence |
+| TD-02 | P0 | Modern touch/controller sidestep semantics, [issue #8](https://github.com/chrissotraidis/goldenpad/issues/8) | **Repair released in Preview 4; reporter verification open** | Preview 4 replaces the opt-in Honey adapter with one shared 1.1 through 1.4 mapping and preserves raw menus, native left-stick Aim, and tank semantics; the user physically accepted the iPad control matrix | Ask the reporter to verify Preview 4 touch and controller behavior; do not change the accepted mapping without a new reproduction and the full regression gate |
 | TD-03 | P0 | A12X first-frame RT64/Metal crash, [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9) | **Confirmed report** on the published Preview 1 IPA; cause unknown; full `.ips` and local A12 reproduction remain absent | A12X is inside the declared ARM64/Metal/iPadOS envelope. Plume's non-Metal3 descriptor-binding path is a strong diagnostic lead, not a proven cause | Obtain the full redacted `.ips` and A12 reproduction; separately force non-direct/Tier-1 binding paths in diagnostic-only builds on accepted hardware before selecting a repair or floor |
 | TD-04 | P1 | Screenshot, system-overlay, and foreground-resume stall/freeze | **Isolated discriminator evidence; physical classification open** | One experimental Simulator run recovered and another held all runtime-progress counters flat while diagnostics stayed live. This is not proof of a drawable-only stall; unbounded fence and queue waits remain | Run the opt-in physical transition matrix, then add only the wait-point instrumentation selected by the observed counter class |
 | TD-05 | P1 | Intermittent audible static | **Observed report; cause unknown; rate mismatch ruled out** | Game, runtime, and host agree at 22,050 Hz. Isolated synthetic Simulator runs found no ring corruption or large jumps but did observe underruns; overflow discontinuity, reset race, cadence, and route artifacts remain | Capture one audible failing physical session with counter series and external timestamp; use the ROM-free signal only if the counters stay flat |
@@ -185,23 +190,24 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **finish the TD-01 sustained-player
-measurement** on the unchanged Preview 3 baseline. The probe and guard windows
-already exist on an isolated branch, but no player timing repair is authorized
-until an ordinary-input setup provides enough ammunition for a repeatable
-comparison.
+The smartest next engineering action is to **keep released TD-01 frozen and
+take TD-14 modal/run-loop neutralization as a separate review unit**, followed
+by TD-07 disconnect containment. Preview 5 recorded the exact expected 12
+Phantom events/100 ticks versus Preview 4's 34.4828 and retained accepted core
+controls. The absent complete guard window and explicit PP7 sequence remain
+disclosed rather than retroactively represented as physical evidence.
 
-The smartest next user-facing action is **issue #8 reporter confirmation of the
-released opt-in TD-02 adapter**. Internal acceptance allowed Preview 3 to ship,
-but it did not close the reporter's touch/controller experience. TD-03 crash-
-artifact collection and A12-family reproduction can run as an evidence-only
-lane; no A12 code change is selected without that evidence. The next landing
-sequence is:
+The smartest next user-facing actions are **issue #8 and issue #17 reporter
+confirmation against Preview 4**. Internal iPad acceptance does not close either
+reporter's setup. TD-03 crash-artifact collection and A12-family reproduction
+can run as an evidence-only lane; no A12 code change is selected without that
+evidence. The next landing sequence is:
 
-1. rebase the read-only fire-rate probe and finish sustained player cadence;
-2. obtain issue #8 reporter confirmation for the released opt-in adapter;
-3. apply the fire-rate authenticity patch only after the probe proves the
-   current and expected numbers, then obtain hands-on combat acceptance;
+1. preserve Preview 4 and the completed sustained-player/guard measurements;
+2. obtain issue #8 and issue #17 reporter confirmation against Preview 4;
+3. apply one independently revertible fire-rate authenticity patch only after
+   its exact player-and-guard mechanism is reviewed, then obtain hands-on combat
+   acceptance;
 4. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
    separate input-lifecycle units;
 5. run the already-defined physical audio/lifecycle/flicker evidence gates and

@@ -54,6 +54,7 @@ for required_symbol in \
     goldenpad_recomp_set_controller_connected \
     goldenpad_recomp_set_two_player_test_mode \
     goldenpad_recomp_set_four_player_test_mode \
+    goldenpad_recomp_set_fire_rate_probe_enabled \
     goldenpad_recomp_queue_touch_look \
     goldenpad_recomp_gameplay_input_active \
     goldenpad_recomp_current_control_style \

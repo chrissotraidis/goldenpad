@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 4 is the current coordinated release. It is a
+GoldenPad 0.1.0 Preview 5 is the current coordinated release. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 
@@ -127,6 +127,34 @@ drawable-size and direct-camera experiments caused much larger regressions.
 - [ ] The final 1.872-degree unsigned release executable has build and static
   verification, not a second physical-device pass. Keep that distinction in
   release notes and status.
+
+## Coordinated Preview 5 automatic-fire update
+
+- [x] Freeze Preview 4 at merge
+  `54474a40e93b77259d10c7594919e6a05f5e276d` and retain its controls/tank
+  rollback record.
+- [x] Measure three Preview 4 Phantom magazines at 20 events/58 ticks each,
+  normalized to 34.4828 events/100 ticks with zero range.
+- [x] Patch the one shared player/guard automatic-rate getter: multiply positive
+  values by three and preserve zero/negative classifications unchanged.
+- [x] Regenerate both embedded patch halves and add CMake stale-pair ratchets.
+- [x] Pass the source-derived deterministic rate test and complete Preview 4
+  input/Aim/tank matrix.
+- [x] Install only the side-by-side test app in place and prove both ROM copies,
+  active save, backup save, and preferences byte-identical.
+- [x] Obtain physical iPad acceptance. Candidate telemetry recorded the exact
+  expected 12 Phantom events/100 ticks, with accepted navigation, movement,
+  controls, gameplay, and runtime quality.
+- [x] Build and audit the version `0.1.0` build `5` unsigned IPA and native
+  arm64 Mac Alpha from production probe-off source.
+- [x] Record package, content, and executable digests in release
+  notes, status, testing, building, and worklog documents.
+- [x] Merge the isolated PR, verify remote `main`, tag
+  `v0.1.0-preview.5`, publish a GitHub prerelease, and download/re-hash every
+  hosted asset.
+- [x] Keep issue #17 open for reporter Mac verification; Preview 5 retains the
+  accepted tank mapping but does not substitute internal iPad evidence for the
+  reporter's setup.
 
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
