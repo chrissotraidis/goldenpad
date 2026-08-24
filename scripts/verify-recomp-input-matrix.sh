@@ -58,15 +58,23 @@ done
 
 echo "PASS: Mac hip turning is 1.30x while Shift Aim and tank sensitivity remain unchanged"
 
-utility_menu_frame_count=$(grep -Fc '.frame(width: 44, height: 44)' \
-  "$repo_root/Sources/RecompPrototypeApp.swift")
-if [ "$utility_menu_frame_count" -lt 2 ] || \
-  ! grep -Fq '.contentShape(Circle())' "$repo_root/Sources/RecompPrototypeApp.swift"; then
-  echo "FAIL: iPad utility Menu outer hit target is not constrained to its 44-point circle" >&2
+if grep -Fq 'Menu {' "$repo_root/Sources/RecompPrototypeApp.swift"; then
+  echo "FAIL: iPad utility overlay still uses the unreliable native Menu container" >&2
   exit 1
 fi
+for utility_menu_marker in \
+  'private var utilityMenuPanel: some View' \
+  'private func utilityMenuRow(' \
+  '.frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)' \
+  'isUtilityMenuPresented = false'
+do
+  if ! grep -Fq "$utility_menu_marker" "$repo_root/Sources/RecompPrototypeApp.swift"; then
+    echo "FAIL: explicit iPad utility rows are missing $utility_menu_marker" >&2
+    exit 1
+  fi
+done
 
-echo "PASS: iPad utility Menu has a bounded 44-point outer hit target"
+echo "PASS: iPad utility overlay owns four independent 48-point button rows"
 
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \

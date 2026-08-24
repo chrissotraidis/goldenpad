@@ -58,6 +58,7 @@ struct GoldenPadApp: App {
     @State private var presentedSheet: RecompPrototypeSheet?
     @State private var showReturnToMenuConfirmation = false
     @State private var isEditingTouchLayout = false
+    @State private var isUtilityMenuPresented = false
 
     var body: some Scene {
         WindowGroup {
@@ -106,11 +107,26 @@ struct GoldenPadApp: App {
                         .ignoresSafeArea()
                 }
                 GeometryReader { geometry in
-                    utilityMenu
-                        .position(
-                            x: utilityMenuX(in: geometry.size),
-                            y: 48
-                        )
+                    ZStack(alignment: .topLeading) {
+                        if isUtilityMenuPresented {
+                            Color.black.opacity(0.001)
+                                .contentShape(Rectangle())
+                                .onTapGesture { isUtilityMenuPresented = false }
+                            utilityMenuPanel
+                                .frame(width: 280)
+                                .position(
+                                    x: utilityMenuPanelX(in: geometry.size),
+                                    y: 184
+                                )
+                                .zIndex(1)
+                        }
+                        utilityMenuButton
+                            .position(
+                                x: utilityMenuX(in: geometry.size),
+                                y: 48
+                            )
+                            .zIndex(2)
+                    }
                 }
                 .ignoresSafeArea()
             }
@@ -243,38 +259,10 @@ struct GoldenPadApp: App {
         }
     }
 
-    private var utilityMenu: some View {
-        Menu {
-            Button("Return to Main Menu", systemImage: "arrow.uturn.backward") {
-                showReturnToMenuConfirmation = true
-            }
-            Button("Settings", systemImage: "gearshape") {
-                presentedSheet = RecompPrototypeSheet(content: .settings)
-            }
-            Button("Edit Touch Controls", systemImage: "hand.draw") {
-                beginTouchLayoutEditing()
-            }
-            Button("Share Diagnostics & Logs…", systemImage: "square.and.arrow.up") {
-                let url = RecompPrototypeDiagnostics.makeReport(
-                    runtimeStatus: surface.status,
-                    audioStatus: audio.status,
-                    controllerName: input.externalControllerName,
-                    lookSensitivity: lookSensitivity,
-                    aimBehavior: aimBehavior,
-                    controllerLookMode: controllerLookMode,
-                    activeControlStyle: input.activeControlStyle,
-                    controllerMapping: controllerMapping,
-                    invertAimY: invertAimY,
-                    reticleEnabled: reticleEnabled,
-                    msaaEnabled: msaaEnabled,
-                    resolutionMode: resolutionMode,
-                    threePointFiltering: threePointFiltering,
-                    unlockAllMissions: unlockAllMissions,
-                    twoPlayerTestMode: twoPlayerTestMode,
-                    fourPlayerTestMode: fourPlayerTestMode
-                )
-                presentedSheet = RecompPrototypeSheet(content: .share(url))
-            }
+    private var utilityMenuButton: some View {
+        Button {
+            input.releaseTouchInput()
+            isUtilityMenuPresented.toggle()
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 19, weight: .bold))
@@ -283,12 +271,64 @@ struct GoldenPadApp: App {
                 .background(.black.opacity(0.62), in: Circle())
                 .overlay(Circle().stroke(.white.opacity(0.34), lineWidth: 1))
         }
-        // GeometryReader proposes the full gameplay surface. Keep the Menu
-        // itself on the visible circle so its invisible label cannot sit above
-        // the presented rows and merge their touch targets on iPad.
+        .buttonStyle(.plain)
         .frame(width: 44, height: 44)
         .contentShape(Circle())
         .accessibilityLabel("GoldenPad menu")
+    }
+
+    private var utilityMenuPanel: some View {
+        VStack(spacing: 0) {
+            utilityMenuRow(
+                "Return to Main Menu",
+                systemImage: "arrow.uturn.backward",
+                role: .destructive
+            ) {
+                showReturnToMenuConfirmation = true
+            }
+            Divider().padding(.horizontal, 12)
+            utilityMenuRow("Settings", systemImage: "gearshape") {
+                presentedSheet = RecompPrototypeSheet(content: .settings)
+            }
+            Divider().padding(.horizontal, 12)
+            utilityMenuRow("Edit Touch Controls", systemImage: "hand.draw") {
+                beginTouchLayoutEditing()
+            }
+            Divider().padding(.horizontal, 12)
+            utilityMenuRow(
+                "Share Diagnostics & Logs…",
+                systemImage: "square.and.arrow.up"
+            ) {
+                shareDiagnostics()
+            }
+        }
+        .padding(6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(.white.opacity(0.22), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 16, y: 8)
+    }
+
+    private func utilityMenuRow(
+        _ title: String,
+        systemImage: String,
+        role: ButtonRole? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(role: role) {
+            isUtilityMenuPresented = false
+            action()
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.body.weight(.medium))
+                .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                .padding(.horizontal, 12)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(role == .destructive ? Color.red : Color.primary)
     }
 
     private var touchDeviceClass: RecompTouchDeviceClass {
@@ -299,6 +339,34 @@ struct GoldenPadApp: App {
         let pause = touchLayout.placements(for: touchDeviceClass)
             .first(where: { $0.id == .pause })
         return canvas.width * (pause?.sanitized().x ?? 0.95)
+    }
+
+    private func utilityMenuPanelX(in canvas: CGSize) -> CGFloat {
+        let halfWidth: CGFloat = 140
+        let desired = utilityMenuX(in: canvas) - 118
+        return min(max(halfWidth, desired), canvas.width - halfWidth)
+    }
+
+    private func shareDiagnostics() {
+        let url = RecompPrototypeDiagnostics.makeReport(
+            runtimeStatus: surface.status,
+            audioStatus: audio.status,
+            controllerName: input.externalControllerName,
+            lookSensitivity: lookSensitivity,
+            aimBehavior: aimBehavior,
+            controllerLookMode: controllerLookMode,
+            activeControlStyle: input.activeControlStyle,
+            controllerMapping: controllerMapping,
+            invertAimY: invertAimY,
+            reticleEnabled: reticleEnabled,
+            msaaEnabled: msaaEnabled,
+            resolutionMode: resolutionMode,
+            threePointFiltering: threePointFiltering,
+            unlockAllMissions: unlockAllMissions,
+            twoPlayerTestMode: twoPlayerTestMode,
+            fourPlayerTestMode: fourPlayerTestMode
+        )
+        presentedSheet = RecompPrototypeSheet(content: .share(url))
     }
 
     private func beginTouchLayoutEditing() {
