@@ -34,7 +34,7 @@
     <key>CFBundleShortVersionString</key>
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
-    <string>6</string>
+    <string>$(GOLDENPAD_RECOMP_BUILD_VERSION)</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.games</string>
     <key>LSRequiresIPhoneOS</key>

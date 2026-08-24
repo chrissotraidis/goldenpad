@@ -7,6 +7,10 @@ if [ "$#" -ne 1 ]; then
 fi
 
 ipa_path=$1
+expected_display_name=${GOLDENPAD_EXPECTED_DISPLAY_NAME:-GoldenPad}
+expected_bundle_identifier=${GOLDENPAD_EXPECTED_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad.recomp-prototype}
+expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-6}
+expected_metal_target=${GOLDENPAD_EXPECTED_METAL_TARGET:-apple-ios17.0.0}
 if [ ! -f "$ipa_path" ] || [[ "$ipa_path" != *.ipa ]]; then
   echo "Expected an existing .ipa file: $ipa_path" >&2
   exit 1
@@ -29,15 +33,28 @@ if [ ! -f "$executable" ] || ! file "$executable" | grep -q 'Mach-O 64-bit execu
   exit 1
 fi
 
-test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "GoldenPad"
-test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "com.chrissotraidis.goldenpad.recomp-prototype"
+test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "$expected_display_name"
+test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "$expected_bundle_identifier"
 test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "6"
+test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "$expected_build_version"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
 
 if codesign -dv "$app_path" >/dev/null 2>&1; then
   echo "IPA is signed; expected an unsigned public artifact." >&2
+  exit 1
+fi
+
+metal_targets=$(strings "$executable" | sed -E -n 's/.*(air64_v[[:alnum:]_.-]*apple-ios[0-9.]+(-simulator)?).*/\1/p' | LC_ALL=C sort -u)
+if ! printf '%s\n' "$metal_targets" | grep -Eq "^air64_v[[:alnum:]_.-]*${expected_metal_target}$"; then
+  echo "IPA executable does not contain the required iOS 17 Metal libraries." >&2
+  printf '%s\n' "$metal_targets" >&2
+  exit 1
+fi
+unexpected_metal_targets=$(printf '%s\n' "$metal_targets" | grep -Ev "^air64_v[[:alnum:]_.-]*${expected_metal_target}$" || true)
+if [ -n "$unexpected_metal_targets" ]; then
+  echo "IPA executable contains Metal libraries for unexpected deployment targets:" >&2
+  printf '%s\n' "$unexpected_metal_targets" >&2
   exit 1
 fi
 

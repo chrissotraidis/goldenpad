@@ -30,6 +30,10 @@ option(GOLDENPAD_MGB64_RENDERER "Link the opt-in MGB64 Fast3D/Metal renderer pro
 option(GOLDENPAD_RECOMP_PROTOTYPE "Build the isolated RT64/N64Recomp prototype host" OFF)
 set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prototype" CACHE STRING
     "Bundle identifier used by the isolated recompilation prototype")
+set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
+    "Display name used by the isolated recompilation prototype")
+set(GOLDENPAD_RECOMP_BUILD_VERSION "6" CACHE STRING
+    "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
 set(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing verified RT64 mobile archives for the prototype")
@@ -475,7 +479,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "6"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${GOLDENPAD_RECOMP_BUILD_VERSION}"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "${goldenpad_recomp_code_signing_required}"
@@ -483,7 +487,8 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${GOLDENPAD_DEVELOPMENT_TEAM}"
         XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
         XCODE_ATTRIBUTE_GENERATE_INFOPLIST_FILE "NO"
-        XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad"
+        XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_DISPLAY_NAME "${GOLDENPAD_RECOMP_DISPLAY_NAME}"
+        XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_BUILD_VERSION "${GOLDENPAD_RECOMP_BUILD_VERSION}"
         XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0"
         XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
