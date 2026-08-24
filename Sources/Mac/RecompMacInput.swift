@@ -27,6 +27,9 @@ private func goldenPadRecompQueueRelativeLook(_ controller: Int32, _ x: Int32, _
 @_silgen_name("goldenpad_recomp_queue_mouse_look")
 private func goldenPadRecompQueueMouseLook(_ controller: Int32, _ x: Int64, _ y: Int64)
 
+@_silgen_name("goldenpad_recomp_set_mouse_camera_aim_active")
+private func goldenPadRecompSetMouseCameraAimActive(_ controller: Int32, _ active: Int32)
+
 @_silgen_name("goldenpad_recomp_request_crouch_toggle")
 private func goldenPadRecompRequestCrouchToggle(_ controller: Int32)
 
@@ -44,6 +47,9 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
+
+@_silgen_name("goldenpad_recomp_frontend_input_active")
+private func goldenPadRecompFrontEndInputActive() -> Int32
 
 @_silgen_name("goldenpad_recomp_get_input_context")
 private func goldenPadRecompGetInputContext(
@@ -214,7 +220,7 @@ final class RecompMacInput: ObservableObject {
     private var viewMouseActionHeld = false
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
-    private var mouseSensitivity: Float = 2.5
+    private var mouseSensitivity: Float = 3.0
     private var invertAimY = false
     private let mouseClampProbeEnabled = ProcessInfo.processInfo.arguments.contains(
         "--mouse-clamp-probe"
@@ -404,6 +410,7 @@ final class RecompMacInput: ObservableObject {
     private func publish() {
         var context = runtimeInputContext(port: 0)
         refreshRuntimeInputMode(context: context)
+        let frontEndInputActive = goldenPadRecompFrontEndInputActive() != 0
         let mapping = RecompControlMapping(runtimeStyle: context.runtimeStyle)
         var buttons: UInt16 = 0
         var movement = gameplayMovement(includeHorizontal: true)
@@ -447,7 +454,7 @@ final class RecompMacInput: ObservableObject {
                 menuMouseStepFrames = 0
                 menuMouseNeutralFrames = 0
             } else {
-                buttons |= nextMenuMouseButtons()
+                movement = nextMenuMouseMovement()
             }
         }
 
@@ -508,10 +515,19 @@ final class RecompMacInput: ObservableObject {
                 movement = manualAimStick
                 rightStick = .zero
             }
+            goldenPadRecompSetMouseCameraAimActive(
+                0,
+                mouseCaptured && mapping.mouseCameraAimHoldActive(context: context) ? 1 : 0
+            )
             menuStickLatch.reset()
         } else {
-            buttons |= menuStickLatch.buttons(for: movement)
-            movement = .zero
+            goldenPadRecompSetMouseCameraAimActive(0, 0)
+            let navigation = menuStickLatch.navigation(
+                for: movement,
+                frontEndActive: frontEndInputActive
+            )
+            buttons |= navigation.buttons
+            movement = navigation.stick
         }
 
         if !gameplayInputActive {
@@ -519,7 +535,7 @@ final class RecompMacInput: ObservableObject {
         }
 
         publishController(buttons: buttons, movement: movement, rightStick: rightStick)
-        publishMouseLook()
+        publishMouseLook(scale: mapping.mouseTurnScale(context: context))
         keyPulseFrames = keyPulseFrames.compactMapValues { frames in frames > 1 ? frames - 1 : nil }
         mouseFirePulseFrames = Swift.max(0, mouseFirePulseFrames - 1)
         mouseActionPulseFrames = Swift.max(0, mouseActionPulseFrames - 1)
@@ -634,35 +650,31 @@ final class RecompMacInput: ObservableObject {
         )
     }
 
-    private func publishMouseLook() {
+    private func publishMouseLook(scale: Double) {
         guard gameplayInputActive, mouseCaptured, pendingMouseDelta != .zero else { return }
         let delta = pendingMouseDelta
         pendingMouseDelta = .zero
-        // The previous desktop rate remained too slow in physical play. Keep
-        // the setting adjustable while doubling the actual mouse response.
-        let scale = 1_680 * mouseSensitivity
-        let x = Int64((Double(delta.x) * Double(scale)).rounded())
-        let y = Int64((Double(-delta.y) * Double(scale)).rounded())
+        // Keep the accepted Shift/tank rates while making ordinary on-foot
+        // turning 30 percent faster. The user setting still scales every mode.
+        let configuredScale = 1_680 * Double(mouseSensitivity) * scale
+        let x = Int64((Double(delta.x) * configuredScale).rounded())
+        let y = Int64((Double(-delta.y) * configuredScale).rounded())
         goldenPadRecompQueueMouseLook(0, x, y)
     }
 
-    private func nextMenuMouseButtons() -> UInt16 {
+    private func nextMenuMouseMovement() -> SIMD2<Float> {
         if menuMouseStepFrames > 0 {
             menuMouseStepFrames -= 1
-            if menuMouseStep.x < 0 { return RecompN64Button.dpadLeft }
-            if menuMouseStep.x > 0 { return RecompN64Button.dpadRight }
-            if menuMouseStep.y > 0 { return RecompN64Button.dpadUp }
-            if menuMouseStep.y < 0 { return RecompN64Button.dpadDown }
-            return 0
+            return menuMouseStep
         }
         if menuMouseNeutralFrames > 0 {
             menuMouseNeutralFrames -= 1
-            return 0
+            return .zero
         }
 
         let threshold: Float = 18
         let delta = pendingMenuMouseDelta
-        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return 0 }
+        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return .zero }
         if abs(delta.x) > abs(delta.y) {
             menuMouseStep = SIMD2(delta.x < 0 ? -1 : 1, 0)
         } else {
@@ -673,7 +685,7 @@ final class RecompMacInput: ObservableObject {
         pendingMenuMouseDelta = .zero
         menuMouseStepFrames = 2
         menuMouseNeutralFrames = 2
-        return nextMenuMouseButtons()
+        return nextMenuMouseMovement()
     }
 
     private func beginWeaponWheelPulseIfNeeded() {
@@ -696,6 +708,7 @@ final class RecompMacInput: ObservableObject {
     private func publishNeutral() {
         goldenPadRecompSetControllerState(0, 0, 0, 0)
         goldenPadRecompSetRightAnalog(0, 0, 0)
+        goldenPadRecompSetMouseCameraAimActive(0, 0)
     }
 }
 

@@ -16,6 +16,66 @@ xcrun swiftc \
 
 "$test_root/verify-recomp-input-matrix"
 
+for mac_frontend_marker in \
+  'goldenpad_recomp_frontend_input_active' \
+  'frontEndActive: frontEndInputActive' \
+  'movement = nextMenuMouseMovement()'
+do
+  if ! grep -Fq "$mac_frontend_marker" "$repo_root/Sources/Mac/RecompMacInput.swift" \
+    "$repo_root/Support/RecompPrototype/recomp_game_start.cpp"; then
+    echo "FAIL: Mac Preview 3 front-end routing is missing $mac_frontend_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: Mac front end preserves analog navigation while watch input remains latched"
+
+mac_sensitivity_markers=$(grep -Fh 'mouseSensitivity = 3.0' \
+  "$repo_root/Sources/Mac/GoldenPadMacApp.swift" | wc -l | tr -d ' ')
+if [ "$mac_sensitivity_markers" -ne 2 ] || \
+  ! grep -Fq 'mouseSensitivity: Float = 3.0' \
+    "$repo_root/Sources/Mac/RecompMacInput.swift"; then
+  echo "FAIL: Preview 6 Mac default mouse sensitivity is not consistently 3.00" >&2
+  exit 1
+fi
+
+echo "PASS: Preview 6 Mac default mouse sensitivity is 3.00"
+
+for mac_mouse_aim_marker in \
+  'goldenpad_recomp_set_mouse_camera_aim_active' \
+  'mouseCaptured && mapping.mouseCameraAimHoldActive(context: context)' \
+  'publishMouseLook(scale: mapping.mouseTurnScale(context: context))' \
+  '1_680 * Double(mouseSensitivity) * scale' \
+  'lookX != 0.0f || lookY != 0.0f || mouseCameraAimHeld'
+do
+  if ! grep -Fq "$mac_mouse_aim_marker" "$repo_root/Sources/Mac/RecompMacInput.swift" \
+    "$repo_root/Support/RecompPrototype/recomp_game_start.cpp" \
+    "$tracked_patch"; then
+    echo "FAIL: held-Shift relative mouse aim is missing $mac_mouse_aim_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: Mac hip turning is 1.30x while Shift Aim and tank sensitivity remain unchanged"
+
+if grep -Fq 'Menu {' "$repo_root/Sources/RecompPrototypeApp.swift"; then
+  echo "FAIL: iPad utility overlay still uses the unreliable native Menu container" >&2
+  exit 1
+fi
+for utility_menu_marker in \
+  'private var utilityMenuPanel: some View' \
+  'private func utilityMenuRow(' \
+  '.frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)' \
+  'isUtilityMenuPresented = false'
+do
+  if ! grep -Fq "$utility_menu_marker" "$repo_root/Sources/RecompPrototypeApp.swift"; then
+    echo "FAIL: explicit iPad utility rows are missing $utility_menu_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: iPad utility overlay owns four independent 48-point button rows"
+
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \
   'if !gameplayActive {' \
@@ -82,6 +142,7 @@ done
 
 for marker in \
   'goldenpad_recomp_consume_reload' \
+  'goldenpad_recomp_mouse_camera_aim_active' \
   'goldenpad_recomp_consume_inventory_slot' \
   'goldenpad_recomp_fire_rate_player_sample' \
   'goldenpad_recomp_fire_rate_guard_sample' \

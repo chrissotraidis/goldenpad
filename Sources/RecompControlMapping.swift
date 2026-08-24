@@ -137,6 +137,18 @@ struct RecompControlMapping {
         return SIMD2(stick.x, rawY)
     }
 
+    func mouseCameraAimHoldActive(
+        context: RecompRuntimeInputContext
+    ) -> Bool {
+        context.gameplayActive && context.aiming && !context.isInTank
+    }
+
+    func mouseTurnScale(
+        context: RecompRuntimeInputContext
+    ) -> Double {
+        context.gameplayActive && !context.aiming && !context.isInTank ? 1.3 : 1.0
+    }
+
     static func menuNavigationButtons(
         up: Bool,
         down: Bool,
@@ -198,6 +210,17 @@ struct RecompMenuStickLatch {
             : (stick.y < 0 ? RecompN64Button.dpadDown : RecompN64Button.dpadUp)
         pulseFramesRemaining = 1
         return pulseButton
+    }
+
+    mutating func navigation(
+        for stick: SIMD2<Float>,
+        frontEndActive: Bool
+    ) -> RecompMovementMapping {
+        if frontEndActive {
+            reset()
+            return RecompMovementMapping(buttons: 0, stick: stick)
+        }
+        return RecompMovementMapping(buttons: buttons(for: stick), stick: .zero)
     }
 
     mutating func reset() {

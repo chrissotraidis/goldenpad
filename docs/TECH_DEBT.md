@@ -192,19 +192,20 @@ regenerating for the second.
 
 The smartest next engineering action is to **keep released TD-01 frozen and
 take TD-14 modal/run-loop neutralization as a separate review unit**, followed
-by TD-07 disconnect containment. Preview 5 recorded the exact expected 12
+by TD-07 disconnect containment. Preview 6 retains Preview 5's exact expected 12
 Phantom events/100 ticks versus Preview 4's 34.4828 and retained accepted core
 controls. The absent complete guard window and explicit PP7 sequence remain
 disclosed rather than retroactively represented as physical evidence.
 
 The smartest next user-facing actions are **issue #8 and issue #17 reporter
-confirmation against Preview 4**. Internal iPad acceptance does not close either
-reporter's setup. TD-03 crash-artifact collection and A12-family reproduction
+confirmation against Preview 6**. Internal acceptance does not close either
+reporter's setup. Issues #9 and #19 still need complete crash artifacts and
+affected-hardware reproduction
 can run as an evidence-only lane; no A12 code change is selected without that
 evidence. The next landing sequence is:
 
 1. preserve Preview 4 and the completed sustained-player/guard measurements;
-2. obtain issue #8 and issue #17 reporter confirmation against Preview 4;
+2. obtain issue #8 and issue #17 reporter confirmation against Preview 6;
 3. apply one independently revertible fire-rate authenticity patch only after
    its exact player-and-guard mechanism is reviewed, then obtain hands-on combat
    acceptance;

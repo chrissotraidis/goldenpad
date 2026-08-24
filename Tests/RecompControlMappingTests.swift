@@ -164,6 +164,42 @@ private struct RecompControlMappingTests {
             nil,
             "mounted Aim keeps right stick on the tank turret path"
         )
+        try expect(
+            honey.mouseCameraAimHoldActive(
+                context: context(style: 0, aiming: true)),
+            true,
+            "on-foot Shift keeps relative mouse aim from recentering"
+        )
+        try expect(
+            honey.mouseCameraAimHoldActive(
+                context: context(style: 0, aiming: false)),
+            false,
+            "ordinary mouse look does not hold the aim camera"
+        )
+        try expect(
+            honey.mouseCameraAimHoldActive(
+                context: context(style: 0, aiming: true, tankState: 2)),
+            false,
+            "tank Aim remains on the turret path"
+        )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: false)),
+            1.3,
+            "ordinary on-foot mouse turning is raised 30 percent"
+        )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: true)),
+            1.0,
+            "Shift mouse aiming retains the accepted sensitivity"
+        )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: false, tankState: 2)),
+            1.0,
+            "tank mouse sensitivity retains the accepted turret baseline"
+        )
 
         try expect(
             honey.movement(
@@ -191,6 +227,18 @@ private struct RecompControlMappingTests {
         try expect(latch.buttons(for: SIMD2<Float>(0, 0.3)), 0, "partial release does not rearm")
         try expect(latch.buttons(for: .zero), 0, "neutral rearms without input")
         try expect(latch.buttons(for: SIMD2<Float>(-1, 0)), RecompN64Button.dpadLeft, "menu second edge")
+
+        latch.reset()
+        try expect(
+            latch.navigation(for: SIMD2<Float>(-1, 0.75), frontEndActive: true),
+            RecompMovementMapping(buttons: 0, stick: SIMD2<Float>(-1, 0.75)),
+            "front end preserves Preview 3 analog cursor movement"
+        )
+        try expect(
+            latch.navigation(for: SIMD2<Float>(0, 1), frontEndActive: false),
+            RecompMovementMapping(buttons: RecompN64Button.dpadUp, stick: .zero),
+            "watch converts movement to one digital edge"
+        )
 
         print("PASS: shared GoldenEye 1.1-1.4 input and tank matrix")
     }

@@ -6,17 +6,17 @@ Updated: 2026-08-24
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 5 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Public release | Preview 6 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
-| Accepted baseline | Physical iPhone/iPad single-player, touch, Xbox/MFi P1, native left-stick Aim, Runway tank controls, saves/preferences preservation, and the bounded four-view experimental render repair. |
+| Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, and iPad utility-menu actions with and without a controller. |
 | Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |
-| Compatibility debt | A12X issue #9 is an unresolved first-frame RT64/Metal crash report, not an architecture/signing failure. |
+| Compatibility debt | A12X issue #9 and iPhone 13 mini issue #19 are unresolved RT64/Metal initialization crash reports; Preview 6 has no confirmed renderer repair for either. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Preview 5 controls | Preview 4's shared mobile/Mac 1.1 through 1.4 mapping, native left-stick Aim, Runway/Streets tank repair, and final controller sensitivity are retained unchanged. |
+| Preview 6 controls | Preview 5's shared 1.1 through 1.4 mappings, native controller Aim, tank repair, controller sensitivity, and automatic-fire cadence are retained. Mac menu navigation, relative mouse turning, Shift Aim hold, and the iPad utility menu are repaired. |
 | Immediate engineering gate | Take TD-14 modal/run-loop neutralization and TD-07 controller-collapse containment as separate input-lifecycle units; do not combine them with the released TD-01 timing repair. |
-| Immediate user-facing follow-up | Ask the issue #8 reporter to verify touch/controller sidestepping and the issue #17 reporter to verify Mac tank controls against Preview 5; keep both open until reporter confirmation. |
+| Immediate user-facing follow-up | Ask issue #8 and #17 reporters to verify Preview 6. Ask issue #9 and #19 reporters to retry and provide complete crash evidence; Preview 6 does not claim those renderer crashes are repaired. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -35,8 +35,8 @@ Documentation ownership:
   accepted controls, artifacts, diagnostic boundary, and rollback identity.
 - [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) owns the bounded TD-01
   measurement sequence and mandatory gameplay stop gate.
-- [`RELEASE_NOTES_0.1.0-preview.5.md`](RELEASE_NOTES_0.1.0-preview.5.md) records
-  Preview 5's public delta, artifact identities, acceptance, and rollback.
+- [`RELEASE_NOTES_0.1.0-preview.6.md`](RELEASE_NOTES_0.1.0-preview.6.md) records
+  Preview 6's public delta, artifact identities, acceptance, and limitations.
 
 ## Summary
 
@@ -84,6 +84,15 @@ recorded 12 Phantom shots/100 ticks versus Preview 4's 20/58-tick magazine,
 with accepted navigation, movement, controls, gameplay, and runtime quality.
 The production mobile build advances to version `0.1.0` build `5`; its bounded
 fire-rate diagnostic remains off by default.
+
+Preview 6 retains that accepted mobile gameplay baseline. On macOS it restores
+analog WASD/trackpad navigation in GoldenEye's front end, retains the Preview 3
+relative mouse path, raises the default mouse sensitivity to `3.00`, applies a
+focused `1.30x` on-foot turning factor, and prevents held Shift Aim from
+recentering until Shift is released. On iPhone/iPad it replaces the unreliable
+native utility `Menu` with four independent 48-point action rows. The user
+physically accepted Mac menu/gameplay controls and iPad menu behavior both
+without and with a controller, followed by Dam and Bunker controller gameplay.
 
 The Preview 2 signed iPhone/iPad release build launches real GoldenEye gameplay,
 preserves its private ROM, save and preference payloads across in-place
@@ -177,20 +186,23 @@ multiplayer or Mac sustained performance to stable-release status. The
 coordinated repository update produces separate audited platform artifacts: an
 iOS/iPadOS `.ipa` and an arm64 macOS Alpha archive containing `GoldenPad.app`.
 
-The audited Preview 5 mobile artifact is
-`GoldenPad-0.1.0-preview.5-unsigned.ipa` at SHA-256
-`d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`.
+The audited Preview 6 mobile artifact is
+`GoldenPad-0.1.0-preview.6-unsigned.ipa` at SHA-256
+`ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`.
 Its 18-member archive passed the ROM/save/signing/private-path/setup-copy and
 required-symbol audits and has sorted unsigned app-content SHA-256
-`4753f0814823aeecc545b5f33eea9d1bf2da0e7b93874e34ad5f6a0e8358981b`.
-The audited Preview 5 Mac Alpha artifact is
-`GoldenPad-0.1.0-preview.5-macos-arm64-alpha.zip` at SHA-256
-`3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`;
+`0069201d9bcd8080778342342ec5e7da3a2aca6648c7f3ab7bb6eeae5229c941`.
+The audited Preview 6 Mac Alpha artifact is
+`GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip` at SHA-256
+`5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`;
 its 20-member archive has sorted app-content SHA-256
-`0221a39c5137dec3a923b1e5c80b30886f4604486a9c3f23eeb1bcedfeb0ed8a`.
+`ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`.
 Two independent packaging passes produced byte-identical files. Neither
 artifact contains ROM, save, provisioning, signing identity, generated source,
 or private build-path data.
+
+The historical audited Preview 5 mobile and Mac artifacts remain documented in
+[`RELEASE_NOTES_0.1.0-preview.5.md`](RELEASE_NOTES_0.1.0-preview.5.md).
 
 The historical audited Preview 4 mobile artifact is
 `GoldenPad-0.1.0-preview.4-unsigned.ipa` at SHA-256
@@ -778,13 +790,13 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 5 is published as a prerelease with separately audited mobile and Mac
-Alpha artifacts. Its shared automatic-rate repair passed source, generated-
-patch, deterministic, full input/tank, platform-build, package, preservation,
-and physical player-cadence gates. Preview 4's exact rollback identity remains
-frozen in [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). In parallel, obtain
-issue #8 and issue #17 reporter confirmation against Preview 5 and issue #9
-`.ips`/A12 evidence. Then take TD-14 modal neutralization, TD-07 controller
+Preview 6 is published as a prerelease with separately audited mobile and Mac
+Alpha artifacts. It retains Preview 5's automatic-rate repair and accepted
+mobile controls while adding the physically accepted Mac menu/input and iPad
+utility-menu repairs. Preview 4's exact rollback identity remains frozen in
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). In parallel, obtain issue #8
+and issue #17 reporter confirmation against Preview 6 and complete crash
+evidence for issues #9 and #19. Then take TD-14 modal neutralization, TD-07 controller
 containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad

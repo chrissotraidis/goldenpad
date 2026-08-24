@@ -7,9 +7,9 @@ baseline_tree=4232141f9d14d2f6197e43173694f649828e730f
 mode=${1:-strict}
 
 case "$mode" in
-    strict|--allow-td01-probe|--allow-td01-repair) ;;
+    strict|--allow-td01-probe|--allow-td01-repair|--allow-preview6) ;;
     *)
-        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair]" >&2
+        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair|--allow-preview6]" >&2
         exit 2
         ;;
 esac
@@ -35,8 +35,19 @@ if [ -n "$runtime_diff" ]; then
 Config/RecompPrototypeInfo.plist.in
 Support/RecompPrototype/recomp_game_start.cpp
 patches/goldeneye64recomp-ios-modern-controls.patch'
+    preview6_diff='CMakeLists.txt
+Config/RecompPrototypeInfo.plist.in
+Sources/Mac/GoldenPadMacApp.swift
+Sources/Mac/RecompMacInput.swift
+Sources/RecompControlMapping.swift
+Sources/RecompPrototypeApp.swift
+Support/RecompPrototype/recomp_game_start.cpp
+Support/RecompPrototype/recomp_rt64_surface_stub.cpp
+Tests/RecompControlMappingTests.swift
+patches/goldeneye64recomp-ios-modern-controls.patch'
     if ! { [ "$mode" = "--allow-td01-probe" ] && [ "$runtime_diff" = "$probe_diff" ]; } &&
-        ! { [ "$mode" = "--allow-td01-repair" ] && [ "$runtime_diff" = "$repair_diff" ]; }; then
+        ! { [ "$mode" = "--allow-td01-repair" ] && [ "$runtime_diff" = "$repair_diff" ]; } &&
+        ! { [ "$mode" = "--allow-preview6" ] && [ "$runtime_diff" = "$preview6_diff" ]; }; then
         echo "FAIL: runtime diff exceeds the selected Preview 4 measurement boundary" >&2
         printf '%s\n' "$runtime_diff" >&2
         exit 1
@@ -69,7 +80,9 @@ do
 done
 
 echo "PASS: current branch descends from the exact Preview 4 tree"
-if [ "$mode" = "--allow-td01-repair" ]; then
+if [ "$mode" = "--allow-preview6" ]; then
+    echo "PASS: runtime diff is limited to Preview 6 Mac input, mobile utility-menu, identity, and retained Preview 5 repair paths"
+elif [ "$mode" = "--allow-td01-repair" ]; then
     echo "PASS: runtime diff is limited to Preview 5 identity, the TD-01 observation body, and shared fire-rate patch"
 elif [ "$mode" = "--allow-td01-probe" ]; then
     echo "PASS: runtime diff is limited to the TD-01 host observation body"

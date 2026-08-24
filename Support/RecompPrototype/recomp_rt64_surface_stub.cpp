@@ -25,6 +25,7 @@ extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_note_audio_host_rates(uint32_t, uint32_t, uint32_t) {}
+extern "C" int32_t goldenpad_recomp_frontend_input_active() { return 1; }
 extern "C" int32_t goldenpad_recomp_gameplay_input_active() { return 0; }
 extern "C" void goldenpad_recomp_get_input_context(
     int32_t, int32_t *gameplay, int32_t *style, int32_t *aiming,
@@ -39,6 +40,7 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t) {}
 extern "C" void goldenpad_recomp_note_transient_inactive() {}
 extern "C" void goldenpad_recomp_queue_touch_look(int32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_queue_mouse_look(int32_t, int64_t, int64_t) {}
+extern "C" void goldenpad_recomp_set_mouse_camera_aim_active(int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_request_crouch_toggle(int32_t) {}
 extern "C" void goldenpad_recomp_request_inventory_slot(int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_request_reload(int32_t) {}
