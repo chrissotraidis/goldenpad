@@ -517,6 +517,35 @@ Preview 5 fire-rate release evidence:
   source/deterministic coverage; do not describe them as separate physical
   evidence.
 
+Preview 6 menu and Mac-input release evidence:
+
+- the user physically accepted Mac GoldenEye menu navigation, keyboard/mouse
+  gameplay, ordinary turning, and held Shift Aim after the final tuning pass;
+- on a physical iPad Pro, the user accepted the four utility-menu actions
+  without a controller, connected a controller and accepted the same menu,
+  then accepted Dam and Bunker controller gameplay with no observed control
+  regression;
+- `scripts/verify-recomp-input-matrix.sh` proves the front end preserves analog
+  Mac navigation, default Mac mouse sensitivity is `3.00`, ordinary on-foot
+  turning is `1.30x` while Shift Aim and tank rates remain unchanged, and the
+  mobile utility overlay owns four independent 48-point action rows;
+- `scripts/verify-preview4-baseline.sh --allow-preview6`, the automatic-fire
+  gate, ROM-data audit, ARM64 iOS/Mac builds, and both package verifiers pass;
+- two packaging runs produced byte-identical 18-member unsigned IPAs at
+  SHA-256
+  `ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`,
+  sorted app-content SHA-256
+  `0069201d9bcd8080778342342ec5e7da3a2aca6648c7f3ab7bb6eeae5229c941`;
+- two packaging runs produced byte-identical 20-member native arm64 Mac Alpha
+  archives at SHA-256
+  `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`,
+  sorted app-content SHA-256
+  `ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`;
+  and
+- this acceptance does not close the A12X or iPhone 13 mini renderer crash
+  reports, known stage rendering defects, long-session coverage, or issue #17
+  until its reporter tests the release.
+
 ## Desktop baseline
 
 ```sh

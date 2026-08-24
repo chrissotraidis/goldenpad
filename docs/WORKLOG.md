@@ -1,5 +1,30 @@
 # Worklog
 
+## 2026-08-24 - package and publish Preview 6 Mac/menu repair
+
+- Restored analog WASD/trackpad movement in the Mac GoldenEye front end while
+  preserving Preview 5's digital watch-transition latch and gameplay mapping.
+- Retained the accepted Preview 3 relative mouse path, raised the default to
+  `3.00`, added a focused `1.30x` ordinary on-foot turn factor, and held the
+  Shift Aim camera position until Shift release without changing controller,
+  mobile Aim, or tank sensitivity.
+- Replaced the unreliable iPad native utility `Menu` with four independent
+  48-point action rows. The user physically accepted the final Mac controls and
+  the iPad menu without and with a controller, followed by Dam and Bunker
+  controller gameplay.
+- Advanced the production mobile app to version `0.1.0` build `6`; the native
+  Mac Alpha remains version `0.1.0` build `1` under its separate bundle ID.
+- Two packaging passes produced byte-identical 18-member unsigned IPAs at
+  SHA-256
+  `ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`
+  and byte-identical 20-member Mac Alpha archives at SHA-256
+  `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
+  Both verifiers passed their ARM64, identity, content, signing, license, ROM,
+  save, private-path, and generated-asset boundaries.
+- Kept issues #8 and #17 open for reporter verification and issues #9 and #19
+  open for complete crash evidence. Preview 6 does not claim the renderer
+  crashes or known graphical defects are repaired.
+
 ## 2026-08-24 - package and publish Preview 5 automatic-fire repair
 
 - Advanced only the primary iPhone/iPad bundle identity from build `4` to build

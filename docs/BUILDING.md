@@ -27,7 +27,7 @@ package with:
 ```sh
 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.5-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.6-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -42,20 +42,19 @@ validation stay inside the app container. An in-place update reuses an existing
 valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
 identity, or provisioning profile is placed in the IPA.
 
-The audited Preview 5 IPA SHA-256 is
-`d4d6c6d7a00e79d1dd4759a97f3ae544c6112dff7c00ea9e57e21199a25c0db7`.
-Preview 5 retains
-the frozen Preview 4 controls/tank baseline and adds only the physically
-accepted shared automatic-fire interval repair plus its default-off diagnostic.
+The audited Preview 6 IPA SHA-256 is
+`ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`.
+Preview 6 retains Preview 5's controls, tank mapping, and automatic-fire repair,
+and adds the physically accepted independent-row iPad utility overlay.
 
 ## Native Apple-Silicon Mac alpha
 
 The Mac app is a separate native arm64 artifact, not a Catalyst build and not
 part of the mobile `.ipa`. It is an Alpha below the accepted iPhone/iPad
-single-player quality bar. Preview 3's exact mouse/keyboard control build has
-hands-on acceptance. Preview 5 retains Preview 4's shared control repair and
-adds the same player/guard automatic-fire conversion, while issue #17 reporter
-gameplay verification remains open. The thin
+single-player quality bar. Preview 6 restores the accepted Preview 3 relative
+mouse path and Mac front-end navigation while retaining Preview 5's shared
+control and automatic-fire repairs. Issue #17 reporter gameplay verification
+remains open. The thin
 far-right blue edge, older-OS coverage, and
 sustained-performance depth remain open; keep renderer work independent from
 the accepted input contract.
@@ -87,8 +86,8 @@ signature, and runs the Mac artifact audit. No ROM, save, generated source or
 Apple signing identity is included.
 
 The audited Alpha archive is
-`dist/GoldenPad-0.1.0-preview.5-macos-arm64-alpha.zip` at SHA-256
-`3dec5864aa637a7115f46a41fd81b8b2077ac44904bf48d7396c54c03a6faee2`.
+`dist/GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip` at SHA-256
+`5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
 It is native arm64, ad-hoc signed and not notarized.
 
 The complete AOT build must have the maintained GoldenEye iOS context patch

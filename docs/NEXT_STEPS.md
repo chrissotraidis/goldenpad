@@ -2,7 +2,7 @@
 
 Updated: 2026-08-24
 
-This is the short operational queue for GoldenPad after Preview 5. It does not
+This is the short operational queue for GoldenPad after Preview 6. It does not
 replace the authoritative documents:
 
 - [`TECH_DEBT.md`](TECH_DEBT.md) owns priority, evidence, and closure state;
@@ -17,13 +17,15 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-14 modal/run-loop neutralization** | Add the failing held-input boundary gate before changing presentation behavior; preserve Preview 5 controls and firing cadence. |
+| 1 | **TD-14 modal/run-loop neutralization** | Add the failing held-input boundary gate before changing presentation behavior; preserve Preview 6 controls, utility menu, and firing cadence. |
 | 2 | **TD-07 disconnect containment** | Publish a neutral frame when the active controller disappears without moving touch ownership implicitly. Keep it separate from TD-14. |
-| Parallel user-facing lane | **Preview 5 reporter confirmation** | Ask issue #8's reporter to verify touch/controller sidestepping and issue #17's reporter to verify Mac Runway tank controls against Preview 5. Require diagnostics and exact settings for any remaining failure. |
+| Parallel user-facing lane | **Preview 6 reporter confirmation** | Ask issue #8's reporter to verify touch/controller sidestepping and issue #17's reporter to verify Mac menu and Runway tank controls. Ask issue #9 and #19 reporters for complete crash evidence if Preview 6 still fails. |
 | Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, A12-family reproduction, and diagnostic-only non-direct/Tier-1 Plume binding builds on accepted hardware. No speculative shipping patch. |
 
-Preview 5 is the accepted release baseline. It retains Preview 4's frozen
-controls/tank boundary and releases the TD-01 shared automatic-rate repair
+Preview 6 is the accepted release baseline. It retains Preview 5's frozen
+mobile controls/tank and TD-01 automatic-rate repairs, restores the Mac menu
+and relative mouse path, and replaces the iPad utility menu with independent
+rows. The underlying automatic-rate repair remains
 documented in [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md). Positive
 player/guard intervals scale by three; nonpositive semi-auto classifications
 remain unchanged. Source, generated-patch, input/tank, build, package,
@@ -61,7 +63,7 @@ one at a time against a freshly accepted baseline.
 
 - Resolve or deliberately document the A12-family support floor from affected
   hardware evidence.
-- Keep Preview 5's shared mapping and the accepted Preview 3 Mac relative-input
+- Keep Preview 6's shared mapping and accepted Mac relative-input
   baseline; take only the edge-mask repair independently if fixed-scene captures
   justify it.
 - Reduce stage/effect reports to deterministic reproductions.

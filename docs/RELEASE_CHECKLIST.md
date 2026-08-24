@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 5 is the current coordinated release. It is a
+GoldenPad 0.1.0 Preview 6 is the current coordinated release. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 
@@ -155,6 +155,30 @@ drawable-size and direct-camera experiments caused much larger regressions.
 - [x] Keep issue #17 open for reporter Mac verification; Preview 5 retains the
   accepted tank mapping but does not substitute internal iPad evidence for the
   reporter's setup.
+
+## Coordinated Preview 6 Mac and utility-menu update
+
+- [x] Restore analog WASD/trackpad navigation in the Mac GoldenEye front end
+  without weakening Preview 5's gameplay, tank, or automatic-fire paths.
+- [x] Retain Preview 3 relative mouse behavior, hold Shift Aim until release,
+  set default sensitivity to `3.00`, and apply the accepted `1.30x` ordinary
+  on-foot turning factor without changing Shift Aim or tank rates.
+- [x] Replace the unreliable iPad native utility menu with four independent
+  48-point action rows.
+- [x] Obtain user acceptance of Mac menu/gameplay controls and iPad utility-menu
+  behavior without and with a controller, plus Dam and Bunker controller
+  gameplay.
+- [x] Advance only the primary iPhone/iPad bundle to build `6`; preserve the
+  separate Mac Alpha identity and build number.
+- [x] Pass the Preview 6 baseline allowance, fire-rate gate, full input matrix,
+  ROM-data audit, ARM64 builds, package audits, and source hygiene checks.
+- [x] Package the 18-member unsigned IPA twice at SHA-256
+  `ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`.
+- [x] Package the 20-member Mac Alpha twice at SHA-256
+  `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
+- [x] Squash-merge the isolated PR, verify remote `main`, publish
+  `v0.1.0-preview.6`, download and re-audit all hosted assets, then reply to
+  issues #8, #9, #17, and #19 without overstating the renderer fixes.
 
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
