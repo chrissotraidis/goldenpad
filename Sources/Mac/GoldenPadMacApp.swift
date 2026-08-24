@@ -58,7 +58,7 @@ struct GoldenPadMacApp: App {
     @AppStorage("recomp.invertAimY") private var invertAimY = false
     @AppStorage("recomp.reticleEnabled") private var reticleEnabled = false
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
-    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.75
+    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 3.0
     @AppStorage("recomp.macMouseTuningVersion") private var mouseTuningVersion = 0
 
     var body: some Scene {
@@ -205,7 +205,7 @@ private struct RecompMacSettingsView: View {
     @AppStorage("recomp.invertAimY") private var invertAimY = false
     @AppStorage("recomp.reticleEnabled") private var reticleEnabled = false
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
-    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 2.75
+    @AppStorage("recomp.macMouseSensitivity") private var mouseSensitivity = 3.0
     @AppStorage("recomp.macKey.moveForward") private var moveForwardKey = Int(RecompMacBindableKey.w.rawValue)
     @AppStorage("recomp.macKey.moveBackward") private var moveBackwardKey = Int(RecompMacBindableKey.s.rawValue)
     @AppStorage("recomp.macKey.moveLeft") private var moveLeftKey = Int(RecompMacBindableKey.a.rawValue)

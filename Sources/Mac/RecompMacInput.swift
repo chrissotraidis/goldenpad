@@ -217,7 +217,7 @@ final class RecompMacInput: ObservableObject {
     private var viewMouseActionHeld = false
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
-    private var mouseSensitivity: Float = 2.75
+    private var mouseSensitivity: Float = 3.0
     private var invertAimY = false
     private let mouseClampProbeEnabled = ProcessInfo.processInfo.arguments.contains(
         "--mouse-clamp-probe"
@@ -496,6 +496,10 @@ final class RecompMacInput: ObservableObject {
             // Suppress synthesized movement immediately on the frame Aim is
             // requested, before GoldenEye updates insightaimmode.
             context.aiming = context.aiming || aimActive
+            let mouseManualAimStick = consumeGameplayMouse(
+                mapping: mapping,
+                context: context
+            )
             let resolved = mapping.movement(
                 buttons: buttons,
                 stick: movement,
@@ -504,7 +508,10 @@ final class RecompMacInput: ObservableObject {
             )
             buttons = resolved.buttons
             movement = resolved.stick
-            if let controllerManualAimStick,
+            if let mouseManualAimStick {
+                movement = mouseManualAimStick
+                rightStick = .zero
+            } else if let controllerManualAimStick,
                let manualAimStick = mapping.manualAimStick(
                    stick: controllerManualAimStick,
                    invertVertical: invertAimY,
@@ -527,7 +534,6 @@ final class RecompMacInput: ObservableObject {
         }
 
         publishController(buttons: buttons, movement: movement, rightStick: rightStick)
-        publishMouseLook()
         keyPulseFrames = keyPulseFrames.compactMapValues { frames in frames > 1 ? frames - 1 : nil }
         mouseFirePulseFrames = Swift.max(0, mouseFirePulseFrames - 1)
         mouseActionPulseFrames = Swift.max(0, mouseActionPulseFrames - 1)
@@ -642,16 +648,30 @@ final class RecompMacInput: ObservableObject {
         )
     }
 
-    private func publishMouseLook() {
-        guard gameplayInputActive, mouseCaptured, pendingMouseDelta != .zero else { return }
+    private func consumeGameplayMouse(
+        mapping: RecompControlMapping,
+        context: RecompRuntimeInputContext
+    ) -> SIMD2<Float>? {
+        guard gameplayInputActive, mouseCaptured, pendingMouseDelta != .zero else {
+            return nil
+        }
         let delta = pendingMouseDelta
         pendingMouseDelta = .zero
+        if let manualAimStick = mapping.mouseManualAimStick(
+            delta: delta,
+            sensitivity: mouseSensitivity,
+            invertVertical: invertAimY,
+            context: context
+        ) {
+            return manualAimStick
+        }
         // The previous desktop rate remained too slow in physical play. Keep
         // the setting adjustable while doubling the actual mouse response.
         let scale = 1_680 * mouseSensitivity
         let x = Int64((Double(delta.x) * Double(scale)).rounded())
         let y = Int64((Double(-delta.y) * Double(scale)).rounded())
         goldenPadRecompQueueMouseLook(0, x, y)
+        return nil
     }
 
     private func nextMenuMouseMovement() -> SIMD2<Float> {
