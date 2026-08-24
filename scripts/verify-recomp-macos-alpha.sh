@@ -95,6 +95,7 @@ for required_symbol in \
   _goldenpad_recomp_consume_reload \
   _goldenpad_recomp_queue_mouse_look \
   _goldenpad_recomp_set_fire_rate_probe_enabled \
+  _goldenpad_recomp_frontend_input_active \
   _goldenpad_recomp_get_input_context
 do
   if ! nm -gU "$executable" | awk -v required="$required_symbol" '$3 == required { found = 1 } END { exit !found }'; then

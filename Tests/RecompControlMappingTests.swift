@@ -192,6 +192,18 @@ private struct RecompControlMappingTests {
         try expect(latch.buttons(for: .zero), 0, "neutral rearms without input")
         try expect(latch.buttons(for: SIMD2<Float>(-1, 0)), RecompN64Button.dpadLeft, "menu second edge")
 
+        latch.reset()
+        try expect(
+            latch.navigation(for: SIMD2<Float>(-1, 0.75), frontEndActive: true),
+            RecompMovementMapping(buttons: 0, stick: SIMD2<Float>(-1, 0.75)),
+            "front end preserves Preview 3 analog cursor movement"
+        )
+        try expect(
+            latch.navigation(for: SIMD2<Float>(0, 1), frontEndActive: false),
+            RecompMovementMapping(buttons: RecompN64Button.dpadUp, stick: .zero),
+            "watch converts movement to one digital edge"
+        )
+
         print("PASS: shared GoldenEye 1.1-1.4 input and tank matrix")
     }
 }

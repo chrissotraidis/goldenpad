@@ -16,6 +16,20 @@ xcrun swiftc \
 
 "$test_root/verify-recomp-input-matrix"
 
+for mac_frontend_marker in \
+  'goldenpad_recomp_frontend_input_active' \
+  'frontEndActive: frontEndInputActive' \
+  'movement = nextMenuMouseMovement()'
+do
+  if ! grep -Fq "$mac_frontend_marker" "$repo_root/Sources/Mac/RecompMacInput.swift" \
+    "$repo_root/Support/RecompPrototype/recomp_game_start.cpp"; then
+    echo "FAIL: Mac Preview 3 front-end routing is missing $mac_frontend_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: Mac front end preserves analog navigation while watch input remains latched"
+
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \
   'if !gameplayActive {' \

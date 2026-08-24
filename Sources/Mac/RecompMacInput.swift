@@ -45,6 +45,9 @@ private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 @_silgen_name("goldenpad_recomp_request_return_to_title")
 private func goldenPadRecompRequestReturnToTitle()
 
+@_silgen_name("goldenpad_recomp_frontend_input_active")
+private func goldenPadRecompFrontEndInputActive() -> Int32
+
 @_silgen_name("goldenpad_recomp_get_input_context")
 private func goldenPadRecompGetInputContext(
     _ controller: Int32,
@@ -404,6 +407,7 @@ final class RecompMacInput: ObservableObject {
     private func publish() {
         var context = runtimeInputContext(port: 0)
         refreshRuntimeInputMode(context: context)
+        let frontEndInputActive = goldenPadRecompFrontEndInputActive() != 0
         let mapping = RecompControlMapping(runtimeStyle: context.runtimeStyle)
         var buttons: UInt16 = 0
         var movement = gameplayMovement(includeHorizontal: true)
@@ -447,7 +451,7 @@ final class RecompMacInput: ObservableObject {
                 menuMouseStepFrames = 0
                 menuMouseNeutralFrames = 0
             } else {
-                buttons |= nextMenuMouseButtons()
+                movement = nextMenuMouseMovement()
             }
         }
 
@@ -510,8 +514,12 @@ final class RecompMacInput: ObservableObject {
             }
             menuStickLatch.reset()
         } else {
-            buttons |= menuStickLatch.buttons(for: movement)
-            movement = .zero
+            let navigation = menuStickLatch.navigation(
+                for: movement,
+                frontEndActive: frontEndInputActive
+            )
+            buttons |= navigation.buttons
+            movement = navigation.stick
         }
 
         if !gameplayInputActive {
@@ -646,23 +654,19 @@ final class RecompMacInput: ObservableObject {
         goldenPadRecompQueueMouseLook(0, x, y)
     }
 
-    private func nextMenuMouseButtons() -> UInt16 {
+    private func nextMenuMouseMovement() -> SIMD2<Float> {
         if menuMouseStepFrames > 0 {
             menuMouseStepFrames -= 1
-            if menuMouseStep.x < 0 { return RecompN64Button.dpadLeft }
-            if menuMouseStep.x > 0 { return RecompN64Button.dpadRight }
-            if menuMouseStep.y > 0 { return RecompN64Button.dpadUp }
-            if menuMouseStep.y < 0 { return RecompN64Button.dpadDown }
-            return 0
+            return menuMouseStep
         }
         if menuMouseNeutralFrames > 0 {
             menuMouseNeutralFrames -= 1
-            return 0
+            return .zero
         }
 
         let threshold: Float = 18
         let delta = pendingMenuMouseDelta
-        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return 0 }
+        guard max(abs(delta.x), abs(delta.y)) >= threshold else { return .zero }
         if abs(delta.x) > abs(delta.y) {
             menuMouseStep = SIMD2(delta.x < 0 ? -1 : 1, 0)
         } else {
@@ -673,7 +677,7 @@ final class RecompMacInput: ObservableObject {
         pendingMenuMouseDelta = .zero
         menuMouseStepFrames = 2
         menuMouseNeutralFrames = 2
-        return nextMenuMouseButtons()
+        return nextMenuMouseMovement()
     }
 
     private func beginWeaponWheelPulseIfNeeded() {

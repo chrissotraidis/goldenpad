@@ -200,6 +200,17 @@ struct RecompMenuStickLatch {
         return pulseButton
     }
 
+    mutating func navigation(
+        for stick: SIMD2<Float>,
+        frontEndActive: Bool
+    ) -> RecompMovementMapping {
+        if frontEndActive {
+            reset()
+            return RecompMovementMapping(buttons: 0, stick: stick)
+        }
+        return RecompMovementMapping(buttons: buttons(for: stick), stick: .zero)
+    }
+
     mutating func reset() {
         armed = true
         pulseButton = 0

@@ -1340,6 +1340,15 @@ extern "C" void goldenpad_recomp_request_return_to_title() {
     logEvent("navigation", "return to main menu requested");
 }
 
+extern "C" int32_t goldenpad_recomp_frontend_input_active() {
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (!runtimeStarted.load(std::memory_order_relaxed) || rdram == nullptr) {
+        return 0;
+    }
+    constexpr int32_t kTitleStage = 90;
+    return readGameWord(rdram, 0x80023FA8) == kTitleStage ? 1 : 0;
+}
+
 extern "C" int32_t goldenpad_recomp_gameplay_input_active() {
     const auto reportMode = [](int32_t active) {
         const int32_t previous = gameplayInputModeReported.exchange(
