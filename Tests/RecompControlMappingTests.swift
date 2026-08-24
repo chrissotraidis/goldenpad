@@ -182,6 +182,24 @@ private struct RecompControlMappingTests {
             false,
             "tank Aim remains on the turret path"
         )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: false)),
+            1.3,
+            "ordinary on-foot mouse turning is raised 30 percent"
+        )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: true)),
+            1.0,
+            "Shift mouse aiming retains the accepted sensitivity"
+        )
+        try expect(
+            honey.mouseTurnScale(
+                context: context(style: 0, aiming: false, tankState: 2)),
+            1.0,
+            "tank mouse sensitivity retains the accepted turret baseline"
+        )
 
         try expect(
             honey.movement(

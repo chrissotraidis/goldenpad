@@ -143,6 +143,12 @@ struct RecompControlMapping {
         context.gameplayActive && context.aiming && !context.isInTank
     }
 
+    func mouseTurnScale(
+        context: RecompRuntimeInputContext
+    ) -> Double {
+        context.gameplayActive && !context.aiming && !context.isInTank ? 1.3 : 1.0
+    }
+
     static func menuNavigationButtons(
         up: Bool,
         down: Bool,

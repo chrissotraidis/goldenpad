@@ -44,6 +44,8 @@ echo "PASS: Preview 6 Mac default mouse sensitivity is 3.00"
 for mac_mouse_aim_marker in \
   'goldenpad_recomp_set_mouse_camera_aim_active' \
   'mouseCaptured && mapping.mouseCameraAimHoldActive(context: context)' \
+  'publishMouseLook(scale: mapping.mouseTurnScale(context: context))' \
+  '1_680 * Double(mouseSensitivity) * scale' \
   'lookX != 0.0f || lookY != 0.0f || mouseCameraAimHeld'
 do
   if ! grep -Fq "$mac_mouse_aim_marker" "$repo_root/Sources/Mac/RecompMacInput.swift" \
@@ -54,7 +56,7 @@ do
   fi
 done
 
-echo "PASS: held-Shift Mac mouse aim suppresses recentering without native-stick emulation"
+echo "PASS: Mac hip turning is 1.30x while Shift Aim and tank sensitivity remain unchanged"
 
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \

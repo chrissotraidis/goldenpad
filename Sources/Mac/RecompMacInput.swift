@@ -535,7 +535,7 @@ final class RecompMacInput: ObservableObject {
         }
 
         publishController(buttons: buttons, movement: movement, rightStick: rightStick)
-        publishMouseLook()
+        publishMouseLook(scale: mapping.mouseTurnScale(context: context))
         keyPulseFrames = keyPulseFrames.compactMapValues { frames in frames > 1 ? frames - 1 : nil }
         mouseFirePulseFrames = Swift.max(0, mouseFirePulseFrames - 1)
         mouseActionPulseFrames = Swift.max(0, mouseActionPulseFrames - 1)
@@ -650,15 +650,15 @@ final class RecompMacInput: ObservableObject {
         )
     }
 
-    private func publishMouseLook() {
+    private func publishMouseLook(scale: Double) {
         guard gameplayInputActive, mouseCaptured, pendingMouseDelta != .zero else { return }
         let delta = pendingMouseDelta
         pendingMouseDelta = .zero
-        // The previous desktop rate remained too slow in physical play. Keep
-        // the setting adjustable while doubling the actual mouse response.
-        let scale = 1_680 * mouseSensitivity
-        let x = Int64((Double(delta.x) * Double(scale)).rounded())
-        let y = Int64((Double(-delta.y) * Double(scale)).rounded())
+        // Keep the accepted Shift/tank rates while making ordinary on-foot
+        // turning 30 percent faster. The user setting still scales every mode.
+        let configuredScale = 1_680 * Double(mouseSensitivity) * scale
+        let x = Int64((Double(delta.x) * configuredScale).rounded())
+        let y = Int64((Double(-delta.y) * configuredScale).rounded())
         goldenPadRecompQueueMouseLook(0, x, y)
     }
 
