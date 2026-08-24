@@ -58,6 +58,16 @@ done
 
 echo "PASS: Mac hip turning is 1.30x while Shift Aim and tank sensitivity remain unchanged"
 
+utility_menu_frame_count=$(grep -Fc '.frame(width: 44, height: 44)' \
+  "$repo_root/Sources/RecompPrototypeApp.swift")
+if [ "$utility_menu_frame_count" -lt 2 ] || \
+  ! grep -Fq '.contentShape(Circle())' "$repo_root/Sources/RecompPrototypeApp.swift"; then
+  echo "FAIL: iPad utility Menu outer hit target is not constrained to its 44-point circle" >&2
+  exit 1
+fi
+
+echo "PASS: iPad utility Menu has a bounded 44-point outer hit target"
+
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \
   'if !gameplayActive {' \

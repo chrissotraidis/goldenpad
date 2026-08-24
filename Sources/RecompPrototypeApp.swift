@@ -283,6 +283,11 @@ struct GoldenPadApp: App {
                 .background(.black.opacity(0.62), in: Circle())
                 .overlay(Circle().stroke(.white.opacity(0.34), lineWidth: 1))
         }
+        // GeometryReader proposes the full gameplay surface. Keep the Menu
+        // itself on the visible circle so its invisible label cannot sit above
+        // the presented rows and merge their touch targets on iPad.
+        .frame(width: 44, height: 44)
+        .contentShape(Circle())
         .accessibilityLabel("GoldenPad menu")
     }
 
