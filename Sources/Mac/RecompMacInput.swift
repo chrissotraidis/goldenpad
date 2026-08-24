@@ -217,7 +217,7 @@ final class RecompMacInput: ObservableObject {
     private var viewMouseActionHeld = false
     private var pendingMouseDelta = SIMD2<Float>.zero
     private var pendingMenuMouseDelta = SIMD2<Float>.zero
-    private var mouseSensitivity: Float = 2.5
+    private var mouseSensitivity: Float = 2.75
     private var invertAimY = false
     private let mouseClampProbeEnabled = ProcessInfo.processInfo.arguments.contains(
         "--mouse-clamp-probe"

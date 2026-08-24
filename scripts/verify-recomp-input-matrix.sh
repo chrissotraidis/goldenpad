@@ -30,6 +30,17 @@ done
 
 echo "PASS: Mac front end preserves analog navigation while watch input remains latched"
 
+mac_sensitivity_markers=$(grep -Fh 'mouseSensitivity = 2.75' \
+  "$repo_root/Sources/Mac/GoldenPadMacApp.swift" | wc -l | tr -d ' ')
+if [ "$mac_sensitivity_markers" -ne 2 ] || \
+  ! grep -Fq 'mouseSensitivity: Float = 2.75' \
+    "$repo_root/Sources/Mac/RecompMacInput.swift"; then
+  echo "FAIL: Preview 6 Mac default mouse sensitivity is not consistently 2.75" >&2
+  exit 1
+fi
+
+echo "PASS: Preview 6 Mac default mouse sensitivity is 2.75"
+
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \
   'if !gameplayActive {' \
