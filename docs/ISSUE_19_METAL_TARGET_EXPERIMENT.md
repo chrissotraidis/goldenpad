@@ -117,3 +117,22 @@ remains SHA-256
 `ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`.
 The original dirty checkout remains on `ba5236d` with its pre-existing changes;
 the experiment did not write to it or its build directories.
+
+## Publication
+
+The source implementation is commit `3bc34e8` on branch
+`codex/issue19-metal-target-experiment`. It is intentionally not merged into
+`main` pending physical confirmation.
+
+The separately hosted prerelease is:
+
+- release: <https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-issue19-test.1>
+- IPA: `GoldenPad-0.1.0-issue19-test.1-unsigned.ipa`
+- hosted SHA-256: `a878a9aed0a253ce0012f473d171429edb1c5bb306bbb01184dac6dff1b891bd`
+- reporter request: <https://github.com/chrissotraidis/goldenpad/issues/19#issuecomment-5400358661>
+
+The hosted IPA was downloaded again and passed the same 18-member, identity,
+Metal-target, symbol, signing, ROM/save/path and license audit as the local
+artifact. The reporter has been asked for iPhone 13 mini confirmation through
+ROM import, title/menu and Dam gameplay before this branch is considered for
+production integration.
