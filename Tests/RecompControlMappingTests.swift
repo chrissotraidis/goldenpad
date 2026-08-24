@@ -12,21 +12,6 @@ private func expect<T: Equatable>(_ actual: T, _ expected: T, _ description: Str
     }
 }
 
-private func expectNear(
-    _ actual: SIMD2<Float>?,
-    _ expected: SIMD2<Float>,
-    _ description: String,
-    tolerance: Float = 0.0001
-) throws {
-    guard let actual,
-          abs(actual.x - expected.x) <= tolerance,
-          abs(actual.y - expected.y) <= tolerance else {
-        throw MappingTestFailure(
-            description: "\(description): expected approximately \(expected), got \(String(describing: actual))"
-        )
-    }
-}
-
 private func context(
     gameplay: Bool = true,
     style: Int32,
@@ -179,32 +164,23 @@ private struct RecompControlMappingTests {
             nil,
             "mounted Aim keeps right stick on the tank turret path"
         )
-        try expectNear(
-            honey.mouseManualAimStick(
-                delta: SIMD2<Float>(5, -5),
-                sensitivity: 3.0,
-                invertVertical: false,
-                context: context(style: 0, aiming: true, nativeLookUpright: false)),
-            SIMD2<Float>(0.6, -0.6),
-            "Shift plus mouse uses native manual sight with Reverse compensation"
+        try expect(
+            honey.mouseCameraAimHoldActive(
+                context: context(style: 0, aiming: true)),
+            true,
+            "on-foot Shift keeps relative mouse aim from recentering"
         )
         try expect(
-            honey.mouseManualAimStick(
-                delta: SIMD2<Float>(5, -5),
-                sensitivity: 3.0,
-                invertVertical: false,
+            honey.mouseCameraAimHoldActive(
                 context: context(style: 0, aiming: false)),
-            nil,
-            "ordinary mouse movement remains on the camera path"
+            false,
+            "ordinary mouse look does not hold the aim camera"
         )
         try expect(
-            honey.mouseManualAimStick(
-                delta: SIMD2<Float>(5, -5),
-                sensitivity: 3.0,
-                invertVertical: false,
+            honey.mouseCameraAimHoldActive(
                 context: context(style: 0, aiming: true, tankState: 2)),
-            nil,
-            "mounted mouse movement remains on the tank turret path"
+            false,
+            "tank Aim remains on the turret path"
         )
 
         try expect(

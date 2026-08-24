@@ -137,27 +137,10 @@ struct RecompControlMapping {
         return SIMD2(stick.x, rawY)
     }
 
-    func mouseManualAimStick(
-        delta: SIMD2<Float>,
-        sensitivity: Float,
-        invertVertical: Bool,
+    func mouseCameraAimHoldActive(
         context: RecompRuntimeInputContext
-    ) -> SIMD2<Float>? {
-        guard context.gameplayActive, context.aiming, !context.isInTank else {
-            return nil
-        }
-
-        let gain = 0.04 * max(0.5, min(6.0, sensitivity))
-        var userStick = SIMD2(delta.x * gain, -delta.y * gain)
-        let magnitudeSquared = userStick.x * userStick.x + userStick.y * userStick.y
-        if magnitudeSquared > 1 {
-            userStick /= magnitudeSquared.squareRoot()
-        }
-        return manualAimStick(
-            stick: userStick,
-            invertVertical: invertVertical,
-            context: context
-        )
+    ) -> Bool {
+        context.gameplayActive && context.aiming && !context.isInTank
     }
 
     static func menuNavigationButtons(

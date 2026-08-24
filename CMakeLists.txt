@@ -94,6 +94,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         goldenpad_mac_patches_text)
     foreach(required_bridge IN ITEMS
             "recomp_get_camera_inputs"
+            "goldenpad_recomp_mouse_camera_aim_active"
             "goldenpad_recomp_consume_crouch_toggle"
             "goldenpad_recomp_consume_inventory_slot"
             "goldenpad_recomp_consume_reload"
@@ -336,6 +337,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             goldenpad_recomp_patches_text)
         foreach(required_bridge IN ITEMS
                 "recomp_get_camera_inputs"
+                "goldenpad_recomp_mouse_camera_aim_active"
                 "goldenpad_recomp_consume_crouch_toggle"
                 "goldenpad_recomp_consume_inventory_slot"
                 "goldenpad_recomp_consume_reload"

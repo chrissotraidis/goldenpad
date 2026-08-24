@@ -40,6 +40,7 @@ extern "C" void goldenpad_recomp_set_app_active(int32_t) {}
 extern "C" void goldenpad_recomp_note_transient_inactive() {}
 extern "C" void goldenpad_recomp_queue_touch_look(int32_t, int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_queue_mouse_look(int32_t, int64_t, int64_t) {}
+extern "C" void goldenpad_recomp_set_mouse_camera_aim_active(int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_request_crouch_toggle(int32_t) {}
 extern "C" void goldenpad_recomp_request_inventory_slot(int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_request_reload(int32_t) {}

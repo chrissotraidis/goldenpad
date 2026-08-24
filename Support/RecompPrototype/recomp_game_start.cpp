@@ -62,6 +62,7 @@ std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookX{};
 std::array<std::atomic<int32_t>, kControllerPorts> queuedTouchLookY{};
 std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookX{};
 std::array<std::atomic<int64_t>, kControllerPorts> queuedMouseLookY{};
+std::array<std::atomic<bool>, kControllerPorts> mouseCameraAimActive{};
 std::array<std::atomic<bool>, kControllerPorts> crouchToggleRequested{};
 std::array<std::atomic<int32_t>, kControllerPorts> inventorySlotRequested{-1, -1, -1, -1};
 std::array<std::atomic<bool>, kControllerPorts> reloadRequested{};
@@ -1295,6 +1296,20 @@ extern "C" void goldenpad_recomp_queue_mouse_look(int32_t controllerNum, int64_t
     const size_t port = static_cast<size_t>(controllerNum);
     queuedMouseLookX[port].fetch_add(lookX, std::memory_order_relaxed);
     queuedMouseLookY[port].fetch_add(lookY, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_set_mouse_camera_aim_active(int32_t controllerNum, int32_t active) {
+    if (controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts)) {
+        mouseCameraAimActive[static_cast<size_t>(controllerNum)].store(
+            active != 0, std::memory_order_relaxed);
+    }
+}
+
+extern "C" void goldenpad_recomp_mouse_camera_aim_active(uint8_t *rdram, recomp_context *ctx) {
+    const int32_t controllerNum = _arg<0, int32_t>(rdram, ctx);
+    ctx->r2 = controllerNum >= 0 && controllerNum < static_cast<int32_t>(kControllerPorts) &&
+        mouseCameraAimActive[static_cast<size_t>(controllerNum)].load(std::memory_order_relaxed)
+        ? 1 : 0;
 }
 
 extern "C" int32_t goldenpad_recomp_previous_session_ended_unexpectedly() {

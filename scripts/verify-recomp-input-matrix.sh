@@ -41,6 +41,21 @@ fi
 
 echo "PASS: Preview 6 Mac default mouse sensitivity is 3.00"
 
+for mac_mouse_aim_marker in \
+  'goldenpad_recomp_set_mouse_camera_aim_active' \
+  'mouseCaptured && mapping.mouseCameraAimHoldActive(context: context)' \
+  'lookX != 0.0f || lookY != 0.0f || mouseCameraAimHeld'
+do
+  if ! grep -Fq "$mac_mouse_aim_marker" "$repo_root/Sources/Mac/RecompMacInput.swift" \
+    "$repo_root/Support/RecompPrototype/recomp_game_start.cpp" \
+    "$tracked_patch"; then
+    echo "FAIL: held-Shift relative mouse aim is missing $mac_mouse_aim_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: held-Shift Mac mouse aim suppresses recentering without native-stick emulation"
+
 for mobile_menu_marker in \
   'let gameplayActive = goldenPadRecompGameplayInputActive() != 0' \
   'if !gameplayActive {' \
@@ -107,6 +122,7 @@ done
 
 for marker in \
   'goldenpad_recomp_consume_reload' \
+  'goldenpad_recomp_mouse_camera_aim_active' \
   'goldenpad_recomp_consume_inventory_slot' \
   'goldenpad_recomp_fire_rate_player_sample' \
   'goldenpad_recomp_fire_rate_guard_sample' \

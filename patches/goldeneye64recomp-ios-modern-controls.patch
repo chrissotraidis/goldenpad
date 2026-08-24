@@ -22,11 +22,12 @@ diff --git a/patches/patches.h b/patches/patches.h
 index 77b502e..4584b42 100644
 --- a/patches/patches.h
 +++ b/patches/patches.h
-@@ -117,6 +117,23 @@ int recomp_printf(const char* fmt, ...);
+@@ -117,6 +117,24 @@ int recomp_printf(const char* fmt, ...);
      extern u8 identifier[]
  
  float recomp_get_aspect_ratio(float);
 +void recomp_get_camera_inputs(s32 controllernum, float* x, float* y);
++s32 goldenpad_recomp_mouse_camera_aim_active(s32 controllernum);
 +s32 goldenpad_recomp_consume_crouch_toggle(s32 controllernum);
 +s32 goldenpad_recomp_unlock_all_missions_enabled(void);
 +s32 goldenpad_recomp_consume_return_to_title(void);
@@ -50,7 +51,7 @@ diff --git a/patches/syms.ld b/patches/syms.ld
 index 31e51b1..b1c0697 100644
 --- a/patches/syms.ld
 +++ b/patches/syms.ld
-@@ -76,4 +76,11 @@ boot_osPiRawStartDma = 0x8F000100;
+@@ -76,4 +76,12 @@ boot_osPiRawStartDma = 0x8F000100;
  osGetCount_recomp = 0x8F000104;
  sprintf_recomp = 0x8F000108;
  osPfsInit_recomp = 0x8F00010C;
@@ -64,11 +65,12 @@ index 31e51b1..b1c0697 100644
 +goldenpad_recomp_fire_rate_guard_sample = 0x8F000124;
 +goldenpad_recomp_consume_reload = 0x8F000128;
 +goldenpad_recomp_consume_inventory_slot = 0x8F00012C;
++goldenpad_recomp_mouse_camera_aim_active = 0x8F000130;
 diff --git a/patches/workbench_theboy.c b/patches/workbench_theboy.c
 index d4424c7..53ae2b6 100644
 --- a/patches/workbench_theboy.c
 +++ b/patches/workbench_theboy.c
-@@ -473,6 +473,200 @@ void InitFrameRateControl(void)
+@@ -473,6 +473,202 @@ void InitFrameRateControl(void)
  extern s32 g_DebugMode;
  extern s32 g_DebugHighlightedOption;
  
@@ -115,6 +117,7 @@ index d4424c7..53ae2b6 100644
 +    f32 lookY = 0.0f;
 +    f32 degreesPerFrame;
 +    s32 tankRunning;
++    s32 mouseCameraAimHeld;
 +    const s32 tankRunStateRunning = 2; /* TANK_RUN_STATE_RUNNING in bondconstants.h */
 +
 +    if (goldenpad_recomp_consume_return_to_title()) {
@@ -131,6 +134,7 @@ index d4424c7..53ae2b6 100644
 +    tankRunning = g_PlayerIsInTank == 1 &&
 +        g_PlayerTankProp != NULL &&
 +        g_EnterTankAudioState == tankRunStateRunning;
++    mouseCameraAimHeld = goldenpad_recomp_mouse_camera_aim_active(playernum);
 +
 +    if (playernum < 0 || playernum >= 4 || g_StageNum == LEVELID_TITLE || g_CurrentPlayer == NULL ||
 +        g_CurrentPlayer->prop == NULL || g_CurrentPlayer->bonddead) {
@@ -163,7 +167,7 @@ index d4424c7..53ae2b6 100644
 +        lookY = 0.0f;
 +    }
 +
-+    if (lookX != 0.0f || lookY != 0.0f) {
++    if (lookX != 0.0f || lookY != 0.0f || mouseCameraAimHeld) {
 +        /* GoldenPad's tuned MGB64 path resolves to 3 degrees per frame at
 +         * full deflection, and one third of that while aiming. */
 +        degreesPerFrame = g_CurrentPlayer->insightaimmode ? 1.0f : 3.0f;
