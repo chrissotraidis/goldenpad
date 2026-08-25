@@ -17,6 +17,7 @@ expected_shader_targets=113
 expected_metal_shaders=56
 expected_rt64_members=210
 expected_closure_members=246
+expected_metal_target=apple-ios17.0.0
 artifact_root=${GOLDENPAD_RT64_ARTIFACT_DIR:-}
 simulator_resource_limits=${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}
 metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
@@ -45,6 +46,7 @@ rt64_patch_targets=(
     src/apple/rt64_apple.mm
     src/hle/rt64_application.cpp
     src/hle/rt64_application_window.h
+    src/hle/rt64_state.cpp
 )
 
 if ! git -C "$rt64_path" diff --quiet -- "${rt64_patch_targets[@]}"; then
@@ -85,6 +87,9 @@ cleanup() {
     if [ "$rt64_sdk_patch_applied" -eq 1 ]; then
         patch -R -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
     fi
+    rm -f \
+        "$rt64_path/src/apple/rt64_apple.mm.orig" \
+        "$plume_path/plume_metal.cpp.orig"
     rm -rf "$probe_root"
 }
 trap cleanup EXIT
@@ -117,7 +122,12 @@ if [ "$shader_target_count" -ne "$expected_shader_targets" ]; then
     exit 1
 fi
 
-xargs ninja -C "$host_build" < "$shader_targets" >/dev/null
+shader_build_log="$probe_root/shader-build.log"
+if ! xargs ninja -C "$host_build" < "$shader_targets" >"$shader_build_log" 2>&1; then
+    rg -n 'FAILED:|error:' "$shader_build_log" | tail -n 40 >&2 || true
+    tail -n 120 "$shader_build_log" >&2
+    exit 1
+fi
 
 metal_sources="$probe_root/metal-sources.txt"
 find "$host_build/src/shaders" -type f -name '*.metal' | LC_ALL=C sort > "$metal_sources"
@@ -136,8 +146,12 @@ fi
 for sdk in iphoneos iphonesimulator; do
     if [ "$sdk" = iphoneos ]; then
         target=arm64-apple-ios17.0
+        metal_target=air64-apple-ios17.0
+        expected_sdk_metal_target="$expected_metal_target"
     else
         target=arm64-apple-ios17.0-simulator
+        metal_target=air64-apple-ios17.0-simulator
+        expected_sdk_metal_target="$expected_metal_target-simulator"
     fi
 
     generated="$probe_root/generated-$sdk"
@@ -160,8 +174,22 @@ for sdk in iphoneos iphonesimulator; do
             echo "Could not read the generated array name from: $host_blob_c" >&2
             exit 1
         fi
-        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metal -c "$source" -o "$output_base.air"
+        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metal \
+            -target "$metal_target" \
+            -c "$source" -o "$output_base.air"
         xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metallib "$output_base.air" -o "$output_base.metallib"
+        metal_targets=$(strings "$output_base.metallib" | sed -E -n 's/.*(air64_v[[:alnum:]_.-]*apple-ios[0-9.]+(-simulator)?).*/\1/p' | LC_ALL=C sort -u)
+        if ! printf '%s\n' "$metal_targets" | grep -Eq "^air64_v[[:alnum:]_.-]*${expected_sdk_metal_target}$"; then
+            echo "$sdk Metal library has the wrong deployment target: $output_base.metallib" >&2
+            printf '%s\n' "$metal_targets" >&2
+            exit 1
+        fi
+        unexpected_metal_targets=$(printf '%s\n' "$metal_targets" | grep -Ev "^air64_v[[:alnum:]_.-]*${expected_sdk_metal_target}$" || true)
+        if [ -n "$unexpected_metal_targets" ]; then
+            echo "$sdk Metal library contains unexpected deployment targets: $output_base.metallib" >&2
+            printf '%s\n' "$unexpected_metal_targets" >&2
+            exit 1
+        fi
         "$file_to_c" "$output_base.metallib" "$array_name" \
             "$output_base.c" "$output_base.h"
     done < "$metal_sources"
@@ -204,6 +232,12 @@ for sdk in iphoneos iphonesimulator; do
             exit 1
         fi
     done
+
+    if ! xcrun -sdk "$sdk" nm -gU "${archives[0]}" |
+        rg '_goldenpad_rt64_depth_format_rebuild_stats$' >/dev/null; then
+        echo "$sdk RT64 archive does not export the Preview 6 depth-format rebuild counter." >&2
+        exit 1
+    fi
 
     rt64_members=$(xcrun -sdk "$sdk" ar -t "${archives[0]}" | wc -l | tr -d ' ')
     closure_members=0

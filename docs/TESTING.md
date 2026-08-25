@@ -542,9 +542,59 @@ Preview 6 menu and Mac-input release evidence:
   sorted app-content SHA-256
   `ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`;
   and
-- this acceptance does not close the A12X or iPhone 13 mini renderer crash
-  reports, known stage rendering defects, long-session coverage, or issue #17
-  until its reporter tests the release.
+- this acceptance did not itself close the A12X or iPhone 13 mini renderer
+  reports, known stage rendering defects, or long-session coverage. Issue #17
+  later closed after its reporter verified Preview 6; issue #19 later passed the
+  isolated iOS 17-target diagnostic.
+
+Preview 7 compatibility-promotion gate:
+
+- preserve Preview 6's complete input, automatic-fire, utility-menu, Mac, ROM,
+  save, audio, renderer-setting, and package boundaries;
+- require all 56 device Metal libraries to contain only an explicit iOS 17 AIR
+  target and all 56 Simulator libraries to contain only the iOS 17 Simulator
+  AIR target;
+- require the production executable and unsigned IPA audit to reject any mixed,
+  missing, iOS 26.5, or other unexpected embedded Metal target;
+- build the normal `GoldenPad` mobile identity at version `0.1.0` build `7`;
+- package the IPA and Mac Alpha twice and require byte-identical outputs;
+- install the production mobile candidate in place and compare the Documents
+  ROM, runtime ROM, active save, backup save, and preferences before and after;
+- physically accept iPadOS ROM reuse, title/menu, touch and controller gameplay,
+  utility menu, audio, and background/foreground behavior;
+- physically accept macOS menu navigation, mouse/keyboard gameplay, the unchanged
+  thin edge boundary, and bounded sustained play; and
+- keep issue #9 open unless the exact production artifact succeeds on affected
+  A12/A12X hardware. Issue #19 closes only after its reporter verifies the
+  production Preview 7 artifact, not solely the side-by-side diagnostic app.
+
+Preview 7 production-candidate evidence:
+
+- the production iPhone/iPad identity is version `0.1.0` build `7` and its
+  unsigned executable SHA-256 is
+  `69aef6c5bb436a97893ea1a9abca773f5bea419c29872374ce30a4751f096359`;
+- two unsigned IPA packaging passes reproduced SHA-256
+  `4f6d26616fbc1d098ba1dce598ea8e958162c82efc975aa483db7e19bd9c58c4`
+  and sorted app-content SHA-256
+  `ffd52cbf9df870989dfce183fb88d61c034bb33f28fedc26b6c63a1ef26e7e39`;
+- build `7` installed in place on the physical iPad and independent pre/post
+  readbacks proved the Documents ROM, runtime ROM, active save, backup save,
+  and preferences byte-identical;
+- the user then explicitly accepted the exact production candidate on the
+  physical iPad after controller pairing and gameplay, reporting that it works
+  well with only the already-known graphical issues; and
+- two Mac packaging passes reproduced SHA-256
+  `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`
+  and sorted app-content SHA-256
+  `ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`;
+- the unsigned Mac source executable is byte-identical to Preview 6 at
+  `05e8ec3da7ca277c22064c62b351ea53ff40eee7d3cbaa8ae967af62e7cf2c6a`.
+
+Hands-on review reconfirmed that horizontal mouse yaw feels sluggish relative
+to vertical movement. Because the exact Preview 7 Mac executable and package
+are byte-identical to Preview 6, this is retained as known Mac debt rather than
+classified as a Preview 7 regression. Do not raise global sensitivity again;
+measure the horizontal queue, normalized output, and final yaw delta first.
 
 ## Desktop baseline
 

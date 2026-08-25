@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-23
+Updated: 2026-08-25
 
 This is GoldenPad's authoritative engineering-debt ledger. It records current
 defects, evidence strength, repair order, acceptance gates, rejected approaches,
@@ -33,6 +33,9 @@ debt visible:
   additional input rewrite is selected;
 - A12-family RT64/Metal compatibility is unresolved after the deterministic
   issue #9 first-frame crash report;
+- issue #19's iPhone 13 mini initialization crash is confirmed as a Metal
+  deployment-target defect and selected for the compatibility-only Preview 7;
+  production-identity confirmation remains a release gate;
 - local multiplayer has a physically coherent experimental baseline, but slight
   lighting flicker and real three/four-controller routing remain open;
 - settings/share presentation can leave latched touch publishing, controller
@@ -132,7 +135,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-05 | P1 | Intermittent audible static | **Observed report; cause unknown; rate mismatch ruled out** | Game, runtime, and host agree at 22,050 Hz. Isolated synthetic Simulator runs found no ring corruption or large jumps but did observe underruns; overflow discontinuity, reset race, cadence, and route artifacts remain | Capture one audible failing physical session with counter series and external timestamp; use the ROM-free signal only if the counters stay flat |
 | TD-06 | P1 | Residual split-screen lighting flicker | **Observed; fixed order rejected; rebuild counter inconclusive** | Matched isolated runs recorded zero depth-`formatChanged` rebuilds, but lacked known-active calibration and non-format upload counts. Fixed player order showed no systematic benefit and was reverted. The physical owner remains unknown | Capture fixed-scene physical video first; if new telemetry is justified, calibrate it on a known-active path and count both rebuild and non-format upload branches |
 | TD-07 | P1 | Real three/four-controller ownership and lifecycle | **Confirmed disconnect leak/design gap; isolated containment candidate exists** | On disconnect-to-none, Preview 3 skips `releaseTouchInput()` and can republish P2 touch as P1; it also lacks stable P2-P4 slots and identity policy. A separate branch proves containment in Simulator only | Rebase the smallest containment change, require a neutral frame on every ownership transition, add held-input suspend/resume coverage, then physically accept before designing slots |
-| TD-08 | P2 | Mac mouse ceiling and incomplete desktop controls | **Hands-on accepted for Preview 3** | Preview 3 uses a wide relative accumulator and aimed-rate compensation; the accepted follow-up has slightly lower sensitivity, conventional mouse buttons, native reload/crouch bridges, weapon cycling, numeric inventory selection, and no Honey Shift+W pitch conflict | Retain the exact accepted executable as the control; keep long-session performance monitoring separate and reject any later input change that fails the Mac regression gate |
+| TD-08 | P2 | Mac horizontal mouse yaw remains sluggish | **Known Preview 6 limitation reconfirmed during Preview 7 review; not a regression** | Preview 7's Mac executable and package are byte-identical to Preview 6. Vertical mouse movement feels acceptable, but horizontal yaw remains sluggish. The shared relative queue is wide while combined output is normalized to one per-frame `[-1, 1]` budget before the game camera path, so raising global sensitivity is not a discriminating repair | Retain Preview 6 as the exact control. Before changing input, measure queued horizontal units, normalized output, saturation count, and final yaw delta in one bounded Mac-only comparison |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Live original `skyRender` selects water, but active replacement helpers discard selected texture/geometry into fog-color fills; the full textured replacement is disabled. Other reports remain unreduced | Treat sky/water as bounded upstream feature debt; require one original-versus-current stage/settings/camera case for every other effect or geometry claim |
 | TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; controller polling exists, but stable simulation frame identity, hashes, serialization, rollback, matchmaking, and transport do not | Complete TD-07, add an offline frame/hash determinism probe, then consider the two-device LAN experiment |
@@ -190,35 +193,31 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **keep released TD-01 frozen and
-take TD-14 modal/run-loop neutralization as a separate review unit**, followed
-by TD-07 disconnect containment. Preview 6 retains Preview 5's exact expected 12
-Phantom events/100 ticks versus Preview 4's 34.4828 and retained accepted core
-controls. The absent complete guard window and explicit PP7 sequence remain
-disclosed rather than retroactively represented as physical evidence.
+The immediate action is to ship **Preview 7 as a compatibility-only promotion**
+after production iPadOS and Mac acceptance. The affected issue #19 iPhone 13
+mini passed the exact iOS 17-target diagnostic artifact. Preview 7 must retain
+Preview 6's accepted controls and Preview 5's exact expected 12 Phantom events
+per 100 ticks. The byte-identical Mac payload retains known horizontal mouse
+sluggishness without introducing a Preview 7 regression. Do not add the
+optional Fire button, TD-14, TD-07, or speculative renderer work to the
+candidate.
 
-The smartest next user-facing actions are **issue #8 and issue #17 reporter
-confirmation against Preview 6**. Internal acceptance does not close either
-reporter's setup. Issues #9 and #19 still need complete crash artifacts and
-affected-hardware reproduction
-can run as an evidence-only lane; no A12 code change is selected without that
-evidence. The next landing sequence is:
+The next landing sequence is:
 
-1. preserve Preview 4 and the completed sustained-player/guard measurements;
-2. obtain issue #8 and issue #17 reporter confirmation against Preview 6;
-3. apply one independently revertible fire-rate authenticity patch only after
-   its exact player-and-guard mechanism is reviewed, then obtain hands-on combat
-   acceptance;
-4. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
+1. finish the production Preview 7 build, package, preservation, and hands-on
+   iPadOS/Mac gates, then obtain issue #19 production-artifact confirmation;
+2. implement the optional second touch Fire button as one independently
+   movable/resizable control and accept it separately on phone and tablet;
+3. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
    separate input-lifecycle units;
-5. run the already-defined physical audio/lifecycle/flicker evidence gates and
-   add only the counters selected by those observations;
-6. act on the A12X evidence with a bounded repair or tested support-floor
-   decision;
-7. keep the accepted TD-08 Mac input repair frozen and take only a justified
+4. run the physical audio/lifecycle/flicker evidence gates and add only the
+   counters selected by those observations;
+5. act on A12X issue #9 with the corrected target, then a bounded Tier-1 repair
+   or tested support-floor decision if the first-draw crash remains;
+6. keep the accepted TD-08 Mac input repair frozen and take only a justified
    TD-09 edge repair;
-8. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
-9. implement stable real multi-controller ownership before any network layer.
+7. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
+8. implement stable real multi-controller ownership before any network layer.
 
 Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would

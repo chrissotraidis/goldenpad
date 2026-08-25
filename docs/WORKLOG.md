@@ -1,5 +1,37 @@
 # Worklog
 
+## 2026-08-25 - prepare Preview 7 compatibility promotion
+
+- Selected the physically confirmed issue #19 iOS 17 Metal-target correction
+  for a compatibility-only Preview 7. The same iPhone 13 mini on iOS 18.7.8
+  that failed Preview 1 through Preview 6 passed ROM validation, title/menu,
+  Dam gameplay, audio, and controls in the exact side-by-side diagnostic IPA.
+- Advanced the production mobile default to version `0.1.0` build `7` and the
+  package default to `0.1.0-preview.7`. The separate Mac Alpha identity remains
+  version `0.1.0` build `1`.
+- Extended the Preview 4 baseline guard for only Preview 6 behavior, Preview 7
+  identity, the explicit iOS 17 Metal-target correction, and restoration of the
+  already-shipped depth diagnostic symbol.
+- Kept the optional second Fire button, TD-14, TD-07, A12-specific work,
+  renderer experiments, audio, storage, and multiplayer outside this release.
+- Built and package-audited production build `7`. Two IPA packaging passes
+  reproduced SHA-256 `4f6d26616fbc1d098ba1dce598ea8e958162c82efc975aa483db7e19bd9c58c4`.
+  Two Mac packaging passes reproduced SHA-256
+  `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`;
+  both the Mac executable and archive are byte-identical to Preview 6.
+- Installed build `7` in place on the physical iPad. iPadOS migrated the
+  app-data container path, while pre/post readbacks proved the Documents ROM,
+  runtime ROM, active save, backup save, preferences, and untouched logs
+  byte-identical.
+- The user explicitly accepted the exact production candidate on the physical
+  iPad after controller pairing and gameplay, reporting that it works well with
+  only the already-known graphical issues.
+- Mac hands-on review reconfirmed that horizontal mouse yaw remains sluggish
+  relative to vertical movement. A sensitivity experiment did not discriminate
+  that axis and was fully reverted. This is known Preview 6 debt, not a Preview
+  7 regression, and the released Mac payload remains unchanged.
+- Merge and hosted-artifact verification remain pending.
+
 ## 2026-08-24 - package and publish Preview 6 Mac/menu repair
 
 - Restored analog WASD/trackpad movement in the Mac GoldenEye front end while
