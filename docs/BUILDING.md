@@ -88,8 +88,9 @@ Apple signing identity is included.
 The coordinated Preview 7 Alpha archive is
 `dist/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip` at SHA-256
 `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
-It is native arm64, ad-hoc signed and not notarized. Its unsigned source
-executable is byte-identical to Preview 6.
+It is native arm64, ad-hoc signed and not notarized. Its source executable and
+complete package are byte-identical to Preview 6; only the coordinated archive
+filename changes.
 
 The complete AOT build must have the maintained GoldenEye iOS context patch
 applied while compiling:

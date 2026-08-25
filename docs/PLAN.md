@@ -20,7 +20,9 @@ research decision, architecture and implementation gates are recorded in
 Preview 6 remains the published baseline. Preview 7 is the selected narrow
 compatibility promotion: explicit iOS 17 targets for every embedded Metal
 library, production mobile build `7`, and no gameplay, input, audio, storage,
-lifecycle, multiplayer, or Mac runtime change. The issue #19 diagnostic passed
+lifecycle, multiplayer, or Mac runtime change. The Mac payload is byte-identical
+to Preview 6; its horizontal-mouse sluggishness remains known debt rather than a
+Preview 7 regression. The issue #19 diagnostic passed
 on the affected iPhone 13 mini. Production iPadOS/Mac acceptance and exact
 artifact audits are the current gate. The optional second touch Fire button is
 the next independent feature only after Preview 7 ships.
@@ -68,7 +70,7 @@ Execute and land these as separate review units:
 
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
-| 1 | **Preview 7 production promotion** | Issue #19's affected iPhone passed the bounded iOS 17-target diagnostic | Production bundle build `7`, audited IPA and Mac archive, preserved-data readback, and hands-on iPadOS/Mac acceptance | Exact artifacts pass twice, no accepted behavior changes, and production Preview 7 is verified before publication |
+| 1 | **Preview 7 production promotion** | Issue #19's affected iPhone passed the bounded iOS 17-target diagnostic | Production bundle build `7`, audited IPA and Mac archive, preserved-data readback, bounded Mac sensitivity adjustment, and hands-on iPadOS/Mac acceptance | Exact artifacts pass twice, only the explicitly accepted behavior changes, and production Preview 7 is verified before publication |
 | 1 | **TD-01 sustained-player probe completion** | Complete; player magnitude now distinguishes the current cadence from the authentic target | Three ordinary-input Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828; retained guard evidence is 13/17/18 per 100 ticks | PASS: three identical player numbers, matching ammo deltas, no gameplay-state writes, and protected data preserved |
 | Parallel user-facing lane | **Issue #8 and #19 release verification** | Issue #8 touch is positive and issue #19's diagnostic is positive | Issue #8 controller result and issue #19 production Preview 7 result | Do not close either report beyond the behavior its reporter actually verified |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, current Preview 4 reproduction, original-signature comparison, and affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |

@@ -579,17 +579,22 @@ Preview 7 production-candidate evidence:
   `ffd52cbf9df870989dfce183fb88d61c034bb33f28fedc26b6c63a1ef26e7e39`;
 - build `7` installed in place on the physical iPad and independent pre/post
   readbacks proved the Documents ROM, runtime ROM, active save, backup save,
-  and preferences byte-identical; and
+  and preferences byte-identical;
+- the user then explicitly accepted the exact production candidate on the
+  physical iPad after controller pairing and gameplay, reporting that it works
+  well with only the already-known graphical issues; and
 - two Mac packaging passes reproduced SHA-256
   `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`
   and sorted app-content SHA-256
-  `ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`.
-  The unsigned Mac source executable is byte-identical to Preview 6 at
+  `ab27557b23f95e5019b98dad7df82e6e9b808f40563643533a234cf53b874c53`;
+- the unsigned Mac source executable is byte-identical to Preview 6 at
   `05e8ec3da7ca277c22064c62b351ea53ff40eee7d3cbaa8ae967af62e7cf2c6a`.
 
-The exact candidates are launched for hands-on iPadOS and Mac acceptance.
-These static, package, install, and preservation results do not substitute for
-that interaction evidence.
+Hands-on review reconfirmed that horizontal mouse yaw feels sluggish relative
+to vertical movement. Because the exact Preview 7 Mac executable and package
+are byte-identical to Preview 6, this is retained as known Mac debt rather than
+classified as a Preview 7 regression. Do not raise global sensitivity again;
+measure the horizontal queue, normalized output, and final yaw delta first.
 
 ## Desktop baseline
 

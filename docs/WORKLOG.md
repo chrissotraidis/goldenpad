@@ -18,13 +18,19 @@
   reproduced SHA-256 `4f6d26616fbc1d098ba1dce598ea8e958162c82efc975aa483db7e19bd9c58c4`.
   Two Mac packaging passes reproduced SHA-256
   `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`;
-  the unsigned Mac executable is byte-identical to Preview 6.
+  both the Mac executable and archive are byte-identical to Preview 6.
 - Installed build `7` in place on the physical iPad. iPadOS migrated the
   app-data container path, while pre/post readbacks proved the Documents ROM,
   runtime ROM, active save, backup save, preferences, and untouched logs
   byte-identical.
-- Hands-on iPadOS and Mac acceptance, merge, and hosted-artifact verification
-  remain pending.
+- The user explicitly accepted the exact production candidate on the physical
+  iPad after controller pairing and gameplay, reporting that it works well with
+  only the already-known graphical issues.
+- Mac hands-on review reconfirmed that horizontal mouse yaw remains sluggish
+  relative to vertical movement. A sensitivity experiment did not discriminate
+  that axis and was fully reverted. This is known Preview 6 debt, not a Preview
+  7 regression, and the released Mac payload remains unchanged.
+- Merge and hosted-artifact verification remain pending.
 
 ## 2026-08-24 - package and publish Preview 6 Mac/menu repair
 

@@ -2,7 +2,7 @@
 
 Preview 7 is a deliberately narrow iPhone/iPad compatibility release. It
 retains Preview 6's accepted gameplay, controls, renderer settings, ROM
-conversion, saves, audio, touch layouts, and native Mac behavior.
+conversion, saves, audio, touch layouts, and byte-identical native Mac app.
 
 ## What changed
 
@@ -30,7 +30,8 @@ gameplay, audio, and controls on that same device.
 That result confirms the issue #19 cause and correction on the affected device.
 It does not close the separate A12X first-draw crash in issue #9. The production
 Preview 7 artifact has passed GoldenPad's package and production-identity gates.
-Physical iPadOS and macOS acceptance remain before publication.
+Physical iPadOS acceptance passed. The Mac payload is byte-identical to Preview
+6 and retains its accepted baseline plus known limitations.
 
 ## Candidate acceptance
 
@@ -39,11 +40,12 @@ Physical iPadOS and macOS acceptance remain before publication.
 - [x] Physical iPadOS in-place update with both ROM copies, active save, backup
   save, and preferences preserved byte for byte. iPadOS migrated the app-data
   container path during installation without changing those contents.
-- [ ] Physical iPadOS launch, menus, touch/controller gameplay, audio, utility
+- [x] Physical iPadOS launch, menus, touch/controller gameplay, audio, utility
   menu, and background/foreground check.
 - [x] Native Apple-Silicon Mac build and two byte-identical package-audit passes.
-- [ ] Native Apple-Silicon Mac menu navigation, mouse and keyboard gameplay,
-  render-edge, and bounded sustained-play acceptance.
+- [x] Native Apple-Silicon Mac payload proven byte-identical to Preview 6;
+  hands-on review reconfirmed the known horizontal-mouse sluggishness without
+  identifying a Preview 7 regression.
 - [ ] Hosted artifacts downloaded and re-audited after publication.
 
 ## Downloads
@@ -72,5 +74,9 @@ profile, Apple signing identity, private build path, or generated source.
 - The thin far-right Mac edge, stage/effect rendering defects, occasional audio
   static, lifecycle stalls, and residual split-screen flicker remain separate
   work.
+- Mac horizontal mouse turning remains sluggish relative to vertical movement.
+  This is a known Preview 6 limitation retained unchanged, not a Preview 7
+  regression. Broad sensitivity tuning is rejected without a measured
+  horizontal-input repair.
 - Real Player 2 through Player 4 controller ownership and network multiplayer
   remain incomplete.

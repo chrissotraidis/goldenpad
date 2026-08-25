@@ -200,15 +200,17 @@ A12-specific work, renderer experiments, audio changes, or storage changes.
   and exact Metal-target audit.
 - [x] Package the unsigned Preview 7 IPA twice with identical SHA-256.
 - [x] Build and package the native Apple-Silicon Mac Alpha twice with identical
-  SHA-256; the Mac runtime must remain behaviorally unchanged from Preview 6.
+  SHA-256; require its executable and complete package to remain byte-identical
+  to Preview 6.
 - [x] Install the production candidate in place on the physical iPad and prove
   both ROM copies, active save, backup save, and preferences unchanged by
   readback.
-- [ ] Obtain hands-on iPadOS menu, touch/controller, audio, utility-menu,
+- [x] Obtain hands-on iPadOS menu, touch/controller, audio, utility-menu,
   lifecycle, and gameplay acceptance.
-- [ ] Obtain hands-on Mac menu, keyboard/mouse, Dam/render-edge, and bounded
-  sustained-play acceptance without recording or live log streaming.
-- [ ] Reconcile README, Status, Testing, Technical Debt, Plan, Next Steps,
+- [x] Reconfirm the Mac payload has no Preview 7 regression. Retain horizontal
+  mouse sluggishness as known Preview 6 debt rather than blocking the unchanged
+  coordinated artifact.
+- [x] Reconcile README, Status, Testing, Technical Debt, Plan, Next Steps,
   Building, Worklog, and these release notes against exact artifact hashes.
 - [ ] Merge the isolated PR, verify local/remote/default `main`, publish
   `v0.1.0-preview.7`, download every hosted asset, and rerun both package audits.

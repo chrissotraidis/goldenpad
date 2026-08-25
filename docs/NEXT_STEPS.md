@@ -23,7 +23,9 @@ the same change rather than choosing whichever wording is more convenient.
 | Parallel user-facing lane | **Affected-device confirmation** | Ask issue #19's reporter to verify production Preview 7 and issue #9's reporter to test the corrected target. Issue #17 is closed; issue #8 controller verification remains open. |
 
 Preview 6 is the accepted release baseline. Preview 7 changes only embedded
-Metal deployment targeting and production identity. It retains Preview 5's frozen
+Metal deployment targeting and production identity. Its Mac payload is
+byte-identical to Preview 6; horizontal mouse sluggishness remains known Mac
+debt, not a Preview 7 regression. Preview 7 retains Preview 5's frozen
 mobile controls/tank and TD-01 automatic-rate repairs, restores the Mac menu
 and relative mouse path, and replaces the iPad utility menu with independent
 rows. The underlying automatic-rate repair remains

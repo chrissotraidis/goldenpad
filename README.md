@@ -33,8 +33,8 @@ The same runtime now has a native Apple-Silicon `GoldenPad.app` in alpha. It
 reaches authentic gameplay, but its mouse/keyboard experience and performance
 are still platform-specific, and a thin blue strip remains at the far-right
 render edge. Preview 7 retains Preview 6's menu and keyboard/mouse controls,
-which received hands-on
-acceptance; performance depth and renderer parity remain open. See the
+including the known sluggish horizontal mouse turning. Those controls received
+hands-on acceptance; performance depth and renderer parity remain open. See the
 [Mac feasibility and implementation record](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md)
 and [Technical Debt](docs/TECH_DEBT.md) before treating it as release parity.
 
@@ -116,7 +116,7 @@ the repository or application package.
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
 | Local iPhone/iPad build | **Preview 7 candidate** | Preview 6 behavior is retained; embedded Metal libraries now explicitly target iOS 17. Final production iPadOS acceptance is required before publication. |
-| Native Apple-Silicon Mac build | **Preview 7 Alpha candidate** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); Preview 6 behavior is retained, while the thin far-right blue edge and broader sustained-performance coverage remain open. |
+| Native Apple-Silicon Mac build | **Preview 7 Alpha candidate** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); its executable and package are byte-identical to Preview 6, including the known sluggish horizontal mouse turning and thin far-right blue edge. |
 | Unsigned `.ipa` | **Audited Preview 7 candidate** | The reproducible, ROM-free candidate passed the complete package audit; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad) after publication. |
 | GitHub release | **Preview 7 pending acceptance** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.7). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
@@ -150,7 +150,7 @@ mobile-parity or notarized Mac release.
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
 | Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
 | Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
-| macOS | Officially supported on Apple Silicon in Alpha status; Preview 7 retains Preview 6's accepted menu and keyboard/mouse controls, with edge-rendering and performance debt still disclosed |
+| macOS | Officially supported on Apple Silicon in Alpha status; Preview 7's executable and package are byte-identical to Preview 6, with horizontal mouse sluggishness, edge-rendering, and performance debt still disclosed |
 | Legacy fallback | MGB64/Fast3D remains buildable as `GoldenPad Legacy` |
 
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
