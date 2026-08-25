@@ -32,7 +32,7 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "6" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "7" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")

@@ -7,9 +7,9 @@ baseline_tree=4232141f9d14d2f6197e43173694f649828e730f
 mode=${1:-strict}
 
 case "$mode" in
-    strict|--allow-td01-probe|--allow-td01-repair|--allow-preview6) ;;
+    strict|--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7) ;;
     *)
-        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair|--allow-preview6]" >&2
+        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7]" >&2
         exit 2
         ;;
 esac
@@ -45,9 +45,12 @@ Support/RecompPrototype/recomp_game_start.cpp
 Support/RecompPrototype/recomp_rt64_surface_stub.cpp
 Tests/RecompControlMappingTests.swift
 patches/goldeneye64recomp-ios-modern-controls.patch'
+    preview7_diff="$preview6_diff
+patches/rt64-ios-embedded.patch"
     if ! { [ "$mode" = "--allow-td01-probe" ] && [ "$runtime_diff" = "$probe_diff" ]; } &&
         ! { [ "$mode" = "--allow-td01-repair" ] && [ "$runtime_diff" = "$repair_diff" ]; } &&
-        ! { [ "$mode" = "--allow-preview6" ] && [ "$runtime_diff" = "$preview6_diff" ]; }; then
+        ! { [ "$mode" = "--allow-preview6" ] && [ "$runtime_diff" = "$preview6_diff" ]; } &&
+        ! { [ "$mode" = "--allow-preview7" ] && [ "$runtime_diff" = "$preview7_diff" ]; }; then
         echo "FAIL: runtime diff exceeds the selected Preview 4 measurement boundary" >&2
         printf '%s\n' "$runtime_diff" >&2
         exit 1
@@ -80,7 +83,9 @@ do
 done
 
 echo "PASS: current branch descends from the exact Preview 4 tree"
-if [ "$mode" = "--allow-preview6" ]; then
+if [ "$mode" = "--allow-preview7" ]; then
+    echo "PASS: runtime diff is limited to Preview 6 behavior, Preview 7 identity, and the iOS 17 Metal-target correction"
+elif [ "$mode" = "--allow-preview6" ]; then
     echo "PASS: runtime diff is limited to Preview 6 Mac input, mobile utility-menu, identity, and retained Preview 5 repair paths"
 elif [ "$mode" = "--allow-td01-repair" ]; then
     echo "PASS: runtime diff is limited to Preview 5 identity, the TD-01 observation body, and shared fire-rate patch"

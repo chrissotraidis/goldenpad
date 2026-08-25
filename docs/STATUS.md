@@ -1,22 +1,23 @@
 # Status
 
-Updated: 2026-08-24
+Updated: 2026-08-25
 
 ## Current at a glance
 
 | Surface | Current truth |
 | --- | --- |
 | Public release | Preview 6 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
+| Release candidate | Preview 7 promotes the physically confirmed issue #19 iOS 17 Metal-target correction under the production bundle identity; both reproducible archives are audited, its in-place iPad installation preserved all game data/settings, and final hands-on iPadOS/Mac acceptance is pending. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
-| Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, and iPad utility-menu actions with and without a controller. |
+| Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, iPad utility-menu actions, and the issue #19 diagnostic build on the affected iPhone 13 mini. |
 | Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |
-| Compatibility debt | A12X issue #9 and iPhone 13 mini issue #19 are unresolved RT64/Metal initialization crash reports; Preview 6 has no confirmed renderer repair for either. |
+| Compatibility debt | Issue #19's iPhone 13 mini crash is confirmed fixed by explicitly targeting embedded Metal libraries at iOS 17; production Preview 7 confirmation remains. A12X issue #9 is separate and unresolved. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Preview 6 controls | Preview 5's shared 1.1 through 1.4 mappings, native controller Aim, tank repair, controller sensitivity, and automatic-fire cadence are retained. Mac menu navigation, relative mouse turning, Shift Aim hold, and the iPad utility menu are repaired. |
-| Immediate engineering gate | Take TD-14 modal/run-loop neutralization and TD-07 controller-collapse containment as separate input-lifecycle units; do not combine them with the released TD-01 timing repair. |
-| Immediate user-facing follow-up | Ask issue #8 and #17 reporters to verify Preview 6. Ask issue #9 and #19 reporters to retry and provide complete crash evidence; Preview 6 does not claim those renderer crashes are repaired. |
+| Preview 7 behavior | Preview 6's controls, automatic-fire cadence, renderer settings, ROM flow, saves, audio, touch layouts, Mac behavior, and limitations are retained unchanged. |
+| Immediate engineering gate | Finish the production Preview 7 build, package, preservation, and iPadOS/Mac acceptance gates before any optional Fire button or input-lifecycle work. |
+| Immediate user-facing follow-up | Ask issue #19's reporter to verify the production Preview 7 IPA and issue #9's reporter to test the corrected target. Issue #17 is reporter-closed; issue #8 touch is positive with controller confirmation pending. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -37,6 +38,8 @@ Documentation ownership:
   measurement sequence and mandatory gameplay stop gate.
 - [`RELEASE_NOTES_0.1.0-preview.6.md`](RELEASE_NOTES_0.1.0-preview.6.md) records
   Preview 6's public delta, artifact identities, acceptance, and limitations.
+- [`RELEASE_NOTES_0.1.0-preview.7.md`](RELEASE_NOTES_0.1.0-preview.7.md) records
+  the bounded compatibility promotion and its pending production gates.
 
 ## Summary
 
@@ -46,6 +49,17 @@ buildable as `GoldenPad Legacy` for regression comparison and fallback. The
 detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
+
+Preview 7 is intentionally limited to the issue #19 Metal deployment-target
+correction. Preview 6 embedded libraries inherited an iOS 26.5 target despite
+the app declaring iOS 17. The exact side-by-side diagnostic artifact rebuilt
+all device and Simulator libraries with explicit iOS 17 AIR triples and passed
+ROM selection, title/menu, Dam gameplay, audio, and controls on the same iPhone
+13 mini running iOS 18.7.8 that failed Preview 1 through Preview 6. Production
+promotion advances the normal mobile bundle to build `7`, retains the Mac Alpha
+as build `1`, and adds an artifact-level Metal-target rejection gate. It does
+not include an A12-specific repair or any gameplay, input, renderer-setting,
+audio, storage, lifecycle, multiplayer, or Mac runtime change.
 
 The independent revision-2 review is retained at
 [`EXTERNAL_REVIEW_2026-08-22.md`](EXTERNAL_REVIEW_2026-08-22.md) and reconciled
@@ -73,8 +87,8 @@ build `4` public executable
 adds the user's requested 20 percent absolute controller-look increase from
 1.56 to 1.872 degrees per frame. It passed the complete matrix, device build,
 and package audit, but was not installed for a second physical pass. The native
-Mac target builds and package-audits; issue #17 remains open because reporter
-gameplay verification is still required.
+Mac target builds and package-audits. The reporter later confirmed Preview 6
+menu navigation and Runway tank behavior and closed issue #17.
 
 Preview 5 retains that complete control boundary and fixes TD-01 at the shared
 GoldenEye weapon-stat getter. Positive automatic-fire intervals are multiplied
@@ -740,7 +754,7 @@ evidence ledger below is preserved as historical validation for
 - Preview 4 supersedes the opt-in sidestep adapter with automatic shared
   mappings for all four GoldenEye control styles. The full matrix is automated;
   ordinary on-foot, Aim, and Runway tank behavior received physical iPad
-  acceptance. Issue #17 remains open for Mac reporter confirmation.
+  acceptance. The reporter later confirmed Preview 6 and closed issue #17.
 - The published Preview 1 artifact crashes deterministically at the first RT64
   rendered frame on a reported A12X iPad Pro. A12X meets the declared ARM64,
   Metal, device-family, and OS requirements; treat [issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)
@@ -790,14 +804,14 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 6 is published as a prerelease with separately audited mobile and Mac
-Alpha artifacts. It retains Preview 5's automatic-rate repair and accepted
-mobile controls while adding the physically accepted Mac menu/input and iPad
-utility-menu repairs. Preview 4's exact rollback identity remains frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). In parallel, obtain issue #8
-and issue #17 reporter confirmation against Preview 6 and complete crash
-evidence for issues #9 and #19. Then take TD-14 modal neutralization, TD-07 controller
-containment, physical
+Preview 6 is the published baseline. Preview 7 is the compatibility-only
+production candidate selected from the physically successful issue #19 iOS 17
+Metal-target experiment. Preview 4's exact rollback identity remains frozen in
+[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). Finish the exact Preview 7
+package, preservation, iPadOS, and Mac gates, then publish and obtain issue #19
+production-artifact confirmation. Issue #9 remains a separate A12 evidence
+lane. After Preview 7, take the optional Fire button, TD-14 modal neutralization,
+TD-07 controller containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad
 multiplayer or renderer changes. Do not import matching-target SDK

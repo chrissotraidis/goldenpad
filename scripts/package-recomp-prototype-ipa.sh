@@ -5,7 +5,7 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 "$repo_root/scripts/verify-recomp-input-matrix.sh"
 
 app_path=${GOLDENPAD_RECOMP_APP:-"$repo_root/build-recomp-prototype-device/Release-iphoneos/GoldenPadRecompPrototype.app"}
-release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.6}
+release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.7}
 reference_source=${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR:-"$repo_root/ref/goldeneye64recomp"}
 rt64_source=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-"$repo_root/ref/rt64"}
 output_name="GoldenPad-${release_name}-unsigned.ipa"

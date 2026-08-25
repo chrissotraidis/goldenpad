@@ -180,6 +180,41 @@ drawable-size and direct-camera experiments caused much larger regressions.
   `v0.1.0-preview.6`, download and re-audit all hosted assets, then reply to
   issues #8, #9, #17, and #19 without overstating the renderer fixes.
 
+## Preview 7 compatibility promotion
+
+Preview 7 is limited to the issue #19 Metal deployment-target correction and
+production identity. Do not add the optional second Fire button, TD-14, TD-07,
+A12-specific work, renderer experiments, audio changes, or storage changes.
+
+- [x] Confirm the same iPhone 13 mini that failed Preview 1 through Preview 6
+  passes the exact iOS 17-target diagnostic IPA through ROM validation,
+  title/menu, Dam gameplay, audio, and controls.
+- [x] Compile all 56 device and all 56 Simulator Metal libraries with explicit
+  iOS 17 AIR targets and reject mixed or unexpected targets.
+- [x] Restore Preview 6's already-shipped depth diagnostic symbol to the tracked
+  RT64 patch without changing its rendering decision.
+- [x] Build production `GoldenPad` version `0.1.0` build `7` from the accepted
+  generated AOT/runtime inputs and corrected RT64 archives.
+- [x] Pass `verify-preview4-baseline.sh --allow-preview7`, the fire-rate gate,
+  full input matrix, ARM64 build, ROM-data audit, package audit, source hygiene,
+  and exact Metal-target audit.
+- [x] Package the unsigned Preview 7 IPA twice with identical SHA-256.
+- [x] Build and package the native Apple-Silicon Mac Alpha twice with identical
+  SHA-256; the Mac runtime must remain behaviorally unchanged from Preview 6.
+- [x] Install the production candidate in place on the physical iPad and prove
+  both ROM copies, active save, backup save, and preferences unchanged by
+  readback.
+- [ ] Obtain hands-on iPadOS menu, touch/controller, audio, utility-menu,
+  lifecycle, and gameplay acceptance.
+- [ ] Obtain hands-on Mac menu, keyboard/mouse, Dam/render-edge, and bounded
+  sustained-play acceptance without recording or live log streaming.
+- [ ] Reconcile README, Status, Testing, Technical Debt, Plan, Next Steps,
+  Building, Worklog, and these release notes against exact artifact hashes.
+- [ ] Merge the isolated PR, verify local/remote/default `main`, publish
+  `v0.1.0-preview.7`, download every hosted asset, and rerun both package audits.
+- [ ] Ask issue #19's reporter to verify the production Preview 7 IPA. Keep
+  issue #9 separate unless affected A12 hardware passes this exact artifact.
+
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
 

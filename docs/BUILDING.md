@@ -27,7 +27,7 @@ package with:
 ```sh
 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.6-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.7-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -42,10 +42,10 @@ validation stay inside the app container. An in-place update reuses an existing
 valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
 identity, or provisioning profile is placed in the IPA.
 
-The audited Preview 6 IPA SHA-256 is
-`ced4d58bd8b54fd0dac4c7e9d892e22ea80f28d4bfa219fd586818dd62ba7266`.
-Preview 6 retains Preview 5's controls, tank mapping, and automatic-fire repair,
-and adds the physically accepted independent-row iPad utility overlay.
+Preview 7 retains Preview 6's accepted controls and utility overlay plus Preview
+5's tank mapping and automatic-fire repair. Its embedded device and Simulator
+Metal libraries are explicitly targeted at iOS 17. The audited IPA SHA-256 is
+`4f6d26616fbc1d098ba1dce598ea8e958162c82efc975aa483db7e19bd9c58c4`.
 
 ## Native Apple-Silicon Mac alpha
 
@@ -85,10 +85,11 @@ only the internal CMake target. The packager adds notices, applies an ad-hoc
 signature, and runs the Mac artifact audit. No ROM, save, generated source or
 Apple signing identity is included.
 
-The audited Alpha archive is
-`dist/GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip` at SHA-256
+The coordinated Preview 7 Alpha archive is
+`dist/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip` at SHA-256
 `5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
-It is native arm64, ad-hoc signed and not notarized.
+It is native arm64, ad-hoc signed and not notarized. Its unsigned source
+executable is byte-identical to Preview 6.
 
 The complete AOT build must have the maintained GoldenEye iOS context patch
 applied while compiling:

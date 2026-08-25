@@ -1,7 +1,7 @@
 # Issue 19 Metal Deployment-Target Experiment
 
-Status: automated candidate verification complete; physical issue #19
-confirmation pending.
+Status: automated verification and physical issue #19 confirmation complete;
+the correction is selected for production promotion in Preview 7.
 
 Date: 2026-08-24
 
@@ -76,9 +76,13 @@ into the worktree.
 
 ## Physical closure
 
-Automated success is not issue closure. The issue #19 reporter must confirm that
-the test app passes ROM selection, common-pipeline initialization, title/menu
-and representative gameplay on the iPhone 13 mini running iOS 18.7.8.
+The issue #19 reporter tested the exact hosted diagnostic IPA on the same
+iPhone 13 mini running iOS 18.7.8 that failed Preview 1 through Preview 6. ROM
+selection and validation, common-pipeline initialization, title/menu, Dam
+gameplay, audio, and controls all passed. This confirms the deployment-target
+correction on the affected device. Issue closure still requires confirmation of
+the production-identity Preview 7 artifact because the diagnostic app used a
+separate bundle and data container.
 
 ## Automated results
 
@@ -133,6 +137,7 @@ The separately hosted prerelease is:
 
 The hosted IPA was downloaded again and passed the same 18-member, identity,
 Metal-target, symbol, signing, ROM/save/path and license audit as the local
-artifact. The reporter has been asked for iPhone 13 mini confirmation through
-ROM import, title/menu and Dam gameplay before this branch is considered for
-production integration.
+artifact. The reporter then confirmed ROM import, title/menu, Dam gameplay,
+audio, and controls on the affected iPhone 13 mini. Preview 7 promotes the same
+Metal-target correction under GoldenPad's production identity while keeping the
+separate A12X first-draw investigation in issue #9 open.

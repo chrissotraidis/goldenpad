@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-23
+Updated: 2026-08-25
 
 This is GoldenPad's authoritative engineering-debt ledger. It records current
 defects, evidence strength, repair order, acceptance gates, rejected approaches,
@@ -33,6 +33,9 @@ debt visible:
   additional input rewrite is selected;
 - A12-family RT64/Metal compatibility is unresolved after the deterministic
   issue #9 first-frame crash report;
+- issue #19's iPhone 13 mini initialization crash is confirmed as a Metal
+  deployment-target defect and selected for the compatibility-only Preview 7;
+  production-identity confirmation remains a release gate;
 - local multiplayer has a physically coherent experimental baseline, but slight
   lighting flicker and real three/four-controller routing remain open;
 - settings/share presentation can leave latched touch publishing, controller
@@ -190,35 +193,29 @@ regenerating for the second.
 
 ## Execution order
 
-The smartest next engineering action is to **keep released TD-01 frozen and
-take TD-14 modal/run-loop neutralization as a separate review unit**, followed
-by TD-07 disconnect containment. Preview 6 retains Preview 5's exact expected 12
-Phantom events/100 ticks versus Preview 4's 34.4828 and retained accepted core
-controls. The absent complete guard window and explicit PP7 sequence remain
-disclosed rather than retroactively represented as physical evidence.
+The immediate action is to ship **Preview 7 as a compatibility-only promotion**
+after production iPadOS and Mac acceptance. The affected issue #19 iPhone 13
+mini passed the exact iOS 17-target diagnostic artifact. Preview 7 must retain
+Preview 6's accepted controls and Preview 5's exact expected 12 Phantom events
+per 100 ticks. Do not add the optional Fire button, TD-14, TD-07, or speculative
+renderer work to the compatibility candidate.
 
-The smartest next user-facing actions are **issue #8 and issue #17 reporter
-confirmation against Preview 6**. Internal acceptance does not close either
-reporter's setup. Issues #9 and #19 still need complete crash artifacts and
-affected-hardware reproduction
-can run as an evidence-only lane; no A12 code change is selected without that
-evidence. The next landing sequence is:
+The next landing sequence is:
 
-1. preserve Preview 4 and the completed sustained-player/guard measurements;
-2. obtain issue #8 and issue #17 reporter confirmation against Preview 6;
-3. apply one independently revertible fire-rate authenticity patch only after
-   its exact player-and-guard mechanism is reviewed, then obtain hands-on combat
-   acceptance;
-4. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
+1. finish the production Preview 7 build, package, preservation, and hands-on
+   iPadOS/Mac gates, then obtain issue #19 production-artifact confirmation;
+2. implement the optional second touch Fire button as one independently
+   movable/resizable control and accept it separately on phone and tablet;
+3. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
    separate input-lifecycle units;
-5. run the already-defined physical audio/lifecycle/flicker evidence gates and
-   add only the counters selected by those observations;
-6. act on the A12X evidence with a bounded repair or tested support-floor
-   decision;
-7. keep the accepted TD-08 Mac input repair frozen and take only a justified
+4. run the physical audio/lifecycle/flicker evidence gates and add only the
+   counters selected by those observations;
+5. act on A12X issue #9 with the corrected target, then a bounded Tier-1 repair
+   or tested support-floor decision if the first-draw crash remains;
+6. keep the accepted TD-08 Mac input repair frozen and take only a justified
    TD-09 edge repair;
-8. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
-9. implement stable real multi-controller ownership before any network layer.
+7. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
+8. implement stable real multi-controller ownership before any network layer.
 
 Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would

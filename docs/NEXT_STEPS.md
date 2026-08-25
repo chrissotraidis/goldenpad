@@ -1,8 +1,9 @@
 # Next steps
 
-Updated: 2026-08-24
+Updated: 2026-08-25
 
-This is the short operational queue for GoldenPad after Preview 6. It does not
+This is the short operational queue for GoldenPad's Preview 7 compatibility
+promotion. It does not
 replace the authoritative documents:
 
 - [`TECH_DEBT.md`](TECH_DEBT.md) owns priority, evidence, and closure state;
@@ -17,32 +18,38 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **TD-14 modal/run-loop neutralization** | Add the failing held-input boundary gate before changing presentation behavior; preserve Preview 6 controls, utility menu, and firing cadence. |
-| 2 | **TD-07 disconnect containment** | Publish a neutral frame when the active controller disappears without moving touch ownership implicitly. Keep it separate from TD-14. |
-| Parallel user-facing lane | **Preview 6 reporter confirmation** | Ask issue #8's reporter to verify touch/controller sidestepping and issue #17's reporter to verify Mac menu and Runway tank controls. Ask issue #9 and #19 reporters for complete crash evidence if Preview 6 still fails. |
-| Parallel evidence lane | **TD-03 A12X crash investigation** | Full redacted `.ips`, A12-family reproduction, and diagnostic-only non-direct/Tier-1 Plume binding builds on accepted hardware. No speculative shipping patch. |
+| 1 | **Build and accept Preview 7** | Production mobile build `7`, iOS 17-only embedded Metal targets, twice-identical packaging, preserved-data readback, and hands-on iPadOS/Mac acceptance. |
+| 2 | **Publish and verify Preview 7** | Merge the exact accepted source, publish both artifacts, download them again, and repeat the package/hash audits before closing the release. |
+| Parallel user-facing lane | **Affected-device confirmation** | Ask issue #19's reporter to verify production Preview 7 and issue #9's reporter to test the corrected target. Issue #17 is closed; issue #8 controller verification remains open. |
 
-Preview 6 is the accepted release baseline. It retains Preview 5's frozen
+Preview 6 is the accepted release baseline. Preview 7 changes only embedded
+Metal deployment targeting and production identity. It retains Preview 5's frozen
 mobile controls/tank and TD-01 automatic-rate repairs, restores the Mac menu
 and relative mouse path, and replaces the iPad utility menu with independent
 rows. The underlying automatic-rate repair remains
 documented in [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md). Positive
 player/guard intervals scale by three; nonpositive semi-auto classifications
 remain unchanged. Source, generated-patch, input/tank, build, package,
-preservation, and physical player-cadence gates pass. Reporter confirmation and
-A12 evidence can proceed without changing released behavior.
+preservation, and physical player-cadence gates pass. The affected issue #19
+iPhone passed the side-by-side diagnostic build; final production Preview 7
+confirmation remains. A12 evidence can proceed without changing released
+behavior.
 
 ## Do immediately after
 
-1. **TD-14 modal/run-loop neutralization**
+1. **Optional second touch Fire button**
+   - Add one optional, independently movable/resizable Fire control.
+   - Preserve current defaults and reject overlapping or latched touch input.
+   - Accept phone and tablet layouts before including it in a later preview.
+2. **TD-14 modal/run-loop neutralization**
    - Fail first on held touch/controller input across Settings, Share, watch,
      pause, and scroll tracking.
    - Publish neutral before presentation and forbid replay on dismissal.
-2. **TD-07 disconnect neutralization and lifecycle probe**
+3. **TD-07 disconnect neutralization and lifecycle probe**
    - Publish neutral when the active controller disappears.
    - Never move touch ownership implicitly.
    - Preserve normal touch/controller Player 1 behavior.
-3. **TD-04, TD-05, and TD-06 discriminators**
+4. **TD-04, TD-05, and TD-06 discriminators**
    - Lifecycle: run the physical matrix first, then instrument the observed wait
      class; do not assume a drawable-only stall.
    - Audio: correlate an audible physical event with counters; 22,050 Hz rate
@@ -50,7 +57,7 @@ A12 evidence can proceed without changing released behavior.
    - Flicker: fixed player order is rejected; the uncalibrated zero
      `formatChanged` signal is narrowing, not closure. Capture the first affected
      physical frame before another RT64 experiment.
-4. **TD-12/TD-13 hygiene**
+5. **TD-12/TD-13 hygiene**
    - Give the runtime-managed ROM copy the same backup/protection policy as the
      Documents copy, with hash-preserving migration/readback.
    - Script the private-input game-bearing build so two clean build directories

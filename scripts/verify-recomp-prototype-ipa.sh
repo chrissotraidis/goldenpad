@@ -9,7 +9,7 @@ fi
 ipa_path=$1
 expected_display_name=${GOLDENPAD_EXPECTED_DISPLAY_NAME:-GoldenPad}
 expected_bundle_identifier=${GOLDENPAD_EXPECTED_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad.recomp-prototype}
-expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-6}
+expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-7}
 expected_metal_target=${GOLDENPAD_EXPECTED_METAL_TARGET:-apple-ios17.0.0}
 if [ ! -f "$ipa_path" ] || [[ "$ipa_path" != *.ipa ]]; then
   echo "Expected an existing .ipa file: $ipa_path" >&2

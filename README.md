@@ -32,7 +32,8 @@ The supported retail data remains user-supplied and private.
 The same runtime now has a native Apple-Silicon `GoldenPad.app` in alpha. It
 reaches authentic gameplay, but its mouse/keyboard experience and performance
 are still platform-specific, and a thin blue strip remains at the far-right
-render edge. Preview 6's menu and keyboard/mouse controls received hands-on
+render edge. Preview 7 retains Preview 6's menu and keyboard/mouse controls,
+which received hands-on
 acceptance; performance depth and renderer parity remain open. See the
 [Mac feasibility and implementation record](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md)
 and [Technical Debt](docs/TECH_DEBT.md) before treating it as release parity.
@@ -55,7 +56,7 @@ You need an iPhone or iPad running iOS/iPadOS 17 or later, a Mac or Windows
 computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
 
 > **No jailbreak or JIT is required. Do not search for a TLB-free ROM.**
-> Preview 6 accepts your ordinary `.z64`, `.v64`, `.n64`, or `.rom` dump and
+> Preview 7 accepts your ordinary `.z64`, `.v64`, `.n64`, or `.rom` dump and
 > prepares the required private runtime copy automatically on the device.
 
 1. Install **AltStore Classic** by following its official
@@ -64,7 +65,7 @@ computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
    Use AltStore Classic with AltServer, not AltStore PAL. PAL cannot install an
    arbitrary unsigned `.ipa` downloaded from GitHub.
 2. Download
-   [`GoldenPad-0.1.0-preview.6-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.6/GoldenPad-0.1.0-preview.6-unsigned.ipa).
+   [`GoldenPad-0.1.0-preview.7-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-unsigned.ipa).
    This is the iPhone/iPad app. Do not download the separate Mac `.zip`.
 3. Open AltStore Classic on the device, go to **My Apps**, tap **+**, and choose
    the downloaded GoldenPad `.ipa` from Files. Follow iOS's prompts to trust
@@ -114,15 +115,15 @@ the repository or application package.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Preview 6 accepted** | Preview 5's controls and firing cadence are retained. Physical iPad testing accepted the four independent utility-menu actions both without and with a controller, plus controller gameplay in Dam and Bunker. |
-| Native Apple-Silicon Mac build | **Preview 6 Alpha** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the separate arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.6/GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip); the menu-navigation regression is repaired, while issue #17 reporter verification, the thin far-right blue edge, and broader sustained-performance coverage remain open. |
-| Unsigned `.ipa` | **Audited Preview 6** | Follow [Play on iPhone or iPad](#play-on-iphone-or-ipad) to install the public unsigned IPA with AltStore Classic. |
-| GitHub release | **Preview 6** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.6). |
+| Local iPhone/iPad build | **Preview 7 candidate** | Preview 6 behavior is retained; embedded Metal libraries now explicitly target iOS 17. Final production iPadOS acceptance is required before publication. |
+| Native Apple-Silicon Mac build | **Preview 7 Alpha candidate** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); Preview 6 behavior is retained, while the thin far-right blue edge and broader sustained-performance coverage remain open. |
+| Unsigned `.ipa` | **Audited Preview 7 candidate** | The reproducible, ROM-free candidate passed the complete package audit; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad) after publication. |
+| GitHub release | **Preview 7 pending acceptance** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.7). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
 The mobile baseline was accepted through normal single-player gameplay on a
 physical iPhone and iPad, including the editable touch layout and Xbox/MFi
-controller path. Preview 6 retains the bounded in-app ROM importer, frozen
+controller path. Preview 7 retains the bounded in-app ROM importer, frozen
 experimental multiplayer render repair, Preview 4 shared control mapping, and
 Runway/Streets tank path while correcting player and guard automatic-fire
 cadence. It also repairs Mac menu navigation and the iPad utility-menu hit
@@ -140,7 +141,7 @@ mobile-parity or notarized Mac release.
 |---|---|
 | Native runtime | Statically recompiled game code runs as Apple ARM64; no JIT or emulator wrapper |
 | Rendering | RT64 presents high-resolution Metal output on physical iPad hardware |
-| Setup | Preview 6 imports the user's original NTSC-U retail dump from Files and converts it privately on device; no game data is included |
+| Setup | Preview 7 imports the user's original NTSC-U retail dump from Files and converts it privately on device; no game data is included |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls |
 | Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity and hold/toggle aim |
@@ -149,7 +150,7 @@ mobile-parity or notarized Mac release.
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
 | Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
 | Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
-| macOS | Officially supported on Apple Silicon in Alpha status; Preview 6's native arm64 `GoldenPad.app` has accepted menu and keyboard/mouse controls, with edge-rendering and performance debt still disclosed |
+| macOS | Officially supported on Apple Silicon in Alpha status; Preview 7 retains Preview 6's accepted menu and keyboard/mouse controls, with edge-rendering and performance debt still disclosed |
 | Legacy fallback | MGB64/Fast3D remains buildable as `GoldenPad Legacy` |
 
 See [Status](docs/STATUS.md) and [Testing](docs/TESTING.md) for the evidence
@@ -171,10 +172,10 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Release files and advanced setup
 
-### Preview 6 downloads
+### Preview 7 downloads
 
 Download
-[`GoldenPad-0.1.0-preview.6-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.6/GoldenPad-0.1.0-preview.6-unsigned.ipa)
+[`GoldenPad-0.1.0-preview.7-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-unsigned.ipa)
 and its adjacent `.sha256` file. The IPA is intentionally unsigned. Follow
 [Play on iPhone or iPad](#play-on-iphone-or-ipad) for the supported AltStore
 Classic installation path.
@@ -185,10 +186,10 @@ the required TLB-free transformation privately on the device, verifies the
 exact output, and starts the native runtime automatically. A valid Preview 1
 `GoldenEye_TLBFREE.z64` is reused unchanged during an in-place update. See the
 [Preview 2 ROM import design and acceptance record](docs/PREVIEW_2_ROM_IMPORT.md),
-which Preview 6 retains unchanged.
+which Preview 7 retains unchanged.
 
 The separate Apple-Silicon Mac Alpha is
-[`GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.6/GoldenPad-0.1.0-preview.6-macos-arm64-alpha.zip).
+[`GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip).
 It is an ad-hoc-signed, non-notarized arm64 app and remains below mobile release
 quality. It uses the same user-supplied-data boundary and must not be described
 as mobile parity.
@@ -196,7 +197,7 @@ as mobile parity.
 <details>
 <summary><strong>Preview 1 manual setup (legacy only)</strong></summary>
 
-> **Preview 2 through Preview 6 users do not need these steps or a prebuilt TLB-free ROM.** This
+> **Preview 2 through Preview 7 users do not need these steps or a prebuilt TLB-free ROM.** This
 > section is retained only for people intentionally running the older Preview 1
 > artifact.
 
@@ -271,7 +272,7 @@ retail input and generated output remain yours and must not be redistributed.
 > currently be reproduced from the public checkout alone because its generated
 > game-code inputs are private and intentionally untracked. The public build
 > commands below produce the older `GoldenPad Legacy` fallback. To use the
-> current primary release, follow **Preview 6** and **First launch** instead.
+> current primary release, follow **Preview 7** and **First launch** instead.
 
 You need:
 
@@ -334,7 +335,7 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Install the unsigned Preview 6 IPA by following
+1. Install the unsigned Preview 7 IPA by following
    [Play on iPhone or iPad](#play-on-iphone-or-ipad).
 2. Launch GoldenPad and choose your own supported original NTSC-U retail ROM
    from Files. The importer accepts `.z64`, `.v64`, `.n64`, and `.rom` byte
@@ -371,7 +372,7 @@ the game runtime are separate stages with different fixes.
   PAL, Japanese, modified, overdumped, and other revisions are rejected.
 - `.z64`, `.v64`, `.n64`, and `.rom` are accepted. Renaming another file or ROM
   does not change its contents and will not pass validation.
-- Preview 6 performs the TLB-free conversion itself. Do not download, request,
+- Preview 7 performs the TLB-free conversion itself. Do not download, request,
   or manually create a TLB-free ROM for the current release.
 - If GoldenPad cannot read a valid file from a cloud or third-party provider,
   copy it into **On My iPhone** or **On My iPad** in Files and try again.
@@ -496,25 +497,28 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
 
 ## Current limitations
 
-- Preview 6 retains Preview 5's native-60-Hz automatic player/guard firing
+- Preview 7 retains Preview 5's native-60-Hz automatic player/guard firing
   cadence repair through
   one shared source-derived interval conversion. It does not change semi-auto
   classifications, first-shot behavior, damage, ammunition, or controls.
 - Preview 4 replaced the separate movement adapter with one shared mapping that
   follows GoldenEye's active 1.1 through 1.4 control style. Physical iPad
   testing accepted normal movement, native left-stick Aim, and Runway tank
-  controls. Preview 6 also repairs the Mac mission-menu navigation regression
-  while retaining the tank mapping. Issue #17 remains open until the
-  Mac reporter confirms the release
+  controls. Preview 7 retains Preview 6's Mac mission-menu navigation repair
+  and the tank mapping. The Mac reporter confirmed both in Preview 6 and closed
+  the report
   ([issue #17](https://github.com/chrissotraidis/goldenpad/issues/17)).
 - A deterministic first-frame RT64/Metal crash is reported on an A12X iPad Pro
   with Preview 1. A12-family hardware is not yet validated; the compatibility
   fix or minimum GPU policy remains open ([issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)).
+- Preview 7 corrects an independent issue #19 failure by explicitly targeting
+  every embedded Metal library at iOS 17. The diagnostic build passed on the
+  affected iPhone 13 mini; the A12X first-draw crash remains separate.
 - Multiplayer has a stable experimental render baseline, not final acceptance.
   Slight lighting flicker and real three/four-controller routing remain open.
 - Peer-to-peer, LAN, internet, relay, and rollback multiplayer are not
   implemented.
-- Preview 6 retains Preview 2's complete, package-audited in-app retail-ROM conversion.
+- Preview 7 retains Preview 2's complete, package-audited in-app retail-ROM conversion.
   A clean physical-iPhone installation has reached the empty-container setup
   screen; fresh real-ROM import, wrong-ROM, cancellation and low-storage
   coverage remains open in the focused importer acceptance record.
@@ -551,8 +555,8 @@ retained only as the deprecated legacy fallback.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-Preview 6 is available from the
-[GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.6).
+Preview 7 is available from the
+[GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.7).
 It is an unsigned, ROM-free developer-preview IPA and must be re-signed. It does
 not include game data; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad)
 for installation and first-launch instructions.
@@ -562,10 +566,10 @@ for installation and first-launch instructions.
 <summary><strong>Do I need JIT or a TLB-free ROM?</strong></summary>
 
 No. GoldenPad's game code is compiled ahead of time, so the iPhone/iPad release
-does not need JIT. Preview 6 accepts the supported original US retail dump and
+does not need JIT. Preview 7 accepts the supported original US retail dump and
 creates the required TLB-free runtime copy privately on the device. Do not use
 the old Preview 1 manual conversion instructions for Preview 2, Preview 3,
-Preview 4, Preview 5, or Preview 6.
+Preview 4, Preview 5, Preview 6, or Preview 7.
 </details>
 
 <details>
@@ -632,6 +636,7 @@ override those current authority documents.
 | [`docs/RELEASE_NOTES_0.1.0-preview.4.md`](docs/RELEASE_NOTES_0.1.0-preview.4.md) | Preview 4 tank, Aim, shared control mapping, checksums, and acceptance boundary |
 | [`docs/RELEASE_NOTES_0.1.0-preview.5.md`](docs/RELEASE_NOTES_0.1.0-preview.5.md) | Preview 5 automatic-fire authenticity repair, checksums, physical evidence, and rollback boundary |
 | [`docs/RELEASE_NOTES_0.1.0-preview.6.md`](docs/RELEASE_NOTES_0.1.0-preview.6.md) | Preview 6 Mac menu/input repair, iPad utility-menu repair, checksums, and acceptance boundary |
+| [`docs/RELEASE_NOTES_0.1.0-preview.7.md`](docs/RELEASE_NOTES_0.1.0-preview.7.md) | Preview 7 Metal deployment-target compatibility correction, checksums, and acceptance boundary |
 | [`docs/PREVIEW_4_BASELINE.md`](docs/PREVIEW_4_BASELINE.md) | Frozen Preview 4 source, artifact, accepted-behavior, diagnostic, and rollback identity |
 | [`docs/TD01_FIRE_RATE_LOOP.md`](docs/TD01_FIRE_RATE_LOOP.md) | Bounded fire-rate measurement sequence and mandatory gameplay stop gate |
 | [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Local ownership, determinism, LAN research, network feasibility, and go/no-go gates |
