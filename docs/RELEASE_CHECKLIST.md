@@ -212,9 +212,9 @@ A12-specific work, renderer experiments, audio changes, or storage changes.
   coordinated artifact.
 - [x] Reconcile README, Status, Testing, Technical Debt, Plan, Next Steps,
   Building, Worklog, and these release notes against exact artifact hashes.
-- [ ] Merge the isolated PR, verify local/remote/default `main`, publish
+- [x] Merge the isolated PR, verify local/remote/default `main`, publish
   `v0.1.0-preview.7`, download every hosted asset, and rerun both package audits.
-- [ ] Ask issue #19's reporter to verify the production Preview 7 IPA. Keep
+- [x] Ask issue #19's reporter to verify the production Preview 7 IPA. Keep
   issue #9 separate unless affected A12 hardware passes this exact artifact.
 
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and

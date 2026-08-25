@@ -596,6 +596,12 @@ are byte-identical to Preview 6, this is retained as known Mac debt rather than
 classified as a Preview 7 regression. Do not raise global sensitivity again;
 measure the horizontal queue, normalized output, and final yaw delta first.
 
+The release tag `v0.1.0-preview.7` points to merge commit
+`1f9ca4e7e668708937c88d77adb0ba6f41483256`. All four hosted assets were
+downloaded into a fresh directory and matched the accepted local files byte for
+byte. The hosted IPA and Mac ZIP then passed their complete package verifiers
+with the same app-content hashes recorded above.
+
 ## Desktop baseline
 
 ```sh

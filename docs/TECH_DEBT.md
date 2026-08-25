@@ -193,19 +193,18 @@ regenerating for the second.
 
 ## Execution order
 
-The immediate action is to ship **Preview 7 as a compatibility-only promotion**
-after production iPadOS and Mac acceptance. The affected issue #19 iPhone 13
-mini passed the exact iOS 17-target diagnostic artifact. Preview 7 must retain
-Preview 6's accepted controls and Preview 5's exact expected 12 Phantom events
-per 100 ticks. The byte-identical Mac payload retains known horizontal mouse
-sluggishness without introducing a Preview 7 regression. Do not add the
-optional Fire button, TD-14, TD-07, or speculative renderer work to the
-candidate.
+Preview 7 shipped as a compatibility-only promotion after production iPadOS and
+Mac acceptance. Its hosted artifacts match the accepted local files byte for
+byte. The affected issue #19 iPhone 13 mini passed the exact iOS 17-target
+diagnostic artifact; production-release reporter confirmation remains open.
+Preview 7 retains Preview 6's accepted controls and Preview 5's exact expected
+12 Phantom events per 100 ticks. Its byte-identical Mac payload retains known
+horizontal mouse sluggishness without introducing a Preview 7 regression.
 
 The next landing sequence is:
 
-1. finish the production Preview 7 build, package, preservation, and hands-on
-   iPadOS/Mac gates, then obtain issue #19 production-artifact confirmation;
+1. obtain issue #19 production-artifact confirmation for the published Preview
+   7 release;
 2. implement the optional second touch Fire button as one independently
    movable/resizable control and accept it separately on phone and tablet;
 3. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as

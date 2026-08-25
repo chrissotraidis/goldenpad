@@ -46,7 +46,8 @@ Physical iPadOS acceptance passed. The Mac payload is byte-identical to Preview
 - [x] Native Apple-Silicon Mac payload proven byte-identical to Preview 6;
   hands-on review reconfirmed the known horizontal-mouse sluggishness without
   identifying a Preview 7 regression.
-- [ ] Hosted artifacts downloaded and re-audited after publication.
+- [x] Hosted artifacts downloaded, matched byte for byte, and re-audited after
+  publication from merge commit `1f9ca4e7e668708937c88d77adb0ba6f41483256`.
 
 ## Downloads
 

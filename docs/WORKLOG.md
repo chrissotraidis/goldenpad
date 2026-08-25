@@ -30,7 +30,13 @@
   relative to vertical movement. A sensitivity experiment did not discriminate
   that axis and was fully reverted. This is known Preview 6 debt, not a Preview
   7 regression, and the released Mac payload remains unchanged.
-- Merge and hosted-artifact verification remain pending.
+- Merged PR #22 at `1f9ca4e7e668708937c88d77adb0ba6f41483256`, published
+  `v0.1.0-preview.7`, downloaded all four hosted assets into a fresh audit
+  directory, proved each byte-identical to its accepted local file, and reran
+  both complete package verifiers successfully.
+- Posted the exact production IPA link and checksum to issue #19 for affected
+  iPhone confirmation and separately to issue #9 for A12X testing without
+  claiming an A12-specific repair.
 
 ## 2026-08-24 - package and publish Preview 6 Mac/menu repair
 

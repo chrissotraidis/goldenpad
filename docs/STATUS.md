@@ -6,8 +6,7 @@ Updated: 2026-08-25
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 6 is published with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. |
-| Release candidate | Preview 7 promotes the physically confirmed issue #19 iOS 17 Metal-target correction under the production bundle identity. Its reproducible IPA is audited, its in-place iPad installation preserved all game data/settings, and iPadOS hands-on acceptance passed. The coordinated Mac payload is byte-identical to Preview 6. |
+| Public release | Preview 7 is published from merge commit `1f9ca4e7e668708937c88d77adb0ba6f41483256` with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. Every hosted asset is byte-identical to its accepted local file. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, iPad utility-menu actions, and the issue #19 diagnostic build on the affected iPhone 13 mini. |
 | Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |
@@ -16,8 +15,8 @@ Updated: 2026-08-25
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
 | Preview 7 behavior | Preview 6's controls, automatic-fire cadence, renderer settings, ROM flow, saves, audio, touch layouts, Mac app, and limitations are retained unchanged. |
-| Immediate engineering gate | Publish and hosted-audit Preview 7, then take the optional Fire button separately. Mac horizontal-mouse sluggishness remains measured follow-up debt. |
-| Immediate user-facing follow-up | Ask issue #19's reporter to verify the production Preview 7 IPA and issue #9's reporter to test the corrected target. Issue #17 is reporter-closed; issue #8 touch is positive with controller confirmation pending. |
+| Immediate engineering gate | Take the optional second touch Fire button as a separate Preview 8 candidate. Mac horizontal-mouse sluggishness remains measured follow-up debt. |
+| Immediate user-facing follow-up | Production Preview 7 test requests are posted to issue #19 and the separate A12X issue #9. Await reporter results. Issue #17 is reporter-closed; issue #8 touch is positive with controller confirmation pending. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -807,14 +806,12 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 6 is the published baseline. Preview 7 is the compatibility-only
-production candidate selected from the physically successful issue #19 iOS 17
-Metal-target experiment. Preview 4's exact rollback identity remains frozen in
-[`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md). Finish the exact Preview 7
-package, preservation, iPadOS, and Mac gates, then publish and obtain issue #19
-production-artifact confirmation. Issue #9 remains a separate A12 evidence
-lane. After Preview 7, take the optional Fire button, TD-14 modal neutralization,
-TD-07 controller containment, physical
+Preview 7 is the published compatibility release selected from the physically
+successful issue #19 iOS 17 Metal-target experiment. Preview 4's exact rollback
+identity remains frozen in [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md).
+Obtain issue #19 production-artifact confirmation; issue #9 remains a separate
+A12 evidence lane. Next, take the optional Fire button, TD-14 modal
+neutralization, TD-07 controller containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad
 multiplayer or renderer changes. Do not import matching-target SDK

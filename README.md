@@ -115,10 +115,10 @@ the repository or application package.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Preview 7 candidate** | Preview 6 behavior is retained; embedded Metal libraries now explicitly target iOS 17. Final production iPadOS acceptance is required before publication. |
-| Native Apple-Silicon Mac build | **Preview 7 Alpha candidate** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); its executable and package are byte-identical to Preview 6, including the known sluggish horizontal mouse turning and thin far-right blue edge. |
-| Unsigned `.ipa` | **Audited Preview 7 candidate** | The reproducible, ROM-free candidate passed the complete package audit; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad) after publication. |
-| GitHub release | **Preview 7 pending acceptance** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.7). |
+| Local iPhone/iPad build | **Preview 7 accepted** | Preview 6 behavior is retained; embedded Metal libraries now explicitly target iOS 17. Physical iPadOS acceptance passed. |
+| Native Apple-Silicon Mac build | **Preview 7 Alpha** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); its executable and package are byte-identical to Preview 6, including the known sluggish horizontal mouse turning and thin far-right blue edge. |
+| Unsigned `.ipa` | **Audited Preview 7** | The reproducible, ROM-free release passed local and hosted package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
+| GitHub release | **Preview 7** | [Release notes, downloads and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.7). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
 The mobile baseline was accepted through normal single-player gameplay on a

@@ -18,9 +18,9 @@ the same change rather than choosing whichever wording is more convenient.
 
 | Order | Work | Output required before moving on |
 | ---: | --- | --- |
-| 1 | **Build and accept Preview 7** | Production mobile build `7`, iOS 17-only embedded Metal targets, twice-identical packaging, preserved-data readback, and hands-on iPadOS/Mac acceptance. |
-| 2 | **Publish and verify Preview 7** | Merge the exact accepted source, publish both artifacts, download them again, and repeat the package/hash audits before closing the release. |
-| Parallel user-facing lane | **Affected-device confirmation** | Ask issue #19's reporter to verify production Preview 7 and issue #9's reporter to test the corrected target. Issue #17 is closed; issue #8 controller verification remains open. |
+| Complete | **Preview 7 compatibility promotion** | Merged, published, downloaded, and re-audited with byte-identical hosted assets. |
+| 1 | **Affected-device confirmation** | Await the posted issue #19 production Preview 7 result and issue #9 corrected-target result. Issue #17 is closed; issue #8 controller verification remains open. |
+| 2 | **Optional second touch Fire button** | One independent control with unchanged current defaults and a focused phone/tablet acceptance pass. |
 
 Preview 6 is the accepted release baseline. Preview 7 changes only embedded
 Metal deployment targeting and production identity. Its Mac payload is
@@ -33,9 +33,9 @@ documented in [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md). Positive
 player/guard intervals scale by three; nonpositive semi-auto classifications
 remain unchanged. Source, generated-patch, input/tank, build, package,
 preservation, and physical player-cadence gates pass. The affected issue #19
-iPhone passed the side-by-side diagnostic build; final production Preview 7
-confirmation remains. A12 evidence can proceed without changing released
-behavior.
+iPhone passed the side-by-side diagnostic build; reporter confirmation of the
+production Preview 7 artifact remains. A12 evidence can proceed without
+changing released behavior.
 
 ## Do immediately after
 
