@@ -20,8 +20,10 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <mutex>
 #include <os/log.h>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -91,6 +93,14 @@ std::atomic<bool> sidestepProbeEnabled = false;
 std::atomic<bool> lifecycleProbeEnabled = false;
 std::atomic<bool> audioProbeEnabled = false;
 std::atomic<bool> depthRebuildProbeEnabled = false;
+std::atomic<bool> determinismProbeEnabled = false;
+std::atomic<bool> determinismProbeComplete = false;
+std::atomic<uint64_t> determinismPollCount = 0;
+std::atomic<uint64_t> determinismViCount = 0;
+std::atomic<uint64_t> determinismClockTicks = 0;
+std::atomic<uint32_t> determinismButtons = 0;
+std::atomic<int32_t> determinismStickX = 0;
+std::atomic<int32_t> determinismStickY = 0;
 std::atomic<uint32_t> audioRequestedFrequency = 0;
 std::atomic<uint32_t> audioHostSourceFrequency = 0;
 std::atomic<uint32_t> audioHostSessionFrequency = 0;
@@ -112,8 +122,44 @@ std::mutex diagnosticsMutex;
 std::string runtimeStatus = "AOT runtime: waiting for imported user ROM";
 std::filesystem::path diagnosticsLogPath;
 std::filesystem::path diagnosticsSessionMarkerPath;
+std::filesystem::path determinismTracePath;
+std::mutex determinismTraceMutex;
 std::atomic<bool> previousSessionEndedUnexpectedly = false;
 constexpr uintmax_t kDiagnosticsLogLimit = 4 * 1024 * 1024;
+
+constexpr size_t kDeterminismRdramBytes = 8 * 1024 * 1024;
+constexpr size_t kDeterminismRegionCount = 8;
+constexpr size_t kDeterminismRegionBytes =
+    kDeterminismRdramBytes / kDeterminismRegionCount;
+constexpr size_t kDeterminismPageBytes = 64 * 1024;
+constexpr size_t kDeterminismPageCount =
+    kDeterminismRdramBytes / kDeterminismPageBytes;
+constexpr size_t kDeterminismBlockBytes = 4 * 1024;
+constexpr std::array<size_t, 4> kDeterminismHotPages{2, 5, 6, 59};
+constexpr size_t kDeterminismBlocksPerPage =
+    kDeterminismPageBytes / kDeterminismBlockBytes;
+constexpr size_t kDeterminismHotBlockCount =
+    kDeterminismHotPages.size() * kDeterminismBlocksPerPage;
+constexpr uint64_t kDeterminismClockTicksPerRead = 10'000;
+constexpr uint64_t kDeterminismMaxPoll = 3'600;
+constexpr uint16_t kN64ButtonStart = 0x1000;
+constexpr uint16_t kN64ButtonZ = 0x2000;
+constexpr uint16_t kN64ButtonCRight = 0x0001;
+
+struct DeterminismInput {
+    uint16_t buttons = 0;
+    int32_t stickX = 0;
+    int32_t stickY = 0;
+
+    bool operator==(const DeterminismInput &) const = default;
+};
+
+using DeterminismRegionHashes =
+    std::array<uint64_t, kDeterminismRegionCount>;
+using DeterminismPageHashes =
+    std::array<uint64_t, kDeterminismPageCount>;
+using DeterminismHotBlockHashes =
+    std::array<uint64_t, kDeterminismHotBlockCount>;
 
 // Match the working GoldenPad host: the game/audio thread is the sole producer
 // and AVAudioEngine is the sole consumer of a bounded stereo PCM ring.
@@ -259,6 +305,169 @@ void logEvent(const char *event, const char *format, ...) {
     }
 }
 
+int32_t readGameWord(uint8_t *rdram, uint32_t address);
+
+DeterminismInput determinismInputForPoll(uint64_t poll) {
+    DeterminismInput input{};
+
+    // Use only ordinary N64 controller input. Repeated Start edges traverse the
+    // stock front end's default path; later windows exercise live gameplay if
+    // the runtime has reached Dam. The schedule is state-independent so every
+    // run receives exactly the same input stream even if simulation diverges.
+    if (poll >= 60 && poll <= 1'380 && (poll - 60) % 120 < 2) {
+        input.buttons |= kN64ButtonStart;
+    }
+    if (poll >= 1'680 && poll < 1'920) {
+        input.stickY = 64;
+    }
+    if (poll >= 2'040 && poll < 2'160) {
+        input.buttons |= kN64ButtonCRight;
+    }
+    if (poll >= 2'280 && poll < 2'520) {
+        input.stickY = 64;
+        input.buttons |= kN64ButtonCRight;
+    }
+    if (poll >= 2'640 && poll < 2'700) {
+        input.buttons |= kN64ButtonZ;
+    }
+    return input;
+}
+
+DeterminismRegionHashes hashDeterminismRegions(const uint8_t *rdram) {
+    DeterminismRegionHashes hashes{};
+    for (size_t region = 0; region < hashes.size(); ++region) {
+        hashes[region] = XXH3_64bits(
+            rdram + region * kDeterminismRegionBytes,
+            kDeterminismRegionBytes);
+    }
+    return hashes;
+}
+
+DeterminismPageHashes hashDeterminismPages(const uint8_t *rdram) {
+    DeterminismPageHashes hashes{};
+    for (size_t page = 0; page < hashes.size(); ++page) {
+        hashes[page] = XXH3_64bits(
+            rdram + page * kDeterminismPageBytes,
+            kDeterminismPageBytes);
+    }
+    return hashes;
+}
+
+DeterminismHotBlockHashes hashDeterminismHotBlocks(const uint8_t *rdram) {
+    DeterminismHotBlockHashes hashes{};
+    size_t output = 0;
+    for (const size_t page : kDeterminismHotPages) {
+        for (size_t block = 0; block < kDeterminismBlocksPerPage; ++block) {
+            const size_t offset = page * kDeterminismPageBytes +
+                block * kDeterminismBlockBytes;
+            hashes[output++] = XXH3_64bits(
+                rdram + offset, kDeterminismBlockBytes);
+        }
+    }
+    return hashes;
+}
+
+uint64_t foldDeterminismRegions(const DeterminismRegionHashes &hashes) {
+    return XXH3_64bits(hashes.data(), hashes.size() * sizeof(hashes[0]));
+}
+
+bool shouldSampleDeterminismPoll(
+    uint64_t poll,
+    const DeterminismInput &input,
+    const DeterminismInput &previousInput
+) {
+    return poll <= 240 || poll % 30 == 0 || input != previousInput ||
+        poll == kDeterminismMaxPoll;
+}
+
+void writeDeterminismSample(
+    uint64_t poll,
+    const DeterminismInput &input,
+    uint8_t *rdram
+) {
+    if (rdram == nullptr || determinismTracePath.empty()) {
+        return;
+    }
+
+    // Two immediate reads distinguish a cross-run mismatch from an unsafe
+    // observation seam that changed while it was being hashed.
+    const DeterminismRegionHashes first = hashDeterminismRegions(rdram);
+    const DeterminismPageHashes pages = hashDeterminismPages(rdram);
+    const DeterminismHotBlockHashes hotBlocks = hashDeterminismHotBlocks(rdram);
+    const DeterminismRegionHashes second = hashDeterminismRegions(rdram);
+    const bool stable = first == second;
+    const uint64_t stateHash = foldDeterminismRegions(second);
+    const uint64_t vi = determinismViCount.load(std::memory_order_acquire);
+    const int32_t menu = readGameWord(rdram, 0x8002A6C0);
+    const int32_t stage = readGameWord(rdram, 0x80023FA8);
+    const int32_t pending = readGameWord(rdram, 0x80048164);
+
+    std::ostringstream line;
+    line << "SAMPLE poll=" << std::dec << poll
+         << " vi=" << vi
+         << " clock_reads="
+         << determinismClockTicks.load(std::memory_order_acquire) /
+                kDeterminismClockTicksPerRead
+         << " stable=" << (stable ? 1 : 0)
+         << " input=" << std::hex << std::setw(4) << std::setfill('0')
+         << input.buttons << std::dec
+         << ',' << input.stickX << ',' << input.stickY
+         << " menu=" << menu
+         << " stage=" << stage
+         << " pending=" << pending
+         << " hash=" << std::hex << std::setw(16) << std::setfill('0')
+         << stateHash
+         << " regions=";
+    for (size_t region = 0; region < second.size(); ++region) {
+        if (region != 0) {
+            line << ',';
+        }
+        line << std::hex << std::setw(16) << std::setfill('0') << second[region];
+    }
+    line << " pages=";
+    for (size_t page = 0; page < pages.size(); ++page) {
+        if (page != 0) {
+            line << ',';
+        }
+        line << std::hex << std::setw(16) << std::setfill('0') << pages[page];
+    }
+    line << " hotblocks=";
+    for (size_t block = 0; block < hotBlocks.size(); ++block) {
+        if (block != 0) {
+            line << ',';
+        }
+        line << std::hex << std::setw(16) << std::setfill('0') << hotBlocks[block];
+    }
+
+    std::lock_guard lock(determinismTraceMutex);
+    std::ofstream trace(determinismTracePath, std::ios::app);
+    trace << line.str() << '\n';
+}
+
+void completeDeterminismTrace(uint64_t poll) {
+    if (determinismProbeComplete.exchange(true, std::memory_order_acq_rel) ||
+        determinismTracePath.empty()) {
+        return;
+    }
+    {
+        std::lock_guard lock(determinismTraceMutex);
+        std::ofstream trace(determinismTracePath, std::ios::app);
+        trace << "COMPLETE poll=" << poll << '\n';
+    }
+    logEvent("determinism-probe",
+        "complete poll=%llu vi=%llu trace=%s",
+        static_cast<unsigned long long>(poll),
+        static_cast<unsigned long long>(
+            determinismViCount.load(std::memory_order_relaxed)),
+        determinismTracePath.filename().string().c_str());
+}
+
+void determinismViCallback() {
+    if (determinismProbeEnabled.load(std::memory_order_relaxed)) {
+        determinismViCount.fetch_add(1, std::memory_order_release);
+    }
+}
+
 void configureDiagnostics(const std::filesystem::path &configPath) {
     std::lock_guard lock(diagnosticsMutex);
     const std::filesystem::path directory = configPath / "Logs";
@@ -305,6 +514,33 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
             << " size=" << sizeChanges
             << " rdram=" << rdramChanges << ')'
             << " latest=0x" << std::hex << latestAddress << std::dec << '\n';
+    }
+    if (determinismProbeEnabled.load(std::memory_order_relaxed)) {
+        determinismTracePath = directory / "goldenpad-determinism-trace-v1.log";
+        determinismPollCount.store(0, std::memory_order_relaxed);
+        determinismViCount.store(0, std::memory_order_relaxed);
+        determinismClockTicks.store(0, std::memory_order_relaxed);
+        determinismProbeComplete.store(false, std::memory_order_relaxed);
+        determinismButtons.store(0, std::memory_order_relaxed);
+        determinismStickX.store(0, std::memory_order_relaxed);
+        determinismStickY.store(0, std::memory_order_relaxed);
+        std::lock_guard traceLock(determinismTraceMutex);
+        std::ofstream trace(determinismTracePath, std::ios::trunc);
+        trace << "GOLDENPAD_DETERMINISM_TRACE_V1"
+              << " base_bytes=" << kDeterminismRdramBytes
+              << " region_bytes=" << kDeterminismRegionBytes
+              << " regions=" << kDeterminismRegionCount
+              << " page_bytes=" << kDeterminismPageBytes
+              << " pages=" << kDeterminismPageCount
+              << " hot_pages=2,5,6,59"
+              << " hot_block_bytes=" << kDeterminismBlockBytes
+              << " script=fixed-menu-dam-v1"
+              << " clock=ordered-call-v1"
+              << " max_poll=" << kDeterminismMaxPoll << '\n';
+        log << "[GoldenPadRecomp] determinism-probe: READY read-only=1 "
+            << "liveInputOverride=1 maxPoll=" << kDeterminismMaxPoll << '\n';
+    } else {
+        determinismTracePath.clear();
     }
 }
 
@@ -764,6 +1000,27 @@ void pollInput() {
     if (!inputPollReported.exchange(true)) {
         logEvent("input", "game began polling the prototype controller bridge");
     }
+    if (!determinismProbeEnabled.load(std::memory_order_acquire) ||
+        determinismProbeComplete.load(std::memory_order_relaxed)) {
+        return;
+    }
+
+    static DeterminismInput previousInput{};
+    const uint64_t poll =
+        determinismPollCount.fetch_add(1, std::memory_order_acq_rel) + 1;
+    const DeterminismInput input = determinismInputForPoll(poll);
+    determinismButtons.store(input.buttons, std::memory_order_release);
+    determinismStickX.store(input.stickX, std::memory_order_release);
+    determinismStickY.store(input.stickY, std::memory_order_release);
+
+    if (shouldSampleDeterminismPoll(poll, input, previousInput)) {
+        writeDeterminismSample(
+            poll, input, activeRdram.load(std::memory_order_acquire));
+    }
+    previousInput = input;
+    if (poll >= kDeterminismMaxPoll) {
+        completeDeterminismTrace(poll);
+    }
 }
 bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
     const bool portAvailable = controllerNum == 0 ||
@@ -777,6 +1034,21 @@ bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
             logEvent("input", "controller port %d has no prototype input source", controllerNum + 1);
         }
         return false;
+    }
+    if (determinismProbeEnabled.load(std::memory_order_acquire)) {
+        if (controllerNum == 0) {
+            *buttons = static_cast<uint16_t>(
+                determinismButtons.load(std::memory_order_acquire));
+            *x = static_cast<float>(
+                determinismStickX.load(std::memory_order_acquire)) / 80.0f;
+            *y = static_cast<float>(
+                determinismStickY.load(std::memory_order_acquire)) / 80.0f;
+        } else {
+            *buttons = 0;
+            *x = 0.0f;
+            *y = 0.0f;
+        }
+        return true;
     }
     const size_t port = static_cast<size_t>(controllerNum);
     *buttons = static_cast<uint16_t>(controllerButtons[port].load(std::memory_order_relaxed));
@@ -867,7 +1139,9 @@ void runRuntime(ultramodern::renderer::WindowHandle window, std::filesystem::pat
             .get_connected_device_info = getConnectedDeviceInfo,
         };
         ultramodern::gfx_callbacks_t gfxCallbacks{};
-        ultramodern::events::callbacks_t eventCallbacks{};
+        ultramodern::events::callbacks_t eventCallbacks{
+            .vi_callback = determinismViCallback,
+        };
         ultramodern::error_handling::callbacks_t errorCallbacks{.message_box = reportRuntimeError};
         ultramodern::threads::callbacks_t threadCallbacks{.get_game_thread_name = gameThreadName};
 
@@ -1048,6 +1322,27 @@ extern "C" void goldenpad_recomp_set_fire_rate_probe_enabled(int32_t enabled) {
 
 extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t enabled) {
     sidestepProbeEnabled.store(enabled != 0, std::memory_order_relaxed);
+}
+
+extern "C" void goldenpad_recomp_set_determinism_probe_enabled(int32_t enabled) {
+    if (runtimeStarted.load(std::memory_order_relaxed)) {
+        return;
+    }
+    determinismProbeEnabled.store(enabled != 0, std::memory_order_release);
+}
+
+extern "C" int32_t goldenpad_recomp_deterministic_clock_enabled() {
+    return determinismProbeEnabled.load(std::memory_order_acquire) ? 1 : 0;
+}
+
+extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks() {
+    // GoldenEye uses osGetCount both as an RNG seed and in short elapsed-time
+    // loops. Advancing by a fixed amount per game-visible clock read preserves
+    // monotonic progress without allowing host wall-clock scheduling into the
+    // simulation. A production clock should be tied to emulated CPU progress;
+    // this deliberately smaller clock is only an offline feasibility probe.
+    return determinismClockTicks.fetch_add(
+        kDeterminismClockTicksPerRead, std::memory_order_acq_rel);
 }
 
 extern "C" void goldenpad_recomp_fire_rate_player_sample(

@@ -60,6 +60,9 @@ private func goldenPadRecompGetInputContext(
 @_silgen_name("goldenpad_recomp_set_sidestep_probe_enabled")
 private func goldenPadRecompSetSidestepProbeEnabled(_ enabled: Int32)
 
+@_silgen_name("goldenpad_recomp_set_determinism_probe_enabled")
+private func goldenPadRecompSetDeterminismProbeEnabled(_ enabled: Int32)
+
 enum RecompPrototypeAimBehavior: String, CaseIterable {
     case toggle
     case hold
@@ -314,6 +317,9 @@ final class RecompPrototypeInput: ObservableObject {
     #endif
 
     init() {
+        goldenPadRecompSetDeterminismProbeEnabled(
+            ProcessInfo.processInfo.arguments.contains("--netplay-determinism-probe") ? 1 : 0
+        )
         let sidestepProbeEnabled = ProcessInfo.processInfo.arguments.contains("--sidestep-probe")
         let ownershipProbeEnabled = ownershipProbeForcesTwoPlayer
         goldenPadRecompSetSidestepProbeEnabled(sidestepProbeEnabled ? 1 : 0)
