@@ -28,6 +28,9 @@ Mac runtime change is included.
 - [x] In-place physical iPad update with protected game data and preferences
   preserved.
 - [x] Hands-on physical iPad gameplay acceptance of the exact candidate.
+- [x] Hosted IPA and checksum downloaded fresh, matched locally byte for byte,
+  and passed the complete package audit after publication from merge commit
+  `4cc6e6eeed400cdd52d82a9101d27b6fc45768ab`.
 
 ## Download
 
