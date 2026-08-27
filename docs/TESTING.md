@@ -622,6 +622,12 @@ Preview 8 optional-Fire acceptance:
 - the user tested the exact installed candidate and reported that it works and
   is great. Existing graphical artifacting/flicker remains separate work.
 
+The release tag `v0.1.0-preview.8` targets merge commit
+`4cc6e6eeed400cdd52d82a9101d27b6fc45768ab`. The hosted IPA and checksum were
+downloaded into a fresh directory, matched the accepted local files byte for
+byte, and the hosted IPA passed the complete package verifier with the same
+app-content hash recorded above.
+
 ## Desktop baseline
 
 ```sh

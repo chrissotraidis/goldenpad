@@ -234,9 +234,9 @@ Alpha remains Preview 7.
 - [x] Install build `8` in place on the physical iPad and verify protected ROM,
   runtime, save, and preference data remains intact.
 - [x] Obtain hands-on iPadOS acceptance of the exact candidate.
-- [ ] Merge, publish `v0.1.0-preview.8`, independently download both assets,
+- [x] Merge, publish `v0.1.0-preview.8`, independently download both assets,
   compare them byte for byte, and rerun the IPA verifier.
-- [ ] Reply to the issue #8 reporter with the public Preview 8 link.
+- [x] Reply to the issue #8 reporter with the public Preview 8 link.
 
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.

@@ -6,7 +6,7 @@ Updated: 2026-08-27
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 8 is the current mobile release; the unchanged arm64 Mac Alpha remains Preview 7. |
+| Public release | Preview 8 is published from merge commit `4cc6e6eeed400cdd52d82a9101d27b6fc45768ab`. Its freshly downloaded IPA and checksum are byte-identical to the accepted local files and the hosted IPA passed the complete audit. The unchanged arm64 Mac Alpha remains Preview 7. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, iPad utility-menu actions, and the issue #19 diagnostic build on the affected iPhone 13 mini. |
 | Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |

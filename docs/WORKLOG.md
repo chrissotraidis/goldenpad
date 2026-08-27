@@ -23,6 +23,12 @@
 - Kept residual split-screen flicker/artifacting, issue #9, issue #19 reporter
   confirmation, controller ownership, lifecycle, audio, storage, and Mac work
   outside this release.
+- Merged PR #23 at `4cc6e6eeed400cdd52d82a9101d27b6fc45768ab`, published
+  `v0.1.0-preview.8`, downloaded the hosted IPA and checksum into a fresh audit
+  directory, proved both byte-identical to their accepted local files, and
+  reran the complete IPA verifier successfully.
+- Replied to issue #8 with the public Preview 8 link and the exact Touch
+  Controls toggle for the requested additional Fire button.
 
 ## 2026-08-25 - prepare Preview 7 compatibility promotion
 
