@@ -282,6 +282,7 @@ final class RecompPrototypeInput: ObservableObject {
     @Published private(set) var fourPlayerTestModeActive = false
     @Published private(set) var touchControlsVisible = true
     private var touchButtons: UInt16 = 0
+    private var touchFireState = RecompTouchFireState()
     private var touchMovement = SIMD2<Float>.zero
     private var touchLook = SIMD2<Float>.zero
     private var touchCrouchIsPressed = false
@@ -517,6 +518,11 @@ final class RecompPrototypeInput: ObservableObject {
         publish()
     }
 
+    func setFirePressed(_ pressed: Bool, source: RecompTouchFireSource) {
+        touchFireState.setPressed(pressed, source: source)
+        setButton(N64.z, pressed: touchFireState.isPressed)
+    }
+
     func releaseTouchInput() {
         clearTouchInputState()
         publish()
@@ -524,6 +530,7 @@ final class RecompPrototypeInput: ObservableObject {
 
     private func clearTouchInputState() {
         touchButtons = 0
+        touchFireState.reset()
         touchAimActive = false
         touchMovement = .zero
         touchLook = .zero
@@ -949,7 +956,7 @@ struct RecompPrototypeTouchControls: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                ForEach(placements) { placement in
+                ForEach(placements.filter(\.isEnabled)) { placement in
                     control(placement, canvas: geometry.size)
                 }
             }
@@ -1005,6 +1012,8 @@ struct RecompPrototypeTouchControls: View {
                 ) {
                     if placement.id == .crouch {
                         input.setCrouchPressed($0)
+                    } else if let fireSource = placement.id.fireSource {
+                        input.setFirePressed($0, source: fireSource)
                     } else {
                         input.setButton(placement.id.n64Mask, pressed: $0)
                     }
@@ -1014,7 +1023,7 @@ struct RecompPrototypeTouchControls: View {
         }
         .opacity(resolved.resolvedOpacity)
         .position(x: canvas.width * resolved.x, y: canvas.height * resolved.y)
-        .accessibilityLabel(placement.id.label)
+        .accessibilityLabel(placement.id.accessibilityLabel)
     }
 }
 

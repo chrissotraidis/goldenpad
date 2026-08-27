@@ -74,6 +74,8 @@ for required_text in \
     'iPad Touch Layout' \
     'recomp.touchLayout.phone.v1' \
     'recomp.touchLayout.tablet.v1' \
+    'Add left-side Fire button' \
+    'Additional Fire' \
     'Choose Original ROM' \
     'Your original file will not be changed.' \
     'The file you select stays in its original location.' \

@@ -27,7 +27,7 @@ package with:
 ```sh
 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.7-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.8-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -42,10 +42,10 @@ validation stay inside the app container. An in-place update reuses an existing
 valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
 identity, or provisioning profile is placed in the IPA.
 
-Preview 7 retains Preview 6's accepted controls and utility overlay plus Preview
-5's tank mapping and automatic-fire repair. Its embedded device and Simulator
-Metal libraries are explicitly targeted at iOS 17. The audited IPA SHA-256 is
-`4f6d26616fbc1d098ba1dce598ea8e958162c82efc975aa483db7e19bd9c58c4`.
+Preview 8 adds a default-off duplicate touch Fire control with independent
+layout persistence and safe multi-touch aggregation. It retains Preview 7's
+accepted controls and explicit iOS 17 Metal targets. The audited IPA SHA-256 is
+`773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`.
 
 ## Native Apple-Silicon Mac alpha
 

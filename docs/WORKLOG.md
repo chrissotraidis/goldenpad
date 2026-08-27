@@ -1,5 +1,29 @@
 # Worklog
 
+## 2026-08-27 - prepare Preview 8 optional second Fire release
+
+- Added a default-off **Add left-side Fire button** toggle to the live touch
+  editor. The duplicate N64 Z surface has independent position, scale, opacity,
+  and persisted enabled state for phone and tablet layouts.
+- Added one aggregated touch-Fire state so simultaneous primary and secondary
+  presses cannot cancel or latch each other when either finger releases.
+- Advanced only the mobile product to version `0.1.0` build `8`; the native
+  Apple-Silicon Mac Alpha remains Preview 7 unchanged.
+- Passed the focused Fire-state suite, complete input matrix, source/data
+  hygiene, signed ARM64 build, package audit, and explicit iOS 17 Metal-target
+  checks.
+- Packaged the unsigned IPA twice at SHA-256
+  `773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`,
+  with sorted app-content SHA-256
+  `be03451c0b0450c43096d49d944642a82bfb0f3c310f70289831e51fcd28dc6d`.
+- Installed build `8` in place on the physical iPad. Pre/post readback preserved
+  the Documents ROM and preferences byte for byte; protected Application
+  Support inputs were unchanged. The user tested the candidate and reported
+  that it works and is great.
+- Kept residual split-screen flicker/artifacting, issue #9, issue #19 reporter
+  confirmation, controller ownership, lifecycle, audio, storage, and Mac work
+  outside this release.
+
 ## 2026-08-25 - prepare Preview 7 compatibility promotion
 
 - Selected the physically confirmed issue #19 iOS 17 Metal-target correction
