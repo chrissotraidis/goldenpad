@@ -220,6 +220,15 @@ choice across an app relaunch; that requires runtime testing.
 
 ## Current GoldenPad behavior
 
+### Preview 8 optional touch Fire control
+
+Preview 8 adds **Add left-side Fire button** under Touch Controls. It is off by
+default and duplicates the primary N64 Z action without changing the accepted
+layout. When enabled, it has independent persisted position, scale, and opacity
+for iPhone and iPad. Primary and secondary touch sources are aggregated, so
+releasing either finger while the other remains held keeps Fire active; reset
+neutralizes both sources.
+
 ### Stable Preview 3 on iPhone/iPad
 
 The source of truth for the accepted controls release is tag

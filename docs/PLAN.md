@@ -15,16 +15,14 @@ The native Apple-Silicon macOS extension is a separate gated product track. Its
 research decision, architecture and implementation gates are recorded in
 [`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
-## Current execution plan (2026-08-25)
+## Current execution plan (2026-08-27)
 
-Preview 7 is published from merge commit
-`1f9ca4e7e668708937c88d77adb0ba6f41483256`. It explicitly targets iOS 17 for
-every embedded Metal library and changes no gameplay, input, audio, storage,
-lifecycle, multiplayer, or Mac runtime behavior. Physical iPadOS acceptance,
-preservation checks, deterministic packaging, and hosted re-audits passed. The
-Mac payload is byte-identical to Preview 6; horizontal-mouse sluggishness remains
-known debt rather than a Preview 7 regression. The optional second touch Fire
-button is the next independent feature.
+Preview 8 is the accepted mobile baseline. It adds one optional duplicate Fire
+control, disabled by default, with independent persisted layout values and
+multi-touch aggregation. Build `8` passed physical iPadOS acceptance,
+preservation checks, input tests, and deterministic packaging while retaining
+Preview 7's iOS 17 Metal target. The Mac Alpha remains Preview 7 and is
+byte-identical to Preview 6.
 
 Relative sizes are scope indicators, not calendar promises: **S** is one bounded
 seam/probe, **M** crosses a game/host or generated-patch boundary, **L** adds a
@@ -33,8 +31,8 @@ service.
 
 | Work | Size | Primary risk |
 | --- | ---: | --- |
-| Preview 7 compatibility promotion | S | Production identity, Metal-target provenance, and preservation regression |
-| Optional second touch Fire button | S | Layout persistence, overlapping touch targets, or duplicated/latched Fire input |
+| Preview 7 compatibility promotion | Complete | Production identity, Metal-target provenance, and preservation regression |
+| Optional second touch Fire button | Released in Preview 8 | Layout persistence, overlapping touch targets, or duplicated/latched Fire input |
 | TD-01 sustained-player measurement | Complete | Three physical-iPad Phantom magazines were identical at 20 events over 58 ticks |
 | TD-02/issue #8 controller verification | S | Touch is reporter-confirmed; physical controller result remains pending |
 | TD-01 authenticity patch | Released in Preview 5 | Retain its isolated rollback and evidence boundary |
@@ -70,13 +68,14 @@ Execute and land these as separate review units:
 | Order | Work package | Why now | Required output | Promotion gate |
 | ---: | --- | --- | --- | --- |
 | Complete | **Preview 7 production promotion** | Issue #19's affected iPhone passed the bounded iOS 17-target diagnostic | Production bundle build `7`, audited IPA and byte-identical Preview 6 Mac archive, preserved-data readback, and hands-on iPadOS/Mac acceptance | PASS: exact artifacts passed twice, published assets matched locally, and no unrelated behavior changed |
+| Complete | **Preview 8 optional second Fire** | User-requested duplicate Fire surface | Default-off control, independent saved layout, aggregated Z state, build `8`, and audited IPA | PASS: focused tests, in-place preserved-data install, and physical iPad acceptance |
 | 1 | **TD-01 sustained-player probe completion** | Complete; player magnitude now distinguishes the current cadence from the authentic target | Three ordinary-input Phantom magazines each recorded 20 events in 58 ticks, normalized to 34.4828; retained guard evidence is 13/17/18 per 100 ticks | PASS: three identical player numbers, matching ammo deltas, no gameplay-state writes, and protected data preserved |
 | Parallel user-facing lane | **Issue #8 and #19 release verification** | Issue #8 touch is positive and issue #19's diagnostic is positive | Issue #8 controller result and issue #19 production Preview 7 result | Do not close either report beyond the behavior its reporter actually verified |
 | Parallel evidence lane | **TD-03 A12X crash artifact/reproduction** | High-severity compatibility report, but no safe patch exists without affected evidence | Full redacted `.ips`, current Preview 4 reproduction, original-signature comparison, and affected/newer device comparison | First failing RT64/Metal boundary isolated or deliberate tested support-floor decision |
 
 Reporter confirmation and A12 evidence work can proceed without changing
-accepted Preview 7 controls. Preview 7 is published; keep the optional Fire
-button and TD-14/TD-07 behavior changes as separate later candidates. Follow
+accepted Preview 8 controls. Preview 8 is the mobile baseline; keep TD-14/TD-07
+behavior changes as separate later candidates. Follow
 [`TD01_FIRE_RATE_LOOP.md`](TD01_FIRE_RATE_LOOP.md) for the completed measurement,
 repair, acceptance, and rollback record. Any later input change must
 be reviewed separately from controller-lifecycle work because both touch input

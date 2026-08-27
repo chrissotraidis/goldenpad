@@ -602,6 +602,26 @@ downloaded into a fresh directory and matched the accepted local files byte for
 byte. The hosted IPA and Mac ZIP then passed their complete package verifiers
 with the same app-content hashes recorded above.
 
+Preview 8 optional-Fire acceptance:
+
+- the production iPhone/iPad identity is version `0.1.0` build `8`;
+- the additional left-side Fire control is disabled by default and retains its
+  own persisted position, scale, opacity, and enabled state on phone and tablet;
+- focused tests prove primary-only, secondary-only, simultaneous press,
+  release-one, release-both, and reset behavior for the aggregated N64 Z state;
+- the signed candidate executable SHA-256 is
+  `6d90224ad63fb50c0eaae9d76e42d105e152e105b3dc9a4e12dcb80db5984dff3`;
+- two unsigned IPA packaging passes reproduced SHA-256
+  `773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`
+  and sorted app-content SHA-256
+  `be03451c0b0450c43096d49d944642a82bfb0f3c310f70289831e51fcd28dc6d`;
+- all embedded Metal libraries retain only the iOS 17 AIR target;
+- build `8` installed in place on the physical iPad, with the Documents ROM and
+  preferences byte-identical before and after; protected Application Support
+  inputs were unchanged; and
+- the user tested the exact installed candidate and reported that it works and
+  is great. Existing graphical artifacting/flicker remains separate work.
+
 ## Desktop baseline
 
 ```sh

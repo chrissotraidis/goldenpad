@@ -217,6 +217,27 @@ A12-specific work, renderer experiments, audio changes, or storage changes.
 - [x] Ask issue #19's reporter to verify the production Preview 7 IPA. Keep
   issue #9 separate unless affected A12 hardware passes this exact artifact.
 
+## Preview 8 optional second Fire promotion
+
+Preview 8 is mobile-only and adds one optional duplicate Fire surface. The Mac
+Alpha remains Preview 7.
+
+- [x] Add a default-off left-side Fire control with independent position,
+  scale, opacity, and persisted enabled state for iPhone and iPad layouts.
+- [x] Aggregate both touch sources into one N64 Z state; prove releasing one
+  held source cannot release or latch the other.
+- [x] Pass the focused Fire-state test, full input matrix, source hygiene,
+  build-identity, ROM-data, package, and iOS 17 Metal-target audits.
+- [x] Build production `GoldenPad` version `0.1.0` build `8`.
+- [x] Package the unsigned IPA twice with identical SHA-256
+  `773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`.
+- [x] Install build `8` in place on the physical iPad and verify protected ROM,
+  runtime, save, and preference data remains intact.
+- [x] Obtain hands-on iPadOS acceptance of the exact candidate.
+- [ ] Merge, publish `v0.1.0-preview.8`, independently download both assets,
+  compare them byte for byte, and rerun the IPA verifier.
+- [ ] Reply to the issue #8 reporter with the public Preview 8 link.
+
 The remaining sections preserve the `GoldenPad Legacy` clean-checkout and
 packaging procedure.
 

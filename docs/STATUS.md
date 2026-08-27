@@ -1,12 +1,12 @@
 # Status
 
-Updated: 2026-08-25
+Updated: 2026-08-27
 
 ## Current at a glance
 
 | Surface | Current truth |
 | --- | --- |
-| Public release | Preview 7 is published from merge commit `1f9ca4e7e668708937c88d77adb0ba6f41483256` with separately audited unsigned iPhone/iPad and arm64 Mac Alpha artifacts. Every hosted asset is byte-identical to its accepted local file. |
+| Public release | Preview 8 is the current mobile release; the unchanged arm64 Mac Alpha remains Preview 7. |
 | Primary runtime | Static GoldenEye ARM64 output + N64ModernRuntime + RT64/Plume/Metal. MGB64 is Legacy only. |
 | Accepted baseline | Preview 5 mobile gameplay/controls plus physically accepted Preview 6 Mac menu and keyboard/mouse controls, iPad utility-menu actions, and the issue #19 diagnostic build on the affected iPhone 13 mini. |
 | Major gameplay repair | Preview 5 fixes TD-01 by scaling the shared positive player/guard automatic-fire interval by 3 while preserving nonpositive semi-auto classifications. Physical iPad telemetry changed the Phantom from 20 events/58 ticks to the exact expected 12/100 with accepted controls/gameplay. |
@@ -14,9 +14,9 @@ Updated: 2026-08-25
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
 | Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
-| Preview 7 behavior | Preview 6's controls, automatic-fire cadence, renderer settings, ROM flow, saves, audio, touch layouts, Mac app, and limitations are retained unchanged. |
-| Immediate engineering gate | Take the optional second touch Fire button as a separate Preview 8 candidate. Mac horizontal-mouse sluggishness remains measured follow-up debt. |
-| Immediate user-facing follow-up | Production Preview 7 test requests are posted to issue #19 and the separate A12X issue #9. Await reporter results. Issue #17 is reporter-closed; issue #8 touch is positive with controller confirmation pending. |
+| Preview 8 behavior | Adds one default-off, independently editable duplicate Fire button. Preview 7's controls, cadence, Metal target, ROM flow, saves, audio, renderer settings, and limitations remain unchanged. |
+| Immediate engineering gate | Keep Preview 8 frozen; isolate renderer flicker and lifecycle/controller debt separately. Mac horizontal-mouse sluggishness remains measured follow-up debt. |
+| Immediate user-facing follow-up | Production Preview 7 test requests are posted to issue #19 and the separate A12X issue #9. Await reporter results. Issue #17 is reporter-closed; issue #8's modern controls are maintainer-accepted and its reporter is invited to test Preview 8's extra Fire button. |
 | Storage/build hygiene | The runtime-managed Application Support ROM copy lacks the Documents copy's explicit backup/protection attributes; game-bearing build provenance remains private-input/manual. |
 
 Documentation ownership:
@@ -39,6 +39,8 @@ Documentation ownership:
   Preview 6's public delta, artifact identities, acceptance, and limitations.
 - [`RELEASE_NOTES_0.1.0-preview.7.md`](RELEASE_NOTES_0.1.0-preview.7.md) records
   the bounded compatibility promotion and its pending production gates.
+- [`RELEASE_NOTES_0.1.0-preview.8.md`](RELEASE_NOTES_0.1.0-preview.8.md) records
+  the optional second Fire control and its physical acceptance boundary.
 
 ## Summary
 
@@ -49,7 +51,15 @@ detailed current evidence and unresolved physical gates are recorded in
 [`RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md`](RT64_N64RECOMP_MORNING_HANDOFF_2026-08-21.md)
 and [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md).
 
-Preview 7 is intentionally limited to the issue #19 Metal deployment-target
+Preview 8 is a mobile-only feature release. It adds an optional second Fire
+button under Touch Controls, disabled by default, with its own saved position,
+scale, and opacity. Both Fire surfaces aggregate into one N64 Z action so
+releasing one while the other is held cannot cancel or latch Fire. The accepted
+build is version `0.1.0` build `8`; it retains Preview 7's explicit iOS 17 Metal
+targets and all other accepted behavior. The user accepted the installed build
+on a physical iPad. The Mac Alpha remains the byte-identical Preview 7 artifact.
+
+Preview 7 was intentionally limited to the issue #19 Metal deployment-target
 correction. Preview 6 embedded libraries inherited an iOS 26.5 target despite
 the app declaring iOS 17. The exact side-by-side diagnostic artifact rebuilt
 all device and Simulator libraries with explicit iOS 17 AIR triples and passed
@@ -806,12 +816,11 @@ evidence ledger below is preserved as historical validation for
 
 ## Next gate
 
-Preview 7 is the published compatibility release selected from the physically
-successful issue #19 iOS 17 Metal-target experiment. Preview 4's exact rollback
+Preview 8 is the accepted mobile release with the default-off second Fire
+control. Preview 7 remains the Mac Alpha and compatibility rollback. Preview 4's exact rollback
 identity remains frozen in [`PREVIEW_4_BASELINE.md`](PREVIEW_4_BASELINE.md).
 Obtain issue #19 production-artifact confirmation; issue #9 remains a separate
-A12 evidence lane. Next, take the optional Fire button, TD-14 modal
-neutralization, TD-07 controller containment, physical
+A12 evidence lane. Next, take TD-14 modal neutralization, TD-07 controller containment, physical
 lifecycle/audio/flicker classification, TD-12 storage hygiene, and TD-13 build
 proof as separate units before broad
 multiplayer or renderer changes. Do not import matching-target SDK

@@ -16,6 +16,31 @@ xcrun swiftc \
 
 "$test_root/verify-recomp-input-matrix"
 
+xcrun swiftc \
+  -module-cache-path "$test_root/swift-module-cache" \
+  "$repo_root/Sources/RecompTouchFireState.swift" \
+  "$repo_root/Tests/RecompTouchFireStateTests.swift" \
+  -o "$test_root/verify-recomp-touch-fire"
+
+"$test_root/verify-recomp-touch-fire"
+
+for secondary_fire_marker in \
+  'case move, look, fire, secondaryFire' \
+  'placement(.secondaryFire, 0.24, 0.58, enabled: false)' \
+  'placement(.secondaryFire, 0.30, 0.48, 0.95, enabled: false)' \
+  'ForEach(placements.filter(\.isEnabled))' \
+  'input.setFirePressed($0, source: fireSource)'
+do
+  if ! grep -Fq "$secondary_fire_marker" \
+    "$repo_root/Sources/RecompPrototypeTouchLayout.swift" \
+    "$repo_root/Sources/RecompPrototypeInput.swift"; then
+    echo "FAIL: optional secondary Fire path is missing $secondary_fire_marker" >&2
+    exit 1
+  fi
+done
+
+echo "PASS: optional secondary Fire is disabled by default and routed through aggregated input"
+
 for mac_frontend_marker in \
   'goldenpad_recomp_frontend_input_active' \
   'frontEndActive: frontEndInputActive' \

@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-25
+Updated: 2026-08-27
 
 This is GoldenPad's authoritative engineering-debt ledger. It records current
 defects, evidence strength, repair order, acceptance gates, rejected approaches,
@@ -201,22 +201,27 @@ Preview 7 retains Preview 6's accepted controls and Preview 5's exact expected
 12 Phantom events per 100 ticks. Its byte-identical Mac payload retains known
 horizontal mouse sluggishness without introducing a Preview 7 regression.
 
+Preview 8 adds only the default-off duplicate touch Fire control. Focused tests
+prove that primary and secondary touches publish one N64 Z state and that
+releasing either source does not cancel or latch the other. Its in-place iPad
+installation preserved the ROM and preferences, and the user accepted the
+feature in gameplay. Renderer flicker, controller ownership, lifecycle, audio,
+storage, and compatibility debt remain separate.
+
 The next landing sequence is:
 
 1. obtain issue #19 production-artifact confirmation for the published Preview
    7 release;
-2. implement the optional second touch Fire button as one independently
-   movable/resizable control and accept it separately on phone and tablet;
-3. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
+2. close TD-14 modal/run-loop neutralization and TD-07 controller collapse as
    separate input-lifecycle units;
-4. run the physical audio/lifecycle/flicker evidence gates and add only the
+3. run the physical audio/lifecycle/flicker evidence gates and add only the
    counters selected by those observations;
-5. act on A12X issue #9 with the corrected target, then a bounded Tier-1 repair
+4. act on A12X issue #9 with the corrected target, then a bounded Tier-1 repair
    or tested support-floor decision if the first-draw crash remains;
-6. keep the accepted TD-08 Mac input repair frozen and take only a justified
+5. keep the accepted TD-08 Mac input repair frozen and take only a justified
    TD-09 edge repair;
-7. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
-8. implement stable real multi-controller ownership before any network layer.
+6. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
+7. implement stable real multi-controller ownership before any network layer.
 
 Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
 is open. A transport demo would not prove multiplayer feasibility and would

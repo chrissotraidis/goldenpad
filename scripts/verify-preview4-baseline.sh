@@ -7,9 +7,9 @@ baseline_tree=4232141f9d14d2f6197e43173694f649828e730f
 mode=${1:-strict}
 
 case "$mode" in
-    strict|--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7) ;;
+    strict|--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7|--allow-preview8) ;;
     *)
-        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7]" >&2
+        echo "Usage: $0 [--allow-td01-probe|--allow-td01-repair|--allow-preview6|--allow-preview7|--allow-preview8]" >&2
         exit 2
         ;;
 esac
@@ -47,10 +47,26 @@ Tests/RecompControlMappingTests.swift
 patches/goldeneye64recomp-ios-modern-controls.patch'
     preview7_diff="$preview6_diff
 patches/rt64-ios-embedded.patch"
+    preview8_diff='CMakeLists.txt
+Config/RecompPrototypeInfo.plist.in
+Sources/Mac/GoldenPadMacApp.swift
+Sources/Mac/RecompMacInput.swift
+Sources/RecompControlMapping.swift
+Sources/RecompPrototypeApp.swift
+Sources/RecompPrototypeInput.swift
+Sources/RecompPrototypeTouchLayout.swift
+Sources/RecompTouchFireState.swift
+Support/RecompPrototype/recomp_game_start.cpp
+Support/RecompPrototype/recomp_rt64_surface_stub.cpp
+Tests/RecompControlMappingTests.swift
+Tests/RecompTouchFireStateTests.swift
+patches/goldeneye64recomp-ios-modern-controls.patch
+patches/rt64-ios-embedded.patch'
     if ! { [ "$mode" = "--allow-td01-probe" ] && [ "$runtime_diff" = "$probe_diff" ]; } &&
         ! { [ "$mode" = "--allow-td01-repair" ] && [ "$runtime_diff" = "$repair_diff" ]; } &&
         ! { [ "$mode" = "--allow-preview6" ] && [ "$runtime_diff" = "$preview6_diff" ]; } &&
-        ! { [ "$mode" = "--allow-preview7" ] && [ "$runtime_diff" = "$preview7_diff" ]; }; then
+        ! { [ "$mode" = "--allow-preview7" ] && [ "$runtime_diff" = "$preview7_diff" ]; } &&
+        ! { [ "$mode" = "--allow-preview8" ] && [ "$runtime_diff" = "$preview8_diff" ]; }; then
         echo "FAIL: runtime diff exceeds the selected Preview 4 measurement boundary" >&2
         printf '%s\n' "$runtime_diff" >&2
         exit 1
@@ -83,7 +99,9 @@ do
 done
 
 echo "PASS: current branch descends from the exact Preview 4 tree"
-if [ "$mode" = "--allow-preview7" ]; then
+if [ "$mode" = "--allow-preview8" ]; then
+    echo "PASS: runtime diff adds only Preview 8 identity and the optional aggregated second touch Fire control"
+elif [ "$mode" = "--allow-preview7" ]; then
     echo "PASS: runtime diff is limited to Preview 6 behavior, Preview 7 identity, and the iOS 17 Metal-target correction"
 elif [ "$mode" = "--allow-preview6" ]; then
     echo "PASS: runtime diff is limited to Preview 6 Mac input, mobile utility-menu, identity, and retained Preview 5 repair paths"

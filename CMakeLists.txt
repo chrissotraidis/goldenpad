@@ -32,7 +32,7 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "7" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "8" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
@@ -469,6 +469,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Sources/RecompPrototypeInput.swift
         Sources/RecompPrototypeMetalCanvas.swift
         Sources/RecompPrototypeROMStore.swift
+        Sources/RecompTouchFireState.swift
         Sources/RecompPrototypeTouchLayout.swift
         ${goldenpad_recomp_resources}
         ${goldenpad_recomp_rt64_bridge}

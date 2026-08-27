@@ -40,7 +40,7 @@ enum RecompTouchDeviceClass: String, CaseIterable, Codable {
 }
 
 enum RecompTouchControlID: String, CaseIterable, Codable, Identifiable {
-    case move, look, fire, aim, action, crouch, weapon, pause
+    case move, look, fire, secondaryFire, aim, action, crouch, weapon, pause
 
     var id: String { rawValue }
 
@@ -48,7 +48,7 @@ enum RecompTouchControlID: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .move: "MOVE"
         case .look: "LOOK"
-        case .fire: "FIRE"
+        case .fire, .secondaryFire: "FIRE"
         case .aim: "AIM"
         case .action: "ACTION"
         case .crouch: "DUCK"
@@ -60,7 +60,7 @@ enum RecompTouchControlID: String, CaseIterable, Codable, Identifiable {
     var n64Mask: UInt16 {
         switch self {
         case .move, .look: 0
-        case .fire: 0x2000
+        case .fire, .secondaryFire: 0x2000
         case .aim: 0x0010
         case .action: 0x4000
         case .crouch: 0
@@ -71,7 +71,7 @@ enum RecompTouchControlID: String, CaseIterable, Codable, Identifiable {
 
     var tint: Color {
         switch self {
-        case .fire, .aim: .gray
+        case .fire, .secondaryFire, .aim: .gray
         case .weapon: .blue
         case .action: .green
         case .crouch: .yellow
@@ -92,6 +92,22 @@ enum RecompTouchControlID: String, CaseIterable, Codable, Identifiable {
     var usesRoundedRectangle: Bool {
         self == .move || self == .look
     }
+
+    var editorLabel: String {
+        self == .secondaryFire ? "FIRE 2" : label
+    }
+
+    var accessibilityLabel: String {
+        self == .secondaryFire ? "Additional Fire" : label
+    }
+
+    var fireSource: RecompTouchFireSource? {
+        switch self {
+        case .fire: .primary
+        case .secondaryFire: .secondary
+        default: nil
+        }
+    }
 }
 
 struct RecompTouchPlacement: Identifiable, Codable, Equatable {
@@ -100,9 +116,14 @@ struct RecompTouchPlacement: Identifiable, Codable, Equatable {
     var y: CGFloat
     var scale: CGFloat
     var opacity: CGFloat? = nil
+    var enabled: Bool? = nil
 
     var resolvedOpacity: CGFloat {
         opacity ?? 0.72
+    }
+
+    var isEnabled: Bool {
+        enabled ?? (id != .secondaryFire)
     }
 
     func sanitized() -> RecompTouchPlacement {
@@ -125,6 +146,7 @@ enum RecompTouchLayoutDefaults {
                 placement(.move, 0.13, 0.82, 1.14),
                 placement(.look, 0.78, 0.72),
                 placement(.fire, 0.91, 0.71, 1.16),
+                placement(.secondaryFire, 0.24, 0.58, enabled: false),
                 placement(.aim, 0.91, 0.58),
                 placement(.action, 0.91, 0.84, 0.94),
                 placement(.crouch, 0.81, 0.89, 0.82),
@@ -138,6 +160,7 @@ enum RecompTouchLayoutDefaults {
                 placement(.move, 0.188389, 0.726667),
                 placement(.look, 0.781991, 0.687179, 0.70),
                 placement(.fire, 0.938389, 0.573504, 1.10),
+                placement(.secondaryFire, 0.30, 0.48, 0.95, enabled: false),
                 placement(.aim, 0.942733, 0.408547, 0.95),
                 placement(.action, 0.932070, 0.744444, 0.90),
                 placement(.crouch, 0.909953, 0.898291, 0.78),
@@ -151,9 +174,10 @@ enum RecompTouchLayoutDefaults {
         _ id: RecompTouchControlID,
         _ x: CGFloat,
         _ y: CGFloat,
-        _ scale: CGFloat = 1
+        _ scale: CGFloat = 1,
+        enabled: Bool? = nil
     ) -> RecompTouchPlacement {
-        RecompTouchPlacement(id: id, x: x, y: y, scale: scale)
+        RecompTouchPlacement(id: id, x: x, y: y, scale: scale, enabled: enabled)
     }
 }
 
@@ -261,10 +285,14 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
         placements.firstIndex { $0.id == selectedID }
     }
 
+    private var secondaryFireEnabled: Bool {
+        placements.first(where: { $0.id == .secondaryFire })?.isEnabled ?? false
+    }
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                ForEach(placements) { placement in
+                ForEach(placements.filter(\.isEnabled)) { placement in
                     editorControl(placement, canvas: geometry.size)
                 }
 
@@ -310,9 +338,19 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
                 .fontWeight(.semibold)
             }
 
+            Toggle(
+                "Add left-side Fire button",
+                isOn: Binding(
+                    get: { secondaryFireEnabled },
+                    set: { setSecondaryFireEnabled($0) }
+                )
+            )
+            .font(.caption.weight(.semibold))
+            .accessibilityHint("Adds a second movable Fire control without changing the original Fire button")
+
             if let index = selectedIndex {
                 HStack(spacing: 12) {
-                    Text(placements[index].id.label)
+                    Text(placements[index].id.editorLabel)
                         .font(.caption.weight(.bold))
                         .frame(width: 62, alignment: .leading)
                     Slider(
@@ -323,7 +361,7 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
                         in: 0.55...1.60,
                         step: 0.05
                     )
-                    .accessibilityLabel("\(placements[index].id.label) size")
+                    .accessibilityLabel("\(placements[index].id.editorLabel) size")
                     Text("\(Int((placements[index].scale * 100).rounded()))%")
                         .font(.caption.monospacedDigit())
                         .frame(width: 42, alignment: .trailing)
@@ -341,7 +379,7 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
                         in: 0.20...1,
                         step: 0.05
                     )
-                    .accessibilityLabel("\(placements[index].id.label) opacity")
+                    .accessibilityLabel("\(placements[index].id.editorLabel) opacity")
                     Text("\(Int((placements[index].resolvedOpacity * 100).rounded()))%")
                         .font(.caption.monospacedDigit())
                         .frame(width: 42, alignment: .trailing)
@@ -420,7 +458,7 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
                     )
                 }
         )
-        .accessibilityLabel(placement.id.label)
+        .accessibilityLabel(placement.id.accessibilityLabel)
         .accessibilityHint("Drag to move; use the size and opacity sliders at the top")
     }
 
@@ -448,5 +486,11 @@ struct RecompPrototypeLiveTouchLayoutEditor: View {
     private func updateSelectedOpacity(_ opacity: CGFloat) {
         guard let index = selectedIndex else { return }
         placements[index].opacity = min(max(opacity, 0.20), 1)
+    }
+
+    private func setSecondaryFireEnabled(_ enabled: Bool) {
+        guard let index = placements.firstIndex(where: { $0.id == .secondaryFire }) else { return }
+        placements[index].enabled = enabled
+        selectedID = enabled ? .secondaryFire : placements.first(where: { $0.isEnabled })?.id
     }
 }
