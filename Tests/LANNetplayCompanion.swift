@@ -17,6 +17,7 @@ final class Companion: NSObject,
     private var invited = false
     private var readySent = false
     private var passed = false
+    private var goReceived = false
     private var lastOrderedFrame: UInt64 = 0
 
     func run() {
@@ -75,11 +76,21 @@ final class Companion: NSObject,
                 kind: .ready,
                 senderID: senderID,
                 ready: true))
+        } else if message.kind == .start {
+            send(LANNetplayMessage(
+                kind: .runtimeReady,
+                senderID: senderID))
+        } else if message.kind == .go {
+            goReceived = true
         } else if message.kind == .orderedFrame,
                   let frame = message.frame,
                   let inputs = message.inputs,
                   inputs.count == LANNetplayProtocol.maximumPlayers,
                   !passed {
+            guard goReceived else {
+                fputs("LAN companion: ordered frame arrived before go barrier\n", stderr)
+                exit(1)
+            }
             guard lastOrderedFrame == 0 || frame == lastOrderedFrame + 1 else {
                 fputs("LAN companion: non-monotonic ordered frame\n", stderr)
                 exit(1)
@@ -91,7 +102,7 @@ final class Companion: NSObject,
                 input: .neutral))
             guard frame >= 8 else { return }
             passed = true
-            print("LAN companion: PASS discovery, Player 2, ready/start, ordered frames 1...\(frame)")
+            print("LAN companion: PASS discovery, Player 2, ready/start/runtime-ready/go, ordered frames 1...\(frame)")
             fflush(stdout)
             browser.stopBrowsingForPeers()
             // Stay connected briefly so the one-Simulator validation can

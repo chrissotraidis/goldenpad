@@ -31,6 +31,12 @@ private func goldenPadRecompNetplayMatchActive() -> Int32
 @_silgen_name("goldenpad_recomp_netplay_pause")
 private func goldenPadRecompNetplayPause()
 
+@_silgen_name("goldenpad_recomp_netplay_runtime_ready")
+private func goldenPadRecompNetplayRuntimeReady() -> Int32
+
+@_silgen_name("goldenpad_recomp_netplay_start_stream")
+private func goldenPadRecompNetplayStartStream()
+
 @_silgen_name("goldenpad_recomp_performance_counters")
 private func goldenPadRecompPerformanceCounters(
     _ displayLists: UnsafeMutablePointer<UInt64>,
@@ -91,8 +97,12 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
     private var nextOrderedFrame: UInt64 = 1
     private var frameTimer: Timer?
     private var checksumTimer: Timer?
+    private var runtimeReadyTimer: Timer?
     private var localChecksums: [UInt64: UInt64] = [:]
     private var peerChecksums: [String: [UInt64: UInt64]] = [:]
+    private var runtimeReadyIDs: Set<String> = []
+    private var runtimeReadyReported = false
+    private var streamStarted = false
     private var transportStopped = false
     private var performanceSample: (
         time: TimeInterval,
@@ -114,6 +124,7 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
     deinit {
         frameTimer?.invalidate()
         checksumTimer?.invalidate()
+        runtimeReadyTimer?.invalidate()
     }
 
     func hostRoom() {
@@ -198,6 +209,8 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         frameTimer = nil
         checksumTimer?.invalidate()
         checksumTimer = nil
+        runtimeReadyTimer?.invalidate()
+        runtimeReadyTimer = nil
         goldenPadRecompNetplayConfigure(0, -1, 0)
         role = .idle
         rooms = []
@@ -209,6 +222,9 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         performance = "Render -- · sim -- · net -- fps"
         performanceSample = nil
         transportStopped = false
+        runtimeReadyIDs = []
+        runtimeReadyReported = false
+        streamStarted = false
         gameLaunchAuthorized = false
         nextOrderedFrame = 1
         latestInputs = Array(repeating: .neutral, count: LANNetplayProtocol.maximumPlayers)
@@ -258,11 +274,55 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         roomSeed = seed
         gameLaunchAuthorized = true
         transportStopped = false
+        runtimeReadyIDs = []
+        runtimeReadyReported = false
+        streamStarted = false
         nextOrderedFrame = 1
         latestInputs = Array(repeating: .neutral, count: LANNetplayProtocol.maximumPlayers)
         goldenPadRecompNetplayConfigure(1, Int32(slot), seed)
         status = "Connected as Player \(slot + 1). Use GoldenEye's stock Multiplayer menu."
-        transportHealth = "Starting ordered input stream"
+        transportHealth = "Starting native runtime"
+        startRuntimeReadyTimer()
+    }
+
+    private func startRuntimeReadyTimer() {
+        runtimeReadyTimer?.invalidate()
+        runtimeReadyTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) {
+            [weak self] _ in self?.runtimeReadyTick()
+        }
+    }
+
+    private func runtimeReadyTick() {
+        guard isPlaying, !runtimeReadyReported,
+              goldenPadRecompNetplayRuntimeReady() != 0 else { return }
+        runtimeReadyReported = true
+        if role == .host {
+            runtimeReadyIDs.insert(localID)
+            status = "Host runtime ready. Waiting for the other device…"
+            maybeStartOrderedStream()
+        } else {
+            status = "Runtime ready. Waiting for the host to release frame 1…"
+            send(LANNetplayMessage(kind: .runtimeReady, senderID: localID))
+        }
+        transportHealth = "Runtime ready · waiting at frame 1"
+    }
+
+    private func maybeStartOrderedStream() {
+        guard role == .host, !streamStarted else { return }
+        let required = Set(participants.filter(\.connected).map(\.id))
+        guard required.count >= 2, required.isSubset(of: runtimeReadyIDs) else { return }
+        send(LANNetplayMessage(kind: .go, senderID: localID))
+        startOrderedStream()
+    }
+
+    private func startOrderedStream() {
+        guard !streamStarted else { return }
+        streamStarted = true
+        runtimeReadyTimer?.invalidate()
+        runtimeReadyTimer = nil
+        goldenPadRecompNetplayStartStream()
+        status = "Connected as Player \((assignedSlot ?? 0) + 1). Use GoldenEye's stock Multiplayer menu."
+        transportHealth = "Synchronized frame 1 released"
         startTimers()
     }
 
@@ -385,6 +445,14 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
             guard role != .host, let seed = message.roomSeed,
                   let slot = message.assignedSlot else { return }
             beginGame(seed: seed, slot: slot)
+        case .runtimeReady:
+            guard role == .host,
+                  participants.contains(where: { $0.id == message.senderID }) else { return }
+            runtimeReadyIDs.insert(message.senderID)
+            maybeStartOrderedStream()
+        case .go:
+            guard role == .guest else { return }
+            startOrderedStream()
         case .input:
             guard role == .host,
                   let slot = participants.first(where: { $0.id == message.senderID })?.slot,
@@ -428,11 +496,14 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         guard let local = localChecksums[frame] else { return }
         for participant in participants where participant.id != localID {
             if let remote = peerChecksums[participant.id]?[frame], remote != local {
-                fault("DESYNC at logical frame \(frame). The test was stopped.")
+                let detail = String(
+                    format: "DESYNC frame %llu · host %016llx · peer %016llx",
+                    frame, local, remote)
                 send(LANNetplayMessage(
                     kind: .fault,
                     senderID: localID,
-                    detail: status))
+                    detail: detail))
+                fault(detail)
                 return
             }
         }
@@ -454,11 +525,18 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
     }
 
     private func fault(_ detail: String) {
+        guard !transportStopped else { return }
+        print("[GoldenPadLAN] fault: \(detail)")
         status = detail
-        transportHealth = "Stopped"
+        transportHealth = "Stopped · \(detail)"
         transportStopped = true
         frameTimer?.invalidate()
         frameTimer = nil
+        checksumTimer?.invalidate()
+        checksumTimer = nil
+        runtimeReadyTimer?.invalidate()
+        runtimeReadyTimer = nil
+        streamStarted = false
         if gameLaunchAuthorized {
             // Keep the deterministic runtime explicitly paused. Disabling
             // netplay here would let the process continue offline and diverge.

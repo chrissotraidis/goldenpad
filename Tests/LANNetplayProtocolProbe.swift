@@ -20,6 +20,17 @@ struct LANNetplayProtocolProbe {
         precondition(decoded == message)
         precondition(decoded.isCompatible)
 
+        let barrier = LANNetplayMessage(kind: .runtimeReady, senderID: playerTwo.id)
+        let barrierData = try JSONEncoder().encode(barrier)
+        let decodedBarrier = try JSONDecoder().decode(
+            LANNetplayMessage.self, from: barrierData)
+        precondition(decodedBarrier == barrier)
+        let go = LANNetplayMessage(kind: .go, senderID: playerOne.id)
+        let goData = try JSONEncoder().encode(go)
+        let decodedGo = try JSONDecoder().decode(
+            LANNetplayMessage.self, from: goData)
+        precondition(decodedGo == go)
+
         var wrongVersion = decoded
         wrongVersion.version += 1
         precondition(!wrongVersion.isCompatible)

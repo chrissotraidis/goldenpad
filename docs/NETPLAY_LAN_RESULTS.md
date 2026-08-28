@@ -11,10 +11,47 @@ it, assign stable player slots, exchange ready/start state, send ordered
 four-port input frames, consume them in the native GoldenEye runtime behind a
 three-frame buffer, and stop simulation on a missing authoritative frame.
 
-This does **not** yet prove a playable two-device match. The remaining decisive
-gate is running the installed build on the physical iPad and iPhone, navigating
-the stock GoldenEye Multiplayer flow, and observing matching canonical
-checksums while both people control their assigned views.
+The first physical iPad/iPhone run proved discovery, secure joining, stable
+Player 1/2 assignment, ready/start, and roughly two seconds of 60 Hz ordered
+input delivery. It also found a real synchronization defect: the two runtimes
+started 178 ms apart, their local VI-derived clocks differed by one tick, and
+the first shared checksum comparison stopped both devices.
+
+LAN Lab protocol v2 now derives netplay time from the authoritative consumed
+input frame and holds both native runtimes at a ready barrier before the host
+releases frame 1. The corrected build is installed with both devices' ROM,
+saves, and preferences preserved byte-for-byte. A second physical run remains
+the decisive playable-synchronization gate.
+
+## First physical run: failure and diagnosis
+
+- Host configured at `08:06:39.779`; guest configured at `08:06:39.850`.
+- Host reached its first native input poll at `08:06:40.787`; guest reached it
+  at `08:06:40.965`, a 178 ms offset.
+- At the first comparable boot-state sample, the host menu timer was 71 and
+  the guest timer was 72.
+- Reliable ordered-frame packets arrived at roughly 60 Hz until
+  `08:06:41.854`, then the host emitted the checksum-fault message and stopped
+  the frame timer.
+- Neither runtime logged a missing authoritative frame. Discovery and
+  transport were not the initial failure.
+- The overlay correctly showed `Stopped`, but the old pause seam stopped
+  synchronized input rather than the entire presentation loop. Continuing
+  animation after the fault was independent divergence, not working netplay.
+
+## Protocol v2 correction
+
+- Both native runtimes now block at their first controller poll and report
+  runtime-ready to the room host.
+- The host releases one explicit `go` barrier before frame 1. Reliable message
+  ordering guarantees the guest sees `go` before any ordered frame.
+- While netplay is enabled, the patched GoldenEye clock is based on the shared
+  consumed logical frame instead of each device's local RT64 VI count.
+- A fault now stops frame, checksum, and ready timers once, preserves the
+  original reason, prints it to unified logging, and shows the checksum values
+  directly in the overlay.
+- The protocol/compatibility identifier is now v2 so an older LAN Lab build
+  cannot silently join the corrected room.
 
 ## Implemented
 
@@ -97,6 +134,16 @@ checksums while both people control their assigned views.
 
 The IPA is locally development-signed for the paired devices. It is a private
 diagnostic artifact, not a public or generally installable release.
+
+Corrected v2 artifact:
+
+- IPA: `dist/GoldenPad-LAN-Lab-2-clock-barrier-signed.ipa`
+- Size: 7,202,174 bytes
+- SHA-256: `4ba647d7f40dc5498d925ab87ff1016a8a3e5c7f2e1fccebb5304fbb11757f38`
+- ROM content: none
+- Installed in place on the physical iPad and iPhone.
+- Pre/post-install ROM, active save, backup save, and preferences: byte-for-byte
+  preserved on both devices.
 
 ## Physical iPad + iPhone gate
 

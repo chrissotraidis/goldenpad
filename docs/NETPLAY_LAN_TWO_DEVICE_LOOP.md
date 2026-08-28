@@ -125,7 +125,10 @@ install-and-play procedure rather than an architectural unknown.
 - G5 one-Simulator validation: PASS, including ordered runtime frames and the
   corrected full-frame pre-match presentation.
 - G6 artifact: PASS. The signed ROM-free diagnostic app is installed on both
-  paired physical devices. Physical two-device play is READY TO RUN.
+  paired physical devices. The first physical run found and localized a
+  VI-clock checksum desync. Protocol v2 with an authoritative-frame clock and
+  native runtime-ready barrier is installed; the physical replay is READY TO
+  RUN.
 
 See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
 physical procedure.

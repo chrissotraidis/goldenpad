@@ -97,6 +97,8 @@ std::atomic<bool> depthRebuildProbeEnabled = false;
 std::atomic<bool> determinismProbeEnabled = false;
 std::atomic<bool> netplayEnabled = false;
 std::atomic<bool> netplayFaulted = false;
+std::atomic<bool> netplayRuntimeReady = false;
+std::atomic<bool> netplayStreamStarted = false;
 std::atomic<int32_t> netplayAssignedSlot = -1;
 std::atomic<uint64_t> netplayRoomSeed = 0;
 std::atomic<uint64_t> netplayReceivedFrame = 0;
@@ -1282,8 +1284,16 @@ void initializeNetplayMatchClock(uint8_t *rdram) {
 }
 
 void pollNetplayInput(uint8_t *rdram) {
-    if (netplayFaulted.load(std::memory_order_acquire)) {
-        return;
+    {
+        std::unique_lock lock(netplayFrameMutex);
+        netplayFrameCondition.wait(lock, [] {
+            return !netplayEnabled.load(std::memory_order_acquire) ||
+                (!netplayFaulted.load(std::memory_order_acquire) &&
+                 netplayStreamStarted.load(std::memory_order_acquire));
+        });
+        if (!netplayEnabled.load(std::memory_order_acquire)) {
+            return;
+        }
     }
     applyNetplayRoomSeed(rdram);
     initializeNetplayMatchClock(rdram);
@@ -1298,11 +1308,15 @@ void pollNetplayInput(uint8_t *rdram) {
                 const NetplayFrame &candidate =
                     netplayFrames[expected % kNetplayFrameCapacity];
                 return !netplayEnabled.load(std::memory_order_acquire) ||
+                    netplayFaulted.load(std::memory_order_acquire) ||
                     (candidate.valid && candidate.number == expected &&
                      netplayReceivedFrame.load(std::memory_order_acquire) >=
                         expected + kDeterminismInputDelayFrames);
             });
         if (!netplayEnabled.load(std::memory_order_acquire)) {
+            return;
+        }
+        if (netplayFaulted.load(std::memory_order_acquire)) {
             return;
         }
         NetplayFrame &candidate = netplayFrames[expected % kNetplayFrameCapacity];
@@ -1347,6 +1361,8 @@ void pollInput() {
         logEvent("input", "game began polling the prototype controller bridge");
     }
     if (netplayEnabled.load(std::memory_order_acquire)) {
+        netplayRuntimeReady.store(true, std::memory_order_release);
+        netplayFrameCondition.notify_all();
         pollNetplayInput(activeRdram.load(std::memory_order_acquire));
         return;
     }
@@ -1763,6 +1779,8 @@ extern "C" void goldenpad_recomp_netplay_configure(
     netplaySeedApplied.store(false, std::memory_order_release);
     netplayMatchInitialized.store(false, std::memory_order_release);
     netplayFaulted.store(false, std::memory_order_release);
+    netplayRuntimeReady.store(false, std::memory_order_release);
+    netplayStreamStarted.store(false, std::memory_order_release);
     netplayEnabled.store(enabled != 0, std::memory_order_release);
     netplayFrameCondition.notify_all();
     if (enabled != 0) {
@@ -1844,6 +1862,21 @@ extern "C" void goldenpad_recomp_netplay_pause() {
     }
 }
 
+extern "C" int32_t goldenpad_recomp_netplay_runtime_ready() {
+    return netplayEnabled.load(std::memory_order_acquire) &&
+        netplayRuntimeReady.load(std::memory_order_acquire) ? 1 : 0;
+}
+
+extern "C" void goldenpad_recomp_netplay_start_stream() {
+    if (!netplayEnabled.load(std::memory_order_acquire) ||
+        netplayFaulted.load(std::memory_order_acquire)) {
+        return;
+    }
+    netplayStreamStarted.store(true, std::memory_order_release);
+    netplayFrameCondition.notify_all();
+    logEvent("netplay", "authoritative frame stream released");
+}
+
 extern "C" void goldenpad_recomp_performance_counters(
     uint64_t *displayLists,
     uint64_t *screenUpdates,
@@ -1876,6 +1909,17 @@ extern "C" int32_t goldenpad_recomp_deterministic_clock_enabled() {
 extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller) {
     (void)caller;
     determinismClockReads.fetch_add(1, std::memory_order_relaxed);
+    if (netplayEnabled.load(std::memory_order_acquire)) {
+        // Netplay time must come from the same source of truth as input. A
+        // device-local VI counter can differ by one tick simply because one
+        // screen or native runtime started first, producing an immediate
+        // checksum mismatch even when the ordered inputs are identical.
+        constexpr uint64_t roomEpochFrame = 4'096;
+        const uint64_t logicalFrame =
+            netplayConsumedFrame.load(std::memory_order_acquire);
+        return (roomEpochFrame + logicalFrame) *
+            kN64CountTicksPerGamePoll;
+    }
     const uint64_t vi = determinismViCount.load(std::memory_order_acquire);
     const uint64_t roomStartVi = determinismRoomStartVi.load(
         std::memory_order_acquire);

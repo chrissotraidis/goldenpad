@@ -1,8 +1,8 @@
 import Foundation
 
 enum LANNetplayProtocol {
-    static let version = 1
-    static let compatibility = "goldenpad-ge-us-netplay-lab-v1"
+    static let version = 2
+    static let compatibility = "goldenpad-ge-us-netplay-lab-v2"
     static let serviceType = "gpad-netplay"
     static let inputDelayFrames: UInt64 = 3
     static let maximumPlayers = 4
@@ -35,6 +35,8 @@ struct LANNetplayMessage: Codable, Equatable, Sendable {
         case roster
         case ready
         case start
+        case runtimeReady
+        case go
         case input
         case orderedFrame
         case checksum
