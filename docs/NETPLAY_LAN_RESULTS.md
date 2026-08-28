@@ -37,9 +37,10 @@ extended run remained synchronized through frame 1,020. During the active run,
 simulation and network delivery both measured 60.0 FPS with zero missing
 frames and three buffered frames.
 
-The remaining decisive gate is to install this new v3 candidate on the paired
-iPad and iPhone and play a real stock multiplayer match. That has deliberately
-not been done yet because physical validation was deferred.
+The v3 candidate is now installed on the paired iPad and iPhone with the ROM,
+converted ROM, active save, backup save, and preferences verified byte-for-byte
+unchanged. The remaining decisive gate is to play a real stock multiplayer
+match on those two devices.
 
 ## Architecture now under test
 
@@ -176,7 +177,8 @@ replaying stale input.
 - Bundle: `com.chrissotraidis.goldenpad.lan-lab`
 - Architecture: ARM64
 - ROM/save content: none
-- Physical installation status: not installed
+- Physical installation status: installed in place on the paired iPad and
+  iPhone; pre/post private-data manifests match
 
 The IPA is development-signed for the paired devices. It is a private
 diagnostic artifact, not a public or generally installable release.
@@ -190,24 +192,26 @@ Earlier artifacts remain historical evidence:
 
 ## Next physical iPad + iPhone gate
 
-1. Hash the current ROM, saves, and preferences on both devices.
-2. Install the v3 diagnostic app in place on both devices and re-hash the same
-   private data before launching.
-3. Open **GoldenPad LAN Lab** on both devices and select the existing validated
+Installation prerequisites completed on 2026-08-28: both devices were backed
+up to private temporary locations, the signed v3 app was installed in place,
+and all five allowlisted private-data hashes matched before/after on each
+device. No Simulator remained booted.
+
+1. Open **GoldenPad LAN Lab** on both devices and select the existing validated
    personal TLB-free GoldenEye ROM.
-4. On the iPad choose **Host Room**. On the iPhone choose **Find Nearby** and
+2. On the iPad choose **Host Room**. On the iPhone choose **Find Nearby** and
    join the iPad.
-5. Confirm Player 1/Player 2 assignment, mark both Ready, and start the test.
-6. Confirm both devices show the same complete intro/file menu, not a premature
+3. Confirm Player 1/Player 2 assignment, mark both Ready, and start the test.
+4. Confirm both devices show the same complete intro/file menu, not a premature
    quadrant crop.
-7. Player 1 enters GoldenEye's stock **Multiplayer** menu, chooses the normal
+5. Player 1 enters GoldenEye's stock **Multiplayer** menu, chooses the normal
    built-in settings, and starts a match. Players 3/4 remain neutral.
-8. Confirm iPad shows Player 1's top-left view and iPhone shows Player 2's
+6. Confirm iPad shows Player 1's top-left view and iPhone shows Player 2's
    top-right view, each centered without stretching or horizontal shift.
-9. Move, turn, fire, and interact from both devices for at least three minutes.
-10. Record render/sim/net FPS on both devices in menus and in-match. Also run
+7. Move, turn, fire, and interact from both devices for at least three minutes.
+8. Record render/sim/net FPS on both devices in menus and in-match. Also run
     **Play Offline** with the same settings as the renderer baseline.
-11. Pass only if `misses` stays zero, neither device reports `DESYNC`, controls
+9. Pass only if `misses` stays zero, neither device reports `DESYNC`, controls
     remain responsive, each player sees the same world interactions, and the
     image/crop is usable. Save screenshots and both diagnostic logs.
 

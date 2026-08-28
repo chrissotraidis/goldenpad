@@ -138,11 +138,13 @@ install-and-play procedure rather than an architectural unknown.
   runs. Comparable presentation counters were nearly identical, so this is an
   existing renderer issue rather than a measured LAN regression. Physical
   image quality and framing remain part of G6.
-- G6 artifact: READY FOR PHYSICAL TEST. The signed ROM-free v3 IPA is packaged
-  and independently verified but not installed. Its SHA-256 is
+- G6 artifact: INSTALLED AND READY FOR PHYSICAL PLAY. The signed ROM-free v3
+  IPA was independently verified and installed in place on both paired
+  devices. Its SHA-256 is
   `ae6a479f82f6055ac77aebcd43efd08e540f729fdc09503be1bd77876d77bf33`.
-  The v2 app currently on both devices is superseded; preserve and re-hash
-  private data when installing v3.
+  Pre/post-install manifests for the ROM, converted ROM, active save, backup
+  save, and preferences matched byte-for-byte on the iPad and iPhone. Both v3
+  apps launched successfully, and no Simulator remained booted.
 
 See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
 physical procedure.
