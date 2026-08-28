@@ -121,14 +121,18 @@ install-and-play procedure rather than an architectural unknown.
 - G3 nearby room lifecycle: PASS with one iPad Simulator plus a real macOS
   companion peer.
 - G4 runtime bridge: PASS on the host/runtime seam; cross-device checksum
-  agreement remains the physical gate.
+  agreement remains the physical gate. The Simulator iteration moved ordered
+  input consumption from arbitrary controller polls to the runtime VI callback
+  and added a two-part game-thread/VI barrier.
 - G5 one-Simulator validation: PASS, including ordered runtime frames and the
-  corrected full-frame pre-match presentation.
-- G6 artifact: PASS. The signed ROM-free diagnostic app is installed on both
-  paired physical devices. The first physical run found and localized a
-  VI-clock checksum desync. Protocol v2 with an authoritative-frame clock and
-  native runtime-ready barrier is installed; the physical replay is READY TO
-  RUN.
+  corrected full-frame pre-match presentation. Immediate and 2,000 ms delayed
+  guest readiness with fixed seed `424242` produced 42 identical checksum
+  samples through frame 1,260, with the game thread parked at VI 37 and the VI
+  scheduler at VI 38 in both runs.
+- G6 artifact: PARTIAL. The signed ROM-free v2 diagnostic app remains installed
+  on both paired physical devices, but it predates the corrected VI/game-thread
+  barrier. Build, sign, verify, and install a new candidate before the physical
+  replay.
 
 See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
 physical procedure.

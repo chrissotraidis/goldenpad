@@ -19,6 +19,13 @@ final class Companion: NSObject,
     private var passed = false
     private var goReceived = false
     private var lastOrderedFrame: UInt64 = 0
+    private let runtimeReadyDelay: TimeInterval = {
+        let environment = ProcessInfo.processInfo.environment
+        guard let raw = environment["GOLDENPAD_LAN_COMPANION_READY_DELAY_MS"],
+              let milliseconds = Double(raw),
+              milliseconds >= 0 else { return 0 }
+        return milliseconds / 1_000
+    }()
 
     func run() {
         session.delegate = self
@@ -77,9 +84,14 @@ final class Companion: NSObject,
                 senderID: senderID,
                 ready: true))
         } else if message.kind == .start {
-            send(LANNetplayMessage(
-                kind: .runtimeReady,
-                senderID: senderID))
+            print("LAN companion: delaying runtime-ready by \(Int(runtimeReadyDelay * 1_000)) ms")
+            fflush(stdout)
+            DispatchQueue.main.asyncAfter(deadline: .now() + runtimeReadyDelay) { [weak self] in
+                guard let self else { return }
+                self.send(LANNetplayMessage(
+                    kind: .runtimeReady,
+                    senderID: self.senderID))
+            }
         } else if message.kind == .go {
             goReceived = true
         } else if message.kind == .orderedFrame,

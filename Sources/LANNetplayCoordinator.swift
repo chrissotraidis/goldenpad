@@ -115,6 +115,13 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
     private var simulatorAutoHost: Bool {
         ProcessInfo.processInfo.arguments.contains("--lan-netplay-auto-host")
     }
+    private var simulatorRoomSeed: UInt64? {
+        let prefix = "--lan-netplay-room-seed="
+        guard let argument = ProcessInfo.processInfo.arguments.first(where: {
+            $0.hasPrefix(prefix)
+        }) else { return nil }
+        return UInt64(argument.dropFirst(prefix.count))
+    }
 
     override init() {
         super.init()
@@ -183,7 +190,7 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
 
     func startGame() {
         guard canStart else { return }
-        let seed = UInt64.random(in: 1...UInt64.max)
+        let seed = simulatorRoomSeed ?? UInt64.random(in: 1...UInt64.max)
         beginGame(seed: seed, slot: 0)
         for peer in session?.connectedPeers ?? [] {
             let peerID = peerIDs[peer]

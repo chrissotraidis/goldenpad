@@ -60,7 +60,8 @@ struct GoldenPadApp: App {
     @State private var showReturnToMenuConfirmation = false
     @State private var isEditingTouchLayout = false
     @State private var isUtilityMenuPresented = false
-    @State private var offlineLaunchRequested = false
+    @State private var offlineLaunchRequested =
+        ProcessInfo.processInfo.arguments.contains("--lan-netplay-auto-offline")
 
     private var lanLabEnabled: Bool {
         #if GOLDENPAD_LAN_NETPLAY_LAB

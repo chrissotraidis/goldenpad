@@ -98,6 +98,7 @@ std::atomic<bool> determinismProbeEnabled = false;
 std::atomic<bool> netplayEnabled = false;
 std::atomic<bool> netplayFaulted = false;
 std::atomic<bool> netplayRuntimeReady = false;
+std::atomic<bool> netplayViReady = false;
 std::atomic<bool> netplayStreamStarted = false;
 std::atomic<int32_t> netplayAssignedSlot = -1;
 std::atomic<uint64_t> netplayRoomSeed = 0;
@@ -681,10 +682,32 @@ void completeDeterminismTrace(uint64_t poll) {
         determinismTracePath.filename().string().c_str());
 }
 
+void pollNetplayInput(uint8_t *rdram);
+
 void determinismViCallback() {
+    uint64_t vi = 0;
     if (determinismProbeEnabled.load(std::memory_order_relaxed) ||
         netplayEnabled.load(std::memory_order_relaxed)) {
-        determinismViCount.fetch_add(1, std::memory_order_release);
+        vi = determinismViCount.fetch_add(1, std::memory_order_acq_rel) + 1;
+    }
+    if (netplayEnabled.load(std::memory_order_acquire)) {
+        // Let bootstrap VIs run until GoldenEye's game thread reaches its
+        // patched wait. The next VI then parks both runtime threads at a real
+        // game-defined boundary instead of relying on a guessed VI count.
+        if (!netplayRuntimeReady.load(std::memory_order_acquire)) {
+            return;
+        }
+        // N64ModernRuntime invokes this immediately before it releases the VI
+        // event to GoldenEye. Latch one ordered input bundle here so the
+        // network gates one actual game tick, not an arbitrary controller
+        // read or a host wall-clock timer.
+        if (!netplayViReady.exchange(true, std::memory_order_acq_rel)) {
+            logEvent("netplay",
+                "VI scheduler reached synchronized frame barrier at VI %llu",
+                static_cast<unsigned long long>(vi));
+        }
+        netplayFrameCondition.notify_all();
+        pollNetplayInput(activeRdram.load(std::memory_order_acquire));
     }
 }
 
@@ -1336,6 +1359,13 @@ void pollNetplayInput(uint8_t *rdram) {
         if (canonical.valid) {
             netplayChecksum.store(canonical.all, std::memory_order_release);
             netplayChecksumFrame.store(expected, std::memory_order_release);
+            logEvent("netplay",
+                "checksum frame=%llu canonical=%016llx globals=%016llx players=%016llx props=%016llx",
+                static_cast<unsigned long long>(expected),
+                static_cast<unsigned long long>(canonical.all),
+                static_cast<unsigned long long>(canonical.globals),
+                static_cast<unsigned long long>(canonical.players),
+                static_cast<unsigned long long>(canonical.props));
         }
     }
     for (size_t port = 0; port < kControllerPorts; ++port) {
@@ -1361,9 +1391,10 @@ void pollInput() {
         logEvent("input", "game began polling the prototype controller bridge");
     }
     if (netplayEnabled.load(std::memory_order_acquire)) {
-        netplayRuntimeReady.store(true, std::memory_order_release);
-        netplayFrameCondition.notify_all();
-        pollNetplayInput(activeRdram.load(std::memory_order_acquire));
+        // Controller reads are not a simulation clock. GoldenEye can poll
+        // several times during one logical frame (and many times while
+        // booting), so blocking here turns a 60 Hz input stream into roughly
+        // 2 FPS. The VI callback latches one ordered bundle instead.
         return;
     }
     if (!determinismProbeEnabled.load(std::memory_order_acquire) ||
@@ -1780,6 +1811,7 @@ extern "C" void goldenpad_recomp_netplay_configure(
     netplayMatchInitialized.store(false, std::memory_order_release);
     netplayFaulted.store(false, std::memory_order_release);
     netplayRuntimeReady.store(false, std::memory_order_release);
+    netplayViReady.store(false, std::memory_order_release);
     netplayStreamStarted.store(false, std::memory_order_release);
     netplayEnabled.store(enabled != 0, std::memory_order_release);
     netplayFrameCondition.notify_all();
@@ -1864,7 +1896,8 @@ extern "C" void goldenpad_recomp_netplay_pause() {
 
 extern "C" int32_t goldenpad_recomp_netplay_runtime_ready() {
     return netplayEnabled.load(std::memory_order_acquire) &&
-        netplayRuntimeReady.load(std::memory_order_acquire) ? 1 : 0;
+        netplayRuntimeReady.load(std::memory_order_acquire) &&
+        netplayViReady.load(std::memory_order_acquire) ? 1 : 0;
 }
 
 extern "C" void goldenpad_recomp_netplay_start_stream() {
@@ -1914,9 +1947,14 @@ extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller) 
         // device-local VI counter can differ by one tick simply because one
         // screen or native runtime started first, producing an immediate
         // checksum mismatch even when the ordered inputs are identical.
-        constexpr uint64_t roomEpochFrame = 4'096;
+        if (!netplayStreamStarted.load(std::memory_order_acquire)) {
+            return determinismViCount.load(std::memory_order_acquire) *
+                kN64CountTicksPerGamePoll;
+        }
         const uint64_t logicalFrame =
             netplayConsumedFrame.load(std::memory_order_acquire);
+        const uint64_t roomEpochFrame =
+            netplayMatchInitialized.load(std::memory_order_acquire) ? 4'096 : 0;
         return (roomEpochFrame + logicalFrame) *
             kN64CountTicksPerGamePoll;
     }
@@ -1943,6 +1981,22 @@ extern "C" void goldenpad_recomp_deterministic_frame_step(
     }
 
     if (netplayFaulted.load(std::memory_order_acquire)) {
+        ctx->r2 = 0;
+        return;
+    }
+
+    if (netplayEnabled.load(std::memory_order_acquire)) {
+        // The VI thread can arrive before GoldenEye has finished startup.
+        // Advertise readiness only after the game thread also reaches this
+        // patched wait boundary; the stock wait then parks it behind the VI
+        // thread until every peer has reported both halves of the barrier.
+        if (!netplayRuntimeReady.exchange(true, std::memory_order_acq_rel)) {
+            logEvent("netplay",
+                "game thread reached synchronized frame barrier at VI %llu",
+                static_cast<unsigned long long>(
+                    determinismViCount.load(std::memory_order_acquire)));
+        }
+        netplayFrameCondition.notify_all();
         ctx->r2 = 0;
         return;
     }

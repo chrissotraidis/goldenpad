@@ -17,11 +17,15 @@ input delivery. It also found a real synchronization defect: the two runtimes
 started 178 ms apart, their local VI-derived clocks differed by one tick, and
 the first shared checksum comparison stopped both devices.
 
-LAN Lab protocol v2 now derives netplay time from the authoritative consumed
-input frame and holds both native runtimes at a ready barrier before the host
-releases frame 1. The corrected build is installed with both devices' ROM,
-saves, and preferences preserved byte-for-byte. A second physical run remains
-the decisive playable-synchronization gate.
+The latest Simulator candidate now derives netplay time from the authoritative
+consumed input frame and synchronizes at the runtime VI boundary. A two-part
+barrier waits until both GoldenEye's game thread and the VI scheduler are
+parked before the host releases frame 1. With a fixed room seed, immediate
+guest readiness and readiness delayed by two seconds produced the same 42
+canonical hashes through frame 1,260 while rendering normally. A new device
+build and second physical run remain the decisive playable-synchronization
+gate; the v2 build currently installed on the devices predates this Simulator
+correction.
 
 ## First physical run: failure and diagnosis
 
@@ -39,10 +43,9 @@ the decisive playable-synchronization gate.
   synchronized input rather than the entire presentation loop. Continuing
   animation after the fault was independent divergence, not working netplay.
 
-## Protocol v2 correction
+## Initial protocol v2 correction
 
-- Both native runtimes now block at their first controller poll and report
-  runtime-ready to the room host.
+- Both native runtimes report runtime-ready to the room host before `go`.
 - The host releases one explicit `go` barrier before frame 1. Reliable message
   ordering guarantees the guest sees `go` before any ordered frame.
 - While netplay is enabled, the patched GoldenEye clock is based on the shared
@@ -52,6 +55,29 @@ the decisive playable-synchronization gate.
   directly in the overlay.
 - The protocol/compatibility identifier is now v2 so an older LAN Lab build
   cannot silently join the corrected room.
+
+## Simulator scheduling correction after v2
+
+- Blocking at the first controller poll was wrong. GoldenEye can read the
+  controller many times in one presented frame, especially during startup, so
+  consuming one network frame per poll created the observed roughly 2 FPS
+  behavior and left RT64 at zero presented frames in the first black-screen
+  reproduction.
+- Controller reads are now instantaneous and return the most recently latched
+  authoritative input.
+- N64ModernRuntime's VI callback latches exactly one ordered input bundle
+  immediately before releasing one actual VI event to GoldenEye. This is the
+  simulation source-of-truth seam.
+- A VI-only barrier was still timing-sensitive: delaying the companion by two
+  seconds changed whether Player/Prop initialization completed by network
+  frame 30.
+- The final barrier is game-defined. Bootstrap VIs run normally until
+  GoldenEye reaches its patched wait boundary. The next VI parks the scheduler;
+  only after both game thread and VI scheduler are parked does the host send
+  `go`.
+- In both controlled runs the game thread parked at local VI 37 and the VI
+  scheduler parked at VI 38. The two-second companion delay did not change
+  these values or any canonical hash through frame 1,260.
 
 ## Implemented
 
@@ -65,7 +91,7 @@ the decisive playable-synchronization gate.
 - Every ordered frame contains buttons, left stick, right look, and relative
   touch look for all four N64 ports. Crouch toggles use a per-player sequence
   number so retransmission cannot apply a toggle twice. Empty slots are neutral.
-- The C++ game thread waits for the authoritative frame plus a three-frame
+- The runtime VI callback waits for the authoritative frame plus a three-frame
   buffer. After a two-second missing-frame boundary it pauses instead of
   inventing input.
 - The existing deterministic clock/frame-step path is enabled only for an
@@ -91,7 +117,10 @@ the decisive playable-synchronization gate.
   - out-of-order arrival buffered into strict order.
   - missing frame faults.
   - four-port 64-byte native wire encoding round trip.
-- One-Simulator limit: PASS. Only `GoldenPad Determinism iPad` was booted.
+- One-Simulator limit: PASS. Exactly one iPad Simulator was booted throughout.
+  The dedicated profile twice lost its device service and Simulator
+  automatically selected another iPad profile; each transition was checked
+  before testing continued, and no two Simulators were booted concurrently.
 - Real local discovery with a Mac companion: PASS.
   - room advertised and discovered.
   - secure session connected.
@@ -104,13 +133,24 @@ the decisive playable-synchronization gate.
   - three/four-frame observed buffer.
   - zero missing frames.
 - Performance instrumentation and reported-stall diagnosis: PASS.
-  - the old run logged no RT64 progress for ten seconds after the temporary
-    companion peer disappeared and repeatedly entered its two-second
-    missing-frame wait; that was the observed near-2-FPS behavior.
-  - the corrected connected run measured `Render 52.0`, `sim 60.0`, and
-    `net 60.0 fps`, with zero misses on the iPad Simulator.
+  - the controller-poll-gated reproduction consumed network frames at 60 Hz
+    while reporting `dl=0`, `vi=0`, and `presented=0`; controller polling was
+    not a valid simulation clock.
+  - the VI-gated connected run reached `dl=515`, `vi=514`, and
+    `presented=514` in its first health window, then exceeded 1,100 presented
+    frames with zero audio drops.
+  - the final immediate/delayed barrier runs both maintained one presentation
+    per VI. Their first sampled windows were 552 and 477 presented frames;
+    the difference is sampling-window length, not simulation-frame identity.
   - disconnect now visibly says `Stopped`, pauses the deterministic runtime,
     and returns immediately from later input polls instead of blocking again.
+- Startup-delay determinism: PASS in one Simulator.
+  - fixed room seed: `424242`.
+  - immediate-ready and 2,000 ms delayed-ready runs both parked the game thread
+    at VI 37 and scheduler at VI 38.
+  - all 42 common 30-frame checksum samples matched byte-for-byte from frame 30
+    through frame 1,260; the delayed log contained one additional frame-1,290
+    sample because it was captured slightly later.
 - Framing regression: PASS.
   - the earlier immediate Player 1 crop was reproduced.
   - cropping was gated on actual multiplayer-match state.
@@ -144,8 +184,14 @@ Corrected v2 artifact:
 - Installed in place on the physical iPad and iPhone.
 - Pre/post-install ROM, active save, backup save, and preferences: byte-for-byte
   preserved on both devices.
+- This artifact is now superseded for testing by the un-packaged Simulator
+  scheduling correction above. Do not use its physical replay as the final
+  verdict; build and install the new device candidate first.
 
 ## Physical iPad + iPhone gate
+
+Before this gate, build/sign/package the new game-thread + VI-barrier candidate
+and install it in place on both devices while re-verifying private data hashes.
 
 1. Open **GoldenPad LAN Lab** on both devices. This is separate from GoldenPad.
 2. On each device, select the same validated personal TLB-free GoldenEye ROM.
