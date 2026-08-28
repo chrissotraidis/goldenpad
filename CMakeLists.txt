@@ -28,6 +28,7 @@ set(GOLDENPAD_RT64_SOURCE_DIR "" CACHE PATH "Pinned RT64 source checkout used fo
 set(GOLDENPAD_MGB64_SOURCE_DIR "" CACHE PATH "Pinned MGB64 checkout used for the native game core")
 option(GOLDENPAD_MGB64_RENDERER "Link the opt-in MGB64 Fast3D/Metal renderer probe" OFF)
 option(GOLDENPAD_RECOMP_PROTOTYPE "Build the isolated RT64/N64Recomp prototype host" OFF)
+option(GOLDENPAD_LAN_NETPLAY_LAB "Enable the isolated two-device LAN netplay experiment" OFF)
 set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prototype" CACHE STRING
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
@@ -477,6 +478,8 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Sources/RecompPrototypeAudio.swift
         Sources/RecompControlMapping.swift
         Sources/RecompPrototypeInput.swift
+        Sources/LANNetplayCoordinator.swift
+        Sources/LANNetplayProtocol.swift
         Sources/RecompPrototypeMetalCanvas.swift
         Sources/RecompPrototypeROMStore.swift
         Sources/RecompTouchFireState.swift
@@ -520,10 +523,17 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         "-framework AVFAudio"
         "-framework Metal"
         "-framework MetalKit"
+        "-framework MultipeerConnectivity"
         "-framework QuartzCore"
         "-framework UIKit"
         "-framework UniformTypeIdentifiers"
     )
+    if(GOLDENPAD_LAN_NETPLAY_LAB)
+        target_compile_options(GoldenPadRecompPrototype PRIVATE
+            "$<$<COMPILE_LANGUAGE:Swift>:-DGOLDENPAD_LAN_NETPLAY_LAB>")
+        target_compile_definitions(GoldenPadRecompPrototype PRIVATE
+            GOLDENPAD_LAN_NETPLAY_LAB=1)
+    endif()
     if(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR)
         target_include_directories(GoldenPadRecompPrototype PRIVATE
             "${GOLDENPAD_RECOMP_RT64_SOURCE_DIR}/src/contrib/plume")

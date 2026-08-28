@@ -39,6 +39,12 @@
     <string>public.app-category.games</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>GoldenPad uses your local network to discover and connect to nearby LAN Netplay Lab rooms.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_gpad-netplay._tcp</string>
+    </array>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>UILaunchScreen</key>

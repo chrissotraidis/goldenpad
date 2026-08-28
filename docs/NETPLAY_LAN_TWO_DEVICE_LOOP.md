@@ -113,3 +113,19 @@ Only then is a public lobby service worth building.
 The diagnostic IPA and source are reproducible; all host and one-Simulator
 gates pass; and the remaining two-physical-device check is a short, explicit
 install-and-play procedure rather than an architectural unknown.
+
+## Execution status
+
+- G1 baseline preservation: PASS.
+- G2 protocol contract: PASS.
+- G3 nearby room lifecycle: PASS with one iPad Simulator plus a real macOS
+  companion peer.
+- G4 runtime bridge: PASS on the host/runtime seam; cross-device checksum
+  agreement remains the physical gate.
+- G5 one-Simulator validation: PASS, including ordered runtime frames and the
+  corrected full-frame pre-match presentation.
+- G6 artifact: PASS. The signed ROM-free diagnostic app is installed on both
+  paired physical devices. Physical two-device play is READY TO RUN.
+
+See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
+physical procedure.

@@ -14,6 +14,7 @@
 #include <bit>
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -94,6 +95,17 @@ std::atomic<bool> lifecycleProbeEnabled = false;
 std::atomic<bool> audioProbeEnabled = false;
 std::atomic<bool> depthRebuildProbeEnabled = false;
 std::atomic<bool> determinismProbeEnabled = false;
+std::atomic<bool> netplayEnabled = false;
+std::atomic<bool> netplayFaulted = false;
+std::atomic<int32_t> netplayAssignedSlot = -1;
+std::atomic<uint64_t> netplayRoomSeed = 0;
+std::atomic<uint64_t> netplayReceivedFrame = 0;
+std::atomic<uint64_t> netplayConsumedFrame = 0;
+std::atomic<uint64_t> netplayMissingFrames = 0;
+std::atomic<uint64_t> netplayChecksumFrame = 0;
+std::atomic<uint64_t> netplayChecksum = 0;
+std::atomic<bool> netplaySeedApplied = false;
+std::atomic<bool> netplayMatchInitialized = false;
 std::atomic<bool> determinismProbeComplete = false;
 std::atomic<uint64_t> determinismPollCount = 0;
 std::atomic<uint64_t> determinismMatchFrame = 0;
@@ -156,6 +168,29 @@ struct DeterminismInput {
 
     bool operator==(const DeterminismInput &) const = default;
 };
+
+struct NetplayInput {
+    uint16_t buttons = 0;
+    int16_t stickX = 0;
+    int16_t stickY = 0;
+    int16_t lookX = 0;
+    int16_t lookY = 0;
+    int16_t touchLookX = 0;
+    int16_t touchLookY = 0;
+    uint16_t crouchSequence = 0;
+};
+
+struct NetplayFrame {
+    uint64_t number = 0;
+    std::array<NetplayInput, kControllerPorts> inputs{};
+    bool valid = false;
+};
+
+constexpr size_t kNetplayFrameCapacity = 512;
+std::array<NetplayFrame, kNetplayFrameCapacity> netplayFrames{};
+std::mutex netplayFrameMutex;
+std::condition_variable netplayFrameCondition;
+std::array<uint16_t, kControllerPorts> netplayCrouchSequences{};
 
 using DeterminismRegionHashes =
     std::array<uint64_t, kDeterminismRegionCount>;
@@ -645,7 +680,8 @@ void completeDeterminismTrace(uint64_t poll) {
 }
 
 void determinismViCallback() {
-    if (determinismProbeEnabled.load(std::memory_order_relaxed)) {
+    if (determinismProbeEnabled.load(std::memory_order_relaxed) ||
+        netplayEnabled.load(std::memory_order_relaxed)) {
         determinismViCount.fetch_add(1, std::memory_order_release);
     }
 }
@@ -1199,9 +1235,120 @@ bool determinismMatchIsReady(uint8_t *rdram) {
     }
     return players >= 2;
 }
+
+void applyNetplayRoomSeed(uint8_t *rdram) {
+    if (rdram == nullptr || netplaySeedApplied.exchange(true)) {
+        return;
+    }
+    const uint64_t seed = netplayRoomSeed.load(std::memory_order_acquire);
+    uint32_t first = static_cast<uint32_t>(seed);
+    uint32_t second = static_cast<uint32_t>(seed >> 32);
+    if (first == 0) {
+        first = 1;
+    }
+    if (second == 0) {
+        second = first ^ 0xD872B41C;
+    }
+    writeGameWord(rdram, 0x80024260, static_cast<int32_t>(first));
+    writeGameWord(rdram, 0x80024264, static_cast<int32_t>(second));
+    logEvent("netplay", "applied synchronized room seed");
+}
+
+void initializeNetplayMatchClock(uint8_t *rdram) {
+    if (!determinismMatchIsReady(rdram) || netplayMatchInitialized.exchange(true)) {
+        return;
+    }
+    const uint64_t roomStartVi = determinismViCount.load(std::memory_order_acquire);
+    determinismRoomStartVi.store(roomStartVi, std::memory_order_release);
+    constexpr uint32_t roomEpochCount = static_cast<uint32_t>(
+        4'096 * kN64CountTicksPerGamePoll);
+    writeGameWord(rdram, 0x80048290, -1);
+    writeGameWord(rdram, 0x80048294, 0);
+    writeGameWord(rdram, 0x80048298, 1);
+    writeGameWord(rdram, 0x8004829C, -1);
+    writeGameWord(rdram, 0x800482A0, 0);
+    writeGameWord(rdram, 0x800482A4, 0);
+    writeGameWord(rdram, 0x800482A8, 0);
+    writeGameWord(rdram, 0x800482AC, roomEpochCount);
+    writeGameWord(rdram, 0x800482B0, roomEpochCount);
+    writeGameWord(rdram, 0x800482B4, 1);
+    writeGameWord(rdram, 0x80048194, 0);
+    writeGameWord(rdram, 0x800481A4, 0);
+    writeGameWord(rdram, 0x800481A8, 0);
+    writeGameWord(rdram, 0x800481AC, 0);
+    writeGameWord(rdram, 0x800481B0, 0);
+    writeGameWord(rdram, 0x800481B4, 0);
+    logEvent("netplay", "stock multiplayer match clock synchronized");
+}
+
+void pollNetplayInput(uint8_t *rdram) {
+    if (netplayFaulted.load(std::memory_order_acquire)) {
+        return;
+    }
+    applyNetplayRoomSeed(rdram);
+    initializeNetplayMatchClock(rdram);
+
+    const uint64_t expected =
+        netplayConsumedFrame.load(std::memory_order_acquire) + 1;
+    NetplayFrame ordered{};
+    {
+        std::unique_lock lock(netplayFrameMutex);
+        const bool available = netplayFrameCondition.wait_for(
+            lock, std::chrono::seconds(2), [expected] {
+                const NetplayFrame &candidate =
+                    netplayFrames[expected % kNetplayFrameCapacity];
+                return !netplayEnabled.load(std::memory_order_acquire) ||
+                    (candidate.valid && candidate.number == expected &&
+                     netplayReceivedFrame.load(std::memory_order_acquire) >=
+                        expected + kDeterminismInputDelayFrames);
+            });
+        if (!netplayEnabled.load(std::memory_order_acquire)) {
+            return;
+        }
+        NetplayFrame &candidate = netplayFrames[expected % kNetplayFrameCapacity];
+        if (!available || !candidate.valid || candidate.number != expected) {
+            netplayMissingFrames.fetch_add(1, std::memory_order_relaxed);
+            netplayFaulted.store(true, std::memory_order_release);
+            logEvent("netplay", "missing authoritative frame %llu; simulation paused",
+                static_cast<unsigned long long>(expected));
+            return;
+        }
+        ordered = candidate;
+        candidate.valid = false;
+    }
+
+    if (rdram != nullptr && expected % 30 == 0) {
+        const CanonicalStateHashes canonical = hashCanonicalState(rdram);
+        if (canonical.valid) {
+            netplayChecksum.store(canonical.all, std::memory_order_release);
+            netplayChecksumFrame.store(expected, std::memory_order_release);
+        }
+    }
+    for (size_t port = 0; port < kControllerPorts; ++port) {
+        const NetplayInput &input = ordered.inputs[port];
+        controllerButtons[port].store(input.buttons, std::memory_order_release);
+        controllerStickX[port].store(input.stickX, std::memory_order_release);
+        controllerStickY[port].store(input.stickY, std::memory_order_release);
+        controllerLookX[port].store(input.lookX, std::memory_order_release);
+        controllerLookY[port].store(input.lookY, std::memory_order_release);
+        queuedTouchLookX[port].store(input.touchLookX, std::memory_order_release);
+        queuedTouchLookY[port].store(input.touchLookY, std::memory_order_release);
+        if (input.crouchSequence != 0 &&
+            input.crouchSequence != netplayCrouchSequences[port]) {
+            netplayCrouchSequences[port] = input.crouchSequence;
+            crouchToggleRequested[port].store(true, std::memory_order_release);
+        }
+    }
+    netplayConsumedFrame.store(expected, std::memory_order_release);
+}
+
 void pollInput() {
     if (!inputPollReported.exchange(true)) {
         logEvent("input", "game began polling the prototype controller bridge");
+    }
+    if (netplayEnabled.load(std::memory_order_acquire)) {
+        pollNetplayInput(activeRdram.load(std::memory_order_acquire));
+        return;
     }
     if (!determinismProbeEnabled.load(std::memory_order_acquire) ||
         determinismProbeComplete.load(std::memory_order_relaxed)) {
@@ -1271,7 +1418,8 @@ void pollInput() {
 }
 bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
     const bool portAvailable = controllerNum >= 0 && controllerNum < 4 &&
-        (determinismProbeEnabled.load(std::memory_order_relaxed) ||
+        (netplayEnabled.load(std::memory_order_relaxed) ||
+            determinismProbeEnabled.load(std::memory_order_relaxed) ||
             controllerNum == 0 ||
             (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
             (controllerNum >= 2 && fourPlayerTestMode.load(std::memory_order_relaxed)));
@@ -1330,7 +1478,8 @@ void setRumble(int controllerNum, bool enabled) {
 }
 ultramodern::input::connected_device_info_t getConnectedDeviceInfo(int controllerNum) {
     const bool portAvailable = controllerNum >= 0 && controllerNum < 4 &&
-        (determinismProbeEnabled.load(std::memory_order_relaxed) ||
+        (netplayEnabled.load(std::memory_order_relaxed) ||
+            determinismProbeEnabled.load(std::memory_order_relaxed) ||
             controllerNum == 0 ||
             (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
             (controllerNum >= 2 && fourPlayerTestMode.load(std::memory_order_relaxed)));
@@ -1592,8 +1741,136 @@ extern "C" void goldenpad_recomp_set_determinism_probe_enabled(int32_t enabled) 
     determinismProbeEnabled.store(enabled != 0, std::memory_order_release);
 }
 
+extern "C" void goldenpad_recomp_netplay_configure(
+    int32_t enabled, int32_t assignedSlot, uint64_t roomSeed) {
+    {
+        std::lock_guard lock(netplayFrameMutex);
+        for (NetplayFrame &frame : netplayFrames) {
+            frame = {};
+        }
+        netplayCrouchSequences.fill(0);
+    }
+    netplayAssignedSlot.store(
+        assignedSlot >= 0 && assignedSlot < static_cast<int32_t>(kControllerPorts)
+            ? assignedSlot : -1,
+        std::memory_order_release);
+    netplayRoomSeed.store(roomSeed, std::memory_order_release);
+    netplayReceivedFrame.store(0, std::memory_order_release);
+    netplayConsumedFrame.store(0, std::memory_order_release);
+    netplayMissingFrames.store(0, std::memory_order_release);
+    netplayChecksumFrame.store(0, std::memory_order_release);
+    netplayChecksum.store(0, std::memory_order_release);
+    netplaySeedApplied.store(false, std::memory_order_release);
+    netplayMatchInitialized.store(false, std::memory_order_release);
+    netplayFaulted.store(false, std::memory_order_release);
+    netplayEnabled.store(enabled != 0, std::memory_order_release);
+    netplayFrameCondition.notify_all();
+    if (enabled != 0) {
+        logEvent("netplay", "configured LAN room as player %d", assignedSlot + 1);
+    }
+}
+
+extern "C" void goldenpad_recomp_netplay_submit_frame(
+    uint64_t frame, const uint8_t *bytes, int32_t byteCount) {
+    constexpr int32_t bytesPerPort = 16;
+    constexpr int32_t requiredBytes =
+        bytesPerPort * static_cast<int32_t>(kControllerPorts);
+    if (!netplayEnabled.load(std::memory_order_acquire) || bytes == nullptr ||
+        byteCount != requiredBytes || frame == 0) {
+        return;
+    }
+    auto read16 = [bytes](size_t offset) {
+        return static_cast<uint16_t>(bytes[offset]) |
+            (static_cast<uint16_t>(bytes[offset + 1]) << 8);
+    };
+    NetplayFrame ordered{};
+    ordered.number = frame;
+    ordered.valid = true;
+    for (size_t port = 0; port < kControllerPorts; ++port) {
+        const size_t base = port * bytesPerPort;
+        NetplayInput &input = ordered.inputs[port];
+        input.buttons = read16(base);
+        input.stickX = static_cast<int16_t>(read16(base + 2));
+        input.stickY = static_cast<int16_t>(read16(base + 4));
+        input.lookX = static_cast<int16_t>(read16(base + 6));
+        input.lookY = static_cast<int16_t>(read16(base + 8));
+        input.touchLookX = static_cast<int16_t>(read16(base + 10));
+        input.touchLookY = static_cast<int16_t>(read16(base + 12));
+        input.crouchSequence = read16(base + 14);
+    }
+    {
+        std::lock_guard lock(netplayFrameMutex);
+        NetplayFrame &destination = netplayFrames[frame % kNetplayFrameCapacity];
+        if (destination.valid && destination.number != frame) {
+            netplayMissingFrames.fetch_add(1, std::memory_order_relaxed);
+            netplayFaulted.store(true, std::memory_order_release);
+            return;
+        }
+        destination = ordered;
+    }
+    uint64_t previous = netplayReceivedFrame.load(std::memory_order_relaxed);
+    while (previous < frame && !netplayReceivedFrame.compare_exchange_weak(
+        previous, frame, std::memory_order_release, std::memory_order_relaxed)) {}
+    netplayFrameCondition.notify_all();
+}
+
+extern "C" void goldenpad_recomp_netplay_status(
+    uint64_t *consumedFrame,
+    uint64_t *receivedFrame,
+    uint64_t *missingFrames,
+    uint64_t *checksumFrame,
+    uint64_t *checksum) {
+    if (consumedFrame != nullptr) {
+        *consumedFrame = netplayConsumedFrame.load(std::memory_order_acquire);
+    }
+    if (receivedFrame != nullptr) {
+        *receivedFrame = netplayReceivedFrame.load(std::memory_order_acquire);
+    }
+    if (missingFrames != nullptr) {
+        *missingFrames = netplayMissingFrames.load(std::memory_order_acquire);
+    }
+    if (checksumFrame != nullptr) {
+        *checksumFrame = netplayChecksumFrame.load(std::memory_order_acquire);
+    }
+    if (checksum != nullptr) {
+        *checksum = netplayChecksum.load(std::memory_order_acquire);
+    }
+}
+
+extern "C" void goldenpad_recomp_netplay_pause() {
+    if (netplayEnabled.load(std::memory_order_acquire)) {
+        netplayFaulted.store(true, std::memory_order_release);
+        netplayFrameCondition.notify_all();
+    }
+}
+
+extern "C" void goldenpad_recomp_performance_counters(
+    uint64_t *displayLists,
+    uint64_t *screenUpdates,
+    uint64_t *presented,
+    uint64_t *vis) {
+    if (displayLists != nullptr) {
+        *displayLists = rt64DisplayListCount.load(std::memory_order_acquire);
+    }
+    if (screenUpdates != nullptr) {
+        *screenUpdates = rt64ScreenUpdateCount.load(std::memory_order_acquire);
+    }
+    if (presented != nullptr) {
+        *presented = rt64PresentedCount.load(std::memory_order_acquire);
+    }
+    if (vis != nullptr) {
+        *vis = determinismViCount.load(std::memory_order_acquire);
+    }
+}
+
+extern "C" int32_t goldenpad_recomp_netplay_match_active() {
+    return netplayEnabled.load(std::memory_order_acquire) &&
+        netplayMatchInitialized.load(std::memory_order_acquire) ? 1 : 0;
+}
+
 extern "C" int32_t goldenpad_recomp_deterministic_clock_enabled() {
-    return determinismProbeEnabled.load(std::memory_order_acquire) ? 1 : 0;
+    return (determinismProbeEnabled.load(std::memory_order_acquire) ||
+        netplayEnabled.load(std::memory_order_acquire)) ? 1 : 0;
 }
 
 extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller) {
@@ -1613,10 +1890,16 @@ extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller) 
 extern "C" void goldenpad_recomp_deterministic_frame_step(
     uint8_t *rdram, recomp_context *ctx) {
     if (rdram == nullptr || ctx == nullptr ||
-        !determinismProbeEnabled.load(std::memory_order_acquire)) {
+        (!determinismProbeEnabled.load(std::memory_order_acquire) &&
+         !netplayEnabled.load(std::memory_order_acquire))) {
         if (ctx != nullptr) {
             ctx->r2 = 0;
         }
+        return;
+    }
+
+    if (netplayFaulted.load(std::memory_order_acquire)) {
+        ctx->r2 = 0;
         return;
     }
 

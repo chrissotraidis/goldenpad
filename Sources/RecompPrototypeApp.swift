@@ -35,6 +35,7 @@ struct GoldenPadApp: App {
     @StateObject private var input = RecompPrototypeInput()
     @StateObject private var audio = RecompPrototypeAudio()
     @StateObject private var touchLayout = RecompTouchLayoutStore()
+    @StateObject private var lanNetplay = LANNetplayCoordinator()
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("recomp.lookSensitivity") private var lookSensitivity = 4.0
     @AppStorage("recomp.aimBehavior") private var aimBehavior = RecompPrototypeAimBehavior.toggle.rawValue
@@ -59,8 +60,28 @@ struct GoldenPadApp: App {
     @State private var showReturnToMenuConfirmation = false
     @State private var isEditingTouchLayout = false
     @State private var isUtilityMenuPresented = false
+    @State private var offlineLaunchRequested = false
+
+    private var lanLabEnabled: Bool {
+        #if GOLDENPAD_LAN_NETPLAY_LAB
+        true
+        #else
+        false
+        #endif
+    }
 
     private var netplayQuadrantAnchor: UnitPoint? {
+        if let assignedSlot = lanNetplay.assignedSlot,
+           lanNetplay.isPlaying,
+           lanNetplay.playerViewActive {
+            switch assignedSlot {
+            case 0: return .topLeading
+            case 1: return .topTrailing
+            case 2: return .bottomLeading
+            case 3: return .bottomTrailing
+            default: return nil
+            }
+        }
         guard let argument = ProcessInfo.processInfo.arguments.first(where: {
             $0.hasPrefix("--netplay-quadrant=")
         }), let quadrant = Int(argument.split(separator: "=").last ?? "") else {
@@ -79,22 +100,15 @@ struct GoldenPadApp: App {
         WindowGroup {
             Group {
                 if romStore.isReady {
+                    if lanLabEnabled && !offlineLaunchRequested && !lanNetplay.gameLaunchAuthorized {
+                        LANNetplayLaunchView(
+                            coordinator: lanNetplay,
+                            onPlayOffline: { offlineLaunchRequested = true })
+                    } else {
                     ZStack(alignment: .topTrailing) {
                 Color.black
                     .ignoresSafeArea()
-                RecompPrototypeMetalCanvas(
-                    surface: surface,
-                    msaaEnabled: msaaEnabled,
-                    resolutionMode: RecompPrototypeResolutionMode(rawValue: resolutionMode) ?? .automatic,
-                    threePointFiltering: threePointFiltering
-                )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .scaleEffect(
-                        netplayQuadrantAnchor == nil ? 1 : 2,
-                        anchor: netplayQuadrantAnchor ?? .center
-                    )
-                    .clipped()
-                    .ignoresSafeArea()
+                gameSurfaceView
                 // The CAMetalLayer can leave a two-physical-pixel sampling
                 // seam at the display's far edge. One opaque point masks that
                 // host seam without changing RT64's drawable or viewport.
@@ -148,8 +162,26 @@ struct GoldenPadApp: App {
                     }
                 }
                 .ignoresSafeArea()
+                if lanNetplay.isPlaying {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("LAN LAB · PLAYER \((lanNetplay.assignedSlot ?? 0) + 1)")
+                            .font(.caption.bold())
+                        Text(lanNetplay.transportHealth)
+                            .font(.caption2.monospacedDigit())
+                        Text(lanNetplay.performance)
+                            .font(.caption2.monospacedDigit())
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.black.opacity(0.70), in: RoundedRectangle(cornerRadius: 9))
+                    .padding(.top, 16)
+                    .padding(.trailing, 72)
+                    .allowsHitTesting(false)
+                }
             }
             .onAppear {
+                input.lanNetplay = lanNetplay
                 input.configureLookSensitivity(lookSensitivity)
                 input.configureAimBehavior(aimBehavior)
                 input.configureControllerLookMode(controllerLookMode)
@@ -256,6 +288,7 @@ struct GoldenPadApp: App {
             } message: {
                 Text("Current mission progress since the last save will be discarded.")
                     }
+                    }
                 } else {
                     RecompPrototypeROMSetupView(store: romStore)
                 }
@@ -275,6 +308,36 @@ struct GoldenPadApp: App {
             .onOpenURL { url in
                 romStore.handleOpenURL(url)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var gameSurfaceView: some View {
+        let canvas = RecompPrototypeMetalCanvas(
+            surface: surface,
+            msaaEnabled: msaaEnabled,
+            resolutionMode: RecompPrototypeResolutionMode(rawValue: resolutionMode) ?? .automatic,
+            threePointFiltering: threePointFiltering)
+        if lanNetplay.isPlaying {
+            // The four-player composite is 4:3, and every quadrant is also
+            // 4:3. Establish that source frame before scaling so iPhone does
+            // not stretch or horizontally mis-frame a player's quadrant.
+            canvas
+                .aspectRatio(4.0 / 3.0, contentMode: .fit)
+                .scaleEffect(
+                    netplayQuadrantAnchor == nil ? 1 : 2,
+                    anchor: netplayQuadrantAnchor ?? .center)
+                .clipped()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+        } else {
+            canvas
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .scaleEffect(
+                    netplayQuadrantAnchor == nil ? 1 : 2,
+                    anchor: netplayQuadrantAnchor ?? .center)
+                .clipped()
+                .ignoresSafeArea()
         }
     }
 
@@ -410,6 +473,135 @@ struct GoldenPadApp: App {
     private var controllerMappingRawValues: [String] {
         RecompPrototypeControllerControl.allCases.map {
             controllerMapping[$0] ?? $0.defaultAction.rawValue
+        }
+    }
+}
+
+private struct LANNetplayLaunchView: View {
+    @ObservedObject var coordinator: LANNetplayCoordinator
+    let onPlayOffline: () -> Void
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(red: 0.10, green: 0.13, blue: 0.10), .black],
+                startPoint: .top,
+                endPoint: .bottom)
+                .ignoresSafeArea()
+            HStack(spacing: 22) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("CLASSIFIED")
+                        .font(.caption.bold())
+                        .tracking(3)
+                        .foregroundStyle(.red.opacity(0.85))
+                    Text("LAN NETPLAY LAB")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                    Text("Two devices. One ordered GoldenEye simulation.")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text(coordinator.status)
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(coordinator.transportHealth)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    HStack {
+                        Button("Host Room") { coordinator.hostRoom() }
+                            .buttonStyle(.borderedProminent)
+                        Button("Find Nearby") { coordinator.browseForRooms() }
+                            .buttonStyle(.bordered)
+                        Button("Play Offline") {
+                            coordinator.stop()
+                            onPlayOffline()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: 430, maxHeight: .infinity, alignment: .topLeading)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("ROOM")
+                        .font(.caption.bold())
+                        .tracking(2)
+                        .foregroundStyle(.secondary)
+                    if coordinator.role == .browsing && coordinator.rooms.isEmpty {
+                        ProgressView("Searching this Wi-Fi network…")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if coordinator.role == .browsing {
+                        ForEach(coordinator.rooms) { room in
+                            Button {
+                                coordinator.join(room)
+                            } label: {
+                                HStack {
+                                    Label(room.name, systemImage: "wifi")
+                                    Spacer()
+                                    Text("JOIN")
+                                        .font(.caption.bold())
+                                }
+                                .padding(12)
+                                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        Spacer()
+                    } else if coordinator.role == .host || coordinator.role == .guest {
+                        ForEach(coordinator.participants) { player in
+                            HStack {
+                                Text("P\(player.slot + 1)")
+                                    .font(.headline.monospacedDigit())
+                                    .frame(width: 36)
+                                VStack(alignment: .leading) {
+                                    Text(player.name).font(.headline)
+                                    Text(player.connected ? "Connected" : "Disconnected")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(player.ready ? "READY" : "NOT READY")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(player.ready ? .green : .orange)
+                            }
+                            .padding(12)
+                            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        }
+                        Spacer()
+                        HStack {
+                            Button(coordinator.localReady ? "Not Ready" : "Ready") {
+                                coordinator.toggleReady()
+                            }
+                            .buttonStyle(.bordered)
+                            if coordinator.role == .host {
+                                Button("Start LAN Test") { coordinator.startGame() }
+                                    .buttonStyle(.borderedProminent)
+                                    .disabled(!coordinator.canStart)
+                            }
+                            Spacer()
+                            Button("Leave", role: .destructive) { coordinator.stop() }
+                                .buttonStyle(.bordered)
+                        }
+                    } else {
+                        Text("Host a room on the iPad, then choose Find Nearby on the iPhone. Both devices must use this exact diagnostic build.")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(
+                    Color(red: 0.78, green: 0.76, blue: 0.61),
+                    in: RoundedRectangle(cornerRadius: 18))
+                .foregroundStyle(.black.opacity(0.86))
+            }
+            .padding(28)
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("--lan-netplay-auto-host"),
+               coordinator.role == .idle {
+                coordinator.hostRoom()
+            }
         }
     }
 }

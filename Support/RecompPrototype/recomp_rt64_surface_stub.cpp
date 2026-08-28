@@ -24,6 +24,26 @@ extern "C" void goldenpad_recomp_set_sidestep_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_lifecycle_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_audio_probe_enabled(int32_t) {}
 extern "C" void goldenpad_recomp_set_depth_rebuild_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_netplay_configure(int32_t, int32_t, uint64_t) {}
+extern "C" void goldenpad_recomp_netplay_submit_frame(uint64_t, const uint8_t *, int32_t) {}
+extern "C" void goldenpad_recomp_netplay_status(
+    uint64_t *consumed, uint64_t *received, uint64_t *missing,
+    uint64_t *checksumFrame, uint64_t *checksum) {
+    uint64_t *outputs[] = {consumed, received, missing, checksumFrame, checksum};
+    for (uint64_t *output : outputs) {
+        if (output != nullptr) { *output = 0; }
+    }
+}
+extern "C" int32_t goldenpad_recomp_netplay_match_active() { return 0; }
+extern "C" void goldenpad_recomp_netplay_pause() {}
+extern "C" void goldenpad_recomp_performance_counters(
+    uint64_t *displayLists, uint64_t *screenUpdates,
+    uint64_t *presented, uint64_t *vis) {
+    uint64_t *outputs[] = {displayLists, screenUpdates, presented, vis};
+    for (uint64_t *output : outputs) {
+        if (output != nullptr) { *output = 0; }
+    }
+}
 extern "C" void goldenpad_recomp_note_audio_host_rates(uint32_t, uint32_t, uint32_t) {}
 extern "C" int32_t goldenpad_recomp_frontend_input_active() { return 1; }
 extern "C" int32_t goldenpad_recomp_gameplay_input_active() { return 0; }

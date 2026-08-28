@@ -147,6 +147,7 @@ enum RecompPrototypeControllerControl: String, CaseIterable, Identifiable {
 
 @MainActor
 final class RecompPrototypeInput: ObservableObject {
+    weak var lanNetplay: LANNetplayCoordinator?
     private enum N64 {
         static let a: UInt16 = 0x8000
         static let b: UInt16 = 0x4000
@@ -500,7 +501,11 @@ final class RecompPrototypeInput: ObservableObject {
 
     func setCrouchPressed(_ pressed: Bool) {
         if pressed && !touchCrouchIsPressed, let touchPort = ownershipRoute.touchPort {
-            goldenPadRecompRequestCrouchToggle(touchPort)
+            if let lanNetplay, lanNetplay.isPlaying, touchPort == 0 {
+                lanNetplay.requestLocalCrouchToggle()
+            } else {
+                goldenPadRecompRequestCrouchToggle(touchPort)
+            }
         }
         touchCrouchIsPressed = pressed
     }
@@ -660,7 +665,11 @@ final class RecompPrototypeInput: ObservableObject {
         if controllerCrouchIsPressed && !controllerCrouchWasPressed {
             // The external controller remains Player 1 in both normal and
             // two-player test modes. Touch is the only input routed to P2.
-            goldenPadRecompRequestCrouchToggle(0)
+            if let lanNetplay, lanNetplay.isPlaying {
+                lanNetplay.requestLocalCrouchToggle()
+            } else {
+                goldenPadRecompRequestCrouchToggle(0)
+            }
         }
         controllerCrouchWasPressed = controllerCrouchIsPressed
 
@@ -711,11 +720,7 @@ final class RecompPrototypeInput: ObservableObject {
                 }
             }
             if queuedTouchLook != .zero, let touchPort = route.touchPort {
-                goldenPadRecompQueueTouchLook(
-                    touchPort,
-                    Int32((queuedTouchLook.x * 32_767).rounded()),
-                    Int32((queuedTouchLook.y * 32_767).rounded())
-                )
+                publishTouchLook(queuedTouchLook, port: touchPort)
             }
             return
         }
@@ -801,11 +806,7 @@ final class RecompPrototypeInput: ObservableObject {
             }
         }
         if queuedTouchLook != .zero, let touchPort = route.touchPort {
-            goldenPadRecompQueueTouchLook(
-                touchPort,
-                Int32((queuedTouchLook.x * 32_767).rounded()),
-                Int32((queuedTouchLook.y * 32_767).rounded())
-            )
+            publishTouchLook(queuedTouchLook, port: touchPort)
         }
     }
 
@@ -844,17 +845,47 @@ final class RecompPrototypeInput: ObservableObject {
         look: SIMD2<Float>
     ) {
         let clampedStick = clamp(stick)
+        let stickX = Int32((clampedStick.x * 80).rounded())
+        let stickY = Int32((clampedStick.y * 80).rounded())
+        let lookX = Int32((look.x * 32_767).rounded())
+        let lookY = Int32((look.y * 32_767).rounded())
+        if let lanNetplay, lanNetplay.isPlaying {
+            // A LAN device owns exactly one logical player. The existing local
+            // control router publishes that physical/touch owner through port
+            // zero; the room host assigns it to the negotiated GoldenEye slot.
+            if port == 0 {
+                lanNetplay.submitLocalInput(LANNetplayInput(
+                    buttons: buttons,
+                    stickX: Int16(clamping: stickX),
+                    stickY: Int16(clamping: stickY),
+                    lookX: Int16(clamping: lookX),
+                    lookY: Int16(clamping: lookY)))
+            }
+            return
+        }
         goldenPadRecompSetControllerState(
             port,
             UInt32(buttons),
-            Int32((clampedStick.x * 80).rounded()),
-            Int32((clampedStick.y * 80).rounded())
+            stickX,
+            stickY
         )
         goldenPadRecompSetRightAnalog(
             port,
-            Int32((look.x * 32_767).rounded()),
-            Int32((look.y * 32_767).rounded())
+            lookX,
+            lookY
         )
+    }
+
+    private func publishTouchLook(_ look: SIMD2<Float>, port: Int32) {
+        let x = Int32((look.x * 32_767).rounded())
+        let y = Int32((look.y * 32_767).rounded())
+        if let lanNetplay, lanNetplay.isPlaying, port == 0 {
+            lanNetplay.addLocalTouchLook(
+                x: Int16(clamping: x),
+                y: Int16(clamping: y))
+        } else {
+            goldenPadRecompQueueTouchLook(port, x, y)
+        }
     }
 
     private func publishNeutralControllers() {

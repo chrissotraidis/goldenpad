@@ -5,6 +5,16 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 runtime_source=${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR:-}
 runtime_archives=${GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR:-}
 output_root=${GOLDENPAD_DETERMINISM_RUNTIME_OUTPUT_DIR:-}
+runtime_platform=${GOLDENPAD_DETERMINISM_RUNTIME_PLATFORM:-simulator}
+
+case "$runtime_platform" in
+    simulator) runtime_sysroot=iphonesimulator ;;
+    device) runtime_sysroot=iphoneos ;;
+    *)
+        echo "GOLDENPAD_DETERMINISM_RUNTIME_PLATFORM must be simulator or device." >&2
+        exit 2
+        ;;
+esac
 
 if [ -z "$runtime_source" ] || [ -z "$runtime_archives" ] || [ -z "$output_root" ]; then
     echo "Set GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR, GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR, and GOLDENPAD_DETERMINISM_RUNTIME_OUTPUT_DIR." >&2
@@ -30,7 +40,7 @@ patch -p1 --batch --no-backup-if-mismatch \
 
 cmake -S "$output_root/source" -B "$output_root/build" -G Ninja \
     -DCMAKE_SYSTEM_NAME=iOS \
-    -DCMAKE_OSX_SYSROOT=iphonesimulator \
+    -DCMAKE_OSX_SYSROOT="$runtime_sysroot" \
     -DCMAKE_OSX_ARCHITECTURES=arm64 \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0 \
     -DCMAKE_BUILD_TYPE=Release \
@@ -53,3 +63,4 @@ fi
 
 echo "Determinism-probe runtime source:   $output_root/source"
 echo "Determinism-probe runtime archives: $output_root/archives"
+echo "Determinism-probe runtime platform: $runtime_platform"
