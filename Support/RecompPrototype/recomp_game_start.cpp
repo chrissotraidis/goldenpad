@@ -108,6 +108,7 @@ std::atomic<uint64_t> netplayMissingFrames = 0;
 std::atomic<uint64_t> netplayChecksumFrame = 0;
 std::atomic<uint64_t> netplayChecksum = 0;
 std::atomic<bool> netplaySeedApplied = false;
+std::atomic<bool> netplayBootstrapNormalized = false;
 std::atomic<bool> netplayMatchInitialized = false;
 std::atomic<bool> determinismProbeComplete = false;
 std::atomic<uint64_t> determinismPollCount = 0;
@@ -691,9 +692,9 @@ void determinismViCallback() {
         vi = determinismViCount.fetch_add(1, std::memory_order_acq_rel) + 1;
     }
     if (netplayEnabled.load(std::memory_order_acquire)) {
-        // Let bootstrap VIs run until GoldenEye's game thread reaches its
-        // patched wait. The next VI then parks both runtime threads at a real
-        // game-defined boundary instead of relying on a guessed VI count.
+        // Let GoldenEye's neutral boot sequence run until its game thread has
+        // reached the stable stock file menu. The following VI is the shared
+        // barrier, independent of how quickly a device rendered the intro.
         if (!netplayRuntimeReady.load(std::memory_order_acquire)) {
             return;
         }
@@ -1279,6 +1280,35 @@ void applyNetplayRoomSeed(uint8_t *rdram) {
     logEvent("netplay", "applied synchronized room seed");
 }
 
+void normalizeNetplayBootstrapState(uint8_t *rdram) {
+    if (rdram == nullptr || netplayBootstrapNormalized.exchange(true)) {
+        return;
+    }
+    // The two runtimes are parked at the same stable stock file menu, but one
+    // host-scheduled bootstrap VI can otherwise remain in volatile clock
+    // globals. Reset only timing/counter state before authoritative frame 1;
+    // menu, stage, saves, players, props, and match settings are untouched.
+    writeGameWord(rdram, 0x80048174, 0);  // g_ClockTimer
+    writeGameWord(rdram, 0x80048178, 1);  // g_GlobalTimerDelta
+    writeGameWord(rdram, 0x8004817C, 0);  // g_GlobalTimer
+    writeGameWord(rdram, 0x80048180, 0);
+    writeGameWord(rdram, 0x80048194, 0);
+    writeGameWord(rdram, 0x80048198, 0);  // g_MpTime
+    writeGameWord(rdram, 0x8004819C, 0);  // g_MpPoint
+    writeGameWord(rdram, 0x800481B0, 0);
+    writeGameWord(rdram, 0x80048290, -1);
+    writeGameWord(rdram, 0x80048294, 0);
+    writeGameWord(rdram, 0x80048298, 1);
+    writeGameWord(rdram, 0x8004829C, -1);
+    writeGameWord(rdram, 0x800482A0, 0);
+    writeGameWord(rdram, 0x800482A4, 0);
+    writeGameWord(rdram, 0x800482A8, 0);
+    writeGameWord(rdram, 0x800482AC, 0);
+    writeGameWord(rdram, 0x800482B0, 0);
+    writeGameWord(rdram, 0x800482B4, 1);
+    logEvent("netplay", "normalized volatile pre-match timing state");
+}
+
 void initializeNetplayMatchClock(uint8_t *rdram) {
     if (!determinismMatchIsReady(rdram) || netplayMatchInitialized.exchange(true)) {
         return;
@@ -1318,6 +1348,7 @@ void pollNetplayInput(uint8_t *rdram) {
             return;
         }
     }
+    normalizeNetplayBootstrapState(rdram);
     applyNetplayRoomSeed(rdram);
     initializeNetplayMatchClock(rdram);
 
@@ -1808,6 +1839,7 @@ extern "C" void goldenpad_recomp_netplay_configure(
     netplayChecksumFrame.store(0, std::memory_order_release);
     netplayChecksum.store(0, std::memory_order_release);
     netplaySeedApplied.store(false, std::memory_order_release);
+    netplayBootstrapNormalized.store(false, std::memory_order_release);
     netplayMatchInitialized.store(false, std::memory_order_release);
     netplayFaulted.store(false, std::memory_order_release);
     netplayRuntimeReady.store(false, std::memory_order_release);
@@ -1986,10 +2018,18 @@ extern "C" void goldenpad_recomp_deterministic_frame_step(
     }
 
     if (netplayEnabled.load(std::memory_order_acquire)) {
-        // The VI thread can arrive before GoldenEye has finished startup.
-        // Advertise readiness only after the game thread also reaches this
-        // patched wait boundary; the stock wait then parks it behind the VI
-        // thread until every peer has reported both halves of the barrier.
+        // Do not synchronize an implementation-dependent startup instant.
+        // Menu 3 is GoldenEye's stable stock file/menu state after the intro;
+        // all pre-start controller input is neutral, so every runtime can
+        // reach this same game-defined boundary before frame 1 is released.
+        const bool bootstrapReady =
+            readGameWord(rdram, 0x8002A6C0) == 3 &&
+            readGameWord(rdram, 0x80023FA8) == 90 &&
+            readGameWord(rdram, 0x80048164) == 90;
+        if (!bootstrapReady) {
+            ctx->r2 = 0;
+            return;
+        }
         if (!netplayRuntimeReady.exchange(true, std::memory_order_acq_rel)) {
             logEvent("netplay",
                 "game thread reached synchronized frame barrier at VI %llu",

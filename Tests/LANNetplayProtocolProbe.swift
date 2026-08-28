@@ -56,6 +56,15 @@ struct LANNetplayProtocolProbe {
         precondition(wire.count == 64)
         precondition(LANNetplayInputWire.decode(wire) == ordered)
 
+        precondition(LANNetplayPacing.maximumLeadFrames == 4)
+        precondition(LANNetplayPacing.canProduce(nextFrame: 1, consumedFrame: 0))
+        precondition(LANNetplayPacing.canProduce(nextFrame: 4, consumedFrame: 0))
+        precondition(!LANNetplayPacing.canProduce(nextFrame: 5, consumedFrame: 0))
+        precondition(LANNetplayPacing.canProduce(nextFrame: 105, consumedFrame: 101))
+        precondition(!LANNetplayPacing.canProduce(nextFrame: 106, consumedFrame: 101))
+        precondition(LANNetplayPacing.inputFrame(afterOrderedFrame: 1) == 5)
+        precondition(LANNetplayPacing.inputFrame(afterOrderedFrame: 120) == 124)
+
         print("LAN netplay protocol probe: PASS")
     }
 

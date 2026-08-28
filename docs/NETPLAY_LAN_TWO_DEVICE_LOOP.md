@@ -24,9 +24,12 @@ must remain unchanged.
   simulate the GoldenEye world for the clients.
 - Every device runs the full deterministic GoldenEye simulation locally.
 - The host emits one monotonically numbered four-port input bundle per logical
-  frame. Inputs are consumed after a bounded three-frame delay.
-- Missing authoritative input stops or visibly faults the experiment; a client
-  must not silently invent a different future.
+  frame and may lead the native consumer by at most four frames.
+- Each peer labels its local sample for exact future frame N+4. The host waits
+  for every connected player's exact sample and never reuses last-known input.
+- The runtime consumes frame N after the following three ordered frames have
+  arrived. Missing authoritative input stops or visibly faults the experiment;
+  a client must not silently invent a different future.
 - Each client periodically reports the canonical game-state checksum already
   defined by the determinism experiment. Any mismatch is a visible desync.
 - Player 1 receives the top-left crop, Player 2 the top-right crop, Player 3
@@ -55,8 +58,8 @@ Only then is a public lobby service worth building.
   readiness, start seed/epoch, ordered input frame, and checksum sample.
 - Decode rejects a wrong protocol or build compatibility identifier.
 - Slot assignment is stable for the lifetime of a room.
-- A host-only test proves ordering, three-frame buffering, neutral unoccupied
-  ports, and missing-frame failure.
+- A host-only test proves ordering, the four-frame producer cap, neutral
+  unoccupied ports, and missing-frame failure.
 
 ### G3 - Nearby room lifecycle
 
@@ -73,6 +76,9 @@ Only then is a public lobby service worth building.
 - The host orders four-port input bundles; both runtimes consume the same
   numbered bundles.
 - The deterministic scheduler is enabled only while the LAN test is active.
+  Input is latched at one real VI boundary rather than at arbitrary controller
+  polls. A stock file-menu/game-thread barrier plus the following VI parks both
+  runtime threads before frame 1.
 - Stock GoldenEye is entered through ordinary controller input; no ROM patch or
   replacement multiplayer menu is written into the game.
 - The native layer selects the assigned quadrant without resizing RT64's
@@ -121,18 +127,22 @@ install-and-play procedure rather than an architectural unknown.
 - G3 nearby room lifecycle: PASS with one iPad Simulator plus a real macOS
   companion peer.
 - G4 runtime bridge: PASS on the host/runtime seam; cross-device checksum
-  agreement remains the physical gate. The Simulator iteration moved ordered
-  input consumption from arbitrary controller polls to the runtime VI callback
-  and added a two-part game-thread/VI barrier.
-- G5 one-Simulator validation: PASS, including ordered runtime frames and the
-  corrected full-frame pre-match presentation. Immediate and 2,000 ms delayed
-  guest readiness with fixed seed `424242` produced 42 identical checksum
-  samples through frame 1,260, with the game thread parked at VI 37 and the VI
-  scheduler at VI 38 in both runs.
-- G6 artifact: PARTIAL. The signed ROM-free v2 diagnostic app remains installed
-  on both paired physical devices, but it predates the corrected VI/game-thread
-  barrier. Build, sign, verify, and install a new candidate before the physical
-  replay.
+  agreement remains the physical gate. Input is VI-latched, bootstrap timing
+  state is normalized at authoritative frame 1, and protocol v3 carries exact
+  N+4 peer samples instead of reusing a latest value.
+- G5 one-Simulator validation: PASS for synchronization, with renderer follow-up
+  open. Immediate, 2,000 ms delayed, and extended fixed-seed runs matched at
+  every common checksum sample; the extended peer reached frame 1,020. Active
+  telemetry reported `sim 60.0`, `net 60.0`, `buffered 3`, and `misses 0`.
+  Simulator rendering remained dark/corrupted in both LAN and offline control
+  runs. Comparable presentation counters were nearly identical, so this is an
+  existing renderer issue rather than a measured LAN regression. Physical
+  image quality and framing remain part of G6.
+- G6 artifact: READY FOR PHYSICAL TEST. The signed ROM-free v3 IPA is packaged
+  and independently verified but not installed. Its SHA-256 is
+  `ae6a479f82f6055ac77aebcd43efd08e540f729fdc09503be1bd77876d77bf33`.
+  The v2 app currently on both devices is superseded; preserve and re-hash
+  private data when installing v3.
 
 See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
 physical procedure.

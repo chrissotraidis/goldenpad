@@ -94,6 +94,9 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
     private var latestInputs = Array(
         repeating: LANNetplayInput.neutral,
         count: LANNetplayProtocol.maximumPlayers)
+    private var scheduledLocalInputs: [UInt64: LANNetplayInput] = [:]
+    private var remoteInputsByFrame: [UInt64: [Int: LANNetplayInput]] = [:]
+    private var waitingForRemoteInputSince: TimeInterval?
     private var nextOrderedFrame: UInt64 = 1
     private var frameTimer: Timer?
     private var checksumTimer: Timer?
@@ -235,6 +238,9 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         gameLaunchAuthorized = false
         nextOrderedFrame = 1
         latestInputs = Array(repeating: .neutral, count: LANNetplayProtocol.maximumPlayers)
+        scheduledLocalInputs = [:]
+        remoteInputsByFrame = [:]
+        waitingForRemoteInputSince = nil
         localChecksums = [:]
         peerChecksums = [:]
         if resetMessage {
@@ -286,6 +292,9 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         streamStarted = false
         nextOrderedFrame = 1
         latestInputs = Array(repeating: .neutral, count: LANNetplayProtocol.maximumPlayers)
+        scheduledLocalInputs = [:]
+        remoteInputsByFrame = [:]
+        waitingForRemoteInputSince = nil
         goldenPadRecompNetplayConfigure(1, Int32(slot), seed)
         status = "Connected as Player \(slot + 1). Use GoldenEye's stock Multiplayer menu."
         transportHealth = "Starting native runtime"
@@ -346,26 +355,69 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
 
     private func frameTick() {
         guard isPlaying else { return }
-        if role == .guest {
-            send(LANNetplayMessage(
-                kind: .input,
-                senderID: localID,
-                input: assignedSlot.flatMap { latestInputs[$0] }))
-            return
-        }
+        if role == .guest { return }
         guard role == .host else { return }
+        var consumed: UInt64 = 0
+        var received: UInt64 = 0
+        var missing: UInt64 = 0
+        var checksumFrame: UInt64 = 0
+        var checksum: UInt64 = 0
+        goldenPadRecompNetplayStatus(
+            &consumed, &received, &missing, &checksumFrame, &checksum)
+        guard LANNetplayPacing.canProduce(
+            nextFrame: nextOrderedFrame,
+            consumedFrame: consumed) else { return }
         let frame = nextOrderedFrame
+        guard let orderedInputs = orderedInputsForHostFrame(frame) else { return }
         nextOrderedFrame += 1
-        submitOrderedFrame(frame: frame, inputs: latestInputs)
+        submitOrderedFrame(frame: frame, inputs: orderedInputs)
         send(LANNetplayMessage(
             kind: .orderedFrame,
             senderID: localID,
             frame: frame,
-            inputs: latestInputs))
-        if let slot = assignedSlot {
-            latestInputs[slot].touchLookX = 0
-            latestInputs[slot].touchLookY = 0
+            inputs: orderedInputs))
+    }
+
+    private func orderedInputsForHostFrame(_ frame: UInt64) -> [LANNetplayInput]? {
+        let remoteSlots = participants
+            .filter { $0.connected && $0.id != localID }
+            .map(\.slot)
+        if frame > LANNetplayPacing.maximumLeadFrames {
+            let pending = remoteInputsByFrame[frame] ?? [:]
+            let missing = remoteSlots.filter { pending[$0] == nil }
+            guard missing.isEmpty else {
+                let now = ProcessInfo.processInfo.systemUptime
+                if waitingForRemoteInputSince == nil {
+                    waitingForRemoteInputSince = now
+                } else if now - (waitingForRemoteInputSince ?? now) >= 2 {
+                    fault("Missing Player \((missing[0]) + 1) input for frame \(frame).")
+                } else {
+                    transportHealth = "Waiting for Player \((missing[0]) + 1) · frame \(frame)"
+                }
+                return nil
+            }
         }
+        waitingForRemoteInputSince = nil
+
+        var ordered = Array(
+            repeating: LANNetplayInput.neutral,
+            count: LANNetplayProtocol.maximumPlayers)
+        if let localSlot = assignedSlot, ordered.indices.contains(localSlot) {
+            if let scheduled = scheduledLocalInputs.removeValue(forKey: frame) {
+                ordered[localSlot] = scheduled
+            }
+            let futureFrame = LANNetplayPacing.inputFrame(afterOrderedFrame: frame)
+            scheduledLocalInputs[futureFrame] = latestInputs[localSlot]
+            latestInputs[localSlot].touchLookX = 0
+            latestInputs[localSlot].touchLookY = 0
+        }
+        if frame > LANNetplayPacing.maximumLeadFrames,
+           let pending = remoteInputsByFrame.removeValue(forKey: frame) {
+            for slot in remoteSlots where ordered.indices.contains(slot) {
+                ordered[slot] = pending[slot] ?? .neutral
+            }
+        }
+        return ordered
     }
 
     private func submitOrderedFrame(frame: UInt64, inputs: [LANNetplayInput]) {
@@ -463,15 +515,26 @@ final class LANNetplayCoordinator: NSObject, ObservableObject {
         case .input:
             guard role == .host,
                   let slot = participants.first(where: { $0.id == message.senderID })?.slot,
+                  let frame = message.frame,
                   let input = message.input,
                   latestInputs.indices.contains(slot) else { return }
-            latestInputs[slot] = input
+            guard frame >= nextOrderedFrame else { return }
+            guard frame <= nextOrderedFrame + LANNetplayPacing.maximumLeadFrames * 4 else {
+                fault("Player \(slot + 1) sent an invalid future input frame.")
+                return
+            }
+            remoteInputsByFrame[frame, default: [:]][slot] = input
         case .orderedFrame:
             guard role == .guest, let frame = message.frame,
                   let inputs = message.inputs,
                   inputs.count == LANNetplayProtocol.maximumPlayers else { return }
             submitOrderedFrame(frame: frame, inputs: inputs)
             if let slot = assignedSlot {
+                send(LANNetplayMessage(
+                    kind: .input,
+                    senderID: localID,
+                    frame: LANNetplayPacing.inputFrame(afterOrderedFrame: frame),
+                    input: latestInputs[slot]))
                 latestInputs[slot].touchLookX = 0
                 latestInputs[slot].touchLookY = 0
             }

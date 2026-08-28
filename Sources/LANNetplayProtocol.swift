@@ -1,11 +1,26 @@
 import Foundation
 
 enum LANNetplayProtocol {
-    static let version = 2
-    static let compatibility = "goldenpad-ge-us-netplay-lab-v2"
+    static let version = 3
+    static let compatibility = "goldenpad-ge-us-netplay-lab-v3"
     static let serviceType = "gpad-netplay"
     static let inputDelayFrames: UInt64 = 3
     static let maximumPlayers = 4
+}
+
+enum LANNetplayPacing {
+    // Frame N can be consumed only after N + inputDelayFrames has arrived.
+    // Keep exactly that look-ahead plus the frame being consumed; producing
+    // farther ahead only increases latency and can overwrite the native ring.
+    static let maximumLeadFrames = LANNetplayProtocol.inputDelayFrames + 1
+
+    static func canProduce(nextFrame: UInt64, consumedFrame: UInt64) -> Bool {
+        nextFrame <= consumedFrame + maximumLeadFrames
+    }
+
+    static func inputFrame(afterOrderedFrame frame: UInt64) -> UInt64 {
+        frame + maximumLeadFrames
+    }
 }
 
 struct LANNetplayInput: Codable, Equatable, Sendable {

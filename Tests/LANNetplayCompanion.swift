@@ -19,6 +19,7 @@ final class Companion: NSObject,
     private var passed = false
     private var goReceived = false
     private var lastOrderedFrame: UInt64 = 0
+    private var timeoutWorkItem: DispatchWorkItem?
     private let runtimeReadyDelay: TimeInterval = {
         let environment = ProcessInfo.processInfo.environment
         guard let raw = environment["GOLDENPAD_LAN_COMPANION_READY_DELAY_MS"],
@@ -26,15 +27,34 @@ final class Companion: NSObject,
               milliseconds >= 0 else { return 0 }
         return milliseconds / 1_000
     }()
+    private let targetFrame: UInt64 = {
+        let raw = ProcessInfo.processInfo.environment[
+            "GOLDENPAD_LAN_COMPANION_TARGET_FRAME"]
+        return raw.flatMap(UInt64.init) ?? 120
+    }()
+    private let holdSeconds: TimeInterval = {
+        let raw = ProcessInfo.processInfo.environment[
+            "GOLDENPAD_LAN_COMPANION_HOLD_SECONDS"]
+        return raw.flatMap(Double.init) ?? 10
+    }()
+    private let timeoutSeconds: TimeInterval = {
+        let raw = ProcessInfo.processInfo.environment[
+            "GOLDENPAD_LAN_COMPANION_TIMEOUT_SECONDS"]
+        return raw.flatMap(Double.init) ?? 45
+    }()
 
     func run() {
         session.delegate = self
         browser.delegate = self
         browser.startBrowsingForPeers()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+        let timeout = DispatchWorkItem {
             fputs("LAN companion: timed out\n", stderr)
             exit(1)
         }
+        timeoutWorkItem = timeout
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + timeoutSeconds,
+            execute: timeout)
         RunLoop.main.run()
     }
 
@@ -97,8 +117,7 @@ final class Companion: NSObject,
         } else if message.kind == .orderedFrame,
                   let frame = message.frame,
                   let inputs = message.inputs,
-                  inputs.count == LANNetplayProtocol.maximumPlayers,
-                  !passed {
+                  inputs.count == LANNetplayProtocol.maximumPlayers {
             guard goReceived else {
                 fputs("LAN companion: ordered frame arrived before go barrier\n", stderr)
                 exit(1)
@@ -111,15 +130,22 @@ final class Companion: NSObject,
             send(LANNetplayMessage(
                 kind: .input,
                 senderID: senderID,
+                frame: LANNetplayPacing.inputFrame(afterOrderedFrame: frame),
                 input: .neutral))
-            guard frame >= 8 else { return }
+            guard frame >= targetFrame, !passed else { return }
             passed = true
+            timeoutWorkItem?.cancel()
             print("LAN companion: PASS discovery, Player 2, ready/start/runtime-ready/go, ordered frames 1...\(frame)")
             fflush(stdout)
             browser.stopBrowsingForPeers()
-            // Stay connected briefly so the one-Simulator validation can
-            // capture the actual two-peer roster without opening a second UI.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { exit(0) }
+            // Stay connected and keep responding to every ordered frame so
+            // this remains a real peer during screenshots and log capture.
+            DispatchQueue.main.asyncAfter(deadline: .now() + holdSeconds) { [weak self] in
+                guard let self else { exit(1) }
+                print("LAN companion: completed through ordered frame \(self.lastOrderedFrame)")
+                fflush(stdout)
+                exit(0)
+            }
         }
     }
 
