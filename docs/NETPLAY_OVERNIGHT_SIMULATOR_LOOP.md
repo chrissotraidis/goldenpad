@@ -2,6 +2,12 @@
 
 Started: 2026-08-28
 
+Result: **CONDITIONAL GO**. See
+[`NETPLAY_OVERNIGHT_RESULTS.md`](NETPLAY_OVERNIGHT_RESULTS.md). The deterministic
+diagnostic matched through 10,620 logical four-player frames under a bounded
+host CPU scheduling stress, including a three-frame input buffer. A real
+two-client relay remains the next gate.
+
 ## Objective
 
 Determine whether GoldenPad can credibly support the proposed online model:
@@ -85,7 +91,7 @@ and ignore only source-proven presentation/OS scratch changes.
 Promotion gate: both clean runs reach the same live multiplayer setup and
 consume byte-identical per-port input streams.
 
-### Loop 3: Independent-process determinism
+### Loop 3: Independent-process determinism — completed
 
 1. Run at least three fresh processes on one Simulator profile.
 2. Compare input identity, canonical state, full state, VI identity, and clock
@@ -98,7 +104,7 @@ consume byte-identical per-port input streams.
 Promotion gate: canonical state matches through a live match. Full memory may
 still differ only in source-proven noncanonical workspaces.
 
-### Loop 4: Deterministic scheduler controls
+### Loop 4: Deterministic scheduler controls — completed for the diagnostic
 
 If canonical state diverges, inspect the first owner and implement only the
 smallest justified diagnostic control, in this order:
@@ -117,7 +123,7 @@ Stop rule: if a single logical event pump still cannot reproduce canonical
 state, classify this runtime as a no-go for input-only lockstep unless a much
 larger engine rewrite is explicitly funded.
 
-### Loop 5: Timing stress
+### Loop 5: Timing stress — completed for the tested scenario
 
 Only after canonical convergence:
 
@@ -126,7 +132,7 @@ Only after canonical convergence:
 3. run at least 10,000 logical frames; and
 4. require zero canonical mismatches.
 
-### Loop 6: Loopback fixed-delay exchange
+### Loop 6: Loopback fixed-delay exchange — partially completed
 
 Only after timing stress passes:
 
@@ -138,6 +144,10 @@ Only after timing stress passes:
 5. measure the minimum playable fixed delay.
 
 This loop is transport proof, not a lobby or internet beta.
+
+The experiment implemented and validated fixed-delay frame semantics, but did
+not connect two clients through a socket relay. That distinction remains open
+and is not counted as transport proof.
 
 ## Evidence required at handoff
 

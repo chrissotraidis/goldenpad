@@ -1,0 +1,48 @@
+diff --git a/RecompiledPatches/patches.c b/RecompiledPatches/patches.c
+index 9d2f48b..f4bd135 100644
+--- a/RecompiledPatches/patches.c
++++ b/RecompiledPatches/patches.c
+@@ -1,6 +1,8 @@
+ #include "recomp.h"
+ #include "funcs.h"
+ 
++void goldenpad_recomp_deterministic_frame_step(uint8_t* rdram, recomp_context* ctx);
++
+ RECOMP_FUNC void musicTrack1Play(uint8_t* rdram, recomp_context* ctx) {
+     uint64_t hi = 0, lo = 0, result = 0;
+     int c1cs = 0;
+@@ -1157,6 +1159,10 @@ RECOMP_FUNC void rmonCreateThread(uint8_t* rdram, recomp_context* ctx) {
+ 
+ ;}
+ RECOMP_FUNC void waitForNextFrame2(uint8_t* rdram, recomp_context* ctx) {
++    goldenpad_recomp_deterministic_frame_step(rdram, ctx);
++    if (ctx->r2 != 0) {
++        return;
++    }
+     uint64_t hi = 0, lo = 0, result = 0;
+     int c1cs = 0;
+     // 0x80801000: addiu       $sp, $sp, -0x28
+@@ -7663,7 +7669,10 @@ L_80803A10:
+     // 0x80803A1C: jal         0x80000000
+     // 0x80803A20: nop
+ 
+-    waitForNextFrame(rdram, ctx);
++    goldenpad_recomp_deterministic_frame_step(rdram, ctx);
++    if (ctx->r2 == 0) {
++        waitForNextFrame(rdram, ctx);
++    }
+         goto after_38;
+     // 0x80803A20: nop
+ 
+@@ -8038,7 +8047,10 @@ L_80803C14:
+     // 0x80803C14: jal         0x80000000
+     // 0x80803C18: nop
+ 
+-    waitForNextFrame(rdram, ctx);
++    goldenpad_recomp_deterministic_frame_step(rdram, ctx);
++    if (ctx->r2 == 0) {
++        waitForNextFrame(rdram, ctx);
++    }
+         goto after_47;
+     // 0x80803C18: nop
+ 

@@ -36,9 +36,9 @@ container=$(xcrun simctl get_app_container "$device_udid" "$bundle_id" data)
 cp "$rom_path" "$container/Documents/GoldenEye_TLBFREE.z64"
 xcrun simctl launch "$device_udid" "$bundle_id" --netplay-determinism-probe >/dev/null
 
-trace="$container/Library/Application Support/GoldenPadRecomp/Logs/goldenpad-determinism-trace-v1.log"
-for _ in $(seq 1 180); do
-    if [ -f "$trace" ] && rg -q '^COMPLETE poll=3600$' "$trace"; then
+trace="$container/Library/Application Support/GoldenPadRecomp/Logs/goldenpad-determinism-trace-v14.log"
+for _ in $(seq 1 420); do
+    if [ -f "$trace" ] && rg -q '^COMPLETE poll=16000$' "$trace"; then
         cp "$trace" "$output_trace"
         xcrun simctl terminate "$device_udid" "$bundle_id" 2>/dev/null || true
         echo "Determinism trace: $output_trace"
@@ -48,5 +48,5 @@ for _ in $(seq 1 180); do
 done
 
 xcrun simctl terminate "$device_udid" "$bundle_id" 2>/dev/null || true
-echo "Probe did not complete within 180 seconds: $trace" >&2
+echo "Probe did not complete within 420 seconds: $trace" >&2
 exit 1

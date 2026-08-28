@@ -38,9 +38,12 @@ cmake -S "$output_root/source" -B "$output_root/build" -G Ninja \
     -DCMAKE_CXX_FLAGS_RELEASE=-DNDEBUG
 
 ninja -C "$output_root/build" \
-    librecomp/CMakeFiles/librecomp.dir/src/ultra_translation.cpp.o
+    librecomp/CMakeFiles/librecomp.dir/src/ultra_translation.cpp.o \
+    ultramodern/CMakeFiles/ultramodern.dir/src/events.cpp.o
 ar -r "$output_root/archives/librecomp/liblibrecomp.a" \
     "$output_root/build/librecomp/CMakeFiles/librecomp.dir/src/ultra_translation.cpp.o"
+ar -r "$output_root/archives/ultramodern/libultramodern.a" \
+    "$output_root/build/ultramodern/CMakeFiles/ultramodern.dir/src/events.cpp.o"
 
 if ! nm -u "$output_root/archives/librecomp/liblibrecomp.a" |
     rg -q 'goldenpad_recomp_deterministic_clock_ticks'; then

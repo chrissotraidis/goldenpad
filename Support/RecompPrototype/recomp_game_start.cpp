@@ -96,11 +96,13 @@ std::atomic<bool> depthRebuildProbeEnabled = false;
 std::atomic<bool> determinismProbeEnabled = false;
 std::atomic<bool> determinismProbeComplete = false;
 std::atomic<uint64_t> determinismPollCount = 0;
+std::atomic<uint64_t> determinismMatchFrame = 0;
 std::atomic<uint64_t> determinismViCount = 0;
-std::atomic<uint64_t> determinismClockTicks = 0;
-std::atomic<uint32_t> determinismButtons = 0;
-std::atomic<int32_t> determinismStickX = 0;
-std::atomic<int32_t> determinismStickY = 0;
+std::atomic<uint64_t> determinismClockReads = 0;
+std::atomic<uint64_t> determinismRoomStartVi = 0;
+std::array<std::atomic<uint32_t>, kControllerPorts> determinismButtons{};
+std::array<std::atomic<int32_t>, kControllerPorts> determinismStickX{};
+std::array<std::atomic<int32_t>, kControllerPorts> determinismStickY{};
 std::atomic<uint32_t> audioRequestedFrequency = 0;
 std::atomic<uint32_t> audioHostSourceFrequency = 0;
 std::atomic<uint32_t> audioHostSessionFrequency = 0;
@@ -140,8 +142,9 @@ constexpr size_t kDeterminismBlocksPerPage =
     kDeterminismPageBytes / kDeterminismBlockBytes;
 constexpr size_t kDeterminismHotBlockCount =
     kDeterminismHotPages.size() * kDeterminismBlocksPerPage;
-constexpr uint64_t kDeterminismClockTicksPerRead = 10'000;
-constexpr uint64_t kDeterminismMaxPoll = 3'600;
+constexpr uint64_t kN64CountTicksPerGamePoll = 781'250;
+constexpr uint64_t kDeterminismMaxPoll = 16'000;
+constexpr uint64_t kDeterminismInputDelayFrames = 3;
 constexpr uint16_t kN64ButtonStart = 0x1000;
 constexpr uint16_t kN64ButtonZ = 0x2000;
 constexpr uint16_t kN64ButtonCRight = 0x0001;
@@ -160,6 +163,28 @@ using DeterminismPageHashes =
     std::array<uint64_t, kDeterminismPageCount>;
 using DeterminismHotBlockHashes =
     std::array<uint64_t, kDeterminismHotBlockCount>;
+using DeterminismInputs = std::array<DeterminismInput, kControllerPorts>;
+
+struct CanonicalStateHashes {
+    uint64_t all = 0;
+    uint64_t globals = 0;
+    uint64_t players = 0;
+    uint64_t props = 0;
+    int32_t playerCount = 0;
+    bool valid = false;
+    bool activeMatch = false;
+
+    bool operator==(const CanonicalStateHashes &) const = default;
+};
+
+constexpr std::array<uint32_t, 19> kCanonicalGlobalAddresses{
+    0x8002A6C0, 0x80023FA8, 0x80048164,
+    0x80024260, 0x80024264, 0x8002B340,
+    0x80048174, 0x80048178, 0x8004817C,
+    0x80048198, 0x8004819C, 0x80048194,
+    0x80048180, 0x800481B0, 0x80079EB8,
+    0x8008C500, 0x8008C504, 0x8002CA64, 0x8002CA68,
+};
 
 // Match the working GoldenPad host: the game/audio thread is the sole producer
 // and AVAudioEngine is the sole consumer of a bounded stereo PCM ring.
@@ -307,30 +332,155 @@ void logEvent(const char *event, const char *format, ...) {
 
 int32_t readGameWord(uint8_t *rdram, uint32_t address);
 
-DeterminismInput determinismInputForPoll(uint64_t poll) {
-    DeterminismInput input{};
+DeterminismInputs determinismInputsForStep(uint64_t poll, uint64_t matchFrame) {
+    DeterminismInputs inputs{};
 
-    // Use only ordinary N64 controller input. Repeated Start edges traverse the
-    // stock front end's default path; later windows exercise live gameplay if
-    // the runtime has reached Dam. The schedule is state-independent so every
-    // run receives exactly the same input stream even if simulation diverges.
-    if (poll >= 60 && poll <= 1'380 && (poll - 60) % 120 < 2) {
-        input.buttons |= kN64ButtonStart;
+    // This is ordinary controller input only. Start traverses the stock front
+    // end, negative Y selects Multiplayer, and Start launches the stock default
+    // four-player match. The schedule never reads game state, so every process
+    // receives exactly the same four port streams even after a divergence.
+    if (poll >= 60 && poll <= 780 && (poll - 60) % 120 < 2) {
+        inputs[0].buttons |= kN64ButtonStart;
     }
-    if (poll >= 1'680 && poll < 1'920) {
-        input.stickY = 64;
+    if (poll >= 820 && poll < 880) {
+        inputs[0].stickY = -64;
     }
-    if (poll >= 2'040 && poll < 2'160) {
-        input.buttons |= kN64ButtonCRight;
+    if ((poll >= 900 && poll < 902) || (poll >= 1'020 && poll < 1'022)) {
+        inputs[0].buttons |= kN64ButtonStart;
     }
-    if (poll >= 2'280 && poll < 2'520) {
-        input.stickY = 64;
-        input.buttons |= kN64ButtonCRight;
+
+    // Distinct, overlapping gameplay windows prove that all four logical ports
+    // affect the same simulation rather than merely reporting as connected.
+    if (matchFrame >= 360 && matchFrame < 840) {
+        inputs[0].stickY = 64;
     }
-    if (poll >= 2'640 && poll < 2'700) {
-        input.buttons |= kN64ButtonZ;
+    if (matchFrame >= 600 && matchFrame < 1'080) {
+        inputs[1].stickY = 48;
+        inputs[1].stickX = 32;
     }
-    return input;
+    if (matchFrame >= 840 && matchFrame < 1'320) {
+        inputs[2].stickY = -48;
+        inputs[2].stickX = -32;
+    }
+    if (matchFrame >= 1'080 && matchFrame < 1'560) {
+        inputs[3].stickY = 40;
+        inputs[3].stickX = -40;
+    }
+    if (matchFrame >= 960 && matchFrame < 1'080) {
+        inputs[0].buttons |= kN64ButtonCRight;
+    }
+    if (matchFrame >= 1'320 && matchFrame < 1'440) {
+        inputs[1].buttons |= kN64ButtonCRight;
+    }
+    if (matchFrame >= 1'680 && matchFrame < 1'740) {
+        inputs[0].buttons |= kN64ButtonZ;
+        inputs[2].buttons |= kN64ButtonZ;
+    }
+    return inputs;
+}
+
+DeterminismInputs determinismBufferedInputsForStep(
+    uint64_t poll, uint64_t matchFrame) {
+    if (matchFrame == 0) {
+        return determinismInputsForStep(poll, 0);
+    }
+    const uint64_t sourceFrame = matchFrame > kDeterminismInputDelayFrames
+        ? matchFrame - kDeterminismInputDelayFrames
+        : 0;
+    return determinismInputsForStep(poll, sourceFrame);
+}
+
+void appendCanonicalWord(std::vector<uint8_t> &output, uint8_t *rdram, uint32_t address) {
+    const uint32_t value = static_cast<uint32_t>(readGameWord(rdram, address));
+    for (uint32_t shift = 0; shift < 32; shift += 8) {
+        output.push_back(static_cast<uint8_t>(value >> shift));
+    }
+}
+
+bool appendCanonicalRange(
+    std::vector<uint8_t> &output,
+    const uint8_t *rdram,
+    uint32_t address,
+    size_t length
+) {
+    if (address < 0x80000000 || address >= 0x80800000) {
+        return false;
+    }
+    const size_t offset = static_cast<size_t>(address - 0x80000000);
+    if (length > kDeterminismRdramBytes - offset) {
+        return false;
+    }
+    output.insert(output.end(), rdram + offset, rdram + offset + length);
+    return true;
+}
+
+CanonicalStateHashes hashCanonicalState(uint8_t *rdram) {
+    // Version 1 is intentionally conservative: it contains source-owned game
+    // state and excludes RT64 buffers, audio queues, OS/runtime bookkeeping,
+    // and PropRecord::zDepth (a renderer-computed field).
+    constexpr std::array<uint32_t, 39> playerWordOffsets{
+        0x000, 0x004, 0x008, 0x00C, 0x010, 0x014, 0x018,
+        0x01C, 0x020, 0x024, 0x028, 0x02C, 0x030,
+        0x038, 0x03C, 0x040, 0x044, 0x048, 0x04C,
+        0x050, 0x054, 0x058, 0x09C, 0x0A0, 0x0A8,
+        0x0D8, 0x0DC, 0x0E0, 0x148, 0x158,
+        0x16C, 0x170, 0x174, 0x178, 0x3B4, 0x3B8,
+        0x408, 0x414, 0x418,
+    };
+    constexpr uint32_t playerPointersAddress = 0x80079CE0;
+    constexpr uint32_t playerDataAddress = 0x80079CF0;
+    constexpr size_t playerDataBytes = 4 * 0x70;
+    constexpr uint32_t propsAddress = 0x80069A38;
+    constexpr size_t propCount = 600;
+    constexpr size_t propBytes = 0x34;
+
+    std::vector<uint8_t> globals;
+    std::vector<uint8_t> players;
+    std::vector<uint8_t> props;
+    globals.reserve(kCanonicalGlobalAddresses.size() * sizeof(uint32_t));
+    players.reserve(playerDataBytes + 4 * playerWordOffsets.size() * sizeof(uint32_t));
+    props.reserve(propCount * (propBytes - sizeof(uint32_t)));
+
+    for (const uint32_t address : kCanonicalGlobalAddresses) {
+        appendCanonicalWord(globals, rdram, address);
+    }
+
+    CanonicalStateHashes result{};
+    result.valid = appendCanonicalRange(players, rdram, playerDataAddress, playerDataBytes);
+    for (size_t port = 0; port < kControllerPorts; ++port) {
+        const uint32_t playerAddress = static_cast<uint32_t>(
+            readGameWord(rdram, playerPointersAddress + static_cast<uint32_t>(port * 4)));
+        if (playerAddress == 0) {
+            continue;
+        }
+        ++result.playerCount;
+        if (playerAddress < 0x80000000 || playerAddress > 0x807FD580) {
+            result.valid = false;
+            continue;
+        }
+        for (const uint32_t offset : playerWordOffsets) {
+            appendCanonicalWord(players, rdram, playerAddress + offset);
+        }
+    }
+    for (size_t prop = 0; prop < propCount; ++prop) {
+        const uint32_t address = propsAddress + static_cast<uint32_t>(prop * propBytes);
+        result.valid = appendCanonicalRange(props, rdram, address, 0x18) && result.valid;
+        result.valid = appendCanonicalRange(props, rdram, address + 0x1C, 0x18) && result.valid;
+    }
+
+    result.globals = XXH3_64bits(globals.data(), globals.size());
+    result.players = XXH3_64bits(players.data(), players.size());
+    result.props = XXH3_64bits(props.data(), props.size());
+    const std::array<uint64_t, 3> componentHashes{
+        result.globals, result.players, result.props,
+    };
+    result.all = XXH3_64bits(componentHashes.data(), sizeof(componentHashes));
+    const int32_t menu = readGameWord(rdram, 0x8002A6C0);
+    const int32_t stage = readGameWord(rdram, 0x80023FA8);
+    const int32_t pending = readGameWord(rdram, 0x80048164);
+    result.activeMatch = result.valid && menu == 11 && stage != 90 &&
+        pending == stage && result.playerCount >= 2;
+    return result;
 }
 
 DeterminismRegionHashes hashDeterminismRegions(const uint8_t *rdram) {
@@ -373,16 +523,20 @@ uint64_t foldDeterminismRegions(const DeterminismRegionHashes &hashes) {
 
 bool shouldSampleDeterminismPoll(
     uint64_t poll,
-    const DeterminismInput &input,
-    const DeterminismInput &previousInput
+    uint64_t matchFrame,
+    const DeterminismInputs &inputs,
+    const DeterminismInputs &previousInputs
 ) {
-    return poll <= 240 || poll % 30 == 0 || input != previousInput ||
+    return poll <= 240 || (matchFrame != 0 &&
+        (matchFrame <= 120 || matchFrame % 30 == 0)) ||
+        (matchFrame == 0 && poll % 30 == 0) || inputs != previousInputs ||
         poll == kDeterminismMaxPoll;
 }
 
 void writeDeterminismSample(
     uint64_t poll,
-    const DeterminismInput &input,
+    uint64_t matchFrame,
+    const DeterminismInputs &inputs,
     uint8_t *rdram
 ) {
     if (rdram == nullptr || determinismTracePath.empty()) {
@@ -391,11 +545,14 @@ void writeDeterminismSample(
 
     // Two immediate reads distinguish a cross-run mismatch from an unsafe
     // observation seam that changed while it was being hashed.
+    const CanonicalStateHashes canonicalFirst = hashCanonicalState(rdram);
     const DeterminismRegionHashes first = hashDeterminismRegions(rdram);
     const DeterminismPageHashes pages = hashDeterminismPages(rdram);
     const DeterminismHotBlockHashes hotBlocks = hashDeterminismHotBlocks(rdram);
     const DeterminismRegionHashes second = hashDeterminismRegions(rdram);
-    const bool stable = first == second;
+    const CanonicalStateHashes canonicalSecond = hashCanonicalState(rdram);
+    const bool memoryStable = first == second;
+    const bool stable = canonicalFirst == canonicalSecond;
     const uint64_t stateHash = foldDeterminismRegions(second);
     const uint64_t vi = determinismViCount.load(std::memory_order_acquire);
     const int32_t menu = readGameWord(rdram, 0x8002A6C0);
@@ -404,17 +561,42 @@ void writeDeterminismSample(
 
     std::ostringstream line;
     line << "SAMPLE poll=" << std::dec << poll
+         << " match_frame=" << matchFrame
          << " vi=" << vi
          << " clock_reads="
-         << determinismClockTicks.load(std::memory_order_acquire) /
-                kDeterminismClockTicksPerRead
+         << determinismClockReads.load(std::memory_order_acquire)
          << " stable=" << (stable ? 1 : 0)
-         << " input=" << std::hex << std::setw(4) << std::setfill('0')
-         << input.buttons << std::dec
-         << ',' << input.stickX << ',' << input.stickY
+         << " memory_stable=" << (memoryStable ? 1 : 0)
+         << " inputs=";
+    for (size_t port = 0; port < inputs.size(); ++port) {
+        if (port != 0) {
+            line << ';';
+        }
+        line << std::hex << std::setw(4) << std::setfill('0')
+             << inputs[port].buttons << std::dec
+             << ',' << inputs[port].stickX << ',' << inputs[port].stickY;
+    }
+    line << " players=" << canonicalSecond.playerCount
+         << " canonical_valid=" << (canonicalSecond.valid ? 1 : 0)
+         << " active_match=" << (canonicalSecond.activeMatch ? 1 : 0)
          << " menu=" << menu
          << " stage=" << stage
          << " pending=" << pending
+         << " canonical=" << std::hex << std::setw(16) << std::setfill('0')
+         << canonicalSecond.all
+         << " canonical_globals=" << std::setw(16) << canonicalSecond.globals
+         << " canonical_players=" << std::setw(16) << canonicalSecond.players
+         << " canonical_props=" << std::setw(16) << canonicalSecond.props
+         << " global_words=";
+    for (size_t index = 0; index < kCanonicalGlobalAddresses.size(); ++index) {
+        if (index != 0) {
+            line << ',';
+        }
+        line << std::hex << std::setw(8) << std::setfill('0')
+             << static_cast<uint32_t>(readGameWord(
+                    rdram, kCanonicalGlobalAddresses[index]));
+    }
+    line
          << " hash=" << std::hex << std::setw(16) << std::setfill('0')
          << stateHash
          << " regions=";
@@ -516,17 +698,21 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
             << " latest=0x" << std::hex << latestAddress << std::dec << '\n';
     }
     if (determinismProbeEnabled.load(std::memory_order_relaxed)) {
-        determinismTracePath = directory / "goldenpad-determinism-trace-v1.log";
+        determinismTracePath = directory / "goldenpad-determinism-trace-v14.log";
         determinismPollCount.store(0, std::memory_order_relaxed);
+        determinismMatchFrame.store(0, std::memory_order_relaxed);
         determinismViCount.store(0, std::memory_order_relaxed);
-        determinismClockTicks.store(0, std::memory_order_relaxed);
+        determinismClockReads.store(0, std::memory_order_relaxed);
+        determinismRoomStartVi.store(0, std::memory_order_relaxed);
         determinismProbeComplete.store(false, std::memory_order_relaxed);
-        determinismButtons.store(0, std::memory_order_relaxed);
-        determinismStickX.store(0, std::memory_order_relaxed);
-        determinismStickY.store(0, std::memory_order_relaxed);
+        for (size_t port = 0; port < kControllerPorts; ++port) {
+            determinismButtons[port].store(0, std::memory_order_relaxed);
+            determinismStickX[port].store(0, std::memory_order_relaxed);
+            determinismStickY[port].store(0, std::memory_order_relaxed);
+        }
         std::lock_guard traceLock(determinismTraceMutex);
         std::ofstream trace(determinismTracePath, std::ios::trunc);
-        trace << "GOLDENPAD_DETERMINISM_TRACE_V1"
+        trace << "GOLDENPAD_DETERMINISM_TRACE_V14"
               << " base_bytes=" << kDeterminismRdramBytes
               << " region_bytes=" << kDeterminismRegionBytes
               << " regions=" << kDeterminismRegionCount
@@ -534,8 +720,11 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
               << " pages=" << kDeterminismPageCount
               << " hot_pages=2,5,6,59"
               << " hot_block_bytes=" << kDeterminismBlockBytes
-              << " script=fixed-menu-dam-v1"
-              << " clock=ordered-call-v1"
+              << " script=stock-four-player-fixed-delay-v8"
+              << " canonical=ge-source-owned-v1"
+              << " clock=room-relative-vi-v8"
+              << " scheduler=fixed-game-frame-direct-input-v8"
+              << " input_delay_frames=" << kDeterminismInputDelayFrames
               << " max_poll=" << kDeterminismMaxPoll << '\n';
         log << "[GoldenPadRecomp] determinism-probe: READY read-only=1 "
             << "liveInputOverride=1 maxPoll=" << kDeterminismMaxPoll << '\n';
@@ -996,6 +1185,20 @@ void setFrequency(uint32_t frequency) {
             audioHostMixerFrequency.load(std::memory_order_relaxed));
     }
 }
+bool determinismMatchIsReady(uint8_t *rdram) {
+    if (rdram == nullptr || readGameWord(rdram, 0x8002A6C0) != 11 ||
+        readGameWord(rdram, 0x80023FA8) == 90 ||
+        readGameWord(rdram, 0x80048164) != readGameWord(rdram, 0x80023FA8)) {
+        return false;
+    }
+    int players = 0;
+    for (uint32_t port = 0; port < kControllerPorts; ++port) {
+        if (readGameWord(rdram, 0x80079CE0 + port * 4) != 0) {
+            ++players;
+        }
+    }
+    return players >= 2;
+}
 void pollInput() {
     if (!inputPollReported.exchange(true)) {
         logEvent("input", "game began polling the prototype controller bridge");
@@ -1005,27 +1208,73 @@ void pollInput() {
         return;
     }
 
-    static DeterminismInput previousInput{};
+    static DeterminismInputs previousInputs{};
     const uint64_t poll =
         determinismPollCount.fetch_add(1, std::memory_order_acq_rel) + 1;
-    const DeterminismInput input = determinismInputForPoll(poll);
-    determinismButtons.store(input.buttons, std::memory_order_release);
-    determinismStickX.store(input.stickX, std::memory_order_release);
-    determinismStickY.store(input.stickY, std::memory_order_release);
-
-    if (shouldSampleDeterminismPoll(poll, input, previousInput)) {
-        writeDeterminismSample(
-            poll, input, activeRdram.load(std::memory_order_acquire));
+    uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+    if (poll == 1'020 && rdram != nullptr &&
+        readGameWord(rdram, 0x8002A6C0) == 14) {
+        // This is the synchronized room-launch boundary, immediately before
+        // the scripted Start edge asks stock GoldenEye to create the match.
+        writeGameWord(rdram, 0x80024260, 0x00000001);
+        writeGameWord(rdram, 0x80024264, 0xD872B41C);
+        const uint64_t roomStartVi = determinismViCount.load(
+            std::memory_order_acquire);
+        determinismRoomStartVi.store(roomStartVi, std::memory_order_release);
+        constexpr uint32_t roomEpochCount = static_cast<uint32_t>(
+            4'096 * kN64CountTicksPerGamePoll);
+        writeGameWord(rdram, 0x80048290, -1); // lastFrameCounter
+        writeGameWord(rdram, 0x80048294, 0);  // currentFrameCounter
+        writeGameWord(rdram, 0x80048298, 1);  // speedgraphframes
+        writeGameWord(rdram, 0x8004829C, -1); // previousFrameCounter
+        writeGameWord(rdram, 0x800482A0, 0);  // halfFrameCounter
+        writeGameWord(rdram, 0x800482A4, 0);  // isFrameCounterOdd
+        writeGameWord(rdram, 0x800482A8, 0);  // halfMinusPreviousCounter
+        writeGameWord(rdram, 0x800482AC, roomEpochCount);
+        writeGameWord(rdram, 0x800482B0, roomEpochCount);
+        writeGameWord(rdram, 0x800482B4, 1);  // frameDelay
+        writeGameWord(rdram, 0x80048194, 0);  // multiplayer seconds ticks
+        writeGameWord(rdram, 0x800481A4, 0);  // displayed seconds
+        writeGameWord(rdram, 0x800481A8, 0);  // multiplayer minutes ticks
+        writeGameWord(rdram, 0x800481AC, 0);  // displayed minutes
+        writeGameWord(rdram, 0x800481B0, 0);  // active stage ticks
+        writeGameWord(rdram, 0x800481B4, 0);  // displayed stage time
     }
-    previousInput = input;
+    uint64_t matchFrame = 0;
+    if (determinismMatchIsReady(rdram)) {
+        // pollInput runs immediately before lvlManageMpGame consumes this
+        // controller sample. g_GlobalTimer is therefore the completed logical
+        // frame count, and +1 identifies the simulation frame these inputs
+        // will drive. Host poll cadence is deliberately not part of the room
+        // protocol.
+        const int32_t completedFrame = readGameWord(rdram, 0x8004817C);
+        matchFrame = completedFrame >= 0
+            ? static_cast<uint64_t>(completedFrame) + 1
+            : 1;
+        determinismMatchFrame.store(matchFrame, std::memory_order_release);
+    }
+    const DeterminismInputs inputs = determinismBufferedInputsForStep(poll, matchFrame);
+    for (size_t port = 0; port < kControllerPorts; ++port) {
+        determinismButtons[port].store(inputs[port].buttons, std::memory_order_release);
+        determinismStickX[port].store(inputs[port].stickX, std::memory_order_release);
+        determinismStickY[port].store(inputs[port].stickY, std::memory_order_release);
+    }
+
+    if (shouldSampleDeterminismPoll(poll, matchFrame, inputs, previousInputs)) {
+        writeDeterminismSample(
+            poll, matchFrame, inputs, rdram);
+    }
+    previousInputs = inputs;
     if (poll >= kDeterminismMaxPoll) {
         completeDeterminismTrace(poll);
     }
 }
 bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
-    const bool portAvailable = controllerNum == 0 ||
-        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
-        (controllerNum >= 2 && controllerNum < 4 && fourPlayerTestMode.load(std::memory_order_relaxed));
+    const bool portAvailable = controllerNum >= 0 && controllerNum < 4 &&
+        (determinismProbeEnabled.load(std::memory_order_relaxed) ||
+            controllerNum == 0 ||
+            (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
+            (controllerNum >= 2 && fourPlayerTestMode.load(std::memory_order_relaxed)));
     if (!portAvailable || buttons == nullptr || x == nullptr || y == nullptr) {
         const uint8_t reportBit = controllerNum >= 0 && controllerNum < 4
             ? static_cast<uint8_t>(1u << controllerNum)
@@ -1036,17 +1285,27 @@ bool getInput(int controllerNum, uint16_t *buttons, float *x, float *y) {
         return false;
     }
     if (determinismProbeEnabled.load(std::memory_order_acquire)) {
-        if (controllerNum == 0) {
-            *buttons = static_cast<uint16_t>(
-                determinismButtons.load(std::memory_order_acquire));
-            *x = static_cast<float>(
-                determinismStickX.load(std::memory_order_acquire)) / 80.0f;
-            *y = static_cast<float>(
-                determinismStickY.load(std::memory_order_acquire)) / 80.0f;
+        const size_t port = static_cast<size_t>(controllerNum);
+        DeterminismInputs inputs{};
+        uint8_t *rdram = activeRdram.load(std::memory_order_acquire);
+        if (determinismMatchIsReady(rdram)) {
+            const int32_t completedFrame = readGameWord(rdram, 0x8004817C);
+            const uint64_t logicalFrame = completedFrame >= 0
+                ? static_cast<uint64_t>(completedFrame) + 1
+                : 1;
+            inputs = determinismBufferedInputsForStep(
+                determinismPollCount.load(std::memory_order_acquire),
+                logicalFrame);
+            *buttons = inputs[port].buttons;
+            *x = static_cast<float>(inputs[port].stickX) / 80.0f;
+            *y = static_cast<float>(inputs[port].stickY) / 80.0f;
         } else {
-            *buttons = 0;
-            *x = 0.0f;
-            *y = 0.0f;
+            *buttons = static_cast<uint16_t>(
+                determinismButtons[port].load(std::memory_order_acquire));
+            *x = static_cast<float>(
+                determinismStickX[port].load(std::memory_order_acquire)) / 80.0f;
+            *y = static_cast<float>(
+                determinismStickY[port].load(std::memory_order_acquire)) / 80.0f;
         }
         return true;
     }
@@ -1070,9 +1329,11 @@ void setRumble(int controllerNum, bool enabled) {
     }
 }
 ultramodern::input::connected_device_info_t getConnectedDeviceInfo(int controllerNum) {
-    const bool portAvailable = controllerNum == 0 ||
-        (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
-        (controllerNum >= 2 && controllerNum < 4 && fourPlayerTestMode.load(std::memory_order_relaxed));
+    const bool portAvailable = controllerNum >= 0 && controllerNum < 4 &&
+        (determinismProbeEnabled.load(std::memory_order_relaxed) ||
+            controllerNum == 0 ||
+            (controllerNum == 1 && twoPlayerTestMode.load(std::memory_order_relaxed)) ||
+            (controllerNum >= 2 && fourPlayerTestMode.load(std::memory_order_relaxed)));
     if (portAvailable) {
         const uint8_t reportBit = static_cast<uint8_t>(1u << controllerNum);
         if ((controllerPortsReported.fetch_or(reportBit) & reportBit) == 0) {
@@ -1335,14 +1596,53 @@ extern "C" int32_t goldenpad_recomp_deterministic_clock_enabled() {
     return determinismProbeEnabled.load(std::memory_order_acquire) ? 1 : 0;
 }
 
-extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks() {
-    // GoldenEye uses osGetCount both as an RNG seed and in short elapsed-time
-    // loops. Advancing by a fixed amount per game-visible clock read preserves
-    // monotonic progress without allowing host wall-clock scheduling into the
-    // simulation. A production clock should be tied to emulated CPU progress;
-    // this deliberately smaller clock is only an offline feasibility probe.
-    return determinismClockTicks.fetch_add(
-        kDeterminismClockTicksPerRead, std::memory_order_acq_rel);
+extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller) {
+    (void)caller;
+    determinismClockReads.fetch_add(1, std::memory_order_relaxed);
+    const uint64_t vi = determinismViCount.load(std::memory_order_acquire);
+    const uint64_t roomStartVi = determinismRoomStartVi.load(
+        std::memory_order_acquire);
+    constexpr uint64_t roomEpochVi = 4'096;
+    const uint64_t logicalVi = roomStartVi == 0
+        ? vi
+        : roomEpochVi + (vi - roomStartVi);
+    return logicalVi *
+        kN64CountTicksPerGamePoll;
+}
+
+extern "C" void goldenpad_recomp_deterministic_frame_step(
+    uint8_t *rdram, recomp_context *ctx) {
+    if (rdram == nullptr || ctx == nullptr ||
+        !determinismProbeEnabled.load(std::memory_order_acquire)) {
+        if (ctx != nullptr) {
+            ctx->r2 = 0;
+        }
+        return;
+    }
+
+    // The stock wait routine derives deltaFrames from host wake-up timing.
+    // Simulator scheduling can therefore produce 5 in one process and 6 in
+    // another even when their inputs and RNG seed match. For this isolated
+    // experiment, advance exactly one GoldenEye logical frame while keeping
+    // the source-owned timing globals internally consistent.
+    const int32_t currentFrame = readGameWord(rdram, 0x80048294);
+    const int32_t previousHalf = readGameWord(rdram, 0x800482A0);
+    const int32_t nextFrame = currentFrame + 1;
+    const int32_t nextHalf = nextFrame / 2;
+    const uint32_t currentCount = static_cast<uint32_t>(
+        goldenpad_recomp_deterministic_clock_ticks(0));
+
+    writeGameWord(rdram, 0x80048290, currentFrame);       // lastFrameCounter
+    writeGameWord(rdram, 0x80048294, nextFrame);          // currentFrameCounter
+    writeGameWord(rdram, 0x80048298, 1);                  // speedgraphframes
+    writeGameWord(rdram, 0x8004829C, previousHalf);       // previousFrameCounter
+    writeGameWord(rdram, 0x800482A0, nextHalf);           // halfFrameCounter
+    writeGameWord(rdram, 0x800482A4, nextFrame & 1);      // isFrameCounterOdd
+    writeGameWord(rdram, 0x800482A8, nextHalf - previousHalf);
+    writeGameWord(rdram, 0x800482AC, currentCount);
+    writeGameWord(rdram, 0x800482B0, currentCount);
+    writeGameWord(rdram, 0x800482B4, 1);                  // frameDelay
+    ctx->r2 = 1;
 }
 
 extern "C" void goldenpad_recomp_fire_rate_player_sample(

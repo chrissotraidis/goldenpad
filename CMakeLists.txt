@@ -65,6 +65,16 @@ if(GOLDENPAD_RT64_ARCHIVE_DIR)
 endif()
 endif()
 
+set(GOLDENPAD_RECOMP_PATCH_OUTPUT_DIR "" CACHE PATH
+    "Optional generated GoldenEye patch output directory for isolated experiments")
+if(GOLDENPAD_RECOMP_PATCH_OUTPUT_DIR)
+    set(goldenpad_recomp_patch_output_dir
+        "${GOLDENPAD_RECOMP_PATCH_OUTPUT_DIR}")
+elseif(GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR)
+    set(goldenpad_recomp_patch_output_dir
+        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches")
+endif()
+
 if(goldenpad_apple_platform STREQUAL "mac")
     foreach(required_path IN ITEMS
         GOLDENPAD_RECOMP_AOT_DIR
@@ -85,8 +95,8 @@ if(goldenpad_apple_platform STREQUAL "mac")
     endif()
 
     set(goldenpad_mac_patch_sources
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches_bin.c"
+        "${goldenpad_recomp_patch_output_dir}/patches.c"
+        "${goldenpad_recomp_patch_output_dir}/patches_bin.c"
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/register_patches.cpp")
     foreach(patch_source IN LISTS goldenpad_mac_patch_sources)
         if(NOT EXISTS "${patch_source}")
@@ -94,7 +104,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         endif()
     endforeach()
     file(READ
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
+        "${goldenpad_recomp_patch_output_dir}/patches.c"
         goldenpad_mac_patches_text)
     foreach(required_bridge IN ITEMS
             "recomp_get_camera_inputs"
@@ -142,12 +152,12 @@ if(goldenpad_apple_platform STREQUAL "mac")
     set(goldenpad_mac_patch_binary
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/patches/patches.bin")
     if("${goldenpad_mac_patch_source}" IS_NEWER_THAN
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c")
+            "${goldenpad_recomp_patch_output_dir}/patches.c")
         message(FATAL_ERROR
             "GoldenEye64Recomp Mac patches.c is stale. Regenerate the matched patch outputs before building GoldenPad.")
     endif()
     if("${goldenpad_mac_patch_binary}" IS_NEWER_THAN
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches_bin.c")
+            "${goldenpad_recomp_patch_output_dir}/patches_bin.c")
         message(FATAL_ERROR
             "GoldenEye64Recomp Mac patches_bin.c is stale. Regenerate the matched patch outputs before building GoldenPad.")
     endif()
@@ -220,7 +230,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
     set_source_files_properties(${goldenpad_mac_aot_c}
         PROPERTIES COMPILE_OPTIONS "-Wno-implicit-function-declaration")
     set_source_files_properties(
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
+        "${goldenpad_recomp_patch_output_dir}/patches.c"
         PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration")
     set_source_files_properties(
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
@@ -242,7 +252,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
     target_include_directories(GoldenPadMac PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype"
         "${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs"
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches"
+        "${goldenpad_recomp_patch_output_dir}"
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/include"
         "${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR}/librecomp/include"
         "${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR}/ultramodern/include"
@@ -327,8 +337,8 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         file(GLOB goldenpad_recomp_aot_c CONFIGURE_DEPENDS
             "${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs/*.c")
         set(goldenpad_recomp_patch_sources
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches_bin.c"
+            "${goldenpad_recomp_patch_output_dir}/patches.c"
+            "${goldenpad_recomp_patch_output_dir}/patches_bin.c"
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/register_patches.cpp")
         foreach(patch_source IN LISTS goldenpad_recomp_patch_sources)
             if(NOT EXISTS "${patch_source}")
@@ -337,7 +347,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             endif()
         endforeach()
         file(READ
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
+            "${goldenpad_recomp_patch_output_dir}/patches.c"
             goldenpad_recomp_patches_text)
         foreach(required_bridge IN ITEMS
                 "recomp_get_camera_inputs"
@@ -397,13 +407,13 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/patches/patches.bin")
         if(EXISTS "${goldenpad_recomp_patch_source}" AND
                 "${goldenpad_recomp_patch_source}" IS_NEWER_THAN
-                "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c")
+                "${goldenpad_recomp_patch_output_dir}/patches.c")
             message(FATAL_ERROR
                 "GoldenEye64Recomp patches.c is older than patches/widescreen.c. Regenerate the matched patch outputs before building mobile GoldenPad.")
         endif()
         if(EXISTS "${goldenpad_recomp_patch_binary}" AND
                 "${goldenpad_recomp_patch_binary}" IS_NEWER_THAN
-                "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches_bin.c")
+                "${goldenpad_recomp_patch_output_dir}/patches_bin.c")
             message(FATAL_ERROR
                 "GoldenEye64Recomp patches_bin.c is older than patches/patches.bin. Regenerate the matched patch outputs before building mobile GoldenPad.")
         endif()
@@ -528,7 +538,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         target_include_directories(GoldenPadRecompPrototype PRIVATE
             "${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype"
             "${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs"
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches"
+            "${goldenpad_recomp_patch_output_dir}"
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/include"
             "${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR}/librecomp/include"
             "${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR}/ultramodern/include"
@@ -546,7 +556,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         set_source_files_properties(${goldenpad_recomp_aot_c} PROPERTIES
             COMPILE_OPTIONS "-Wno-implicit-function-declaration")
         set_source_files_properties(
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/RecompiledPatches/patches.c"
+            "${goldenpad_recomp_patch_output_dir}/patches.c"
             PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration")
         foreach(archive IN LISTS goldenpad_recomp_runtime_archives)
             target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-force_load,${archive}")

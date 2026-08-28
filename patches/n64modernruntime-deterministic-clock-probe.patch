@@ -7,26 +7,48 @@ index 9b7247e..dd4f839 100644
  #include "recomp.h"
  
 +extern "C" int32_t goldenpad_recomp_deterministic_clock_enabled();
-+extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks();
++extern "C" uint64_t goldenpad_recomp_deterministic_clock_ticks(uint32_t caller);
 +
  extern "C" void osInitialize_recomp(uint8_t * rdram, recomp_context * ctx) {
      osInitialize();
  }
-@@ -70,11 +73,15 @@ extern "C" void osViSetEvent_recomp(uint8_t * rdram, recomp_context * ctx) {
+@@ -70,11 +73,17 @@ extern "C" void osViSetEvent_recomp(uint8_t * rdram, recomp_context * ctx) {
  }
  
  extern "C" void osGetCount_recomp(uint8_t * rdram, recomp_context * ctx) {
 -    ctx->r2 = osGetCount();
 +    ctx->r2 = goldenpad_recomp_deterministic_clock_enabled()
-+        ? static_cast<uint32_t>(goldenpad_recomp_deterministic_clock_ticks())
++        ? static_cast<uint32_t>(goldenpad_recomp_deterministic_clock_ticks(
++            static_cast<uint32_t>(ctx->r31)))
 +        : osGetCount();
  }
  
  extern "C" void osGetTime_recomp(uint8_t * rdram, recomp_context * ctx) {
 -    uint64_t total_count = osGetTime();
 +    uint64_t total_count = goldenpad_recomp_deterministic_clock_enabled()
-+        ? goldenpad_recomp_deterministic_clock_ticks()
++        ? goldenpad_recomp_deterministic_clock_ticks(
++            static_cast<uint32_t>(ctx->r31))
 +        : osGetTime();
      ctx->r2 = (int32_t)(total_count >> 32);
      ctx->r3 = (int32_t)(total_count >> 0);
+ }
+diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
+index d6f2ea1..0a8f50a 100644
+--- a/ultramodern/src/events.cpp
++++ b/ultramodern/src/events.cpp
+@@ -143,3 +143,5 @@ void vi_thread_func() {
+         total_vis = new_total_vis;
+-
++        if (events_callbacks.vi_callback != nullptr) {
++            events_callbacks.vi_callback();
++        }
+         remaining_retraces--;
+@@ -176,8 +178,4 @@ void vi_thread_func() {
+             }
+         }
+-
+-        if (events_callbacks.vi_callback != nullptr) {
+-            events_callbacks.vi_callback();
+-        }
+     }
  }

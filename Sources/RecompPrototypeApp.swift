@@ -60,6 +60,21 @@ struct GoldenPadApp: App {
     @State private var isEditingTouchLayout = false
     @State private var isUtilityMenuPresented = false
 
+    private var netplayQuadrantAnchor: UnitPoint? {
+        guard let argument = ProcessInfo.processInfo.arguments.first(where: {
+            $0.hasPrefix("--netplay-quadrant=")
+        }), let quadrant = Int(argument.split(separator: "=").last ?? "") else {
+            return nil
+        }
+        switch quadrant {
+        case 1: return .topLeading
+        case 2: return .topTrailing
+        case 3: return .bottomLeading
+        case 4: return .bottomTrailing
+        default: return nil
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -74,6 +89,10 @@ struct GoldenPadApp: App {
                     threePointFiltering: threePointFiltering
                 )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .scaleEffect(
+                        netplayQuadrantAnchor == nil ? 1 : 2,
+                        anchor: netplayQuadrantAnchor ?? .center
+                    )
                     .clipped()
                     .ignoresSafeArea()
                 // The CAMetalLayer can leave a two-physical-pixel sampling
