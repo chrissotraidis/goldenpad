@@ -1,11 +1,13 @@
 # Multiplayer roadmap
 
-Updated: 2026-08-23
+Updated: 2026-08-28
 
-GoldenPad currently has **experimental local split-screen in one runtime**. It
-does not have peer-to-peer, LAN, internet, relay, dedicated-server, or rollback
-multiplayer. This document separates the accepted render work from controller
-ownership and from future network simulation.
+GoldenPad currently has **experimental local split-screen in one runtime** and
+a separate research-only LAN v3 diagnostic. It does not have supported LAN,
+internet, relay, dedicated-server, or rollback multiplayer. The physical v3
+iPad/iPhone replay failed closed at frame 30 on a globals-only canonical
+mismatch. This document separates accepted render work from controller
+ownership and diagnostic network research.
 
 ## Current product boundary
 
@@ -17,7 +19,7 @@ ownership and from future network simulation.
 | Real controller ports 2–4 | Not implemented in the primary host | Core ports exist, but Swift binds only the first extended controller |
 | Controller disconnect/reconnect ownership | Not accepted | Disconnect can collapse test mode and route touch back to P1 |
 | Apple-Silicon Mac multiplayer assignment | Not implemented | Mac has no touch-P2 policy and also binds one controller |
-| LAN or peer-to-peer play | Not implemented | No protocol or synchronized-simulation layer |
+| LAN or peer-to-peer play | Diagnostic v3 only; physical synchronization failed | Discovery, slots, exact N+4 input, pacing, and desync stop exist; iPad/iPhone globals diverged at frame 30 |
 | Internet matchmaking/relay | Not implemented | No transport service or session identity handshake |
 | Savestate/rollback | No validated seam | Do not describe rollback as available or near-complete |
 
@@ -98,19 +100,19 @@ is deciding who owns simulation state and keeping two native game runtimes in
 agreement. Current local multiplayer has one process, one game clock, one RNG
 stream, and one shared memory image. Network play would split those assumptions.
 
-The current runtime exposes controller polling, but it does not expose a stable
-simulation frame identity: the poll-ID seam is an upstream TODO and the VI count
-is wall-clock-derived and skippable. It also has no validated complete state
-serialization, deterministic state hash, rewind, or rollback restore. Therefore
-a matchmaking UI or packet demo would not demonstrate playable network
-multiplayer.
+The isolated LAN diagnostic now supplies authoritative frame identity, a
+canonical component hash, exact future-frame input, and fail-closed desync
+detection. It still has no validated complete state serialization, rewind, or
+rollback restore. More importantly, the first physical v3 replay produced a
+globals-only mismatch at frame 30. Therefore a matchmaking UI or packet demo
+would not demonstrate playable network multiplayer.
 
 ### Feasibility matrix
 
 | Model | Technical feasibility | Missing foundation | Recommended disposition |
 | --- | --- | --- | --- |
 | Same-device 2–4 player split-screen | High | Real controller ownership, lifecycle acceptance, residual flicker decision | Finish first |
-| Two iPads on one LAN, input-delay lockstep | Plausible, unproven | Determinism proof, frame protocol, stall/timeout policy, desync detection | First network experiment after local gates |
+| Two Apple devices on one LAN, input-delay lockstep | Transport/protocol proven; physical determinism failed | Identify the differing canonical global, prove cross-device agreement, then latency/jitter | Continue only with v4 diagnostic |
 | Direct internet peer-to-peer | Plausible transport, high product complexity | Everything above plus discovery, NAT traversal/relay fallback, authentication, reconnect, latency adaptation | Do not start before LAN proof |
 | GameKit real-time match | Plausible Apple-only transport/matchmaking | Same synchronization work; GameKit does not make simulations deterministic | Evaluate only after protocol proof |
 | Relay-assisted internet sessions | Plausible | Protocol, relay service, operations, abuse controls, privacy, monitoring | Later product phase |
@@ -126,9 +128,11 @@ does not require an internet service. GameKit can be evaluated later for Apple-
 ecosystem matchmaking and relay-like connectivity, but it does not replace the
 protocol, compatibility, determinism, or state-ownership work.
 
-Multipeer Connectivity should not be the initial architecture. A convenient
-discovery API is not worth coupling the simulation protocol to a legacy
-high-level session abstraction before determinism is proven.
+The disposable v3 lab used Multipeer Connectivity for encrypted nearby
+discovery/session transport because it kept the experiment small. That choice
+is not a production transport decision. The application protocol remains the
+important boundary; Network.framework or GameKit can be reconsidered only
+after deterministic agreement passes.
 
 ### Required session handshake
 
@@ -149,7 +153,8 @@ Reject an incompatible peer with a specific reason before starting simulation.
 
 ### Synchronization experiments
 
-The first protocol should be disposable and measurement-focused:
+The v3 protocol is disposable and measurement-focused. It implemented the
+following sequence:
 
 1. run the same build and supported data on two local devices;
 2. exchange frame-numbered neutral/controller inputs with a fixed input delay;
@@ -165,6 +170,13 @@ The first protocol should be disposable and measurement-focused:
 An input exchange that renders two screens is research evidence. It is not
 online-multiplayer acceptance until real matches, reconnect policy, long-session
 desync checks, compatibility rejection, and adverse-network tests pass.
+
+Physical v3 result: the iPad parked at game/scheduler VI 1092/1093 and the
+iPhone at 1091/1092. Frame-30 player and prop hashes matched; globals differed.
+Both runtimes deliberately paused and no new crash report appeared. The next
+protocol must log the 19 individual canonical global words before attempting a
+repair. See
+[`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
 
 ## Network go/no-go gate
 
@@ -186,7 +198,10 @@ when every condition below is true:
 - no ROM bytes, extracted data, save payload, device identifier, or signing data
   is required by the protocol.
 
-The decision is **no-go** if identical local runs diverge without a diagnosable
+The current decision is **no-go beyond bounded diagnostic research** because
+the physical peers diverged at frame 30 and v3 retained only the aggregate
+global hash, not the individual differing word. The general decision is no-go
+if identical local runs diverge without a diagnosable
 frame, controller ownership can change implicitly, the only proposal is
 transport without state ownership, or success depends on unvalidated savestate/
 rollback behavior.
@@ -236,9 +251,12 @@ ownership/flicker acceptance and must not be bundled with network work.
 
 ### M3 — Two-device LAN research
 
-- Exact handshake rejects mismatches.
-- Frame-numbered input exchange and desync detection work on two physical iPads.
-- Loss, delay, reorder, app-switch, and disconnect tests fail safely.
+- **Partial/failing v3 checkpoint.** Protocol compatibility rejects old builds;
+  discovery, slots, ready/start, frame-numbered input, pacing, and desync stop
+  work on an iPad/iPhone pair.
+- Physical canonical globals diverged at frame 30 while players/props matched.
+- v4 must expose the individual 19-word snapshot and pass different bootstrap
+  VI counts before loss/delay/app-switch testing proceeds.
 - No claim beyond research is made.
 
 ### M4 — Product network decision
@@ -255,7 +273,9 @@ public matchmaking.
 3. Implement and physically accept stable real 2–4 controller ownership.
 4. Run the depth-rebuild flicker discriminator and decide whether a renderer
    repair is proportionate.
-5. Add deterministic frame/state observability.
-6. Run a two-device LAN input/hash experiment.
-7. Decide whether internet multiplayer is justified.
+5. Preserve the implemented deterministic frame/state observability.
+6. Resume the failed two-device LAN experiment with the v4 word-level
+   diagnostic; do not merely repeat v3.
+7. Decide whether internet multiplayer is justified only after physical
+   canonical agreement.
 8. Consider enhanced visuals independently.

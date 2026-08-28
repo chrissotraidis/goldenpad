@@ -2,6 +2,11 @@
 
 Updated: 2026-08-27
 
+> Historical first determinism loop. Later Simulator work reached a conditional
+> go, but the physical LAN v3 replay failed at frame 30 on a globals-only
+> mismatch. Resume from
+> [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+
 ## Goal
 
 Prove or falsify the minimum simulation property required for GoldenPad online

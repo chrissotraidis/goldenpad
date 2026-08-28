@@ -1,5 +1,42 @@
 # Worklog
 
+## 2026-08-28 - preserve physical LAN netplay v3 failure checkpoint
+
+- Built the network experiment in an isolated checkout from accepted Preview 8
+  without changing ROM bytes or the accepted Preview bundle.
+- Proved a canonical four-player projection under controlled deterministic
+  runs, then built a nearby-room LAN lab with encrypted discovery/session,
+  stable slots, ready/start/runtime-ready/go, exact frame-indexed four-port
+  input, a four-frame producer cap, VI-boundary consumption, periodic hashes,
+  and fail-closed missing-input/desync behavior.
+- Rejected controller-poll synchronization after it produced the reported
+  roughly 2 FPS stall. Rejected a guessed fixed-VI barrier after it deadlocked.
+  Retained the stock-menu game-thread barrier plus following VI scheduler
+  barrier and selected frame-1 timing normalization.
+- Immediate and 2,000 ms delayed one-Simulator peers matched through frame 240;
+  an extended peer reached frame 1,020. Active telemetry reported 60 FPS sim,
+  60 FPS network, three buffered frames, and zero misses. Offline and LAN
+  controls shared the same red/dark Simulator renderer issue and comparable
+  presentation counts, so no LAN render-cadence regression was measured.
+- Built, signed, packaged, and independently audited the ROM-free ARM64 LAN v3
+  IPA at SHA-256
+  `ae6a479f82f6055ac77aebcd43efd08e540f729fdc09503be1bd77876d77bf33`.
+- Backed up and hashed each paired device's preferences, converted ROM, active
+  save, backup save, and selected TLB-free ROM before installation. Installed
+  v3 in place on the iPad Pro and iPhone 14; every allowlisted pre/post hash
+  matched. No Simulator remained booted.
+- The physical pair completed discovery, join, Player 1/2 assignment,
+  ready/start, and frame delivery, then failed closed at frame 30. The iPad
+  parked at game/scheduler VI 1092/1093 and the iPhone at 1091/1092. Player and
+  prop hashes matched exactly; the 19-word global component differed.
+- Verified that the apparent simultaneous "crash" was an intentional pause:
+  both LAN Lab processes remained live, their health logs continued with fixed
+  counters, and neither device generated a new `.ips` report.
+- Froze the exact current status and v4 word-level continuation in
+  `NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`. Public matchmaking, relay,
+  rollback, and online-support claims remain out until physical canonical
+  agreement passes.
+
 ## 2026-08-27 - prepare Preview 8 optional second Fire release
 
 - Added a default-off **Add left-side Fire button** toggle to the live touch

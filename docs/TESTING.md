@@ -1355,6 +1355,40 @@ The 2026-08-03 pass reported `Apple iOS simulator GPU` at 1206x2622 and
 1668x2420 respectively. A Release `iphoneos` linked app also built as ARM64.
 This satisfies G2; GoldenEye frames begin at G3 and remain core-gated.
 
+## LAN netplay diagnostic gate
+
+This gate is research-only and never promotes the accepted Preview by itself.
+The authoritative current result and restart procedure are in
+[`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+
+Before Simulator or device work:
+
+```sh
+scripts/verify-lan-netplay-protocol.sh
+python3 scripts/compare-recomp-determinism-traces.py --self-test
+git diff --check
+scripts/check-no-rom-data.sh
+```
+
+Keep at most one Simulator booted. The host companion must prove encrypted
+discovery, Player 2 assignment, ready/start/runtime-ready/go, monotonic ordered
+frames, exact N+4 input responses, bounded lead, and fail-closed peer loss.
+Compare immediate and delayed logs with
+`compare-lan-netplay-checksum-logs.py`; a passing Simulator run does not replace
+the physical cross-device gate.
+
+Before every physical installation, privately copy and hash the LAN Lab
+preferences, converted ROM, active save, backup save, and Documents runtime
+ROM. Install in place, copy them back, and require byte-for-byte pre/post
+agreement. Never commit those files or their private save/preference hashes.
+
+Physical v3 evidence is a failure at frame 30: Player/Prop hashes matched,
+global hashes differed, and the runtimes were one bootstrap VI apart. No new
+crash reports appeared and both processes remained live. The next valid run is
+protocol v4 with all 19 canonical global values logged at frame 1 and frame 30.
+A v4 repair passes only when different local barrier VI counts retain identical
+individual global words and component hashes through at least frame 1,020.
+
 ## Converted ROM storage and backup gate
 
 GoldenPad currently keeps the protected, backup-excluded Documents runtime

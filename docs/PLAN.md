@@ -15,7 +15,7 @@ The native Apple-Silicon macOS extension is a separate gated product track. Its
 research decision, architecture and implementation gates are recorded in
 [`MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](MACOS_NATIVE_FEASIBILITY_2026-08-21.md).
 
-## Current execution plan (2026-08-27)
+## Current execution plan (2026-08-28)
 
 Preview 8 is the accepted mobile baseline. It adds one optional duplicate Fire
 control, disabled by default, with independent persisted layout values and
@@ -129,12 +129,19 @@ one at a time against a freshly accepted baseline.
    lifecycle invariants exist.
 2. Physically accept real two-, three-, and four-controller ownership on mobile;
    accept a separate no-touch Mac policy.
-3. Define a stable frame number and compact state hash; prove repeated local
-   deterministic matches.
-4. Run the bounded two-iPad LAN input/hash experiment.
-5. Decide whether GameKit, direct P2P with relay fallback, or no network product
-   is justified. Rollback remains blocked until complete state serialization and
-   restore are proven.
+3. The isolated diagnostic path now defines authoritative frame numbers,
+   four-port component hashes, a four-frame producer cap, and exact N+4 input.
+   Simulator controls passed through frame 1,020.
+4. The physical iPad/iPhone v3 gate failed closed at frame 30: player and prop
+   hashes matched, the 19-word global hash differed, and the devices were one
+   bootstrap VI apart. The processes paused rather than crashed.
+5. Before another physical replay, build protocol v4 to log every canonical
+   global at frame 1/frame 30 and isolate the exact source-owned difference.
+   The restart point is
+   [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+6. Decide whether GameKit, direct P2P with relay fallback, or no network product
+   is justified only after cross-device canonical agreement. Rollback remains
+   blocked until complete state serialization and restore are proven.
 
 The network go/no-go gate is in
 [`MULTIPLAYER_ROADMAP.md`](MULTIPLAYER_ROADMAP.md#network-gono-go-gate). No

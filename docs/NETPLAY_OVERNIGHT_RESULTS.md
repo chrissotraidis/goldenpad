@@ -2,6 +2,11 @@
 
 Date: 2026-08-28
 
+> Historical Simulator checkpoint. The later physical v3 replay failed at
+> frame 30 on a globals-only mismatch. Resume from
+> [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md),
+> not from the conditional-go wording below.
+
 ## Decision
 
 **CONDITIONAL GO for an ordered-input online prototype. Not ready to ship as

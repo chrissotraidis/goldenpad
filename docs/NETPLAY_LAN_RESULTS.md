@@ -6,8 +6,9 @@ Current protocol: v3
 
 ## Straight answer
 
-This is now a credible two-device LAN experiment, not yet proven playable
-multiplayer.
+This is a credible two-device LAN experiment whose current physical v3 build
+fails deterministic synchronization at frame 30. It is not playable or
+shippable multiplayer.
 
 GoldenPad can advertise and discover a nearby room, assign stable player
 slots, synchronize ready/start, and run the full GoldenEye simulation on every
@@ -37,10 +38,13 @@ extended run remained synchronized through frame 1,020. During the active run,
 simulation and network delivery both measured 60.0 FPS with zero missing
 frames and three buffered frames.
 
-The v3 candidate is now installed on the paired iPad and iPhone with the ROM,
+The v3 candidate was installed on the paired iPad and iPhone with the ROM,
 converted ROM, active save, backup save, and preferences verified byte-for-byte
-unchanged. The remaining decisive gate is to play a real stock multiplayer
-match on those two devices.
+unchanged. The devices completed discovery, join, slots, ready/start, and the
+shared ordered stream, then deliberately stopped on a globals-only canonical
+mismatch at frame 30. See
+[`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md)
+for the authoritative restart point.
 
 ## Architecture now under test
 
@@ -115,7 +119,9 @@ Repeated launches showed that the local barrier can still occur one VI apart.
 This corrected an earlier, too-strong conclusion that VI 37/38 was invariant.
 The remaining difference was confined to volatile pre-match timing globals;
 players and props already matched. Normalizing those counters at authoritative
-frame 1 made the canonical state independent of the local bootstrap VI count.
+frame 1 made the final controlled Simulator runs match, but the physical v3
+replay disproved the stronger claim that this state is independent of local
+bootstrap VI count.
 
 ### Retained: exact frame-indexed input
 
@@ -143,6 +149,15 @@ replaying stale input.
     samples from frame 30 through frame 240;
   - a third extended run matched both shorter runs through frame 240 and then
     continued to frame 1,020 without a missing authoritative frame.
+- Physical iPad/iPhone synchronization: FAIL at frame 30.
+  - iPad barrier: game VI 1092, scheduler VI 1093;
+  - iPhone barrier: game VI 1091, scheduler VI 1092;
+  - players matched at `b928418e0cc40c30`;
+  - props matched at `f9105157e57528de`;
+  - iPad globals were `62459b2ae49a1fd8`; iPhone globals were
+    `6d6d0a40fa8666f6`;
+  - no new iOS crash report was created and both processes remained alive;
+    the visible simultaneous stop was the intentional fail-closed pause.
 - Active pacing: PASS for the synchronization path.
   - overlay sample at ordered frame 537: `buffered 3`, `misses 0`,
     `sim 60.0`, `net 60.0 fps`;
@@ -190,37 +205,31 @@ Earlier artifacts remain historical evidence:
   iPad/iPhone, private data preserved, but superseded by the VI and frame-index
   corrections.
 
-## Next physical iPad + iPhone gate
+## Next gate: v4 word-level diagnostic
 
-Installation prerequisites completed on 2026-08-28: both devices were backed
-up to private temporary locations, the signed v3 app was installed in place,
-and all five allowlisted private-data hashes matched before/after on each
-device. No Simulator remained booted.
+Do not repeat v3 expecting a different verdict. Its frame-30 log contains only
+the aggregate hash of 19 canonical globals, so it cannot identify the exact
+differing word.
 
-1. Open **GoldenPad LAN Lab** on both devices and select the existing validated
-   personal TLB-free GoldenEye ROM.
-2. On the iPad choose **Host Room**. On the iPhone choose **Find Nearby** and
-   join the iPad.
-3. Confirm Player 1/Player 2 assignment, mark both Ready, and start the test.
-4. Confirm both devices show the same complete intro/file menu, not a premature
-   quadrant crop.
-5. Player 1 enters GoldenEye's stock **Multiplayer** menu, chooses the normal
-   built-in settings, and starts a match. Players 3/4 remain neutral.
-6. Confirm iPad shows Player 1's top-left view and iPhone shows Player 2's
-   top-right view, each centered without stretching or horizontal shift.
-7. Move, turn, fire, and interact from both devices for at least three minutes.
-8. Record render/sim/net FPS on both devices in menus and in-match. Also run
-    **Play Offline** with the same settings as the renderer baseline.
-9. Pass only if `misses` stays zero, neither device reports `DESYNC`, controls
-    remain responsive, each player sees the same world interactions, and the
-    image/crop is usable. Save screenshots and both diagnostic logs.
+1. Bump the diagnostic compatibility identifier to v4.
+2. Log all 19 canonical global values at frame 1 and frame 30 on both peers.
+3. Retain barrier VI, room seed, slot, menu/stage/pending, and frame counters.
+4. Repeat immediate/delayed Simulator controls.
+5. Build and package a ROM-free signed diagnostic IPA.
+6. Repeat the private-data backup/hash gate before installing on the two
+   physical devices.
+7. Run one room start and stop at the first comparison.
+8. Normalize or repair only the exact source-proven field that differs.
+
+Do not delete a canonical field merely to make the checksum pass. The detailed
+procedure and current 19-address projection are in the physical checkpoint.
 
 ## Interpretation
 
 - **Pass:** deterministic LAN multiplayer is feasible. Next measure input
   latency and jitter, then design a small Internet directory/relay experiment.
-- **Desync with zero misses:** isolate remaining nondeterministic state before
-  any Internet work.
+- **Actual v3 result - desync with zero misses:** isolate the individual global
+  word before any Internet or playable-match work.
 - **Missing exact input:** tune the frame window and Wi-Fi behavior; do not
   restore stale-input replay.
 - **Correct simulation but bad render/crop:** repair the presentation layer;

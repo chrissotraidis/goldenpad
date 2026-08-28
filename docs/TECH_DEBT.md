@@ -1,6 +1,6 @@
 # Technical debt and upstream watch
 
-Updated: 2026-08-27
+Updated: 2026-08-28
 
 This is GoldenPad's authoritative engineering-debt ledger. It records current
 defects, evidence strength, repair order, acceptance gates, rejected approaches,
@@ -138,7 +138,7 @@ bundle unrelated changes. Every repair must be independently revertible.
 | TD-08 | P2 | Mac horizontal mouse yaw remains sluggish | **Known Preview 6 limitation reconfirmed during Preview 7 review; not a regression** | Preview 7's Mac executable and package are byte-identical to Preview 6. Vertical mouse movement feels acceptable, but horizontal yaw remains sluggish. The shared relative queue is wide while combined output is normalized to one per-frame `[-1, 1]` budget before the game camera path, so raising global sensitivity is not a discriminating repair | Retain Preview 6 as the exact control. Before changing input, measure queued horizontal units, normalized output, saturation count, and final yaw delta in one bounded Mac-only comparison |
 | TD-09 | P2 | Thin far-right Mac render edge | **Observed**; host coverage seam is the **leading hypothesis** | Mobile already masks the same family of seam at the final presentation boundary; changing RT64 sizing is rejected | Measure the strip and test a Mac-only one-point trailing-edge mask against fixed Dam/Surface captures |
 | TD-10 | P2 | Stage-specific geometry, sky, water, and framebuffer-effect gaps | **Mixed** | Live original `skyRender` selects water, but active replacement helpers discard selected texture/geometry into fog-color fills; the full textured replacement is disabled. Other reports remain unreduced | Treat sky/water as bounded upstream feature debt; require one original-versus-current stage/settings/camera case for every other effect or geometry claim |
-| TD-11 | P3 | Peer-to-peer and online multiplayer | **Not implemented** | Local split-screen is one runtime; controller polling exists, but stable simulation frame identity, hashes, serialization, rollback, matchmaking, and transport do not | Complete TD-07, add an offline frame/hash determinism probe, then consider the two-device LAN experiment |
+| TD-11 | P3 | Peer-to-peer and online multiplayer | **Diagnostic LAN v3 implemented; physical determinism failed** | Nearby discovery, encrypted session, slots, exact N+4 input, bounded pacing, canonical hashes, and fail-closed desync reached frame 30 on iPad/iPhone. Player/prop hashes matched; globals differed with a one-VI barrier offset. No supported LAN/Internet product, serialization, rollback, matchmaking service, or recovery exists | Build v4 to log all 19 global words at frame 1/frame 30, identify the exact source-owned difference, and repeat the physical gate before any Internet work; see `NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md` |
 | TD-12 | P2 | Converted-ROM storage, backup, and package-path hygiene | **Confirmed write path; backup exposure is a strong inference** | The protected Documents runtime image is excluded from backup, but librecomp writes another full copy under `Application Support/GoldenPadRecomp` without explicit backup exclusion/protection. Package scans also miss `/var/folders` | Exclude/protect the runtime-managed copy without changing conversion or saves; extend path checks and verify attributes plus package contents |
 | TD-13 | P2 | Game-bearing build reproducibility | **Structural gap, disclosed** | Public verifiers build the ROM-free host and audit packaged content; private generated AOT inputs and the accepted runtime pin prevent an external clean build of the shipped executable | Add a scripted game-bearing build proof usable with private inputs and reproduce one shipped-source digest from two independent clean build directories |
 | TD-14 | P1 | Host input suspension and modal/run-loop neutralization | **Confirmed source gaps** | Settings/share sheets do not explicitly release touch; the 60 Hz mobile publisher uses the default run-loop mode and can pause during tracking; pause/watch guard completeness still needs a transition probe | Add a failing held-touch modal/scroll/watch transition test, then neutralize all ports on presentation and prove menu/watch/gameplay resume without replayed input |
@@ -221,11 +221,12 @@ The next landing sequence is:
 5. keep the accepted TD-08 Mac input repair frozen and take only a justified
    TD-09 edge repair;
 6. close TD-12 storage hygiene and TD-13 build-proof gaps independently; and
-7. implement stable real multi-controller ownership before any network layer.
+7. implement stable real multi-controller ownership before any supported
+   network layer; retain the isolated LAN work as diagnostic-only.
 
-Do not begin peer discovery, matchmaking, relay, or rollback work while TD-07
-is open. A transport demo would not prove multiplayer feasibility and would
-create a second unfinished ownership system.
+Do not begin public discovery, matchmaking, relay, or rollback work while TD-07
+and the frame-30 TD-11 global mismatch are open. The private v3 transport demo
+proved useful seams, not multiplayer feasibility or product acceptance.
 
 ## Preview 3 Mac input release — 2026-08-22
 

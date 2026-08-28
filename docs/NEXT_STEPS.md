@@ -1,6 +1,6 @@
 # Next steps
 
-Updated: 2026-08-27
+Updated: 2026-08-28
 
 This is the short operational queue after GoldenPad Preview 8. It does not
 replace the authoritative documents:
@@ -75,9 +75,14 @@ one at a time against a freshly accepted baseline.
   justify it.
 - Reduce stage/effect reports to deterministic reproductions.
 - Implement stable real two- to four-controller ownership.
-- Add deterministic frame numbers and state hashes.
-- Run the bounded two-iPad LAN input/hash experiment only if the
-  [`network go/no-go gate`](MULTIPLAYER_ROADMAP.md#network-gono-go-gate) passes.
+- Resume network research only from the v3 physical checkpoint. Frame numbers,
+  hashes, LAN discovery, exact N+4 input exchange, and fail-closed desync
+  detection exist in the diagnostic path, but the iPad/iPhone replay produced
+  a globals-only mismatch at frame 30.
+- Build the protocol v4 word-level diagnostic before another physical replay:
+  log all 19 canonical globals at frame 1/frame 30, preserve the one-VI barrier
+  difference, and repair only the source-proven divergent field. See
+  [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
 
 Public matchmaking, relays, authoritative servers, and rollback are not current
 implementation tasks.

@@ -146,7 +146,7 @@ mobile-parity or notarized Mac release.
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls; an optional second Fire button is available |
 | Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity, hold/toggle aim, and a default-off second Fire toggle |
 | Controllers | `GCController` with accepted Player 1 movement, right-stick look, buttons, and automatic touch-overlay hiding |
-| Multiplayer | Experimental; the frozen Preview 2 render baseline removes the former large black/checkerboard corruption on physical iPad, while slight lighting flicker and real three/four-controller routing remain open |
+| Multiplayer | Local split-screen rendering is experimental; online play is unsupported. A research-only LAN v3 build proved discovery/input ordering but failed closed on a globals-only physical desync at frame 30 |
 | Audio | Native game PCM feeds `AVAudioEngine` through a bounded stereo ring |
 | Saves | GoldenEye's 512-byte EEP4K active and backup files persist in Application Support |
 | Display | Native N64, 2× and automatic high-resolution modes, 2× MSAA and N64 three-point filtering |
@@ -645,6 +645,7 @@ override those current authority documents.
 | [`docs/PREVIEW_4_BASELINE.md`](docs/PREVIEW_4_BASELINE.md) | Frozen Preview 4 source, artifact, accepted-behavior, diagnostic, and rollback identity |
 | [`docs/TD01_FIRE_RATE_LOOP.md`](docs/TD01_FIRE_RATE_LOOP.md) | Bounded fire-rate measurement sequence and mandatory gameplay stop gate |
 | [`docs/MULTIPLAYER_ROADMAP.md`](docs/MULTIPLAYER_ROADMAP.md) | Local ownership, determinism, LAN research, network feasibility, and go/no-go gates |
+| [`docs/NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](docs/NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md) | Authoritative physical LAN v3 result, frame-30 mismatch evidence, non-crash determination, and exact v4 restart point |
 | [`docs/EXTERNAL_REVIEW_2026-08-22.md`](docs/EXTERNAL_REVIEW_2026-08-22.md) | Preserved independent revision-2 review; supporting evidence reconciled by current authority documents |
 | [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |

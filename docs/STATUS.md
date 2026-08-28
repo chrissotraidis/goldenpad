@@ -1,6 +1,6 @@
 # Status
 
-Updated: 2026-08-27
+Updated: 2026-08-28
 
 ## Current at a glance
 
@@ -13,7 +13,7 @@ Updated: 2026-08-27
 | Compatibility debt | Issue #19's iPhone 13 mini crash is confirmed fixed by explicitly targeting embedded Metal libraries at iOS 17; production Preview 7 confirmation remains. A12X issue #9 is separate and unresolved. |
 | Local multiplayer | Experimental rendering works; real P2–P4 controller ownership, reconnect behavior, and residual flicker remain open. |
 | Input lifecycle | Settings/share touch neutralization, disconnect-to-none ownership collapse, and mobile run-loop tracking remain open TD-14/TD-07 gaps. |
-| Network multiplayer | Not implemented. It is no-go until local ownership and deterministic state-hash gates pass. |
+| Network multiplayer | Not a supported product feature. A research-only LAN v3 protocol is implemented, but the physical iPad/iPhone replay failed closed at frame 30 on a globals-only canonical mismatch. |
 | Preview 8 behavior | Adds one default-off, independently editable duplicate Fire button. Preview 7's controls, cadence, Metal target, ROM flow, saves, audio, renderer settings, and limitations remain unchanged. |
 | Immediate engineering gate | Keep Preview 8 frozen; isolate renderer flicker and lifecycle/controller debt separately. Mac horizontal-mouse sluggishness remains measured follow-up debt. |
 | Immediate user-facing follow-up | Production Preview 7 test requests are posted to issue #19 and the separate A12X issue #9. Await reporter results. Issue #17 is reporter-closed; issue #8's modern controls are maintainer-accepted and its reporter is invited to test Preview 8's extra Fire button. |
@@ -787,6 +787,12 @@ evidence ledger below is preserved as historical validation for
   physical four-player run kept every quadrant coherent and is accepted as a
   stable experimental render baseline. Real Player 3/4 controller routing is
   not implemented or accepted.
+- Network LAN v3 is an isolated research path, not Preview behavior. Real
+  iPad/iPhone discovery, join, slots, ready/start, and ordered input reached
+  frame 30; player and prop hashes matched, globals differed, and both runtimes
+  deliberately paused. No new process crash report was generated. Resume only
+  with the 19-word v4 diagnostic in
+  [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
 - Screenshot/background resume has previously frozen gameplay and needs a
   dedicated physical lifecycle pass.
 - Settings/share presentation does not explicitly release latched primary-host

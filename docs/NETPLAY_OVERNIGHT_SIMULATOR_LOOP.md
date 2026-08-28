@@ -2,6 +2,11 @@
 
 Started: 2026-08-28
 
+> Historical execution loop. It led to the LAN v3 build, whose physical
+> iPad/iPhone replay later failed at frame 30. Current status and the exact v4
+> continuation are in
+> [`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+
 Result: **CONDITIONAL GO**. See
 [`NETPLAY_OVERNIGHT_RESULTS.md`](NETPLAY_OVERNIGHT_RESULTS.md). The deterministic
 diagnostic matched through 10,620 logical four-player frames under a bounded

@@ -14,6 +14,11 @@ This is a LAN feasibility build, not a public-internet multiplayer release.
 The accepted Preview build, user ROM, saves, and ROM bytes are out of scope and
 must remain unchanged.
 
+Current result: the physical v3 iPad/iPhone replay reached frame 30, then
+failed closed on a globals-only checksum mismatch. The apps paused rather than
+crashed. See
+[`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+
 ## Architecture under test
 
 - GoldenPad presents the room UI from its existing three-dot native overlay.
@@ -117,8 +122,10 @@ Only then is a public lobby service worth building.
 ## Definition of done
 
 The diagnostic IPA and source are reproducible; all host and one-Simulator
-gates pass; and the remaining two-physical-device check is a short, explicit
-install-and-play procedure rather than an architectural unknown.
+gates pass; and the physical iPad/iPhone gate either maintains canonical
+agreement or stops with enough word-level evidence to identify the first
+cross-device difference. v3 failed the agreement requirement and did not log
+the individual global words, so this definition is not yet satisfied.
 
 ## Execution status
 
@@ -126,10 +133,10 @@ install-and-play procedure rather than an architectural unknown.
 - G2 protocol contract: PASS.
 - G3 nearby room lifecycle: PASS with one iPad Simulator plus a real macOS
   companion peer.
-- G4 runtime bridge: PASS on the host/runtime seam; cross-device checksum
-  agreement remains the physical gate. Input is VI-latched, bootstrap timing
-  state is normalized at authoritative frame 1, and protocol v3 carries exact
-  N+4 peer samples instead of reusing a latest value.
+- G4 runtime bridge: PASS on the host/runtime seam, FAIL for physical
+  cross-device global-state agreement. Input is VI-latched and protocol v3
+  carries exact N+4 peer samples instead of reusing a latest value, but the
+  current bootstrap normalization did not absorb a one-VI device difference.
 - G5 one-Simulator validation: PASS for synchronization, with renderer follow-up
   open. Immediate, 2,000 ms delayed, and extended fixed-seed runs matched at
   every common checksum sample; the extended peer reached frame 1,020. Active
@@ -138,13 +145,15 @@ install-and-play procedure rather than an architectural unknown.
   runs. Comparable presentation counters were nearly identical, so this is an
   existing renderer issue rather than a measured LAN regression. Physical
   image quality and framing remain part of G6.
-- G6 artifact: INSTALLED AND READY FOR PHYSICAL PLAY. The signed ROM-free v3
-  IPA was independently verified and installed in place on both paired
-  devices. Its SHA-256 is
+- G6 artifact: PASS. The signed ROM-free v3 IPA was independently verified and
+  installed in place on both paired devices. Its SHA-256 is
   `ae6a479f82f6055ac77aebcd43efd08e540f729fdc09503be1bd77876d77bf33`.
   Pre/post-install manifests for the ROM, converted ROM, active save, backup
-  save, and preferences matched byte-for-byte on the iPad and iPhone. Both v3
-  apps launched successfully, and no Simulator remained booted.
+  save, and preferences matched byte-for-byte on the iPad and iPhone.
+- G7 physical synchronization: FAIL at frame 30. iPad barrier VI 1092/1093 and
+  iPhone barrier VI 1091/1092 produced identical player and prop hashes but
+  different global hashes. Both processes remained alive and no new crash
+  report appeared; the synchronized stop was intentional.
 
-See `NETPLAY_LAN_RESULTS.md` for evidence, artifact checksum, and the exact
-physical procedure.
+See `NETPLAY_LAN_RESULTS.md` for accumulated evidence and
+`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md` for the exact resume procedure.

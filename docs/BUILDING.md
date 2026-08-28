@@ -47,6 +47,43 @@ layout persistence and safe multi-touch aggregation. It retains Preview 7's
 accepted controls and explicit iOS 17 Metal targets. The audited IPA SHA-256 is
 `773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`.
 
+## Research-only LAN netplay diagnostic
+
+The LAN Lab is isolated from the accepted Preview and disabled by default.
+Configure the complete primary AOT target with the same private generated AOT,
+RT64, runtime source/archive, and matched GoldenEye reference inputs, plus:
+
+```text
+-DGOLDENPAD_RECOMP_PROTOTYPE=ON
+-DGOLDENPAD_LAN_NETPLAY_LAB=ON
+-DGOLDENPAD_RECOMP_BUNDLE_IDENTIFIER=com.chrissotraidis.goldenpad.lan-lab
+-DGOLDENPAD_RECOMP_DISPLAY_NAME=GoldenPad LAN Lab
+```
+
+Use `iphonesimulator` for the one-Simulator control and `iphoneos` plus the
+developer's own team for the physical build. The retained build/package gates
+are:
+
+```sh
+cmake --build build-recomp-lan-lab-simulator --config Release \
+  --target GoldenPadRecompPrototype -j 8
+cmake --build build-recomp-lan-lab-device --config Release \
+  --target GoldenPadRecompPrototype -j 8
+scripts/verify-lan-netplay-protocol.sh
+scripts/package-lan-netplay-lab-ipa.sh
+```
+
+The package script accepts only bundle
+`com.chrissotraidis.goldenpad.lan-lab`, verifies the signature, runs the
+repository ROM scan, rejects ROM/save-like archive names, and writes a SHA-256
+sidecar. It produces a private development-signed diagnostic, not the public
+Preview IPA.
+
+Current v3 physical status is **FAIL at frame 30, globals only**. Do not rebuild
+or distribute it as working LAN multiplayer. Resume with the v4 word-level
+diagnostic in
+[`NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md`](NETPLAY_PHYSICAL_CHECKPOINT_2026-08-28.md).
+
 ## Native Apple-Silicon Mac alpha
 
 The Mac app is a separate native arm64 artifact, not a Catalyst build and not
