@@ -24,10 +24,12 @@
 </p>
 <p align="center"><em>Native RT64/Metal gameplay on a physical iPad Pro.</em></p>
 
-GoldenPad's primary iPhone/iPad runtime uses statically recompiled GoldenEye 007
-code, N64ModernRuntime and RT64's Metal renderer. It is not a general Nintendo
-64 emulator and it does not contain the game, a ROM, or extracted game assets.
-The supported retail data remains user-supplied and private.
+GoldenPad's primary iPhone/iPad runtime includes statically recompiled GoldenEye
+007 code, N64ModernRuntime and RT64's Metal renderer. It is a game-specific
+runtime. Downloads exclude ROM images and extracted retail graphics/audio;
+you supply the supported retail ROM after installation. See
+[Legal and provenance](docs/LEGAL.md) for the separate game-code and
+dependency-license boundaries.
 
 The same runtime now has a native Apple-Silicon `GoldenPad.app` in alpha. It
 reaches authentic gameplay, but its mouse/keyboard experience and performance
@@ -106,9 +108,10 @@ before reporting that GoldenPad itself does not work.
   </tr>
 </table>
 
-These user-approved captures were taken from the signed GoldenPad build on a
-physical iPad. No ROM, save, extracted asset file, or game data is included in
-the repository or application package.
+These captures were taken from the signed GoldenPad build on a physical iPad.
+They illustrate rendering and controls. The ROM and extracted retail media used
+to produce them are not distributed in the repository or app package; the app
+includes statically recompiled game code.
 
 ## Install status
 
@@ -117,7 +120,7 @@ the repository or application package.
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
 | Local iPhone/iPad build | **Preview 8 accepted** | Adds an optional second Fire button while retaining Preview 7 behavior and iOS 17 Metal targets. Physical iPadOS acceptance passed. |
 | Native Apple-Silicon Mac build | **Preview 7 Alpha** | GoldenPad officially supports Apple Silicon Macs in Alpha status. [Download the coordinated arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.7/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip); its executable and package are byte-identical to Preview 6, including the known sluggish horizontal mouse turning and thin far-right blue edge. |
-| Unsigned `.ipa` | **Audited Preview 8** | The reproducible, ROM-free release passed package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
+| Unsigned `.ipa` | **Audited Preview 8** | The release passed the documented package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
 | GitHub release | **Preview 8 mobile / Preview 7 Mac** | [Preview 8 mobile release notes, download and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.8). |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
@@ -141,7 +144,7 @@ mobile-parity or notarized Mac release.
 |---|---|
 | Native runtime | Statically recompiled game code runs as Apple ARM64; no JIT or emulator wrapper |
 | Rendering | RT64 presents high-resolution Metal output on physical iPad hardware |
-| Setup | Preview 8 imports the user's original NTSC-U retail dump from Files and converts it privately on device; no game data is included |
+| Setup | Preview 8 imports the user's original NTSC-U retail dump from Files and converts it privately on device; no ROM image or extracted retail media is bundled |
 | Gameplay | Original front end and live Dam/Facility gameplay render and accept normal input |
 | Touch | Tuned GoldenPad move and relative-look zones plus aim, fire, action, weapon, duck, and Start controls; an optional second Fire button is available |
 | Customization | Separate persisted iPhone/iPad layouts with per-control drag, resize, opacity and reset, plus look sensitivity, hold/toggle aim, and a default-off second Fire toggle |
@@ -489,9 +492,13 @@ filtering, then fully quit and reopen the app.
 install. It is a testing convenience only and any explicit user choice is
 preserved during an in-place update.
 
-## Reproducible and ROM-free
+## Public build inputs and package checks
 
 The primary integration, dependency pins and reversible patches are public.
+The generated-input pipeline is not yet independently reproducible from this
+repository. The package checks below verify specific exclusions; they do not
+establish an independently reproducible release.
+
 Retail data, converted ROM derivatives and generated AOT game sources remain
 private and ignored. `scripts/package-recomp-prototype-ipa.sh` strips the
 developer signature/provisioning profile, adds the applicable dependency
@@ -561,8 +568,9 @@ retained only as the deprecated legacy fallback.
 
 Preview 8 is available from the
 [GitHub release](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.8).
-It is an unsigned, ROM-free developer-preview IPA and must be re-signed. It does
-not include game data; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad)
+It is an unsigned developer-preview IPA and must be re-signed. It includes
+statically recompiled game code but excludes ROM images and extracted retail
+media; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad)
 for installation and first-launch instructions.
 </details>
 

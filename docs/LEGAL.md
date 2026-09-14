@@ -14,11 +14,11 @@ Productions, or any other rights holder. No trademark license is claimed.
   screenshots may be tracked separately from the app/package; they do not grant
   rights in the depicted game content and must retain the project's unofficial
   developer-preview attribution.
-- Never bundle or prepopulate a ROM or ROM-derived media in an app, IPA,
-  archive, test fixture, CI cache, app container, or release. A user-supplied
-  source may exist temporarily in that user's private Files storage for import;
-  GoldenPad closes source access after copying validated bytes into volatile
-  core memory.
+- Never distribute or prepopulate ROM images or extracted retail media in an
+  app package, release archive, test fixture or CI cache. The primary runtime
+  imports the user's supported ROM after installation and keeps its converted
+  runtime copy inside that user's private app storage. The volatile-memory-only
+  behavior described later applies to GoldenPad Legacy, not the primary runtime.
 - Never commit credentials, keys, certificates, profiles, or private data.
 - Audit tracked and staged files before each commit and push.
 
