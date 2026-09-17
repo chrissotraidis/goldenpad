@@ -33,9 +33,9 @@ device app has been built and physically accepted, create the public unsigned
 package with:
 
 ```sh
-./scripts/package-recomp-prototype-ipa.sh
+GOLDENPAD_RELEASE_NAME=0.1.0-preview.9 ./scripts/package-recomp-prototype-ipa.sh
 ./scripts/verify-recomp-prototype-ipa.sh \
-  dist/GoldenPad-0.1.0-preview.8-unsigned.ipa
+  dist/GoldenPad-0.1.0-preview.9-unsigned.ipa
 ```
 
 The packager copies the signed app into a temporary staging directory, removes
@@ -50,9 +50,9 @@ validation stay inside the app container. An in-place update reuses an existing
 valid `GoldenEye_TLBFREE.z64`. No retail input, save, generated source, signing
 identity, or provisioning profile is placed in the IPA.
 
-Preview 8 adds a default-off duplicate touch Fire control with independent
+The previously accepted Preview 8 added a default-off duplicate touch Fire control with independent
 layout persistence and safe multi-touch aggregation. It retains Preview 7's
-accepted controls and explicit iOS 17 Metal targets. The audited IPA SHA-256 is
+accepted controls and explicit iOS 17 Metal targets. Its historical IPA SHA-256 is
 `773223b7ed7787c18526fb63281a6a3e4960b87adb0a912b0c2b77d0f1312a1b`.
 
 ## Research-only LAN netplay diagnostic
@@ -130,30 +130,16 @@ only the internal CMake target. The packager adds notices, applies an ad-hoc
 signature, and runs the Mac artifact audit. No ROM, save, generated source or
 Apple signing identity is included.
 
-The coordinated Preview 7 Alpha archive is
-`dist/GoldenPad-0.1.0-preview.7-macos-arm64-alpha.zip` at SHA-256
-`5189dcb5c7089f5ba45e7dbe17d67be9186148da20bce0c2c60e7156f78d71b8`.
-It is native arm64, ad-hoc signed and not notarized. Its source executable and
-complete package are byte-identical to Preview 6; only the coordinated archive
-filename changes.
+The published Preview 9 Alpha archive is
+`GoldenPad-0.1.0-preview.9-macos-arm64-alpha.zip` at SHA-256
+`345c59477fb22a1eb8fce5f9dd4545351af6fb6c44c8edf45daab3775bea5b84`.
+It is native arm64, ad-hoc signed and not notarized. See the
+[Preview 9 release notes](RELEASE_NOTES_0.1.0-preview.9.md) for its exact source,
+import fix, maintained dependency builds and validation boundaries.
 
-The complete AOT build must have the maintained GoldenEye iOS context patch
-applied while compiling:
-
-```sh
-git -C ref/goldeneye64recomp apply \
-  ../../patches/goldeneye64recomp-ios-prototype-render-trace.patch
-```
-
-CMake deliberately refuses a complete AOT configuration without the patch.
-It supplies the writable first-launch RT64 Application Support path as well as
-the existing render diagnostics. Reverse it after the build to leave the
-ignored upstream checkout clean:
-
-```sh
-git -C ref/goldeneye64recomp apply --reverse \
-  ../../patches/goldeneye64recomp-ios-prototype-render-trace.patch
-```
+The maintained GoldenEye source already contains the required iOS context and
+render-trace changes. Bootstrap the locked sources and use the primary build
+scripts above; no manual patch apply/reverse step is required.
 
 ## iPhone/iPad foundation
 

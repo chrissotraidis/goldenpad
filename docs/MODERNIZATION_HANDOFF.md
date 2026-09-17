@@ -11,13 +11,13 @@ GoldenEye/runtime, RT64 and separate iOS/Mac Plume source files match their old
 prepared trees. Normal dependency builds consume maintained source without patch
 replay. ROM and generated game code remain private.
 
-## Audited local artifacts
+## Published Preview 9 artifacts
 
 | Artifact | SHA-256 |
 | --- | --- |
-| iOS build 9 `GoldenPad-0.1.0-maintenance-test.2-unsigned.ipa` | `d5590251259f503093560ce2dbc7c1dd14d9e487eb52cd36c3aae39dda234a41` |
-| Mac build 2 `GoldenPad-0.1.0-maintenance-test.2-macos-arm64-alpha.zip` | `345c59477fb22a1eb8fce5f9dd4545351af6fb6c44c8edf45daab3775bea5b84` |
-| `GoldenPad-public-sources-56851bf84614.tar.gz` | `6fa53fdfbafe4d99d01d85299eac09e13338c661095359f1d9ff42c7a0f4a1ed` |
+| iOS build 9 `GoldenPad-0.1.0-preview.9-unsigned.ipa` | `d5590251259f503093560ce2dbc7c1dd14d9e487eb52cd36c3aae39dda234a41` |
+| Mac build 2 `GoldenPad-0.1.0-preview.9-macos-arm64-alpha.zip` | `345c59477fb22a1eb8fce5f9dd4545351af6fb6c44c8edf45daab3775bea5b84` |
+| `GoldenPad-0.1.0-preview.9-public-software-sources.tar.gz` | `6fa53fdfbafe4d99d01d85299eac09e13338c661095359f1d9ff42c7a0f4a1ed` |
 
 Both Apple Release builds and package audits passed using newly built maintained
 runtime/renderer archives. Device and Simulator renderer checks passed with
@@ -33,18 +33,21 @@ source file was rejected by its manifest check, then restored. Original checkout
 device data, accepted packages and recovery bundles remain preserved outside the
 checkout on the same physical disk; see the private recovery ledger for paths.
 
-## Remaining release decision
+## Publication and remaining review
 
-Public iOS Preview 8 and Mac Preview 7 remain unchanged. The code/source recovery
-and maintenance work are completed technically; a new public binary is not
-claimed here. The modernization prompt additionally requires reconciled source
-and licensing delivery. The binary combines GPL runtime code with generated game
-logic that project rules prohibit publishing, and original app code has no
-outbound license grant. A reproducible public-software source archive does not
-by itself settle that separate issue. No third-party or original-host license
-has been invented or changed.
+[Preview 9](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.9)
+was published on 2026-09-17 with explicit owner approval under the existing
+developer-preview policy. The release contains the artifacts above and a SHA-256
+manifest. All four assets were downloaded anonymously after publication; the
+three payload hashes match the published manifest and the audited local files.
+Earlier releases remain available unchanged.
 
-Update only GoldenPad's exact card on the
-[canonical checklist](https://app.notion.com/p/3dcceacc88a5810395c2e00ab6173d08).
-The earlier missing-runtime blocker must not remain listed as unresolved. Source
-maintenance and binary publication remain separate acceptance states.
+The source/licensing review remains open. The binary combines GPL runtime code
+with generated game logic that project rules prohibit publishing, and original
+app code has no outbound license grant. The public-software source archive does
+not by itself settle that separate issue. No third-party or original-host license
+has been invented or changed. No new physical iPad acceptance is claimed.
+
+GoldenPad's [canonical checklist](https://app.notion.com/p/3dcceacc88a5810395c2e00ab6173d08)
+remains in Follow-up for these outstanding gates. Runtime recovery and source
+maintenance are complete; the earlier missing-runtime blocker is resolved.
