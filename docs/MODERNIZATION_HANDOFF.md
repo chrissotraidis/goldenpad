@@ -24,7 +24,7 @@ reproduced the earlier tested candidate byte-for-byte. Source provenance for the
 reconstructed runtime remains distinct from accepted-runtime equivalence.
 
 The public releases remain iOS Preview 8 and Mac Preview 7. Neither release nor
-its tags were changed. Issue #25 receives a progress reply linking the fix,
+its tags were changed. [Issue #25 received a progress reply](https://github.com/chrissotraidis/goldenpad/issues/25#issuecomment-5706807394) linking the fix,
 explicitly stating that it is not yet a released download.
 
 ## Canonical checklist handoff
@@ -33,10 +33,13 @@ explicitly stating that it is not yet a released download.
 
 The initial exact-card update was saved and read back as **In progress**, hybrid
 private AOT/patch-prepared public dependencies, new release not yet qualified.
-The final connector refresh failed with a transport error. **Notion update
-pending** until a fresh fetch, targeted edit and readback succeed.
+The first final refresh failed with a transport error. The retry succeeded;
+the exact GoldenPad card was moved to Blocked, its index and workflow rollup
+updated, and the complete card read back successfully. All 31 PORT-ID records
+remain present. Saved rollup: Complete 2; Follow-up 11; Not started 17;
+In progress 0; Blocked 1.
 
-Proposed exact `PORT-ID: chrissotraidis/goldenpad` update:
+Saved exact `PORT-ID: chrissotraidis/goldenpad` status:
 
 - Workflow: Blocked.
 - Source status: Hybrid private AOT/patch-prepared dependencies; no migration
