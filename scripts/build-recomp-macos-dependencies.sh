@@ -2,34 +2,12 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
-rt64_path=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-"$repo_root/ref/rt64"}
-runtime_source=${GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR:-}
+rt64_path="$repo_root/vendor/rt64-macos"
+runtime_source="$repo_root/vendor/goldeneye/lib/N64ModernRuntime"
 output_root=${GOLDENPAD_RECOMP_MAC_DEPENDENCY_DIR:-"$repo_root/build-recomp-macos-deps"}
 metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
-
-rt64_sdk_patch="$repo_root/patches/rt64-ios-sdk.patch"
-rt64_embedded_patch="$repo_root/patches/rt64-ios-embedded.patch"
-plume_patch="$repo_root/patches/plume-ios-metal.patch"
-plume_macos_pacing_patch="$repo_root/patches/plume-macos-main-queue-coalescing.patch"
-plume_path="$rt64_path/src/contrib/plume"
 shim_path="$repo_root/Support/RT64"
-
-expected_rt64=5473732a822a4423b5696e7cb18fecc425a59875
-expected_plume=d890ac899e505fb30040e037a4037cdeca68f033
-expected_runtime=e75e0de77e8377d4954fe7b511c0d1cf608e7ded
-
-for tool in cmake ninja patch git xcrun rg rsync; do
-    command -v "$tool" >/dev/null || { echo "Missing build tool: $tool" >&2; exit 1; }
-done
-test -d "$rt64_path/.git" || { echo "Missing pinned RT64 checkout: $rt64_path" >&2; exit 1; }
-test -n "$runtime_source" || {
-    echo "Set GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR to the private N64ModernRuntime checkout." >&2
-    exit 1
-}
-test -d "$runtime_source/.git" || { echo "Missing private runtime source: $runtime_source" >&2; exit 1; }
-test "$(git -C "$rt64_path" rev-parse HEAD)" = "$expected_rt64"
-test "$(git -C "$plume_path" rev-parse HEAD)" = "$expected_plume"
-test "$(git -C "$runtime_source" rev-parse HEAD)" = "$expected_runtime"
+python3 "$repo_root/scripts/check-sources.py" --component goldeneye --component rt64-macos
 
 if [ -n "$metal_toolchain" ]; then
     # RT64's generated Ninja rules invoke plain `xcrun`. Propagate the
@@ -61,52 +39,6 @@ cmake --fresh -S "$runtime_source" -B "$runtime_build" -G Ninja \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
     -DN64MODERNRUNTIME_ENABLE_LIVE_RECOMP=OFF
 cmake --build "$runtime_build" --parallel 8
-
-rt64_patch_targets=(
-    CMakeLists.txt
-    src/apple/rt64_apple.mm
-    src/hle/rt64_application.cpp
-    src/hle/rt64_application_window.h
-    src/hle/rt64_rsp.cpp
-    src/hle/rt64_rdp.cpp
-)
-if ! git -C "$rt64_path" diff --quiet -- "${rt64_patch_targets[@]}"; then
-    echo "RT64 sources have local changes; refusing to patch them." >&2
-    exit 1
-fi
-if ! git -C "$plume_path" diff --quiet -- plume_apple.h plume_apple.mm plume_metal.cpp; then
-    echo "Plume sources have local changes; refusing to patch them." >&2
-    exit 1
-fi
-
-sdk_applied=0
-embedded_applied=0
-plume_applied=0
-plume_macos_pacing_applied=0
-cleanup() {
-    if [ "$plume_macos_pacing_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch --no-backup-if-mismatch -d "$plume_path" < "$plume_macos_pacing_patch" >/dev/null
-    fi
-    if [ "$plume_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch --no-backup-if-mismatch -d "$plume_path" < "$plume_patch" >/dev/null
-    fi
-    if [ "$embedded_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch --no-backup-if-mismatch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
-    fi
-    if [ "$sdk_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch --no-backup-if-mismatch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
-    fi
-}
-trap cleanup EXIT
-
-patch -p1 -l --batch --no-backup-if-mismatch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
-sdk_applied=1
-patch -p1 -l --batch --no-backup-if-mismatch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
-embedded_applied=1
-patch -p1 -l --batch --no-backup-if-mismatch -d "$plume_path" < "$plume_patch" >/dev/null
-plume_applied=1
-patch -p1 -l --batch --no-backup-if-mismatch -d "$plume_path" < "$plume_macos_pacing_patch" >/dev/null
-plume_macos_pacing_applied=1
 
 host_build="$output_root/rt64-host"
 cmake --fresh -S "$rt64_path" -B "$host_build" -G Ninja \

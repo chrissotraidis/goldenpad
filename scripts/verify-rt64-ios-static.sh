@@ -2,24 +2,20 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
-rt64_path=${1:-"$repo_root/ref/rt64"}
-plume_path="$rt64_path/src/contrib/plume"
-rt64_sdk_patch="$repo_root/patches/rt64-ios-sdk.patch"
-rt64_embedded_patch="$repo_root/patches/rt64-ios-embedded.patch"
-plume_patch="$repo_root/patches/plume-ios-metal.patch"
-plume_query_patch="$repo_root/patches/plume-ios-simulator-query.patch"
-simulator_resource_patch="$repo_root/patches/rt64-ios-simulator-resource-limits.patch"
+rt64_path="$repo_root/vendor/rt64-ios"
 shim_path="$repo_root/Support/RT64"
 link_probe="$shim_path/rt64_link_probe.cpp"
-expected_rt64=5473732a822a4423b5696e7cb18fecc425a59875
-expected_plume=d890ac899e505fb30040e037a4037cdeca68f033
+python3 "$repo_root/scripts/check-sources.py" --component rt64-ios
+if [ "${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}" != OFF ]; then
+    echo "Simulator resource-limit experiments use the archived patch workflow; production sources remain immutable." >&2
+    exit 1
+fi
 expected_shader_targets=113
 expected_metal_shaders=56
 expected_rt64_members=210
 expected_closure_members=246
 expected_metal_target=apple-ios17.0.0
 artifact_root=${GOLDENPAD_RT64_ARTIFACT_DIR:-}
-simulator_resource_limits=${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}
 metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
 run_xcrun() {
     if [ -n "$metal_toolchain" ]; then
@@ -29,86 +25,8 @@ run_xcrun() {
     fi
 }
 
-if [ ! -d "$rt64_path/.git" ] || [ ! -f "$plume_path/plume_metal.cpp" ]; then
-    echo "Expected the pinned RT64 checkout at: $rt64_path" >&2
-    exit 1
-fi
-
-if [ "$(git -C "$rt64_path" rev-parse HEAD)" != "$expected_rt64" ]; then
-    echo "RT64 checkout is not at the documented commit: $expected_rt64" >&2
-    exit 1
-fi
-
-if [ "$(git -C "$plume_path" rev-parse HEAD)" != "$expected_plume" ]; then
-    echo "Plume checkout is not at the documented commit: $expected_plume" >&2
-    exit 1
-fi
-
-rt64_patch_targets=(
-    CMakeLists.txt
-    src/apple/rt64_apple.mm
-    src/hle/rt64_application.cpp
-    src/hle/rt64_application_window.h
-    src/hle/rt64_state.cpp
-)
-
-if ! git -C "$rt64_path" diff --quiet -- "${rt64_patch_targets[@]}"; then
-    echo "RT64 embedded-build sources have local changes; refusing to patch them." >&2
-    exit 1
-fi
-
-if ! git -C "$plume_path" diff --quiet -- plume_apple.mm plume_metal.cpp; then
-    echo "Plume Apple/Metal sources have local changes; refusing to patch them." >&2
-    exit 1
-fi
-
-if [ "$simulator_resource_limits" = "ON" ] && ! git -C "$rt64_path" diff --quiet -- src/render/rt64_descriptor_sets.h src/render/rt64_shader_library.cpp src/shaders/FbRendererCommon.hlsli src/shaders/TextureSampler.hlsli; then
-    echo "RT64 Simulator resource-limit sources have local changes; refusing to patch them." >&2
-    exit 1
-fi
-
 probe_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-rt64-static.XXXXXX")
-rt64_sdk_patch_applied=0
-rt64_embedded_patch_applied=0
-plume_patch_applied=0
-plume_query_patch_applied=0
-simulator_resource_patch_applied=0
-
-cleanup() {
-    if [ "$simulator_resource_patch_applied" -eq 1 ]; then
-        git -C "$rt64_path" apply --reverse "$simulator_resource_patch" >/dev/null
-    fi
-    if [ "$plume_query_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
-    fi
-    if [ "$plume_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
-    fi
-    if [ "$rt64_embedded_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
-    fi
-    if [ "$rt64_sdk_patch_applied" -eq 1 ]; then
-        patch -R -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
-    fi
-    rm -f \
-        "$rt64_path/src/apple/rt64_apple.mm.orig" \
-        "$plume_path/plume_metal.cpp.orig"
-    rm -rf "$probe_root"
-}
-trap cleanup EXIT
-
-patch -p1 -l --batch -d "$rt64_path" < "$rt64_sdk_patch" >/dev/null
-rt64_sdk_patch_applied=1
-patch -p1 -l --batch -d "$rt64_path" < "$rt64_embedded_patch" >/dev/null
-rt64_embedded_patch_applied=1
-patch -p1 -l --batch -d "$plume_path" < "$plume_patch" >/dev/null
-plume_patch_applied=1
-patch -p1 -l --batch -d "$plume_path" < "$plume_query_patch" >/dev/null
-plume_query_patch_applied=1
-if [ "$simulator_resource_limits" = "ON" ]; then
-    git -C "$rt64_path" apply "$simulator_resource_patch"
-    simulator_resource_patch_applied=1
-fi
+trap 'rm -rf "$probe_root"' EXIT
 
 host_build="$probe_root/host"
 cmake -S "$rt64_path" -B "$host_build" -G Ninja \
@@ -292,7 +210,7 @@ for sdk in iphoneos iphonesimulator; do
     echo "$sdk: dependencies $dependencies"
 done
 
-echo "RT64 embedded Apple static-library verification passed at $expected_rt64."
+echo "RT64 embedded Apple static-library verification passed from maintained pinned source."
 if [ -n "$artifact_root" ]; then
     echo "Verified archives copied to $artifact_root."
 fi

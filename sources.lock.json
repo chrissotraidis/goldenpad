@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "components": {
+    "goldeneye": {
+      "path": "vendor/goldeneye",
+      "url": "https://github.com/chrissotraidis/GoldenEye64Recomp.git",
+      "commit": "0fb5d192071920304aeb92f30478d3e321a976b4",
+      "branch": "goldenpad/apple-maintained"
+    },
+    "rt64-ios": {
+      "path": "vendor/rt64-ios",
+      "url": "https://github.com/chrissotraidis/rt64.git",
+      "commit": "b3a1ceef3fbae10a4a5e5e1f0c240fb60b6d2a0a",
+      "branch": "goldenpad/ios"
+    },
+    "rt64-macos": {
+      "path": "vendor/rt64-macos",
+      "url": "https://github.com/chrissotraidis/rt64.git",
+      "commit": "24995c8e4f98c46cb361327562f436289031e305",
+      "branch": "goldenpad/macos"
+    }
+  },
+  "runtime": {
+    "path": "vendor/goldeneye/lib/N64ModernRuntime",
+    "upstream_snapshot_tree": "fb2bb121643d3e0e84f7f430a34f59f0955bc5de",
+    "recovered_local_commit": "e75e0de77e8377d4954fe7b511c0d1cf608e7ded"
+  },
+  "plume": {
+    "ios": {
+      "url": "https://github.com/chrissotraidis/plume.git",
+      "commit": "2477e5ae6d9972aa37c1e9c077a27e58051d3bae"
+    },
+    "macos": {
+      "url": "https://github.com/chrissotraidis/plume.git",
+      "commit": "aa0064be917115d09ae9b8a1323f80041325f195"
+    }
+  }
+}

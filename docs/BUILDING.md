@@ -1,5 +1,11 @@
 # Building
 
+Primary dependency builds now use the pinned maintained sources in
+[`SOURCE_MAINTENANCE.md`](SOURCE_MAINTENANCE.md). Run
+`scripts/bootstrap-sources.sh` first; the old temporary runtime commit is no
+longer a required checkout. Private generated inputs can be rebuilt with
+`scripts/generate-recomp-inputs.sh`.
+
 GoldenPad's primary iPhone/iPad runtime is the recomp/RT64 target documented in
 [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). Its internal target
 name remains `GoldenPadRecompPrototype`, but the installed product is
