@@ -1,62 +1,50 @@
 # Modernization handoff — 2026-09-17
 
-Repository: `chrissotraidis/goldenpad`.
-[PR #27](https://github.com/chrissotraidis/goldenpad/pull/27) remains a draft.
-See [the source audit](SOURCE_MAINTENANCE.md) for exact pins, preparation paths,
-backup verification and unresolved release gates.
+The runtime source blocker is resolved. The old commit was a disposable local
+snapshot of public source; the exact original hash and tree were recovered.
+[Source maintenance](SOURCE_MAINTENANCE.md) records the proof, fork parents,
+immutable pins and old-patch mapping. No upstream version was upgraded.
 
-## Local candidates
+Implementation commit: `56851bf84614` in
+[PR #27](https://github.com/chrissotraidis/goldenpad/pull/27).
+GoldenEye/runtime, RT64 and separate iOS/Mac Plume source files match their old
+prepared trees. Normal dependency builds consume maintained source without patch
+replay. ROM and generated game code remain private.
 
-Both artifacts were built from clean source commit
-`ff2bdcd` using Xcode 26.6 (17F113). They are private test candidates,
-not public releases. This handoff adds documentation after that build.
+## Audited local artifacts
 
-| Platform | Artifact / build | SHA-256 |
-| --- | --- | --- |
-| iOS/iPadOS | `GoldenPad-0.1.0-maintenance-test.1-unsigned.ipa`, build 9 | `7bdc52cc30c95d9b4a9c05402ceed1729feac38604d4769cd153033b5a570a13` |
-| Apple Silicon Mac | `GoldenPad-0.1.0-issue25-test.2-macos-arm64-alpha.zip`, build 2 | `37841eefcea17b53c8184c6708500c83ad2e2efa5f1f5dba9cc8dda2ba8c97a0` |
+| Artifact | SHA-256 |
+| --- | --- |
+| iOS build 9 `GoldenPad-0.1.0-maintenance-test.2-unsigned.ipa` | `d5590251259f503093560ce2dbc7c1dd14d9e487eb52cd36c3aae39dda234a41` |
+| Mac build 2 `GoldenPad-0.1.0-maintenance-test.2-macos-arm64-alpha.zip` | `345c59477fb22a1eb8fce5f9dd4545351af6fb6c44c8edf45daab3775bea5b84` |
+| `GoldenPad-public-sources-56851bf84614.tar.gz` | `6fa53fdfbafe4d99d01d85299eac09e13338c661095359f1d9ff42c7a0f4a1ed` |
 
-The iOS package passed the ARM64, unsigned-package, bundle/build, iOS-17 Metal,
-strong game-patch symbol, conversion-resource, notice and private-data/path
-checks. Renderer static-library and link checks passed for device and Simulator.
-No build-9 hardware install or gameplay acceptance is claimed. The Mac package
-reproduced the earlier tested candidate byte-for-byte. Source provenance for the
-reconstructed runtime remains distinct from accepted-runtime equivalence.
+Both Apple Release builds and package audits passed using newly built maintained
+runtime/renderer archives. Device and Simulator renderer checks passed with
+explicit iOS 17 Metal targets. Real retail/prepared import tests and preservation
+checks passed. The Mac build was observed advancing into title-sequence cast
+credits in isolated storage and then closed normally. No new physical iPad
+installation or broad gameplay acceptance is claimed.
 
-The public releases remain iOS Preview 8 and Mac Preview 7. Neither release nor
-its tags were changed. [Issue #25 received a progress reply](https://github.com/chrissotraidis/goldenpad/issues/25#issuecomment-5706807394) linking the fix,
-explicitly stating that it is not yet a released download.
+The public source archive restored independently, verified all 31,648 files and
+symlinks, and regenerated identical private outputs without the original
+checkout or Git metadata: 63 AOT, five game-patch and two RSP files. A modified
+source file was rejected by its manifest check, then restored. Original checkout,
+device data, accepted packages and recovery bundles remain preserved outside the
+checkout on the same physical disk; see the private recovery ledger for paths.
 
-## Canonical checklist handoff
+## Remaining release decision
 
-[Portfolio checklist](https://app.notion.com/p/3dcceacc88a5810395c2e00ab6173d08)
+Public iOS Preview 8 and Mac Preview 7 remain unchanged. The code/source recovery
+and maintenance work are completed technically; a new public binary is not
+claimed here. The modernization prompt additionally requires reconciled source
+and licensing delivery. The binary combines GPL runtime code with generated game
+logic that project rules prohibit publishing, and original app code has no
+outbound license grant. A reproducible public-software source archive does not
+by itself settle that separate issue. No third-party or original-host license
+has been invented or changed.
 
-The initial exact-card update was saved and read back as **In progress**, hybrid
-private AOT/patch-prepared public dependencies, new release not yet qualified.
-The first final refresh failed with a transport error. The retry succeeded;
-the exact GoldenPad card was moved to Blocked, its index and workflow rollup
-updated, and the complete card read back successfully. All 31 PORT-ID records
-remain present. Saved rollup: Complete 2; Follow-up 11; Not started 17;
-In progress 0; Blocked 1.
-
-Saved exact `PORT-ID: chrissotraidis/goldenpad` status:
-
-- Workflow: Blocked.
-- Source status: Hybrid private AOT/patch-prepared dependencies; no migration
-  merged. Missing accepted-runtime source and incomplete corresponding-source
-  delivery prevent declaring a behavior-preserving migration complete.
-- Release status: Public iOS Preview 8 and Mac Preview 7 unchanged. Local iOS
-  build 9 and Mac build 2 candidates passed package audits; not published.
-- Owner/task: Codex, `codex/issue-25-mac-rom-guidance`, PR #27.
-- Last checked: 2026-09-17; implementation `ff2bdcd`; public main `2610863`.
-- Next action: Recover the accepted `e75e0de` runtime source or establish a
-  replacement baseline with comparison evidence, then resolve exact primary
-  source delivery before migrating/publishing.
-- Evidence: source-audit and handoff links; real retail conversion/preservation
-  tests; both Apple builds/package checks; iOS-17 renderer rebuild; complete
-  private backup/independent restore; accepted download hashes; no device
-  install/gameplay or completed source migration claimed.
-
-Preserve the original audit, existing checked/unchecked gates and other cards.
-Recompute workflow totals from a fresh page, not these notes. Do not modify the
-reusable prompt or the separate portfolio tracker.
+Update only GoldenPad's exact card on the
+[canonical checklist](https://app.notion.com/p/3dcceacc88a5810395c2e00ab6173d08).
+The earlier missing-runtime blocker must not remain listed as unresolved. Source
+maintenance and binary publication remain separate acceptance states.

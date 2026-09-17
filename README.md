@@ -26,6 +26,8 @@
 
 GoldenPad builds on [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp),
 with an Apple host, touch/controller integration and Metal presentation.
+Primary dependency changes now live in pinned [maintained source forks](docs/SOURCE_MAINTENANCE.md);
+normal builds no longer replay patches into those dependencies.
 
 GoldenPad's primary iPhone/iPad runtime includes statically recompiled GoldenEye
 007 code, N64ModernRuntime and RT64's Metal renderer. It is a game-specific
