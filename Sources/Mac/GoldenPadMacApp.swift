@@ -123,7 +123,8 @@ struct GoldenPadMacApp: App {
                 }
                 .disabled(romStore.romURL == nil)
                 Divider()
-                Button("Import GoldenEye TLBFREE Input…") { romStore.chooseROM() }
+                Button("Import GoldenEye 007 ROM…") { romStore.chooseROM() }
+                    .disabled(romStore.isImporting)
                 Button("Release Mouse") { input.releaseMouseCapture() }
                     .disabled(!input.mouseCaptured)
             }
@@ -168,7 +169,11 @@ private struct RecompMacSetupView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 520)
-            Button("Choose GoldenEye_TLBFREE.z64…") { store.chooseROM() }
+            if store.isImporting {
+                ProgressView()
+            }
+            Button("Choose GoldenEye 007 ROM…") { store.chooseROM() }
+                .disabled(store.isImporting)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
             Text("No ROM or save data is included with GoldenPad.")
@@ -275,8 +280,11 @@ private struct RecompMacSettingsView: View {
                 LabeledContent("Renderer", value: "RT64 Metal")
                 LabeledContent("Game", value: surface.status)
                 LabeledContent("Audio", value: audio.status)
-                LabeledContent("Input", value: romStore.romURL == nil ? "TLBFREE input required" : "Ready")
-                Button("Import or Replace TLBFREE Input…") { romStore.chooseROM() }
+                LabeledContent("Input", value: romStore.romURL == nil ? "GoldenEye ROM required" : "Ready")
+                Button("Import or Replace GoldenEye ROM…") { romStore.chooseROM() }
+                    .disabled(romStore.isImporting)
+                Text(romStore.status)
+                    .foregroundStyle(.secondary)
             }
             Section("Diagnostics") {
                 Button("Export Diagnostics & Logs…") {
