@@ -104,3 +104,7 @@ generated game source and the ROM needed to regenerate it. Original app code
 also has no declared outbound license. Source recovery and reproducible build
 scripts do not themselves resolve that source/licensing conflict. Preserve the
 existing [legal boundary](LEGAL.md); no new rights-holder permission is claimed.
+
+Preview 9 was published with explicit owner approval on 2026-09-17 under the
+existing developer-preview policy. Publication does not resolve the review above.
+See the [release handoff](MODERNIZATION_HANDOFF.md) for artifacts and validation.
