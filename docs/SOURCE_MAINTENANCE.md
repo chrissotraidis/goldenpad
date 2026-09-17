@@ -40,9 +40,9 @@ original GoldenPad code or game-derived material.
 
 The old patch files remain as migration evidence, not the primary source of
 Apple behavior. Generated-game weakening is still a required, pinned generator
-step: generated files remain private. Simulator resource-limit and LAN clock
-patches remain experiments; use their recorded baseline checkout for those
-experiments rather than modifying the maintained production dependencies.
+step: generated files remain private. The Simulator resource-limit option stages a disposable source copy before
+applying its diagnostic-only patch; maintained production trees stay unchanged.
+LAN clock experiments retain their separately recorded baseline checkout.
 
 ## Build and update
 

@@ -6,10 +6,6 @@ rt64_path="$repo_root/vendor/rt64-ios"
 shim_path="$repo_root/Support/RT64"
 link_probe="$shim_path/rt64_link_probe.cpp"
 python3 "$repo_root/scripts/check-sources.py" --component rt64-ios
-if [ "${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}" != OFF ]; then
-    echo "Simulator resource-limit experiments use the archived patch workflow; production sources remain immutable." >&2
-    exit 1
-fi
 expected_shader_targets=113
 expected_metal_shaders=56
 expected_rt64_members=210
@@ -27,6 +23,13 @@ run_xcrun() {
 
 probe_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-rt64-static.XXXXXX")
 trap 'rm -rf "$probe_root"' EXIT
+
+# Diagnostic exception: stage a disposable copy, never rewrite maintained source.
+if [ "${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}" = ON ]; then
+    cp -R "$rt64_path" "$probe_root/rt64-diagnostic"
+    rt64_path="$probe_root/rt64-diagnostic"
+    patch -p1 --batch -d "$rt64_path" < "$repo_root/patches/rt64-ios-simulator-resource-limits.patch"
+fi
 
 host_build="$probe_root/host"
 cmake -S "$rt64_path" -B "$host_build" -G Ninja \
