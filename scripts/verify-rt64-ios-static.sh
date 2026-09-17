@@ -21,10 +21,13 @@ expected_metal_target=apple-ios17.0.0
 artifact_root=${GOLDENPAD_RT64_ARTIFACT_DIR:-}
 simulator_resource_limits=${GOLDENPAD_RT64_SIMULATOR_RESOURCE_LIMITS:-OFF}
 metal_toolchain=${GOLDENPAD_METAL_TOOLCHAIN:-}
-metal_toolchain_args=()
-if [ -n "$metal_toolchain" ]; then
-    metal_toolchain_args=(--toolchain "$metal_toolchain")
-fi
+run_xcrun() {
+    if [ -n "$metal_toolchain" ]; then
+        xcrun --toolchain "$metal_toolchain" "$@"
+    else
+        xcrun "$@"
+    fi
+}
 
 if [ ! -d "$rt64_path/.git" ] || [ ! -f "$plume_path/plume_metal.cpp" ]; then
     echo "Expected the pinned RT64 checkout at: $rt64_path" >&2
@@ -174,10 +177,10 @@ for sdk in iphoneos iphonesimulator; do
             echo "Could not read the generated array name from: $host_blob_c" >&2
             exit 1
         fi
-        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metal \
+        run_xcrun -sdk "$sdk" metal \
             -target "$metal_target" \
             -c "$source" -o "$output_base.air"
-        xcrun "${metal_toolchain_args[@]}" -sdk "$sdk" metallib "$output_base.air" -o "$output_base.metallib"
+        run_xcrun -sdk "$sdk" metallib "$output_base.air" -o "$output_base.metallib"
         metal_targets=$(strings "$output_base.metallib" | sed -E -n 's/.*(air64_v[[:alnum:]_.-]*apple-ios[0-9.]+(-simulator)?).*/\1/p' | LC_ALL=C sort -u)
         if ! printf '%s\n' "$metal_targets" | grep -Eq "^air64_v[[:alnum:]_.-]*${expected_sdk_metal_target}$"; then
             echo "$sdk Metal library has the wrong deployment target: $output_base.metallib" >&2

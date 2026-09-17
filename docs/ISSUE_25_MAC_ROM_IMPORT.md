@@ -40,11 +40,11 @@ Both original and replacement functions had weak Clang symbols; Xcode's object
 path ordering selected the original in the new directory layout.
 
 The Mac patch translation unit now uses strong, noinline definitions through
-`recomp_mac_patch_attributes.h`. Generated originals retain their weak symbols.
+`recomp_patch_attributes.h`. Generated originals retain their weak symbols.
 The package audit requires strong `musicTrack1Play` and
 `bondwalkItemGetAutomaticFiringRate` replacements. This prevents directory names
 from silently deciding whether these critical patches are active. The override
-is Mac-only.
+now applies to both Apple targets; the same weak-symbol ambiguity exists in the iOS build.
 
 ## Validation
 
@@ -67,11 +67,11 @@ is Mac-only.
   of ROM/save/signing files and private build paths, conversion resource hash,
   required runtime symbols, and strong patch replacements.
 
-The iPad contains the prepared runtime file, not the original retail dump.
-Original-retail conversion and its missing/invalid-patch cases are implemented
-using the unchanged mobile converter but were not exercised with an original
-retail fixture in this run. The regression script accepts an optional original
-input to run those cases. Reporter-device acceptance and broad gameplay are
+The iPad contains the prepared runtime file. The modernization inventory also
+located the original retail input in the local references. Its normalized SHA-1
+matched `abe01e4aeb033b6c0836819f549c791b26cfde83`. Original-retail conversion
+passed for every supported byte order, including missing and corrupt conversion
+resource cases that preserve the prior stored file. Reporter-device acceptance and broad gameplay are
 separate from import and startup validation. No public release is claimed here.
 
 ## Repeat the focused import test

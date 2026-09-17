@@ -24,6 +24,9 @@
 </p>
 <p align="center"><em>Native RT64/Metal gameplay on a physical iPad Pro.</em></p>
 
+GoldenPad builds on [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp),
+with an Apple host, touch/controller integration and Metal presentation.
+
 GoldenPad's primary iPhone/iPad runtime includes statically recompiled GoldenEye
 007 code, N64ModernRuntime and RT64's Metal renderer. It is a game-specific
 runtime. Downloads exclude ROM images and extracted retail graphics/audio;
@@ -685,6 +688,7 @@ override those current authority documents.
 | [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |
+| [`docs/SOURCE_MAINTENANCE.md`](docs/SOURCE_MAINTENANCE.md) | Primary build provenance, modernization plan and outstanding source-delivery gates |
 | [`docs/SOURCE_LICENSES.md`](docs/SOURCE_LICENSES.md) | Separate primary-runtime and MGB64 Legacy source/license boundaries |
 | [`docs/ART.md`](docs/ART.md) | Original app-icon provenance |
 | [`docs/WORKLOG.md`](docs/WORKLOG.md) | Chronological production log |

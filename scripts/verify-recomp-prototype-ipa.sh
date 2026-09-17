@@ -9,7 +9,7 @@ fi
 ipa_path=$1
 expected_display_name=${GOLDENPAD_EXPECTED_DISPLAY_NAME:-GoldenPad}
 expected_bundle_identifier=${GOLDENPAD_EXPECTED_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad.recomp-prototype}
-expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-8}
+expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-9}
 expected_metal_target=${GOLDENPAD_EXPECTED_METAL_TARGET:-apple-ios17.0.0}
 if [ ! -f "$ipa_path" ] || [[ "$ipa_path" != *.ipa ]]; then
   echo "Expected an existing .ipa file: $ipa_path" >&2
@@ -91,6 +91,15 @@ if [ ! -f "$rom_patch" ] || [ "$(shasum -a 256 "$rom_patch" | awk '{print $1}')"
   echo "IPA is missing the exact pinned GEP1 conversion patch." >&2
   exit 1
 fi
+
+# Patch replacements must win independently of private source directory order.
+for patched_symbol in _musicTrack1Play _bondwalkItemGetAutomaticFiringRate; do
+  if ! nm -m "$executable" | awk -v required="$patched_symbol" \
+      '$NF == required && /external/ && !/weak/ && !/undefined/ { found = 1 } END { exit !found }'; then
+    echo "IPA did not link a strong game patch: $patched_symbol" >&2
+    exit 1
+  fi
+done
 
 for required_symbol in \
   _goldenpad_recomp_start_game \

@@ -33,7 +33,7 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "8" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "9" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
@@ -247,7 +247,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         PROPERTIES COMPILE_OPTIONS "-Wno-implicit-function-declaration")
     set_source_files_properties(
         "${goldenpad_recomp_patch_output_dir}/patches.c"
-        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_mac_patch_attributes.h")
+        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
     set_source_files_properties(
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
         PROPERTIES COMPILE_OPTIONS
@@ -582,7 +582,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             COMPILE_OPTIONS "-Wno-implicit-function-declaration")
         set_source_files_properties(
             "${goldenpad_recomp_patch_output_dir}/patches.c"
-            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration")
+            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
         foreach(archive IN LISTS goldenpad_recomp_runtime_archives)
             target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-force_load,${archive}")
         endforeach()
