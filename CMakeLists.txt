@@ -33,7 +33,7 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "8" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "9" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
@@ -181,7 +181,22 @@ if(goldenpad_apple_platform STREQUAL "mac")
         endif()
     endforeach()
 
+    set(goldenpad_mac_rom_patch
+        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/vanilla_to_tlbfree.gep1")
+    if(NOT EXISTS "${goldenpad_mac_rom_patch}")
+        message(FATAL_ERROR "Missing pinned Mac ROM conversion patch: ${goldenpad_mac_rom_patch}")
+    endif()
+    file(SHA256 "${goldenpad_mac_rom_patch}" goldenpad_mac_rom_patch_sha256)
+    if(NOT goldenpad_mac_rom_patch_sha256 STREQUAL
+            "5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263")
+        message(FATAL_ERROR "Mac GEP1 conversion patch does not match pinned revision a787fe0d95e8278fcba5ba2d768fa6a606e75f55")
+    endif()
+    set_source_files_properties("${goldenpad_mac_rom_patch}"
+        PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
     add_executable(GoldenPadMac MACOSX_BUNDLE
+        "${goldenpad_mac_rom_patch}"
+        Support/RecompPrototype/recomp_rom_import.cpp
         Assets.xcassets
         Config/ThirdPartyNotices.txt
         Sources/Mac/GoldenPadMacApp.swift
@@ -209,7 +224,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "1"
+        MACOSX_BUNDLE_BUNDLE_VERSION "2"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/GoldenPadMacInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
@@ -232,7 +247,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         PROPERTIES COMPILE_OPTIONS "-Wno-implicit-function-declaration")
     set_source_files_properties(
         "${goldenpad_recomp_patch_output_dir}/patches.c"
-        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration")
+        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
     set_source_files_properties(
         "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
         PROPERTIES COMPILE_OPTIONS
@@ -567,7 +582,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             COMPILE_OPTIONS "-Wno-implicit-function-declaration")
         set_source_files_properties(
             "${goldenpad_recomp_patch_output_dir}/patches.c"
-            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration")
+            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
         foreach(archive IN LISTS goldenpad_recomp_runtime_archives)
             target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-force_load,${archive}")
         endforeach()

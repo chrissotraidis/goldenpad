@@ -1,0 +1,9 @@
+[submodule "vendor/goldeneye"]
+	path = vendor/goldeneye
+	url = https://github.com/chrissotraidis/GoldenEye64Recomp.git
+[submodule "vendor/rt64-ios"]
+	path = vendor/rt64-ios
+	url = https://github.com/chrissotraidis/rt64.git
+[submodule "vendor/rt64-macos"]
+	path = vendor/rt64-macos
+	url = https://github.com/chrissotraidis/rt64.git

@@ -36,7 +36,7 @@ test "$(plutil -extract CFBundleName raw "$plist")" = "GoldenPad"
 test "$executable_name" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$plist")" = "com.chrissotraidis.goldenpad.macos"
 test "$(plutil -extract CFBundleShortVersionString raw "$plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$plist")" = "1"
+test "$(plutil -extract CFBundleVersion raw "$plist")" = "2"
 test "$(plutil -extract LSMinimumSystemVersion raw "$plist")" = "13.0"
 
 if ! xcrun vtool -show-build "$executable" | grep -q 'platform MACOS'; then
@@ -83,6 +83,8 @@ if otool -L "$executable" | grep -Eqi '/opt/homebrew|/usr/local|SDL|Vulkan|X11';
 fi
 
 for required_symbol in \
+  _goldenpad_recomp_import_rom \
+  _goldenpad_recomp_validate_tlbfree_rom \
   _goldenpad_recomp_start_game \
   _goldenpad_recomp_rt64_initialize \
   _goldenpad_recomp_set_controller_state \
@@ -104,7 +106,23 @@ do
   fi
 done
 
+# These replacements must win over the original generated game functions,
+# independently of Xcode's object-path ordering.
+for patched_symbol in _musicTrack1Play _bondwalkItemGetAutomaticFiringRate; do
+  if ! nm -m "$executable" | awk -v required="$patched_symbol" \
+      '$NF == required && /external/ && !/weak/ && !/undefined/ { found = 1 } END { exit !found }'; then
+    echo "Mac Alpha did not link a strong game patch: $patched_symbol" >&2
+    exit 1
+  fi
+done
+
 test -s "$resources/AppIcon.icns"
+rom_patch="$resources/vanilla_to_tlbfree.gep1"
+if [ ! -f "$rom_patch" ] || [ "$(shasum -a 256 "$rom_patch" | awk '{print $1}')" != \
+    '5a079d5b3750afcb027e46367e318b884eadabbd238a450a70f95e3976ded263' ]; then
+  echo "Mac Alpha is missing its pinned ROM conversion resource." >&2
+  exit 1
+fi
 for required_file in \
   ThirdPartyNotices.txt \
   COPYING-GPL-3.0.txt \

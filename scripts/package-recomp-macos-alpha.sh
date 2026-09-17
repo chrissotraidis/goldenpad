@@ -2,12 +2,13 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
+export GOLDENPAD_RECOMP_REFERENCE_ROOT="${GOLDENPAD_RECOMP_REFERENCE_ROOT:-${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR:-$repo_root/vendor/goldeneye}}"
 "$repo_root/scripts/verify-recomp-input-matrix.sh"
 
 app_path=${GOLDENPAD_RECOMP_MAC_APP:-"$repo_root/build-recomp-macos-stable/Release/GoldenPad.app"}
-reference_source=${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR:-"$repo_root/ref/goldeneye64recomp"}
-rt64_source=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-"$repo_root/ref/rt64"}
-release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-preview.7}
+reference_source=${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR:-"$repo_root/vendor/goldeneye"}
+rt64_source=${GOLDENPAD_RECOMP_RT64_SOURCE_DIR:-"$repo_root/vendor/rt64-macos"}
+release_name=${GOLDENPAD_RELEASE_NAME:-0.1.0-issue25-test.1}
 output_name="GoldenPad-${release_name}-macos-arm64-alpha.zip"
 output_path="$repo_root/dist/$output_name"
 

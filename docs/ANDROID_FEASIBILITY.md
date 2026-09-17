@@ -3,7 +3,7 @@
 - **Assessment date:** 2026-08-22
 - **GoldenPad source assessed:** `13c07bacf5645ac8fe2addd6613f264d874498c1`
 - **GoldenEye64Recomp reference:** `a787fe0d95e8278fcba5ba2d768fa6a606e75f55` plus GoldenPad's maintained patches
-- **Accepted N64ModernRuntime build reference:** `e75e0de77e8377d4954fe7b511c0d1cf608e7ded` plus `patches/n64modernruntime-ios-aot.patch`
+- **N64ModernRuntime source:** maintained vendored runtime pinned by `sources.lock.json`; the historical local `e75e0de` snapshot has been recovered
 - **RT64 reference:** `5473732a822a4423b5696e7cb18fecc425a59875`
 - **Plume reference:** `d890ac899e505fb30040e037a4037cdeca68f033`
 - **Assessment type:** source, architecture, and current upstream documentation review
@@ -180,18 +180,16 @@ port needs a Gradle application and an NDK CMake shared-library target. It
 should consume a common CMake source fragment rather than force the Android
 toolchain through the Apple bundle branches.
 
-### Dependency identity needs one accepted source of truth
+### Dependency identity
 
-The accepted mobile/Mac dependency script and current authority documents use
-N64ModernRuntime reference
-`e75e0de77e8377d4954fe7b511c0d1cf608e7ded`. A later local research checkout at
-`589bbf018a3e6d3646ddf7de1e7919f1b7e99bb1` was never promoted into the accepted
-build contract and is retained only as historical investigation context.
-
-Android work must start from the accepted `e75e0d` runtime plus the exact AOT
-patch and advance all platforms together only after the common tests pass. It
-must not quietly build Android against one runtime revision while Apple ships
-another.
+The former `e75e0de` reference has been recovered exactly. It was a temporary
+local commit of GoldenEye64Recomp's public vendored runtime, not an upstream
+runtime release. The maintained runtime and renderer now use the immutable
+commits in [`sources.lock.json`](../sources.lock.json); see the recovered-tree
+and prepared-source equality evidence in [Source maintenance](SOURCE_MAINTENANCE.md).
+The later `589bbf0` research checkout remains outside the shipping baseline.
+Android work must use this maintained baseline and advance platforms together
+only after common tests; it must not silently choose another upstream runtime.
 
 ## Renderer feasibility
 

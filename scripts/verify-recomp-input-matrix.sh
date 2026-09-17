@@ -4,7 +4,7 @@ set -eu
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 test_root=$(mktemp -d "${TMPDIR:-/tmp}/goldenpad-input-matrix.XXXXXX")
 trap 'rm -rf "$test_root"' EXIT HUP INT TERM
-reference_root=${GOLDENPAD_RECOMP_REFERENCE_ROOT:-"$repo_root/ref/goldeneye64recomp"}
+reference_root=${GOLDENPAD_RECOMP_REFERENCE_ROOT:-"$repo_root/vendor/goldeneye"}
 tracked_patch="$repo_root/patches/goldeneye64recomp-ios-modern-controls.patch"
 generated_patch="$reference_root/RecompiledPatches/patches.c"
 
@@ -148,19 +148,10 @@ fi
 
 echo "PASS: Preview 4 external-controller look rate is 1.872 degrees per frame"
 
-mkdir -p "$test_root/reference-clean"
-git -C "$reference_root" archive -o "$test_root/reference.tar" HEAD
-tar -xf "$test_root/reference.tar" -C "$test_root/reference-clean"
-git -C "$test_root/reference-clean" apply "$tracked_patch"
-
-for source_path in \
-  patches/externs.h \
-  patches/patches.h \
-  patches/syms.ld \
-  patches/workbench_theboy.c
-do
-  if ! cmp "$test_root/reference-clean/$source_path" "$reference_root/$source_path"; then
-    echo "FAIL: tracked patch output differs from build input $source_path" >&2
+python3 "$repo_root/scripts/check-sources.py" --component goldeneye
+for source_path in patches/externs.h patches/patches.h patches/syms.ld patches/workbench_theboy.c; do
+  if ! cmp "$repo_root/vendor/goldeneye/$source_path" "$reference_root/$source_path"; then
+    echo "FAIL: generated input source differs from maintained source: $source_path" >&2
     exit 1
   fi
 done
@@ -188,4 +179,4 @@ do
   fi
 done
 
-echo "PASS: tracked patch matches build input and generated control/tank/fire-rate markers are present"
+echo "PASS: maintained source matches build input and generated control/tank/fire-rate markers are present"

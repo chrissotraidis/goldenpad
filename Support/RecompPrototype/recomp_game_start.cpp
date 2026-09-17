@@ -1685,25 +1685,6 @@ extern "C" const char *goldenpad_recomp_start_game(void *window, void *view, con
     return "AOT runtime: launch requested";
 }
 
-extern "C" int32_t goldenpad_recomp_validate_tlbfree_rom(const char *romPath) {
-    if (romPath == nullptr) {
-        return 0;
-    }
-    std::ifstream input(std::filesystem::path(romPath), std::ios::binary | std::ios::ate);
-    if (!input.good()) {
-        return 0;
-    }
-    const std::streamsize size = input.tellg();
-    if (size != kGoldenEyeTlbFreeSize) {
-        return 0;
-    }
-    input.seekg(0, std::ios::beg);
-    std::vector<uint8_t> bytes(static_cast<size_t>(size));
-    if (!input.read(reinterpret_cast<char *>(bytes.data()), size)) {
-        return 0;
-    }
-    return XXH3_64bits(bytes.data(), bytes.size()) == kGoldenEyeTlbFreeHash ? 1 : 0;
-}
 
 extern "C" const char *goldenpad_recomp_game_status() {
     thread_local std::string statusSnapshot;

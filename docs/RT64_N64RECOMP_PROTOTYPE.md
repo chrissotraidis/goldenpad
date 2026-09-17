@@ -35,7 +35,7 @@ as one dependency set.
 | `cblock85/GoldenEye64Recomp` | `a787fe0d95e8278fcba5ba2d768fa6a606e75f55` | GPL-3.0 | Static configuration, conversion and fix reference; isolate any reuse |
 | `kholdfuzion/GoldenRecomp` | `f31b5d1e214f57c9ddb3dc598daa688bccffdd4f` | GPL-3.0 | Historical/static-recomp reference only |
 | `N64Recomp/N64Recomp` | `ffb39cdad1da5de07eaaa48bd1db4a89a7986771` | MIT | Static generator/tooling |
-| `N64Recomp/N64ModernRuntime` | `e75e0de77e8377d4954fe7b511c0d1cf608e7ded` | GPL-3.0 | Accepted private AOT runtime reference; input/audio/queues/saves |
+| `N64Recomp/N64ModernRuntime` | vendored at GoldenEye64Recomp `0fb5d192071920304aeb92f30478d3e321a976b4` | GPL-3.0 | Maintained AOT runtime; historical local snapshot `e75e0de` recovered; see SOURCE_MAINTENANCE.md |
 | `rt64/rt64` | `5473732a822a4423b5696e7cb18fecc425a59875` | MIT | RDP renderer; Plume submodule `d890ac899e505fb30040e037a4037cdeca68f033` |
 | `Kenix3/libultraship` | `7eb555d06656271556efc9cb9b23fc39b31b9aef` | MIT | Fast3D design reference only |
 | `perfect-dark-pc-port/perfect_dark` | `32a1cb9f268dd3ac73016801025c6bbbfa20130f` | MIT | Sky conversion reference only |

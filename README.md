@@ -24,6 +24,11 @@
 </p>
 <p align="center"><em>Native RT64/Metal gameplay on a physical iPad Pro.</em></p>
 
+GoldenPad builds on [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp),
+with an Apple host, touch/controller integration and Metal presentation.
+Primary dependency changes now live in pinned [maintained source forks](docs/SOURCE_MAINTENANCE.md);
+normal builds no longer replay patches into those dependencies.
+
 GoldenPad's primary iPhone/iPad runtime includes statically recompiled GoldenEye
 007 code, N64ModernRuntime and RT64's Metal renderer. It is a game-specific
 runtime. Downloads exclude ROM images and extracted retail graphics/audio;
@@ -197,12 +202,27 @@ It is an ad-hoc-signed, non-notarized arm64 app and remains below mobile release
 quality. It uses the same user-supplied-data boundary and must not be described
 as mobile parity.
 
-<details>
-<summary><strong>Preview 1 manual setup (legacy only)</strong></summary>
+**Published Mac Preview 7 ROM setup differs from iPhone/iPad:** that Mac Alpha accepts
+only a prepared `GoldenEye_TLBFREE.z64`, not an unmodified retail dump. Follow
+[Create the required TLB-free file](#create-the-required-tlb-free-file), then
+choose the generated file in the Mac app. Renaming a retail ROM does not convert
+it. No macOS security or graphics setting changes are needed for this import
+error.
 
-> **Preview 2 through Preview 8 users do not need these steps or a prebuilt TLB-free ROM.** This
-> section is retained only for people intentionally running the older Preview 1
-> artifact.
+**Unreleased Mac import fix (build 2):** this source now accepts the original
+NTSC-U `.z64`, `.v64`, `.n64`, or `.rom` and prepares its private runtime copy
+automatically, using the same converter as iPhone/iPad. Already prepared inputs
+remain supported. This does not change the published Preview 7 download. See
+[issue #25 implementation and validation](docs/ISSUE_25_MAC_ROM_IMPORT.md).
+
+<details>
+<summary><strong>Mac Alpha conversion and Preview 1 manual setup</strong></summary>
+
+> **iPhone/iPad Preview 2 through Preview 8 perform conversion automatically.**
+> The published **Mac Preview 7 still requires the conversion below**. After conversion,
+> select the generated file with the Mac app's **Choose GoldenEye_TLBFREE.z64…**
+> button. The IPA installation and Finder file-sharing steps apply only to iOS
+> Preview 1.
 
 > **Using the IPA does not require building GoldenPad from source.** Install and
 > re-sign the IPA, generate the required game-data file once from your own retail
@@ -224,15 +244,15 @@ file sharing after installation to copy that file.
 Generate this file locally from your own legally acquired NTSC-U GoldenEye dump.
 Do not download or request a converted ROM. Renaming a normal ROM does not work.
 
-**Why is this necessary?** Preview 1's statically recompiled runtime was built
+**Why is this necessary?** The statically recompiled runtime was built
 around a modified ROM memory layout that keeps the original TLB-mapped game code
 resident in Expansion Pak memory and stores the original compressed data segment
 uncompressed in the layout expected by the recompiled code. The unmodified retail
-ROM has a different layout, so Preview 1 cannot read it directly. This is a
-technical limitation of the current build, not a DRM check. Preview 2 and
-Preview 3, Preview 4, and Preview 5 perform this same private conversion inside GoldenPad so users can
-select their ordinary retail dump directly; Preview 1 still needs the manual
-process below.
+ROM has a different layout, so Preview 1 and published Mac Preview 7 cannot read
+it directly. This is a technical limitation of those builds, not a DRM check.
+iPhone/iPad Preview 2 through Preview 8 perform the conversion inside GoldenPad.
+The unreleased Mac build 2 source now does the same. Preview 1 and published Mac
+Preview 7 still need the manual process below.
 
 These commands require a big-endian `.z64` dump whose SHA-1 is
 `abe01e4aeb033b6c0836819f549c791b26cfde83`. If your dump is `.v64` or `.n64`,
@@ -380,6 +400,18 @@ the game runtime are separate stages with different fixes.
 - If GoldenPad cannot read a valid file from a cloud or third-party provider,
   copy it into **On My iPhone** or **On My iPad** in Files and try again.
   Keep enough free storage for GoldenPad's private prepared copy.
+
+### Mac Alpha says the file is not the expected NTSC-U TLBFREE input
+
+The published Mac Preview 7 does not include the mobile app's automatic ROM
+conversion. The unreleased build 2 source adds it.
+Convert your supported original NTSC-U dump using
+[Create the required TLB-free file](#create-the-required-tlb-free-file), verify
+the output SHA-256, and select `GoldenEye_TLBFREE.z64` in the Mac app. Changing
+the filename or extension does not prepare the required memory layout.
+
+If the verified output is still rejected, report the exact Mac Alpha version,
+file size, and SHA-256 only; do not attach the ROM.
 
 ### The ROM is accepted but the game does not start
 
@@ -580,8 +612,8 @@ for installation and first-launch instructions.
 No. GoldenPad's game code is compiled ahead of time, so the iPhone/iPad release
 does not need JIT. Preview 8 accepts the supported original US retail dump and
 creates the required TLB-free runtime copy privately on the device. Do not use
-the old Preview 1 manual conversion instructions for Preview 2, Preview 3,
-Preview 4, Preview 5, Preview 6, Preview 7, or Preview 8.
+the manual conversion instructions for iPhone/iPad Preview 2 through Preview 8.
+The published Mac Preview 7 requires manual conversion as described above.
 </details>
 
 <details>
@@ -658,6 +690,7 @@ override those current authority documents.
 | [`docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md`](docs/EXTERNAL_TECHNICAL_REVIEW_HANDOFF.md) | Read-only expert-review prompt for confidence-ranked analysis of the hardest remaining defects |
 | [`docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md`](docs/MACOS_NATIVE_FEASIBILITY_2026-08-21.md) | Native Mac architecture, evidence and Alpha boundary |
 | [`docs/LEGAL.md`](docs/LEGAL.md) | ROM, source, licensing, and distribution boundary |
+| [`docs/SOURCE_MAINTENANCE.md`](docs/SOURCE_MAINTENANCE.md) | Primary build provenance, modernization plan and outstanding source-delivery gates |
 | [`docs/SOURCE_LICENSES.md`](docs/SOURCE_LICENSES.md) | Separate primary-runtime and MGB64 Legacy source/license boundaries |
 | [`docs/ART.md`](docs/ART.md) | Original app-icon provenance |
 | [`docs/WORKLOG.md`](docs/WORKLOG.md) | Chronological production log |
