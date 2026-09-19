@@ -130,7 +130,7 @@ void worker() {
                 out<<" thermal="<<(long)NSProcessInfo.processInfo.thermalState<<" low_power="<<NSProcessInfo.processInfo.lowPowerModeEnabled;
                 task_vm_info_data_t vm{}; mach_msg_type_number_t count=TASK_VM_INFO_COUNT;
                 if(task_info(mach_task_self(),TASK_VM_INFO,(task_info_t)&vm,&count)==KERN_SUCCESS) out<<" footprint_mib="<<vm.phys_footprint/(1024*1024);
-                { std::lock_guard lock(s.mutex); out<<" drawable="<<s.width<<"x"<<s.height; s.summary=out.str(); }
+                { std::lock_guard lock(s.mutex); out<<" drawable="<<s.width<<"x"<<s.height; }
                 lines.push_back(stamp(out.str()));
                 const bool advanced=current[0]!=s.previous[0]||current[2]!=s.previous[2];
                 if(stall.update(milliseconds(),active&&(current[0]||current[1]),advanced)) lines.push_back(stamp("stall no_render_progress_ms>=10000 (suspension excluded; not a crash diagnosis)"));
@@ -140,6 +140,13 @@ void worker() {
                     std::ostringstream row; row<<"timing kind="<<names[i]<<" n="<<v.count<<" mean_us="<<v.totalUs/v.count<<" p95_upper_us="<<v.p95UpperUs()<<" max_us="<<v.maxUs<<" value_sum="<<v.value;
                     lines.push_back(stamp(row.str()));
                 }
+                // Include the latest bottleneck timings in the reviewed GitHub context,
+                // reusing this window's aggregates without adding sampling work.
+                for(size_t i : {size_t(0),size_t(2),size_t(4),size_t(6),size_t(11)}) if(samples[i].count) {
+                    const auto &v=samples[i];
+                    out<<"\n"<<names[i]<<" mean_us="<<v.totalUs/v.count<<" p95_upper_us="<<v.p95UpperUs()<<" max_us="<<v.maxUs;
+                }
+                { std::lock_guard lock(s.mutex); s.summary=out.str(); }
                 previousTime=now;
             }
             writeLines(s.path,lines);

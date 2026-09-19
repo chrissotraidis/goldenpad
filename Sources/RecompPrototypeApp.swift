@@ -388,16 +388,10 @@ struct GoldenPadApp: App {
                 beginTouchLayoutEditing()
             }
             Divider().padding(.horizontal, 12)
-            utilityMenuRow("Report a Problem…", systemImage: "ladybug") {
+            utilityMenuRow("Report a Problem…", systemImage: "exclamationmark.bubble") {
                 presentedSheet = RecompPrototypeSheet(content: .report)
             }
-            Divider().padding(.horizontal, 12)
-            utilityMenuRow(
-                "Share Diagnostics & Logs…",
-                systemImage: "square.and.arrow.up"
-            ) {
-                shareDiagnostics()
-            }
+
         }
         .padding(6)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))

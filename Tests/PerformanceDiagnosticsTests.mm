@@ -40,6 +40,7 @@ int main(int argc,char **argv) {
     assert(text.find("t_ms=")!=std::string::npos);
     assert(text.find("timing kind=display_list")!=std::string::npos);
     assert(text.find("runtime: test line")!=std::string::npos);
+    assert(std::string(goldenpad_diagnostics_summary()).find("display_list mean_us=")!=std::string::npos);
     // Force real file rotation, not a mock. Two segments stay individually bounded.
     const std::string message(850,'x');
     for(int batch=0;batch<30;++batch) {

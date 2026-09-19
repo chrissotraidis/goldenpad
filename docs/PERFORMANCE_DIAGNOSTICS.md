@@ -9,13 +9,15 @@ version is changed. MGB64 Legacy is a separate runtime and is outside this pass.
 
 On Mac, open Settings → Diagnostics → Report a Problem. On iPhone/iPad, use
 Report a Problem in the game menu, or below the import screen before loading a
-ROM. Describe the problem, mission/area and frequency. Review the technical
-context, export the report, then open the GitHub draft and attach the reviewed
-file manually. A screenshot or short video can help with visual problems.
+ROM. Describe the problem, mission/area and frequency. Use the primary Report on GitHub action to open the prefilled draft.
+Review technical details in the expandable section. Share Diagnostic Report
+opens the native share sheet on iPhone/iPad (or file export on Mac); save the
+report to Files and attach the reviewed file manually on GitHub. A screenshot or short video can help with visual problems.
 Opening a draft never submits the issue or uploads a file. GitHub issues are
 public. If opening GitHub fails, the app shows the project issue address.
 
-The existing diagnostic export remains available. Exports include build/source
+The three-dot menu has one Report a Problem entry, with report sharing inside
+it, following SunPad’s GitHub-first flow. Mac also retains its existing export. Exports include build/source
 identity, dependency pins, device model/GPU, OS, requested graphics settings,
 thermal/power state, recent performance context and selected log events. They
 exclude ROMs, saves, raw controller values, player-memory/position dumps and

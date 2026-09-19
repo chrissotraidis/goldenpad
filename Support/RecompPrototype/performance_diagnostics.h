@@ -12,3 +12,5 @@ extern "C" void goldenpad_diagnostics_flush();
 void goldenpad_diagnostics_event(const char *event, const char *detail);
 
 extern "C" void goldenpad_recomp_prepare_diagnostics(const char *supportPath);
+
+extern "C" const char *goldenpad_diagnostics_summary();

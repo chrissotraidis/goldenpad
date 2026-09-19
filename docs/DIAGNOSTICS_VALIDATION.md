@@ -81,3 +81,13 @@ the target devices. No build or package work ran during the four windows.
 An earlier all-command GPU experiment prompted the bounded one-in-sixteen
 sampling design; its preliminary control differed and is not a valid final
 comparison. The final control disables periodic system sampling correctly.
+
+## SunPad reporting iteration
+
+The follow-up adopts SunPad's primary Report on GitHub action and native iOS
+share sheet. The three-dot menu now has one reporting entry rather than a
+competing raw-log sharing path. Technical details are expandable; report IDs
+correlate the exported file and GitHub draft. The draft includes recent display
+list/GPU/drawable/pipeline/present wait summaries from existing aggregates,
+without additional hot-path sampling. Candidate builds advance to iOS 11 / Mac 4.
+The prior overhead result remains a limitation; this UI pass is not a slowdown fix.

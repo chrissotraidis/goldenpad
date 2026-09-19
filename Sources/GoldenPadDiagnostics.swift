@@ -82,6 +82,7 @@ enum GoldenPadDiagnostics {
     static func report(context: String, support: URL) -> String {
         """
         GoldenPad Diagnostics v2
+        Report a problem: https://github.com/chrissotraidis/goldenpad/issues
         \(metadata)
         \(redact(context))
 
@@ -105,7 +106,7 @@ enum GoldenPadDiagnostics {
         ## Frequency
         \(bounded(frequency, 120))
         ## Technical context
-        \(bounded(context, 1600))
+        \(bounded(context, 2400))
         ## Diagnostics
         Attach your reviewed exported report and optional screenshot here. No files are attached automatically.
         """
