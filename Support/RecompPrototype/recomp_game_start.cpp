@@ -1,4 +1,5 @@
 #include "funcs.h"
+#include "performance_diagnostics.h"
 #include "librecomp/game.hpp"
 #include "librecomp/helpers.hpp"
 #include "librecomp/overlays.hpp"
@@ -51,6 +52,7 @@ constexpr std::streamsize kGoldenEyeTlbFreeSize = 0xC11460;
 const std::u8string kGameID = u8"ge007.us";
 
 std::atomic<bool> runtimeStarted = false;
+std::atomic<int32_t> diagnosticStage{-1}, diagnosticMenu{-1};
 std::atomic<uint8_t *> activeRdram = nullptr;
 constexpr size_t kControllerPorts = 4;
 std::array<std::atomic<uint32_t>, kControllerPorts> controllerButtons{};
@@ -143,7 +145,6 @@ std::filesystem::path diagnosticsSessionMarkerPath;
 std::filesystem::path determinismTracePath;
 std::mutex determinismTraceMutex;
 std::atomic<bool> previousSessionEndedUnexpectedly = false;
-constexpr uintmax_t kDiagnosticsLogLimit = 4 * 1024 * 1024;
 
 constexpr size_t kDeterminismRdramBytes = 8 * 1024 * 1024;
 constexpr size_t kDeterminismRegionCount = 8;
@@ -352,21 +353,7 @@ void logEvent(const char *event, const char *format, ...) {
     va_start(arguments, format);
     std::vsnprintf(detail, sizeof(detail), format, arguments);
     va_end(arguments);
-    char line[896];
-    std::snprintf(line, sizeof(line), "[GoldenPadRecomp] %s: %s", event, detail);
-    std::fprintf(stderr, "%s\n", line);
-    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_DEFAULT, "%{public}s", line);
-    std::lock_guard diagnosticsLock(diagnosticsMutex);
-    if (!diagnosticsLogPath.empty()) {
-        std::error_code error;
-        const uintmax_t size = std::filesystem::file_size(diagnosticsLogPath, error);
-        if (!error && size > kDiagnosticsLogLimit) {
-            std::ofstream reset(diagnosticsLogPath, std::ios::trunc);
-            reset << "[GoldenPadRecomp] diagnostics: earlier log text was rotated\n";
-        }
-        std::ofstream log(diagnosticsLogPath, std::ios::app);
-        log << line << '\n';
-    }
+    goldenpad_diagnostics_event(event, detail);
 }
 
 int32_t readGameWord(uint8_t *rdram, uint32_t address);
@@ -728,6 +715,12 @@ void configureDiagnostics(const std::filesystem::path &configPath) {
     if (std::filesystem::exists(latest, error)) {
         std::filesystem::rename(latest, previous, error);
     }
+    error.clear();
+    std::filesystem::remove(previous.string() + ".1", error);
+    error.clear();
+    if (std::filesystem::exists(latest.string() + ".1", error)) {
+        std::filesystem::rename(latest.string() + ".1", previous.string() + ".1", error);
+    }
     diagnosticsLogPath = latest;
     gameplayInputModeReported.store(-1, std::memory_order_relaxed);
     std::ofstream log(diagnosticsLogPath, std::ios::trunc);
@@ -989,7 +982,6 @@ void monitorGameState(uint8_t *rdram) {
     uint64_t previousDisplayLists = 0;
     uint64_t previousScreenUpdates = 0;
     uint64_t previousPresented = 0;
-    int stalledActiveSamples = 0;
     uint64_t observedLifecycleSequence = 0;
     uint64_t nextLifecycleSampleMs = 0;
     int lifecycleProgressSamples = 0;
@@ -997,6 +989,8 @@ void monitorGameState(uint8_t *rdram) {
     while (runtimeStarted.load(std::memory_order_relaxed)) {
         const int32_t menu = readGameWord(rdram, 0x8002A6C0);
         const int32_t stage = readGameWord(rdram, 0x80023FA8);
+        diagnosticStage.store(stage, std::memory_order_relaxed);
+        diagnosticMenu.store(menu, std::memory_order_relaxed);
         const int32_t pendingStage = readGameWord(rdram, 0x80048164);
         if (menu != previousMenu || stage != previousStage || pendingStage != previousPendingStage || heartbeat == 0) {
             logEvent("game-state",
@@ -1129,21 +1123,7 @@ void monitorGameState(uint8_t *rdram) {
                     static_cast<unsigned long long>(rdramChanges), latestAddress);
             }
         }
-        const bool rendererHadStarted = displayLists != 0 || screenUpdates != 0;
-        const bool rendererAdvanced = displayLists != previousDisplayLists ||
-            screenUpdates != previousScreenUpdates || presented != previousPresented;
-        if (active && rendererHadStarted && !rendererAdvanced) {
-            ++stalledActiveSamples;
-            if (stalledActiveSamples == 5) {
-                logEvent("watchdog",
-                    "RT64 made no progress for 10 seconds while active (dl=%llu vi=%llu presented=%llu)",
-                    static_cast<unsigned long long>(displayLists),
-                    static_cast<unsigned long long>(screenUpdates),
-                    static_cast<unsigned long long>(presented));
-            }
-        } else {
-            stalledActiveSamples = 0;
-        }
+        // The diagnostics worker uses elapsed monotonic time for stalls.
         previousDisplayLists = displayLists;
         previousScreenUpdates = screenUpdates;
         previousPresented = presented;
@@ -1418,6 +1398,12 @@ void pollNetplayInput(uint8_t *rdram) {
 }
 
 void pollInput() {
+    // GoldenEye may poll multiple times per game frame: report cadence, never FPS.
+    static thread_local auto lastPoll = std::chrono::steady_clock::time_point{};
+    const auto now = std::chrono::steady_clock::now();
+    if (lastPoll.time_since_epoch().count()) goldenpad_diagnostics_sample(10,
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now-lastPoll).count(), 0);
+    lastPoll = now;
     if (!inputPollReported.exchange(true)) {
         logEvent("input", "game began polling the prototype controller bridge");
     }
@@ -1578,7 +1564,7 @@ std::string gameThreadName(const OSThread *) { return "GE game"; }
 
 void runRuntime(ultramodern::renderer::WindowHandle window, std::filesystem::path romPath, std::filesystem::path configPath) {
     try {
-        configureDiagnostics(configPath);
+        goldenpad_recomp_prepare_diagnostics(configPath.c_str());
         logEvent("runtime", "worker started");
         if (fireRateProbeEnabled.load(std::memory_order_acquire)) {
             logEvent("fire-rate-probe",
@@ -2698,6 +2684,7 @@ extern "C" void goldenpad_recomp_stop_game() {
     // either unsafe teardown path.
     logEvent("lifecycle", "native Mac host is terminating");
     markDiagnosticsSessionClean();
+    goldenpad_diagnostics_flush();
     std::fflush(nullptr);
     std::_Exit(EXIT_SUCCESS);
 #else
@@ -2706,4 +2693,24 @@ extern "C" void goldenpad_recomp_stop_game() {
         ultramodern::quit();
     }
 #endif
+}
+
+extern "C" void goldenpad_diagnostics_refresh() {
+    goldenpad_diagnostics_progress(
+        rt64DisplayListCount.load(), rt64ScreenUpdateCount.load(), rt64PresentedCount.load(),
+        audioRenderedFrames.load(), audioDroppedFrames.load(), audioUnderrunFrames.load(),
+        getQueuedFrames(), appActive.load(), diagnosticStage.load(), diagnosticMenu.load());
+}
+
+extern "C" void goldenpad_recomp_prepare_diagnostics(const char *supportPath) {
+    static std::once_flag prepared;
+    std::call_once(prepared, [supportPath] {
+        configureDiagnostics(std::filesystem::path(supportPath));
+        goldenpad_diagnostics_start(diagnosticsLogPath.c_str());
+    });
+}
+
+extern "C" void goldenpad_diagnostics_graphics(int32_t *resolution, int32_t *msaa, int32_t *filter, float *scale) {
+    *resolution=prototypeResolutionMode.load(); *msaa=prototypeMsaaEnabled.load();
+    *filter=prototypeThreePointFiltering.load(); *scale=ultramodern::get_resolution_scale();
 }

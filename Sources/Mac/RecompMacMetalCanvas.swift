@@ -105,9 +105,11 @@ final class RecompMacSurface: ObservableObject {
 
     private func initializeRendererIfPossible() {
         guard !rendererInitialized,
+              let supportURL,
               let view = metalView,
               let window,
               let layer = view.layer as? CAMetalLayer else { return }
+        GoldenPadDiagnostics.start(at: supportURL)
         let windowHandle = Unmanaged.passUnretained(window).toOpaque()
         let layerHandle = Unmanaged.passUnretained(layer).toOpaque()
         guard let message = goldenPadRecompRT64Initialize(windowHandle, layerHandle) else {

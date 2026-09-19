@@ -22,6 +22,10 @@ upstream fetch target. That blocker is resolved.
 
 ## Exact sources and patch mapping
 
+The table below records the migration baseline. Subsequent diagnostic-only fork
+commits are pinned in `sources.lock.json`; see [performance diagnostics](PERFORMANCE_DIAGNOSTICS.md).
+The original upstream bases and generated-game inputs remain unchanged.
+
 [`sources.lock.json`](../sources.lock.json) and the app's gitlinks are the
 machine-readable authority. GitHub fork/parent metadata was verified for all
 three forks; each preserves upstream ancestry.

@@ -712,3 +712,9 @@ the GoldenEye decompilation community, Metal support work, and their
 contributors. Each upstream component retains its own copyright and license.
 No ROM, extracted game media, leaked XBLA material, or proprietary
 matching-target SDK implementation source is included here.
+
+### Diagnostics development
+
+The [performance diagnostics guide](docs/PERFORMANCE_DIAGNOSTICS.md) describes the
+new Mac/iPhone/iPad measurement and reviewed GitHub-report flow under development.
+It is not part of the currently published Preview 9 downloads.

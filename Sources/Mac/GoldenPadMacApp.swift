@@ -199,6 +199,7 @@ private struct RecompMacReticle: View {
 }
 
 private struct RecompMacSettingsView: View {
+    @State private var reportPresented = false
     @ObservedObject var surface: RecompMacSurface
     @ObservedObject var input: RecompMacInput
     @ObservedObject var audio: RecompMacAudio
@@ -287,21 +288,9 @@ private struct RecompMacSettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section("Diagnostics") {
+                Button("Report a Problem…") { reportPresented = true }
                 Button("Export Diagnostics & Logs…") {
-                    RecompMacDiagnostics.exportReport(
-                        supportURL: romStore.supportURL,
-                        runtimeStatus: surface.status,
-                        audioStatus: audio.status,
-                        controllerName: input.externalControllerName,
-                        resolutionMode: RecompMacResolutionMode(rawValue: resolutionMode) ?? .automatic,
-                        msaaEnabled: msaaEnabled,
-                        threePointFiltering: threePointFiltering,
-                        mouseSensitivity: mouseSensitivity,
-                        keyboardSummary: input.keyboardSummary,
-                        invertAimY: invertAimY,
-                        reticleEnabled: reticleEnabled,
-                        unlockAllMissions: unlockAllMissions
-                    )
+                    exportDiagnostics()
                 }
                 Button("Show Logs in Finder") {
                     RecompMacDiagnostics.showLogs(in: romStore.supportURL)
@@ -314,6 +303,25 @@ private struct RecompMacSettingsView: View {
         .formStyle(.grouped)
         .padding()
         .frame(width: 620, height: 620)
+        .sheet(isPresented: $reportPresented) {
+            GoldenPadIssueReport(context: GoldenPadDiagnostics.metadata + "\nRequested graphics (apply after restart): " + resolutionMode + "; MSAA: " + String(msaaEnabled), supportURL: romStore.supportURL)
+        }
+    }
+    private func exportDiagnostics() {
+        RecompMacDiagnostics.exportReport(
+            supportURL: romStore.supportURL,
+            runtimeStatus: surface.status,
+            audioStatus: audio.status,
+            controllerName: input.externalControllerName,
+            resolutionMode: RecompMacResolutionMode(rawValue: resolutionMode) ?? .automatic,
+            msaaEnabled: msaaEnabled,
+            threePointFiltering: threePointFiltering,
+            mouseSensitivity: mouseSensitivity,
+            keyboardSummary: input.keyboardSummary,
+            invertAimY: invertAimY,
+            reticleEnabled: reticleEnabled,
+            unlockAllMissions: unlockAllMissions
+        )
     }
 }
 

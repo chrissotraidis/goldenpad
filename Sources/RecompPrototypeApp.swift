@@ -57,6 +57,7 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.twoPlayerTestMode") private var twoPlayerTestMode = false
     @AppStorage("recomp.fourPlayerTestMode") private var fourPlayerTestMode = false
     @State private var presentedSheet: RecompPrototypeSheet?
+    @State private var diagnosticExportFailed = false
     @State private var showReturnToMenuConfirmation = false
     @State private var isEditingTouchLayout = false
     @State private var isUtilityMenuPresented = false
@@ -239,8 +240,34 @@ struct GoldenPadApp: App {
                     surface.setAppActive(false)
                 }
             }
+            .alert("Could not export diagnostics", isPresented: $diagnosticExportFailed) {
+                Button("OK", role: .cancel) {}
+            } message: { Text("The report could not be saved. Please try again.") }
+            .confirmationDialog(
+                "Return to Main Menu?",
+                isPresented: $showReturnToMenuConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Return to Main Menu", role: .destructive) {
+                    input.requestReturnToMainMenu()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Current mission progress since the last save will be discarded.")
+                    }
+                    }
+                } else {
+                    RecompPrototypeROMSetupView(store: romStore)
+                        .safeAreaInset(edge: .bottom) {
+                            Button("Report a Problem…") { presentedSheet = RecompPrototypeSheet(content: .report) }
+                                .padding()
+                        }
+                }
+            }
             .sheet(item: $presentedSheet) { sheet in
                 switch sheet.content {
+                case .report:
+                    GoldenPadIssueReport(context: GoldenPadDiagnostics.metadata + "\nRequested graphics (apply after restart): " + resolutionMode + "; MSAA: " + String(msaaEnabled), supportURL: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("GoldenPadRecomp", isDirectory: true))
                 case .settings:
                     RecompPrototypeSettingsView(
                         lookSensitivity: Binding(
@@ -275,23 +302,6 @@ struct GoldenPadApp: App {
                     )
                 case let .share(url):
                     RecompPrototypeShareSheet(items: [url])
-                }
-            }
-            .confirmationDialog(
-                "Return to Main Menu?",
-                isPresented: $showReturnToMenuConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Return to Main Menu", role: .destructive) {
-                    input.requestReturnToMainMenu()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Current mission progress since the last save will be discarded.")
-                    }
-                    }
-                } else {
-                    RecompPrototypeROMSetupView(store: romStore)
                 }
             }
             .fileImporter(
@@ -378,6 +388,10 @@ struct GoldenPadApp: App {
                 beginTouchLayoutEditing()
             }
             Divider().padding(.horizontal, 12)
+            utilityMenuRow("Report a Problem…", systemImage: "ladybug") {
+                presentedSheet = RecompPrototypeSheet(content: .report)
+            }
+            Divider().padding(.horizontal, 12)
             utilityMenuRow(
                 "Share Diagnostics & Logs…",
                 systemImage: "square.and.arrow.up"
@@ -431,25 +445,27 @@ struct GoldenPadApp: App {
     }
 
     private func shareDiagnostics() {
-        let url = RecompPrototypeDiagnostics.makeReport(
-            runtimeStatus: surface.status,
-            audioStatus: audio.status,
-            controllerName: input.externalControllerName,
-            lookSensitivity: lookSensitivity,
-            aimBehavior: aimBehavior,
-            controllerLookMode: controllerLookMode,
-            activeControlStyle: input.activeControlStyle,
-            controllerMapping: controllerMapping,
-            invertAimY: invertAimY,
-            reticleEnabled: reticleEnabled,
-            msaaEnabled: msaaEnabled,
-            resolutionMode: resolutionMode,
-            threePointFiltering: threePointFiltering,
-            unlockAllMissions: unlockAllMissions,
-            twoPlayerTestMode: twoPlayerTestMode,
-            fourPlayerTestMode: fourPlayerTestMode
-        )
-        presentedSheet = RecompPrototypeSheet(content: .share(url))
+        do {
+            let url = try RecompPrototypeDiagnostics.makeReport(
+                runtimeStatus: surface.status,
+                audioStatus: audio.status,
+                controllerName: input.externalControllerName,
+                lookSensitivity: lookSensitivity,
+                aimBehavior: aimBehavior,
+                controllerLookMode: controllerLookMode,
+                activeControlStyle: input.activeControlStyle,
+                controllerMapping: controllerMapping,
+                invertAimY: invertAimY,
+                reticleEnabled: reticleEnabled,
+                msaaEnabled: msaaEnabled,
+                resolutionMode: resolutionMode,
+                threePointFiltering: threePointFiltering,
+                unlockAllMissions: unlockAllMissions,
+                twoPlayerTestMode: twoPlayerTestMode,
+                fourPlayerTestMode: fourPlayerTestMode
+            )
+            presentedSheet = RecompPrototypeSheet(content: .share(url))
+        } catch { diagnosticExportFailed = true }
     }
 
     private func beginTouchLayoutEditing() {
@@ -611,6 +627,7 @@ private struct RecompPrototypeSheet: Identifiable {
     enum Content {
         case settings
         case share(URL)
+        case report
     }
 
     let id = UUID()
@@ -838,7 +855,6 @@ private struct RecompPrototypeShareSheet: UIViewControllerRepresentable {
 }
 
 private enum RecompPrototypeDiagnostics {
-    private static let sharedTailLimit = 512 * 1024
 
     static func makeReport(
         runtimeStatus: String,
@@ -857,16 +873,12 @@ private enum RecompPrototypeDiagnostics {
         unlockAllMissions: Bool,
         twoPlayerTestMode: Bool,
         fourPlayerTestMode: Bool
-    ) -> URL {
+    ) throws -> URL {
         let manager = FileManager.default
         let support = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GoldenPadRecomp", isDirectory: true)
-        let logs = support.appendingPathComponent("Logs", isDirectory: true)
-        let latest = logs.appendingPathComponent("goldenpad-recomp-latest.log")
-        let previous = logs.appendingPathComponent("goldenpad-recomp-previous.log")
         let destination = manager.temporaryDirectory
             .appendingPathComponent("GoldenPad-Recomp-Diagnostics.txt")
-        let home = NSHomeDirectory()
         let report = """
         GoldenPad Recomp Diagnostics
         ============================
@@ -884,18 +896,11 @@ private enum RecompPrototypeDiagnostics {
         Unlock all missions: \(unlockAllMissions ? "On (mission select only; EEPROM unchanged)" : "Off")
         Two-player input test: \(twoPlayerTestMode ? "Requested (external P1 + touch P2)" : "Off")
         Four-player render test: \(fourPlayerTestMode ? "Requested (neutral P3/P4)" : "Off")
-        Graphics: RT64 Metal, \((RecompPrototypeResolutionMode(rawValue: resolutionMode) ?? .automatic).title), \(msaaEnabled ? "2x MSAA" : "MSAA off"), \(threePointFiltering ? "three-point filtering" : "linear filtering"), original presentation rate
+        Requested graphics (apply after restart): RT64 Metal, \((RecompPrototypeResolutionMode(rawValue: resolutionMode) ?? .automatic).title), \(msaaEnabled ? "2x MSAA" : "MSAA off"), \(threePointFiltering ? "three-point filtering" : "linear filtering"), original presentation rate
         Device: \(UIDevice.current.model) / iOS \(UIDevice.current.systemVersion)
 
-        Previous Session
-        ----------------
-        \(tail(of: previous, home: home))
-
-        Current Session
-        ---------------
-        \(tail(of: latest, home: home))
         """
-        try? report.write(to: destination, atomically: true, encoding: .utf8)
+        try GoldenPadDiagnostics.report(context: report, support: support).write(to: destination, atomically: true, encoding: .utf8)
         return destination
     }
 
@@ -910,24 +915,7 @@ private enum RecompPrototypeDiagnostics {
         }.joined(separator: ", ")
     }
 
-    private static func tail(of url: URL, home: String) -> String {
-        guard let handle = try? FileHandle(forReadingFrom: url) else {
-            return "No log was available."
-        }
-        defer { try? handle.close() }
-        let length = (try? handle.seekToEnd()) ?? 0
-        if length > UInt64(sharedTailLimit) {
-            try? handle.seek(toOffset: length - UInt64(sharedTailLimit))
-        } else {
-            try? handle.seek(toOffset: 0)
-        }
-        guard let data = try? handle.readToEnd() else {
-            return "The log could not be read."
-        }
-        return String(decoding: data, as: UTF8.self)
-            .replacingOccurrences(of: home, with: "<HOME>")
-            .replacingOccurrences(of: NSTemporaryDirectory(), with: "<TEMP>/")
-    }
+
 }
 
 private func controlStyleTitle(_ style: Int32) -> String {

@@ -1,6 +1,37 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(GoldenPad LANGUAGES Swift C CXX OBJCXX)
+set_source_files_properties(Support/RecompPrototype/performance_diagnostics.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+
+# Embed the exact configure-time source identity and immutable dependency pins.
+execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse HEAD
+    OUTPUT_VARIABLE GOLDENPAD_SOURCE_ID OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(NOT GOLDENPAD_SOURCE_ID)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/source-manifest.json")
+        file(READ "${CMAKE_CURRENT_SOURCE_DIR}/source-manifest.json" GOLDENPAD_ARCHIVE_MANIFEST)
+        string(JSON GOLDENPAD_SOURCE_ID GET "${GOLDENPAD_ARCHIVE_MANIFEST}" app_commit)
+    else()
+        set(GOLDENPAD_SOURCE_ID "unknown (missing Git and source manifest)")
+    endif()
+endif()
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sources.lock.json" GOLDENPAD_SOURCE_LOCK)
+execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" status --porcelain --untracked-files=no
+    OUTPUT_VARIABLE GOLDENPAD_SOURCE_CHANGES ERROR_QUIET)
+if(GOLDENPAD_SOURCE_CHANGES)
+    string(APPEND GOLDENPAD_SOURCE_ID " (modified build; not a release commit)")
+endif()
+set(GOLDENPAD_PIN_SUMMARY "")
+foreach(component goldeneye rt64-ios rt64-macos)
+    string(JSON pin GET "${GOLDENPAD_SOURCE_LOCK}" components "${component}" commit)
+    string(APPEND GOLDENPAD_PIN_SUMMARY "${component}: ${pin}\n")
+endforeach()
+foreach(platform ios macos)
+    string(JSON pin GET "${GOLDENPAD_SOURCE_LOCK}" plume "${platform}" commit)
+    string(APPEND GOLDENPAD_PIN_SUMMARY "plume-${platform}: ${pin}\n")
+endforeach()
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BuildIdentity.txt"
+    "Source: ${GOLDENPAD_SOURCE_ID}\n${GOLDENPAD_PIN_SUMMARY}")
+set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/BuildIdentity.txt" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
 option(GOLDENPAD_RECOMP_MAC "Build the native Apple-Silicon GoldenPad Mac app" OFF)
 
@@ -33,8 +64,9 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "9" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "10" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
+set(GOLDENPAD_RECOMP_MAC_BUILD_VERSION "3" CACHE STRING "Mac bundle build version")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
 set(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing verified RT64 mobile archives for the prototype")
@@ -195,6 +227,9 @@ if(goldenpad_apple_platform STREQUAL "mac")
         PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 
     add_executable(GoldenPadMac MACOSX_BUNDLE
+        Sources/GoldenPadDiagnostics.swift
+        "${CMAKE_CURRENT_BINARY_DIR}/BuildIdentity.txt"
+        Sources/GoldenPadIssueReport.swift
         "${goldenpad_mac_rom_patch}"
         Support/RecompPrototype/recomp_rom_import.cpp
         Assets.xcassets
@@ -213,10 +248,11 @@ if(goldenpad_apple_platform STREQUAL "mac")
         "${GOLDENPAD_RECOMP_AOT_DIR}/rsp/aspMain.cpp"
         Support/RecompPrototype/recomp_aot_link_bridge.cpp
         Support/RecompPrototype/recomp_game_start.cpp
+        Support/RecompPrototype/performance_diagnostics.mm
         Support/RecompPrototype/recomp_register_overlays.cpp
         Support/RecompPrototype/recomp_ultra_shims.cpp
         Support/RecompPrototype/recomp_ui_stub.cpp
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp")
+        "${CMAKE_CURRENT_SOURCE_DIR}/vendor/goldeneye/src/main/rt64_render_context.cpp")
 
     set_target_properties(GoldenPadMac PROPERTIES
         OUTPUT_NAME "GoldenPad"
@@ -224,7 +260,8 @@ if(goldenpad_apple_platform STREQUAL "mac")
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-        MACOSX_BUNDLE_BUNDLE_VERSION "2"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${GOLDENPAD_RECOMP_MAC_BUILD_VERSION}"
+        XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_MAC_BUILD_VERSION "${GOLDENPAD_RECOMP_MAC_BUILD_VERSION}"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/GoldenPadMacInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
         XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO"
@@ -249,7 +286,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         "${goldenpad_recomp_patch_output_dir}/patches.c"
         PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
     set_source_files_properties(
-        "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/vendor/goldeneye/src/main/rt64_render_context.cpp"
         PROPERTIES COMPILE_OPTIONS
         "-DSDL_PROTOTYPES_ONLY=1;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/rt64_namespace_compat.hpp")
 
@@ -434,7 +471,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
                 "GoldenEye64Recomp patches_bin.c is older than patches/patches.bin. Regenerate the matched patch outputs before building mobile GoldenPad.")
         endif()
         set(goldenpad_recomp_render_context
-            "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/src/main/rt64_render_context.cpp")
+            "${CMAKE_CURRENT_SOURCE_DIR}/vendor/goldeneye/src/main/rt64_render_context.cpp")
         file(READ "${goldenpad_recomp_render_context}" goldenpad_recomp_render_context_text)
         string(FIND "${goldenpad_recomp_render_context_text}"
             "GoldenPadRecompRT64" goldenpad_recomp_writable_rt64_path)
@@ -462,6 +499,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             "${GOLDENPAD_RECOMP_AOT_DIR}/rsp/aspMain.cpp"
             Support/RecompPrototype/recomp_aot_link_bridge.cpp
             Support/RecompPrototype/recomp_game_start.cpp
+            Support/RecompPrototype/performance_diagnostics.mm
             Support/RecompPrototype/recomp_rom_import.cpp
             Support/RecompPrototype/recomp_register_overlays.cpp
             Support/RecompPrototype/recomp_ultra_shims.cpp
@@ -487,6 +525,9 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
     endif()
 
     add_executable(GoldenPadRecompPrototype MACOSX_BUNDLE
+        Sources/GoldenPadDiagnostics.swift
+        Sources/GoldenPadIssueReport.swift
+        "${CMAKE_CURRENT_BINARY_DIR}/BuildIdentity.txt"
         Assets.xcassets
         Config/ThirdPartyNotices.txt
         Sources/RecompPrototypeApp.swift
