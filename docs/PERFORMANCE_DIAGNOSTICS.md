@@ -1,6 +1,7 @@
 # Performance diagnostics and issue reporting
 
-This describes the diagnostics development branch, not published Preview 9.
+This describes iPhone/iPad Preview 10 and the maintained Mac source.
+The published Mac package remains Preview 9.
 macOS and the shared iPhone/iPad AOT host use the same bounded collector.
 No game timing, resolution default, shader behavior, save format or upstream
 version is changed. MGB64 Legacy is a separate runtime and is outside this pass.

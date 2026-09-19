@@ -72,7 +72,7 @@ computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
    Use AltStore Classic with AltServer, not AltStore PAL. PAL cannot install an
    arbitrary unsigned `.ipa` downloaded from GitHub.
 2. Download
-   [`GoldenPad-0.1.0-preview.9-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.9/GoldenPad-0.1.0-preview.9-unsigned.ipa).
+   [`GoldenPad-0.1.0-preview.10-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.10/GoldenPad-0.1.0-preview.10-unsigned.ipa).
    This is the iPhone/iPad app. Do not download the separate Mac `.zip`.
 3. Open AltStore Classic on the device, go to **My Apps**, tap **+**, and choose
    the downloaded GoldenPad `.ipa` from Files. Follow iOS's prompts to trust
@@ -123,10 +123,10 @@ includes statically recompiled game code.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Preview 9 built and audited** | Build 9 passes package and importer checks. Prior Preview 8 physical acceptance remains the baseline; build 9 has no new physical-device acceptance. |
+| Local iPhone/iPad build | **Preview 10, build 11** | Updated in place and accepted by the owner on physical iPad; saves/settings preserved. New bounded performance logging and GitHub reporting. |
 | Native Apple-Silicon Mac build | **Preview 9 Alpha** | [Download the arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.9/GoldenPad-0.1.0-preview.9-macos-arm64-alpha.zip). Automatic original-ROM conversion is included; mouse, rendering-edge and performance limitations remain. |
-| Unsigned `.ipa` | **Audited Preview 9** | The release passed the documented package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
-| GitHub release | **Preview 9 iOS and Mac** | [Release notes, downloads, public-software sources and SHA-256](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.9). |
+| Unsigned `.ipa` | **Preview 10** | The release passed the documented package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
+| GitHub release | **Preview 10 iOS/iPadOS; Preview 9 Mac** | [iOS release, sources and checksums](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.10). Mac downloads remain on Preview 9. |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
 The mobile baseline was accepted through normal single-player gameplay on a
@@ -180,11 +180,11 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Release files and advanced setup
 
-### Preview 9 mobile download
+### Preview 10 mobile download
 
 Download
-[`GoldenPad-0.1.0-preview.9-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.9/GoldenPad-0.1.0-preview.9-unsigned.ipa)
-and the release’s `GoldenPad-0.1.0-preview.9-SHA256SUMS.txt`. The IPA is intentionally unsigned. Follow
+[`GoldenPad-0.1.0-preview.10-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.10/GoldenPad-0.1.0-preview.10-unsigned.ipa)
+and the release’s `GoldenPad-0.1.0-preview.10-SHA256SUMS.txt`. The IPA is intentionally unsigned. Follow
 [Play on iPhone or iPad](#play-on-iphone-or-ipad) for the supported AltStore
 Classic installation path.
 
@@ -211,7 +211,7 @@ Source/licensing review remains open; see the [modernization handoff](docs/MODER
 <details>
 <summary><strong>Historical Mac Preview 7 and iOS Preview 1 manual setup</strong></summary>
 
-> **iPhone/iPad Preview 2 through Preview 9 perform conversion automatically.**
+> **iPhone/iPad Preview 2 through Preview 10 perform conversion automatically.**
 > The older **Mac Preview 7 requires the conversion below**. After conversion,
 > select the generated file with the Mac app's **Choose GoldenEye_TLBFREE.z64…**
 > button. The IPA installation and Finder file-sharing steps apply only to iOS
@@ -243,7 +243,7 @@ resident in Expansion Pak memory and stores the original compressed data segment
 uncompressed in the layout expected by the recompiled code. The unmodified retail
 ROM has a different layout, so Preview 1 and older Mac Preview 7 cannot read
 it directly. This is a technical limitation of those builds, not a DRM check.
-iPhone/iPad Preview 2 through Preview 9 perform the conversion inside GoldenPad.
+iPhone/iPad Preview 2 through Preview 10 perform the conversion inside GoldenPad.
 Mac Preview 9 now does the same. Preview 1 and older Mac
 Preview 7 still need the manual process below.
 
@@ -352,7 +352,7 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Install the unsigned Preview 9 IPA by following
+1. Install the unsigned Preview 10 IPA by following
    [Play on iPhone or iPad](#play-on-iphone-or-ipad).
 2. Launch GoldenPad and choose your own supported original NTSC-U retail ROM
    from Files. The importer accepts `.z64`, `.v64`, `.n64`, and `.rom` byte
@@ -407,9 +407,11 @@ file size, and SHA-256 only; do not attach the ROM.
 
 ### The ROM is accepted but the game does not start
 
-Fully quit and reopen GoldenPad once. If the app reaches its three-dot menu,
-choose **Share Diagnostics & Logs** and keep the generated text file private
-until you have checked it for personal information.
+In Preview 10, open **••• → Report a Problem → Report on GitHub**. GoldenPad
+adds device/build details and recent performance context to a draft you review
+and submit. Use **Share Diagnostic Report** in the same screen to save detailed
+logs and attach the reviewed file on GitHub. Export before restarting if the
+current session contains the problem; previous logs are retained for one session.
 
 When filing a [GitHub issue](https://github.com/chrissotraidis/goldenpad/issues),
 include:
@@ -604,7 +606,7 @@ for installation and first-launch instructions.
 No. GoldenPad's game code is compiled ahead of time, so the iPhone/iPad release
 does not need JIT. Preview 9 accepts the supported original US retail dump and
 creates the required TLB-free runtime copy privately on the device. Do not use
-the manual conversion instructions for iPhone/iPad Preview 2 through Preview 9.
+the manual conversion instructions for iPhone/iPad Preview 2 through Preview 10.
 Mac Preview 9 also converts automatically; older Mac Preview 7 requires manual conversion.
 </details>
 
@@ -713,8 +715,11 @@ contributors. Each upstream component retains its own copyright and license.
 No ROM, extracted game media, leaked XBLA material, or proprietary
 matching-target SDK implementation source is included here.
 
-### Diagnostics development
+### Performance diagnostics and reporting
 
-The [performance diagnostics guide](docs/PERFORMANCE_DIAGNOSTICS.md) describes the
-new Mac/iPhone/iPad measurement and reviewed GitHub-report flow under development.
-It is not part of the currently published Preview 9 downloads.
+[iPhone/iPad Preview 10](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.10)
+adds bounded performance logs and a GitHub-first Report a Problem flow inspired
+by SunPad. See the [measurement guide](docs/PERFORMANCE_DIAGNOSTICS.md) for CPU/GPU,
+wait, texture, thermal and audio context, and the [qualification record](docs/DIAGNOSTICS_VALIDATION.md).
+This is a diagnostics update, not a confirmed frame-rate or A12X crash fix.
+The Mac implementation is merged in source; the published Mac package remains Preview 9.

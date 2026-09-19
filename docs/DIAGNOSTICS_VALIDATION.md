@@ -103,3 +103,12 @@ launch-image cache files were removed. App launch succeeded and device logs
 contain timestamped CPU, GPU, drawable/fence waits and presentation intervals.
 This establishes installation/startup/logging, not mission performance or physical
 report-form interaction acceptance. No binary release was published.
+
+## Owner acceptance and release authorization
+
+On 2026-09-19 the owner confirmed that the revised flow looks good and works on
+the iPad, explicitly declined further testing, and authorized pushing/merging
+to main, publishing the new IPA and replying to relevant GitHub reports. This
+is bounded owner acceptance, not an independently measured busy-scene or A12X
+fix. The preliminary 2.16% overhead screen remains disclosed. Preview 10 uses
+iOS/iPadOS build 11; the public Mac download remains Preview 9.
