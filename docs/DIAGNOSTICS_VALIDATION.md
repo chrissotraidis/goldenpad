@@ -91,3 +91,15 @@ correlate the exported file and GitHub draft. The draft includes recent display
 list/GPU/drawable/pipeline/present wait summaries from existing aggregates,
 without additional hot-path sampling. Candidate builds advance to iOS 11 / Mac 4.
 The prior overhead result remains a limitation; this UI pass is not a slowdown fix.
+
+Build 11 from `05acebc` was installed in place on the connected physical iPad,
+replacing build 8. The first passive CoreDevice list showed disconnected, but
+USB/pairing checks and a direct device-details request established the tunnel;
+no re-pairing, cable change or service restart was required. The signed candidate
+preserves the installed app's exact entitlements and passed strict signature
+verification. Documents and Library were backed up before installation. All 20
+retained files were byte-identical after install; only two OS-managed SplashBoard
+launch-image cache files were removed. App launch succeeded and device logs
+contain timestamped CPU, GPU, drawable/fence waits and presentation intervals.
+This establishes installation/startup/logging, not mission performance or physical
+report-form interaction acceptance. No binary release was published.
