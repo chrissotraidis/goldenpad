@@ -4,20 +4,20 @@
     "goldeneye": {
       "path": "vendor/goldeneye",
       "url": "https://github.com/chrissotraidis/GoldenEye64Recomp.git",
-      "commit": "0fb5d192071920304aeb92f30478d3e321a976b4",
-      "branch": "goldenpad/apple-maintained"
+      "commit": "b698234f1c8bf3bd5e69fca3588cbc871e652ed6",
+      "branch": "goldenpad/apple-diagnostics"
     },
     "rt64-ios": {
       "path": "vendor/rt64-ios",
       "url": "https://github.com/chrissotraidis/rt64.git",
-      "commit": "b3a1ceef3fbae10a4a5e5e1f0c240fb60b6d2a0a",
-      "branch": "goldenpad/ios"
+      "commit": "0e90a15c987d8e8eb168e2d044eadc0c395b4f97",
+      "branch": "goldenpad/ios-diagnostics"
     },
     "rt64-macos": {
       "path": "vendor/rt64-macos",
       "url": "https://github.com/chrissotraidis/rt64.git",
-      "commit": "24995c8e4f98c46cb361327562f436289031e305",
-      "branch": "goldenpad/macos"
+      "commit": "6e9b233868e3c377929510278c15fd5843b7929b",
+      "branch": "goldenpad/macos-diagnostics"
     }
   },
   "runtime": {
@@ -28,11 +28,11 @@
   "plume": {
     "ios": {
       "url": "https://github.com/chrissotraidis/plume.git",
-      "commit": "2477e5ae6d9972aa37c1e9c077a27e58051d3bae"
+      "commit": "2be7ba3366fe8f7ebe328b679793b3c3aa07ec3f"
     },
     "macos": {
       "url": "https://github.com/chrissotraidis/plume.git",
-      "commit": "aa0064be917115d09ae9b8a1323f80041325f195"
+      "commit": "734e8a670ff1ec5b641e0aeaba8ffdac0ff56e73"
     }
   }
 }

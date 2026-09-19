@@ -94,3 +94,17 @@ extern "C" void goldenpad_recomp_audio_stats(
         }
     }
 }
+
+extern "C" void goldenpad_diagnostics_flush() {}
+extern "C" const char *goldenpad_diagnostics_summary() { return "No linked game runtime in this renderer probe."; }
+extern "C" void goldenpad_recomp_prepare_diagnostics(const char *) {}
+// Keep the no-ROM reporting/renderer probe linkable without a game runtime.
+extern "C" int32_t goldenpad_recomp_netplay_runtime_ready() { return 0; }
+extern "C" void goldenpad_recomp_netplay_start_stream() {}
+extern "C" void goldenpad_recomp_set_determinism_probe_enabled(int32_t) {}
+extern "C" void goldenpad_recomp_set_touch_input_port(int32_t) {}
+extern "C" void goldenpad_recomp_audio_probe_stats(uint64_t *frames, uint64_t *jumps, uint64_t *errors) {
+    if (frames) *frames=0;
+    if (jumps) *jumps=0;
+    if (errors) *errors=0;
+}

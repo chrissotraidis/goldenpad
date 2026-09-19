@@ -36,7 +36,7 @@ test "$(plutil -extract CFBundleName raw "$plist")" = "GoldenPad"
 test "$executable_name" = "GoldenPad"
 test "$(plutil -extract CFBundleIdentifier raw "$plist")" = "com.chrissotraidis.goldenpad.macos"
 test "$(plutil -extract CFBundleShortVersionString raw "$plist")" = "0.1.0"
-test "$(plutil -extract CFBundleVersion raw "$plist")" = "2"
+test "$(plutil -extract CFBundleVersion raw "$plist")" = "${GOLDENPAD_RECOMP_MAC_BUILD_VERSION:-4}"
 test "$(plutil -extract LSMinimumSystemVersion raw "$plist")" = "13.0"
 
 if ! xcrun vtool -show-build "$executable" | grep -q 'platform MACOS'; then

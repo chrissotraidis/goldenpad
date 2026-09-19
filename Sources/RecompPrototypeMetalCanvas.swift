@@ -87,6 +87,11 @@ final class RecompPrototypeSurface: ObservableObject {
             status = "RT64 prototype: CAMetalLayer unavailable"
             return
         }
+        #if GOLDENPAD_RECOMP_AOT_LINKED
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("GoldenPadRecomp", isDirectory: true)
+        GoldenPadDiagnostics.start(at: support)
+        #endif
         let window = Unmanaged.passUnretained(view).toOpaque()
         let metalLayer = Unmanaged.passUnretained(layer).toOpaque()
         if let message = goldenPadRecompRT64Initialize(window, metalLayer) {
