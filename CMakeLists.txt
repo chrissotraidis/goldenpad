@@ -4,8 +4,10 @@ project(GoldenPad LANGUAGES Swift C CXX OBJCXX)
 set_source_files_properties(Support/RecompPrototype/performance_diagnostics.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 
 # Embed the exact configure-time source identity and immutable dependency pins.
-execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse HEAD
-    OUTPUT_VARIABLE GOLDENPAD_SOURCE_ID OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse HEAD
+        OUTPUT_VARIABLE GOLDENPAD_SOURCE_ID OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+endif()
 if(NOT GOLDENPAD_SOURCE_ID)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/source-manifest.json")
         file(READ "${CMAKE_CURRENT_SOURCE_DIR}/source-manifest.json" GOLDENPAD_ARCHIVE_MANIFEST)
@@ -15,8 +17,10 @@ if(NOT GOLDENPAD_SOURCE_ID)
     endif()
 endif()
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sources.lock.json" GOLDENPAD_SOURCE_LOCK)
-execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" status --porcelain --untracked-files=no
-    OUTPUT_VARIABLE GOLDENPAD_SOURCE_CHANGES ERROR_QUIET)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    execute_process(COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}" status --porcelain --untracked-files=no
+        OUTPUT_VARIABLE GOLDENPAD_SOURCE_CHANGES ERROR_QUIET)
+endif()
 if(GOLDENPAD_SOURCE_CHANGES)
     string(APPEND GOLDENPAD_SOURCE_ID " (modified build; not a release commit)")
 endif()
