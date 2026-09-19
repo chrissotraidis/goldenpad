@@ -100,7 +100,7 @@ void worker() {
             std::array<uint64_t,7> current{};
             int active,stage,menu; uint64_t flush;
             const auto now=Clock::now();
-            bool summarize=now-previousTime>=std::chrono::seconds(2);
+            bool summarize=s.enabled && now-previousTime>=std::chrono::seconds(2);
             if(summarize) goldenpad_diagnostics_refresh();
             {
                 std::unique_lock lock(s.mutex);
