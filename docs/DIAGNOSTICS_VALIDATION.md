@@ -67,3 +67,17 @@ collection overhead. CPU/GPU command timings are investigative evidence, not
 unique game FPS. Full GPU sampling is for focused local profiling; normal
 collection samples one in sixteen commands. See [measurement definitions and
 Apple references](PERFORMANCE_DIAGNOSTICS.md).
+
+## Local overhead screen
+
+Four fresh-process runs used the same private ROM/settings and title sequence,
+20 seconds warm-up followed by a 20-second process-CPU window, in off/on/on/off
+order. Off measured 82.913% and 80.807%; on measured 84.380% and 82.876%.
+Mean enabled CPU was 83.628% versus 81.860% disabled (2.16% relative increase).
+This short screen does **not** meet the proposed <2% acceptance threshold;
+run-to-run variation and uncontrolled host activity prevent a precise overhead
+claim. Keep the PR a draft pending longer matched gameplay measurements on
+the target devices. No build or package work ran during the four windows.
+An earlier all-command GPU experiment prompted the bounded one-in-sixteen
+sampling design; its preliminary control differed and is not a valid final
+comparison. The final control disables periodic system sampling correctly.
