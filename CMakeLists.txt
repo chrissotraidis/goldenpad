@@ -68,9 +68,9 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "11" CACHE STRING
+set(GOLDENPAD_RECOMP_BUILD_VERSION "12" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_MAC_BUILD_VERSION "4" CACHE STRING "Mac bundle build version")
+set(GOLDENPAD_RECOMP_MAC_BUILD_VERSION "5" CACHE STRING "Mac bundle build version")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
     "Bundle identifier used by the native GoldenPad Mac app")
 set(GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR "" CACHE PATH "Directory containing verified RT64 mobile archives for the prototype")

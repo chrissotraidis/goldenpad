@@ -203,3 +203,51 @@ problem before adopting message-policy changes; pair the two controller fixes
 with TD-07's ownership work; and instrument game-side audio only after a
 physical symptom with host counters. None of these findings is physical-device
 acceptance, an A12X repair, or a working Internet multiplayer service.
+
+## Validation and build integration — 2026-09-24
+
+The controller and queue findings were reproduced against the actual pinned
+runtime C++ sources, compiled with AddressSanitizer, UndefinedBehaviorSanitizer,
+and patterned automatic-variable initialization. The old source failed three
+behavior checks: multiple-controller masks, preserving pad values on disconnect,
+and delivering to an available queue behind a full queue. Reconnect and retained
+completion checks already passed.
+
+Two maintained-source commits now address those failures:
+
+- [`995a0f2`](https://github.com/chrissotraidis/GoldenEye64Recomp/commit/995a0f2):
+  accumulate every connected port in the initialization mask. On a failed read,
+  preserve the previous buttons/sticks but always update the error status;
+  leave channels outside `osContSetCh` untouched. This deliberately follows
+  GoldenEye's `lib/ge/src/libultrare/io/contreaddata.c`, rather than copying
+  upstream #117's omission of the error-status write.
+- [`7c56979d357097d32900ef4a3ec3aa6f84689ea9`](https://github.com/chrissotraidis/GoldenEye64Recomp/commit/7c56979d357097d32900ef4a3ec3aa6f84689ea9):
+  try each pending external message once per pass so a full destination does
+  not block another queue. Retain required completions and existing external
+  callers' delivery guarantee, but allow VI/AI notifications to expire when
+  their target is full. Replace the ineffective SP/DP retry loop with explicit
+  reliable enqueueing. Sanitizers also caught a legacy null-pointer expression
+  used for structure-member offsets; standard `offsetof` preserves the offsets
+  without that undefined behavior.
+
+[`scripts/test-runtime-reliability.sh`](../scripts/test-runtime-reliability.sh)
+now passes 11 checks against the real queue, input, and guest-memory bridge
+sources. Coverage includes all 16 connection masks, disconnect/reconnect,
+disabled channels, retained completion order, cross-queue progress, external
+waits, and 1,000 queued retraces followed by required completions. Scheduler
+operations are stubbed to fail on unexpected blocking; this is a focused host
+test, not a full scheduler or physical-gameplay test. Both sanitizers pass with
+recovery disabled.
+
+Full arm64 iPhoneOS and macOS apps were rebuilt from regenerated private AOT
+inputs and the pinned maintained runtime. Candidate bundle builds are iOS
+**12** and Mac **5**, named `0.1.0-runtime-reliability.1`. Both package audits
+pass, including generated control/tank/fire-rate patch checks, ROM exclusion,
+platform/dependency checks, and Mac ad-hoc signature verification. These are
+local candidate packages; this work does not replace the public Preview 10
+release or accept physical gameplay.
+
+TD-04 still needs a physical resume trace to connect its reported symptom to
+the queue defect. TD-07's host-side controller ownership and neutral-frame
+work remains separate. Audio pool telemetry, A12X repairs, and netplay changes
+were not adopted because this validation established no corresponding fix.
