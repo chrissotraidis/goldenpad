@@ -25,7 +25,7 @@ patches to copy.
 | --- | --- | --- |
 | [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp) | Public `main` is still `a787fe0d95e8278fcba5ba2d768fa6a606e75f55`, the upstream reference already recorded in `RESEARCH.md`. Its [v1.0.0 release](https://github.com/cblock85/GoldenEye64Recomp/releases/tag/v1.0.0) still lists sky/water, multiplayer UI, and some weapon cadence as known issues. | No newer upstream game patch to pull. GoldenPad's maintained fork and accepted cadence repair remain the relevant build. |
 | [RT64](https://github.com/rt64/rt64/compare/5473732a822a4423b5696e7cb18fecc425a59875...main) | Two commits after the historical base: an RDNA4 Vulkan workaround and [rejection of inverted or zero-size VI regions](https://github.com/rt64/rt64/commit/43373749dac9bbc1b653e6a02aed40a9e1783bed). | Adopted the VI validity guard in both maintained Apple RT64 forks; see follow-up below. The Vulkan change does not address Metal. The guard is not evidence of an A12X fix. |
-| [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime/commits/main/) | Recent upstream commits concern game modes, octagonal input, and CLI selection. GoldenPad uses a recovered, patched runtime snapshot recorded in `sources.lock.json`. | No direct reliability repair identified. Never swap this runtime independently of generated game code and the maintained forks. |
+| [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime/commits/main/) | GoldenPad uses a recovered, patched runtime snapshot recorded in `sources.lock.json`. A deeper source audit found older upstream controller and message-queue repairs absent from that snapshot. | See the read-only follow-up below. Never swap this runtime independently of generated game code and the maintained forks. |
 | [MGB64](https://github.com/akratch/mgb64) and [GoldenRecomp](https://github.com/kholdfuzion/GoldenRecomp) | MGB64 is archived as discontinued; GoldenRecomp's public branch has not gained a reproducible GoldenPad replacement pipeline. | Keep MGB64 as the existing Legacy comparison. Neither is a safer primary iOS replacement today. |
 | [GoldenEye 007 PC Port](https://github.com/jkdansereau/goldeneye-pc-port) | v0.3.0 is a new Windows/Linux N64-source release with reported 20-mission Agent completion. Its [known issues](https://github.com/jkdansereau/goldeneye-pc-port/releases/tag/v0.3.0) still include audio, culling, particles, and other rendering defects; it has no iOS or ARM release. | Use its reproducible findings for focused comparisons. Do not infer iOS performance or campaign completion for GoldenPad from its desktop result. |
 
@@ -157,3 +157,49 @@ built and linked for arm64 iPhoneOS and arm64 iPhone Simulator, and
 RT64 dependencies. No game-bearing app or physical-device gameplay was run for
 this change. Issue #9 crashes at the first Metal raster submission, a different
 path from this guard; it remains open until its own reproduction and trace.
+
+## Follow-up: deeper donor audit before another implementation
+
+This follow-up is research only. It compares source at GoldenPad `main`
+`5205187c4a0f997eb949b866c44f5bad230da06c` with public upstream commits;
+it adds no runtime or renderer change. The strongest findings relate to
+GoldenPad's existing controller, lifecycle, and audio debt.
+
+| Candidate | Source comparison | Decision and proof needed |
+| --- | --- | --- |
+| **Controller bitmask** | [N64ModernRuntime #134](https://github.com/N64Recomp/N64ModernRuntime/commit/4cf46bf7f49e9a05a97cbbb87b6f1fb8b536c8ad) changes `*pattern = 1 << controller` to `*pattern |= 1 << controller`. GoldenPad's `vendor/goldeneye/lib/N64ModernRuntime/ultramodern/src/input.cpp` still assigns, while its host can advertise P1-P4 in test or network modes. GoldenEye's `joy.c` consumes the initialization mask and later refreshes status. | A directly applicable boot-time correctness fix, but it does **not** implement stable controller ownership or cure the reported disconnect leak. First capture the mask and P1-P4 status at initialization and after a status refresh; test one, two, and four ports and disconnect/reconnect. Integrate only with TD-07's neutral-frame and physical ownership gate. |
+| **Absent-controller pad writes** | [N64ModernRuntime #117](https://github.com/N64Recomp/N64ModernRuntime/commit/ba2acaeb5c2a01db64abd9ec60f947381f5f452a) avoids copying button/stick data from a no-response pad. GoldenPad's `librecomp/src/cont.cpp` still copies every field even though `ultramodern/src/input.cpp` sets only `err_no` for a no-response pad. | Possible indeterminate button/stick bytes at disconnect. Trace the game's `errno` handling and previous sample before adopting upstream's exact write policy; this is not proof of a user-visible input leak by itself. Test no-response, reconnect, and held-input transitions with TD-07. |
+| **External message delivery** | [N64ModernRuntime #125](https://github.com/N64Recomp/N64ModernRuntime/commit/a849ecf511c43949597c379a2508f7e64f9cdf44) requeues completion, SI, timer, and PI messages on a full queue while allowing VI/AI retraces to be skipped. GoldenPad has its own `ultramodern/src/mesgqueue.cpp` pending FIFO: it retains **all** external messages and stops flushing at the first full target queue. `events.cpp` calls `osSendMesg` from non-game threads for VI/AI and SP/DP; that path enqueues and reports success before actual delivery. | A plausible head-of-line stall mechanism for TD-04, not a diagnosed cause. Build a bounded queue-full reproducer: fill the VI target, queue a retrace then an SP/DP completion, and observe whether the completion can advance. Compare GoldenPad's FIFO with upstream's selective policy and retain the game-specific no-lost-completion requirement. Then correlate a physical screenshot/resume stall with queue depth and wait-point evidence before changing the runtime. Do not cherry-pick the full upstream runtime. |
+| **Long-session audio state** | The N64 source PC port's [D322 investigation](https://github.com/jkdansereau/goldeneye-pc-port/commit/2d9e673129b153ec817637b75a63777470e7f01a) follows a full-campaign report of fading music and intermittent SFX. It distinguishes SFX soft-cap, event-queue, physical-voice, and output-queue health. GoldenPad currently exposes host ring, drop, and underrun counters, but not the game-side voice-pool counters. The PC port's issue remains open. | First capture GoldenPad's own audible failure with a timestamp and existing counters. If those remain healthy during the failure, a low-rate game-side voice/event-queue probe could distinguish pool drift from host output trouble. Do not import its mutex or source-port mixer assumptions: GoldenPad's `osSetIntMask_recomp` is a no-op and its audio backend differs. |
+
+The older [Plume argument-buffer fix](https://github.com/renderbag/plume/commit/561428b7d0499eaf96b17d04bd6aa594d3b1260f)
+is already present in GoldenPad's pinned iOS Metal source. Its newer
+[device-query change](https://github.com/renderbag/plume/commit/53605876aec40498e50944f9a6f96380928bcb37)
+addresses non-macOS and OS 27 selectors; it does not match issue #9's first
+`drawIndexedPrimitives` stack. No inspected upstream change proves an A12X
+repair. The full redacted crash trace and an A12-family reproduction remain the
+necessary gate.
+
+[goldeneye-native](https://github.com/seb-patron/goldeneye-native) is another
+active N64 *source port*, with an iOS Metal bring-up and a separate split-screen
+implementation. Its [netplay investigation](https://github.com/seb-patron/goldeneye-native/blob/main/docs/NETPLAY.md)
+reports identical input traces yet early lockstep divergence, including 0/5
+agreed two-process trials after seed and simulation-step fixes. It also found
+render-visibility state read by AI on a different cadence; moving that work to
+the tick did not eliminate desync. These are useful comparison tests for
+GoldenPad's frame-30 globals mismatch, not evidence that its patch applies to
+GoldenPad's static recompilation. GoldenPad's v4 word-by-word global capture
+remains the next online experiment. The project's README calls iOS a bring-up,
+not a proven alternative iOS release.
+
+[GoldenEye Metal](https://github.com/ysrdevs/goldeneye-metal) reaches first-
+mission gameplay with a native Mac Metal backend, but it recompiles the
+unreleased Xbox 360 game. Its renderer and runtime do not run GoldenPad's N64
+simulation. The announced GoldenEye Omniport repository still returned 404
+during this check, so there is no inspected source to evaluate.
+
+**Next implementation decision:** reproduce or falsify the queue ordering
+problem before adopting message-policy changes; pair the two controller fixes
+with TD-07's ownership work; and instrument game-side audio only after a
+physical symptom with host counters. None of these findings is physical-device
+acceptance, an A12X repair, or a working Internet multiplayer service.
