@@ -10,13 +10,13 @@
     "rt64-ios": {
       "path": "vendor/rt64-ios",
       "url": "https://github.com/chrissotraidis/rt64.git",
-      "commit": "0e90a15c987d8e8eb168e2d044eadc0c395b4f97",
+      "commit": "241fb1905f121e2af94a2b74baf2e9e46b1aee0f",
       "branch": "goldenpad/ios-diagnostics"
     },
     "rt64-macos": {
       "path": "vendor/rt64-macos",
       "url": "https://github.com/chrissotraidis/rt64.git",
-      "commit": "6e9b233868e3c377929510278c15fd5843b7929b",
+      "commit": "3baebf2a2843bd6c4b5ae84fc13e904894398370",
       "branch": "goldenpad/macos-diagnostics"
     }
   },
