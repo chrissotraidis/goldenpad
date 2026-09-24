@@ -24,21 +24,20 @@ patches to copy.
 | Source checked | Finding on 2026-09-24 | GoldenPad decision |
 | --- | --- | --- |
 | [GoldenEye64Recomp](https://github.com/cblock85/GoldenEye64Recomp) | Public `main` is still `a787fe0d95e8278fcba5ba2d768fa6a606e75f55`, the upstream reference already recorded in `RESEARCH.md`. Its [v1.0.0 release](https://github.com/cblock85/GoldenEye64Recomp/releases/tag/v1.0.0) still lists sky/water, multiplayer UI, and some weapon cadence as known issues. | No newer upstream game patch to pull. GoldenPad's maintained fork and accepted cadence repair remain the relevant build. |
-| [RT64](https://github.com/rt64/rt64/compare/5473732a822a4423b5696e7cb18fecc425a59875...main) | Two commits after the historical base: an RDNA4 Vulkan workaround and [rejection of inverted or zero-size VI regions](https://github.com/rt64/rt64/commit/43373749dac9bbc1b653e6a02aed40a9e1783bed). | The Vulkan change does not address Metal. Check whether GoldenPad's maintained RT64 fork already has an equivalent VI guard; consider the other change only if a captured invalid VI reaches the present queue. Neither is evidence of an A12X fix. |
+| [RT64](https://github.com/rt64/rt64/compare/5473732a822a4423b5696e7cb18fecc425a59875...main) | Two commits after the historical base: an RDNA4 Vulkan workaround and [rejection of inverted or zero-size VI regions](https://github.com/rt64/rt64/commit/43373749dac9bbc1b653e6a02aed40a9e1783bed). | Adopted the VI validity guard in both maintained Apple RT64 forks; see follow-up below. The Vulkan change does not address Metal. The guard is not evidence of an A12X fix. |
 | [N64ModernRuntime](https://github.com/N64Recomp/N64ModernRuntime/commits/main/) | Recent upstream commits concern game modes, octagonal input, and CLI selection. GoldenPad uses a recovered, patched runtime snapshot recorded in `sources.lock.json`. | No direct reliability repair identified. Never swap this runtime independently of generated game code and the maintained forks. |
 | [MGB64](https://github.com/akratch/mgb64) and [GoldenRecomp](https://github.com/kholdfuzion/GoldenRecomp) | MGB64 is archived as discontinued; GoldenRecomp's public branch has not gained a reproducible GoldenPad replacement pipeline. | Keep MGB64 as the existing Legacy comparison. Neither is a safer primary iOS replacement today. |
 | [GoldenEye 007 PC Port](https://github.com/jkdansereau/goldeneye-pc-port) | v0.3.0 is a new Windows/Linux N64-source release with reported 20-mission Agent completion. Its [known issues](https://github.com/jkdansereau/goldeneye-pc-port/releases/tag/v0.3.0) still include audio, culling, particles, and other rendering defects; it has no iOS or ARM release. | Use its reproducible findings for focused comparisons. Do not infer iOS performance or campaign completion for GoldenPad from its desktop result. |
 
 ## Specific findings worth testing
 
-1. **Mac mouse input — medium priority, directly relevant to TD-08.** The PC
+1. **Mac mouse input — reference for TD-08, no current transplant.** The PC
    port's [direct-look change](https://github.com/jkdansereau/goldeneye-pc-port/commit/fec396f53b)
    reports that slow mouse movement was lost and fast movement saturated; its
-   v0.3.0 release says a new mouse path improved both. GoldenPad already has a
-   measured horizontal yaw limit and an accepted control contract. First record
-   raw delta, queued units, normalized output, and final yaw on one fixed Mac
-   scene. Only if that reproduces the same loss class, evaluate a Mac-only
-   adaptation at GoldenPad's existing input seam. Do not write camera/player
+   v0.3.0 release says a new mouse path improved both. GoldenPad already has an
+   accepted Mac control repair, which the technical-debt ledger says to freeze.
+   If TD-08 is reopened, first record raw delta, queued units, normalized
+   output, and final yaw on one fixed Mac scene. Do not write camera/player
    fields directly or change iOS touch semantics.
 
 2. **Long-session and mission-transition stability — medium priority as an
@@ -56,11 +55,16 @@ patches to copy.
 
 3. **Audio under load — conditional, relevant to TD-05.** The PC release
    describes a sound-preemption pointer crash on Steam Deck and still lists
-   gunshot cadence and intermittent silence as open. The source port's native
-   pointer representation differs from GoldenPad's emulated N64 memory. Use
-   sustained PP7/AK47 fire near a looping alarm as a reproducible *listening*
-   scene if GoldenPad's reported static or silence recurs. Correlate its own
-   ring/underrun/route counters; do not transplant a pointer guard blindly.
+   gunshot cadence and intermittent silence as open. Its [D285 repair](https://github.com/jkdansereau/goldeneye-pc-port/commit/1970ab3732f4)
+   protects a sound-list reader from a concurrent writer with `osSetIntMask`.
+   GoldenPad's game source has the same reader/writer pattern, but its
+   N64ModernRuntime `osSetIntMask_recomp` is a no-op. Copying that one call
+   would provide no synchronization here. First establish whether those paths
+   run concurrently in GoldenPad; if so, design a focused synchronization
+   repair and stress it under sound bursts. Also use sustained PP7/AK47 fire
+   near a looping alarm as a *listening* scene for the existing static/silence
+   report, with ring/underrun/route counters. The PC port's native pointer
+   representation differs from GoldenPad's emulated N64 memory.
 
 4. **Visual parity — narrow, lower priority than observed GoldenPad defects.**
    The PC release reports fixes to IA4 texture decoding, near-plane portal
@@ -121,8 +125,8 @@ future work and does not plan internet multiplayer today.
 1. Finish current GoldenPad reproducibility, A12X, audio, lifecycle, and
    observed renderer evidence gates from `TECH_DEBT.md`. No upstream release
    closes them on its own.
-2. Run a small Mac mouse-loss comparison against the PC port's diagnosed class;
-   change only the measured seam if the mechanism matches.
+2. Keep the accepted Mac controls frozen. Reopen the PC port mouse comparison
+   only if a GoldenPad reproduction justifies it.
 3. Add the PC port's named mission and audio scenes to a bounded manual
    regression list. Promote a fix only for a GoldenPad reproduction.
 4. Resume LAN v4 diagnostics separately from product builds. After physical
@@ -134,3 +138,22 @@ diffs, GitHub issue state, and GoldenPad's maintained-source lock and technical
 debt. No external executable was installed or run; no native-port performance,
 campaign, online-server availability, or hardware compatibility claim was
 independently reproduced in this pass.
+
+## Follow-up: RT64 VI present guard adopted on 2026-09-24
+
+The maintained iOS and Mac RT64 forks had no equivalent to upstream's
+[VI validity guard](https://github.com/rt64/rt64/commit/43373749dac9bbc1b653e6a02aed40a9e1783bed).
+The patch now requires a visible VI to have positive framebuffer width and
+height before it enters the present path. Valid frames retain the same path.
+The fork commits are
+[`241fb1905f121e2af94a2b74baf2e9e46b1aee0f`](https://github.com/chrissotraidis/rt64/commit/241fb1905f121e2af94a2b74baf2e9e46b1aee0f)
+for iOS and
+[`3baebf2a2843bd6c4b5ae84fc13e904894398370`](https://github.com/chrissotraidis/rt64/commit/3baebf2a2843bd6c4b5ae84fc13e904894398370)
+for Mac; `sources.lock.json` pins both exact commits.
+
+`scripts/check-sources.py` passed. The maintained iOS static RT64 library
+built and linked for arm64 iPhoneOS and arm64 iPhone Simulator, and
+`scripts/build-recomp-macos-dependencies.sh` built the arm64 Mac runtime and
+RT64 dependencies. No game-bearing app or physical-device gameplay was run for
+this change. Issue #9 crashes at the first Metal raster submission, a different
+path from this guard; it remains open until its own reproduction and trace.
