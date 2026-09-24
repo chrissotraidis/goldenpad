@@ -4,7 +4,7 @@
     "goldeneye": {
       "path": "vendor/goldeneye",
       "url": "https://github.com/chrissotraidis/GoldenEye64Recomp.git",
-      "commit": "b698234f1c8bf3bd5e69fca3588cbc871e652ed6",
+      "commit": "7c56979d357097d32900ef4a3ec3aa6f84689ea9",
       "branch": "goldenpad/apple-diagnostics"
     },
     "rt64-ios": {
