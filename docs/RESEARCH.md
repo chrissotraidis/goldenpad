@@ -4,6 +4,10 @@ Last reconciled: 2026-08-22. Upstream source checkouts live under ignored
 reference or temporary directories and are never copied wholesale into the
 tracked repository.
 
+The [2026-09-24 native-port research update](NATIVE_PORT_RESEARCH_2026-09-24.md)
+checks newer releases, concrete reliability findings, upstream adoption value,
+and the preserved LAN netplay restart point against the Preview 10 baseline.
+
 ## Decision
 
 GoldenPad's primary Preview 3 runtime uses **GoldenEye64Recomp at
