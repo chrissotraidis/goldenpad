@@ -1,6 +1,6 @@
 # Release checklist
 
-GoldenPad 0.1.0 Preview 6 is the current coordinated release. It is a
+GoldenPad 0.1.0 Preview 11 is the current mobile release; the public Mac binary remains Preview 9. See [the release record](RELEASE_NOTES_0.1.0-preview.11.md). The completed checklists below are historical. It is a
 developer preview, not an App Store/TestFlight release. `GoldenPad Legacy`
 remains a fallback artifact and must not be presented as primary.
 

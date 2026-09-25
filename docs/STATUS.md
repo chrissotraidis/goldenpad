@@ -1,8 +1,12 @@
 # Status
 
-Updated: 2026-08-28
+Updated: 2026-09-25
 
-## Current at a glance
+## Preview 11 release baseline
+
+The approved iPhone/iPad release is Preview 11, build 12. See the [release record](RELEASE_NOTES_0.1.0-preview.11.md) for runtime changes, physical iPad acceptance, preservation evidence, and limitations. The public Mac binary remains Preview 9. The tables below preserve the older Preview 8 checkpoint and are not the current release index.
+
+## Historical Preview 8 checkpoint
 
 | Surface | Current truth |
 | --- | --- |

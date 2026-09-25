@@ -251,3 +251,7 @@ TD-04 still needs a physical resume trace to connect its reported symptom to
 the queue defect. TD-07's host-side controller ownership and neutral-frame
 work remains separate. Audio pool telemetry, A12X repairs, and netplay changes
 were not adopted because this validation established no corresponding fix.
+
+## Preview 11 promotion — September 25, 2026
+
+The owner tested build 12 on the physical iPad, reported it working fine, and approved promotion to Preview 11. Both ROM copies, both saves, preferences, and all other backed-up files were byte-identical after the in-place update. This supersedes the local-candidate-only status above for iOS; the Mac candidate remains unpublished. See the [release record](RELEASE_NOTES_0.1.0-preview.11.md) for the exact acceptance boundary.
