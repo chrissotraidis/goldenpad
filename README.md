@@ -72,7 +72,7 @@ computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
    Use AltStore Classic with AltServer, not AltStore PAL. PAL cannot install an
    arbitrary unsigned `.ipa` downloaded from GitHub.
 2. Download
-   [`GoldenPad-0.1.0-preview.10-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.10/GoldenPad-0.1.0-preview.10-unsigned.ipa).
+   [`GoldenPad-0.1.0-preview.11-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.11/GoldenPad-0.1.0-preview.11-unsigned.ipa).
    This is the iPhone/iPad app. Do not download the separate Mac `.zip`.
 3. Open AltStore Classic on the device, go to **My Apps**, tap **+**, and choose
    the downloaded GoldenPad `.ipa` from Files. Follow iOS's prompts to trust
@@ -118,15 +118,19 @@ They illustrate rendering and controls. The ROM and extracted retail media used
 to produce them are not distributed in the repository or app package; the app
 includes statically recompiled game code.
 
+## Latest mobile release
+
+[Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md) adds targeted runtime controller, message-queue and rendering-validity fixes. The owner accepted build 12 on a physical iPad; existing game data and settings were verified intact.
+
 ## Install status
 
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
-| Local iPhone/iPad build | **Preview 10, build 11** | Updated in place and accepted by the owner on physical iPad; saves/settings preserved. New bounded performance logging and GitHub reporting. |
+| Local iPhone/iPad build | **Preview 11, build 12** | Updated in place and accepted by the owner on physical iPad; saves/settings preserved. Controller-read, message-queue and invalid-video-region fixes. |
 | Native Apple-Silicon Mac build | **Preview 9 Alpha** | [Download the arm64 Mac Alpha](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.9/GoldenPad-0.1.0-preview.9-macos-arm64-alpha.zip). Automatic original-ROM conversion is included; mouse, rendering-edge and performance limitations remain. |
-| Unsigned `.ipa` | **Preview 10** | The release passed the documented package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
-| GitHub release | **Preview 10 iOS/iPadOS; Preview 9 Mac** | [iOS release, sources and checksums](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.10). Mac downloads remain on Preview 9. |
+| Unsigned `.ipa` | **Preview 11** | The release passed the documented package audits; follow [Play on iPhone or iPad](#play-on-iphone-or-ipad). |
+| GitHub release | **Preview 11 iOS/iPadOS; Preview 9 Mac** | [iOS release, sources and checksums](https://github.com/chrissotraidis/goldenpad/releases/tag/v0.1.0-preview.11). Mac downloads remain on Preview 9. |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
 The mobile baseline was accepted through normal single-player gameplay on a
@@ -180,11 +184,11 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ## Release files and advanced setup
 
-### Preview 10 mobile download
+### Preview 11 mobile download
 
 Download
-[`GoldenPad-0.1.0-preview.10-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.10/GoldenPad-0.1.0-preview.10-unsigned.ipa)
-and the release’s `GoldenPad-0.1.0-preview.10-SHA256SUMS.txt`. The IPA is intentionally unsigned. Follow
+[`GoldenPad-0.1.0-preview.11-unsigned.ipa`](https://github.com/chrissotraidis/goldenpad/releases/download/v0.1.0-preview.11/GoldenPad-0.1.0-preview.11-unsigned.ipa)
+and the release’s `GoldenPad-0.1.0-preview.11-SHA256SUMS.txt`. The IPA is intentionally unsigned. Follow
 [Play on iPhone or iPad](#play-on-iphone-or-ipad) for the supported AltStore
 Classic installation path.
 
