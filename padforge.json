@@ -4,7 +4,7 @@
   "name": "GoldenPad",
   "game": "GoldenEye 007 (N64, US retail)",
   "kind": "disc-translation",
-  "status": "draft-untested",
+  "status": "experimental",
   "inputs": [
     {
       "type": "n64-rom",
@@ -21,10 +21,25 @@
   "targets": {
     "ios": {
       "hosts": {
-        "macos-arm64": "planned",
+        "macos-arm64": "experimental",
         "linux-x86_64": "planned",
         "windows-x86_64": "planned"
-      }
+      },
+      "command": [
+        "/bin/bash",
+        "{repo}/scripts/build-personal-ipa.sh",
+        "--rom",
+        "{disc}",
+        "--work",
+        "{work}",
+        "--output",
+        "{output}"
+      ],
+      "modes": {
+        "full": []
+      },
+      "output": "ipa",
+      "check": "ipa"
     },
     "macos": {
       "hosts": {
@@ -86,7 +101,7 @@
     "compile",
     "package"
   ],
-  "notes": "No single personal-build command exists yet. Documented steps: scripts/bootstrap-sources.sh, TLB-free conversion with GoldenEye64Recomp's pinned xdelta, scripts/generate-recomp-inputs.sh, runtime and RT64 archive builds, scripts/build-recomp-apple.sh ios, then packaging. See docs/BUILDING.md and docs/RT64_N64RECOMP_PROTOTYPE.md.",
+  "notes": "scripts/build-personal-ipa.sh chains scripts/bootstrap-sources.sh, TLB-free conversion with the pinned fork's vanilla_to_tlbfree.xdelta (identical to upstream a787fe0), scripts/generate-recomp-inputs.sh, runtime and RT64 archive builds, scripts/build-recomp-apple.sh ios and the existing package checks. See docs/BUILDING.md.",
   "publication": {
     "public_binaries": false,
     "reason": "The primary app contains game code translated from the player's ROM; public releases are source only."

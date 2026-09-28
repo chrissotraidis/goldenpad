@@ -8,6 +8,21 @@ longer a required checkout. Private generated inputs can be rebuilt with
 `scripts/build-recomp-apple.sh ios /private/generated-directory` or
 `scripts/build-recomp-apple.sh macos /private/generated-directory`.
 
+## Personal iPhone/iPad build (one command)
+
+```sh
+scripts/build-personal-ipa.sh --rom "/path/to/your/GoldenEye 007 (US).z64" \
+  --output "$PWD/build-personal/GoldenPad-personal.ipa"
+```
+
+It accepts `.z64`, `.v64` or `.n64` byte order, checks the US retail SHA-1,
+converts the ROM with the pinned `vanilla_to_tlbfree.xdelta` and checks the
+result, then runs the steps below and the existing package checks. All
+ROM-derived files stay under `build-personal/`. The IPA is unsigned and
+contains game code translated from your ROM: sign it for your own device and
+never publish it. Requires `xdelta3` and Homebrew `llvm` and `lld` for the
+MIPS patch build.
+
 GoldenPad's primary iPhone/iPad runtime is the recomp/RT64 target documented in
 [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). Its internal target
 name remains `GoldenPadRecompPrototype`, but the installed product is
