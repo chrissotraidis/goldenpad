@@ -4,7 +4,7 @@
   "name": "GoldenPad",
   "game": "GoldenEye 007 (N64, US retail)",
   "kind": "disc-translation",
-  "status": "draft-untested",
+  "status": "experimental",
   "inputs": [
     {
       "type": "n64-rom",
