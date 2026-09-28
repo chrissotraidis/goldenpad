@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "goldenpad",
+  "name": "GoldenPad",
+  "game": "GoldenEye 007 (N64, US retail)",
+  "kind": "disc-translation",
+  "status": "draft-untested",
+  "inputs": [
+    {
+      "type": "n64-rom",
+      "formats": [
+        "z64",
+        "v64",
+        "n64",
+        "rom"
+      ],
+      "when": "build",
+      "description": "Your own US retail GoldenEye 007 ROM (normalized SHA-1 abe01e4aeb033b6c0836819f549c791b26cfde83). The primary build converts it privately and translates it with N64Recomp; the app also imports it on first launch."
+    }
+  ],
+  "targets": {
+    "ios": {
+      "hosts": {
+        "macos-arm64": "planned",
+        "linux-x86_64": "planned",
+        "windows-x86_64": "planned"
+      }
+    },
+    "macos": {
+      "hosts": {
+        "macos-arm64": "planned"
+      }
+    }
+  },
+  "requirements": {
+    "disk_gb": 20,
+    "tools": [
+      {
+        "name": "git",
+        "version_args": [
+          "--version"
+        ]
+      },
+      {
+        "name": "cmake",
+        "version_args": [
+          "--version"
+        ],
+        "min_version": "3.28"
+      },
+      {
+        "name": "ninja",
+        "version_args": [
+          "--version"
+        ]
+      },
+      {
+        "name": "python3",
+        "version_args": [
+          "--version"
+        ]
+      },
+      {
+        "name": "xdelta3",
+        "version_args": [
+          "-V"
+        ]
+      },
+      {
+        "name": "xcodebuild",
+        "version_args": [
+          "-version"
+        ],
+        "note": "Install Xcode and its iOS platform"
+      }
+    ]
+  },
+  "stages": [
+    "preflight",
+    "dependencies",
+    "convert-rom",
+    "translate",
+    "patch-generated",
+    "runtime",
+    "renderer",
+    "compile",
+    "package"
+  ],
+  "notes": "No single personal-build command exists yet. Documented steps: scripts/bootstrap-sources.sh, TLB-free conversion with GoldenEye64Recomp's pinned xdelta, scripts/generate-recomp-inputs.sh, runtime and RT64 archive builds, scripts/build-recomp-apple.sh ios, then packaging. See docs/BUILDING.md and docs/RT64_N64RECOMP_PROTOTYPE.md.",
+  "publication": {
+    "public_binaries": false,
+    "reason": "The primary app contains game code translated from the player's ROM; public releases are source only."
+  }
+}
