@@ -32,7 +32,7 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>$(GOLDENPAD_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(GOLDENPAD_RECOMP_BUILD_VERSION)</string>
     <key>LSApplicationCategoryType</key>

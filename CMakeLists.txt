@@ -68,7 +68,11 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-set(GOLDENPAD_RECOMP_BUILD_VERSION "12" CACHE STRING
+# One version for the app, its release and PadForge: version.json.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.json" goldenpad_version_json)
+string(JSON GOLDENPAD_VERSION GET "${goldenpad_version_json}" version)
+string(JSON goldenpad_version_build GET "${goldenpad_version_json}" build)
+set(GOLDENPAD_RECOMP_BUILD_VERSION "${goldenpad_version_build}" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUILD_VERSION "5" CACHE STRING "Mac bundle build version")
 set(GOLDENPAD_RECOMP_MAC_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.macos" CACHE STRING
@@ -552,7 +556,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_BUNDLE_NAME "GoldenPad"
         MACOSX_BUNDLE_GUI_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${GOLDENPAD_VERSION}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${GOLDENPAD_RECOMP_BUILD_VERSION}"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Config/RecompPrototypeInfo.plist.in"
         XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "${goldenpad_recomp_code_signing_allowed}"
@@ -563,6 +567,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         XCODE_ATTRIBUTE_GENERATE_INFOPLIST_FILE "NO"
         XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_DISPLAY_NAME "${GOLDENPAD_RECOMP_DISPLAY_NAME}"
         XCODE_ATTRIBUTE_GOLDENPAD_RECOMP_BUILD_VERSION "${GOLDENPAD_RECOMP_BUILD_VERSION}"
+        XCODE_ATTRIBUTE_GOLDENPAD_VERSION "${GOLDENPAD_VERSION}"
         XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "17.0"
         XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER}"
         XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
