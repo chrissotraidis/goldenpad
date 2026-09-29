@@ -51,21 +51,29 @@ and Xbox/MFi controller support. The earlier MGB64/Fast3D app is retained as
 the primary development version.
 
 > **Development boundary:** generated AOT source and retail-derived data are
-> never committed. GoldenPad preview artifacts distribute a compiled runtime
-> only; they contain
-> no ROM, save, extracted retail media, provisioning profile, or signing
-> identity. No official, commercial, or App Store clearance is claimed.
+> never committed. Releases publish the build recipe only; everyone builds
+> their own app from their own ROM with PadForge. No official, commercial, or
+> App Store clearance is claimed.
 
 ## Play on iPhone or iPad
 
-You need an iPhone or iPad running iOS/iPadOS 17 or later, a Mac or Windows
-computer, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
+You need an iPhone or iPad running iOS/iPadOS 17 or later, an Apple Silicon
+Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
 
 > **No jailbreak or JIT is required. Do not search for a TLB-free ROM.**
 > Preview 9 accepts your ordinary `.z64`, `.v64`, `.n64`, or `.rom` dump and
 > prepares the required private runtime copy automatically on the device.
 
-Previous builds have been retired; a new version is in progress.
+Releases publish no app: GoldenPad contains code translated from the game, so
+you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
+`brew install cmake ninja xdelta`, download
+[PadForge](https://github.com/chrissotraidis/padforge/releases/latest), unzip it,
+double-click `PadForge.command`, choose GoldenPad and pick your ROM. PadForge
+builds GoldenPad from this repository's
+[latest release](https://github.com/chrissotraidis/goldenpad/releases/latest) and
+saves an unsigned IPA in the folder you choose. Install it with AltStore Classic,
+SideStore or Sideloadly, then choose the same ROM in the app on first launch.
+The IPA contains code translated from your ROM: it is yours alone; never share it.
 
 Apps signed through AltStore Classic with a free Apple ID normally need to be
 refreshed every seven days and count toward Apple's three-active-app limit.
@@ -111,6 +119,7 @@ includes statically recompiled game code.
 | Option | Status | What to do |
 |---|---|---|
 | Local Simulator build | **Verified** | Build with the complete verifier below, then run from Xcode or `simctl`. |
+| Make your own with PadForge | **Available** | See [Play on iPhone or iPad](#play-on-iphone-or-ipad). Releases hold the recipe only. |
 | Local iPhone/iPad build | **Preview 11, build 12** | Updated in place and accepted by the owner on physical iPad; saves/settings preserved. Controller-read, message-queue and invalid-video-region fixes. |
 | App Store / TestFlight | **Not announced** | Store distribution requires separate rights, signing, review, and device acceptance. |
 
@@ -167,7 +176,7 @@ emulator. Another N64 game or GoldenEye revision cannot be substituted.
 
 ### Mobile download
 
-Previous builds have been retired; a new version is in progress.
+Make your own IPA with PadForge (see [Play on iPhone or iPad](#play-on-iphone-or-ipad)).
 
 On first launch, choose your own original NTSC-U retail ROM from Files.
 GoldenPad recognizes `.z64`, `.v64`, `.n64`, and `.rom` byte orders, performs
@@ -555,7 +564,9 @@ retained only as the deprecated legacy fallback.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-Previous builds have been retired; a new version is in progress.
+There is no public IPA: the app contains code translated from the game, so
+PadForge builds your own from your ROM on an Apple Silicon Mac. See
+[Play on iPhone or iPad](#play-on-iphone-or-ipad).
 </details>
 
 <details>

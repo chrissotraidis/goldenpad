@@ -9,7 +9,9 @@ fi
 ipa_path=$1
 expected_display_name=${GOLDENPAD_EXPECTED_DISPLAY_NAME:-GoldenPad}
 expected_bundle_identifier=${GOLDENPAD_EXPECTED_BUNDLE_IDENTIFIER:-com.chrissotraidis.goldenpad.recomp-prototype}
-expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-12}
+version_file="$(cd "$(dirname "$0")/.." && pwd)/version.json"
+expected_version=${GOLDENPAD_EXPECTED_VERSION:-$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$version_file")}
+expected_build_version=${GOLDENPAD_EXPECTED_BUILD_VERSION:-$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["build"])' "$version_file")}
 expected_metal_target=${GOLDENPAD_EXPECTED_METAL_TARGET:-apple-ios17.0.0}
 if [ ! -f "$ipa_path" ] || [[ "$ipa_path" != *.ipa ]]; then
   echo "Expected an existing .ipa file: $ipa_path" >&2
@@ -35,7 +37,7 @@ fi
 
 test "$(plutil -extract CFBundleDisplayName raw "$app_path/Info.plist")" = "$expected_display_name"
 test "$(plutil -extract CFBundleIdentifier raw "$app_path/Info.plist")" = "$expected_bundle_identifier"
-test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "0.1.0"
+test "$(plutil -extract CFBundleShortVersionString raw "$app_path/Info.plist")" = "$expected_version"
 test "$(plutil -extract CFBundleVersion raw "$app_path/Info.plist")" = "$expected_build_version"
 test "$(plutil -extract UIFileSharingEnabled raw "$app_path/Info.plist")" = "true"
 test "$(plutil -extract LSSupportsOpeningDocumentsInPlace raw "$app_path/Info.plist")" = "true"
