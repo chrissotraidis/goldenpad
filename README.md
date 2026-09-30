@@ -65,7 +65,8 @@ Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 
 > prepares the required private runtime copy automatically on the device.
 
 Releases publish no app: GoldenPad contains code translated from the game, so
-you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
+you make your own from your own ROM. On an Apple Silicon Mac with
+Xcode (plus its Metal Toolchain: `xcodebuild -downloadComponent MetalToolchain`) and
 `brew install cmake ninja xdelta sdl2`, download
 [PadMint](https://github.com/chrissotraidis/padmint/releases/latest), unzip it,
 double-click `PadMint.command`, choose GoldenPad and pick your ROM. PadMint
