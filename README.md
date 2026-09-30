@@ -112,7 +112,7 @@ includes statically recompiled game code.
 
 ## Latest mobile release
 
-GoldenPad 0.2.1 (build 14) is easier to make: PadMint 0.2.1 downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. The game is the same as 0.2.0. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md).
+GoldenPad 0.2.1 (build 14) is easier to make: PadMint (0.2.2 or newer) downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. The game is the same as 0.2.0. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md).
 
 ## Install status
 
