@@ -68,7 +68,7 @@ set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prot
     "Bundle identifier used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
     "Display name used by the isolated recompilation prototype")
-# One version for the app, its release and PadForge: version.json.
+# One version for the app, its release and PadMint: version.json.
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.json" goldenpad_version_json)
 string(JSON GOLDENPAD_VERSION GET "${goldenpad_version_json}" version)
 string(JSON goldenpad_version_build GET "${goldenpad_version_json}" build)
