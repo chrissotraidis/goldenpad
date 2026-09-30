@@ -66,8 +66,7 @@ Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 
 
 Releases publish no app: GoldenPad contains code translated from the game, so
 you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
-`brew install cmake ninja xdelta` (PadMint 0.2.0 also needs `brew install llvm lld`;
-later PadMint versions download LLVM themselves), download
+`brew install cmake ninja xdelta`, download
 [PadMint](https://github.com/chrissotraidis/padmint/releases/latest), unzip it,
 double-click `PadMint.command`, choose GoldenPad and pick your ROM. PadMint
 builds GoldenPad from this repository's
@@ -113,7 +112,7 @@ includes statically recompiled game code.
 
 ## Latest mobile release
 
-[Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md) adds targeted runtime controller, message-queue and rendering-validity fixes. The owner accepted build 12 on a physical iPad; existing game data and settings were verified intact.
+GoldenPad 0.2.1 (build 14) is easier to make: PadMint 0.2.1 downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. The game is the same as 0.2.0. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md).
 
 ## Install status
 
