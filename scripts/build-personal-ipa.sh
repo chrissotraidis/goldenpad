@@ -27,6 +27,8 @@ done
 [ -n "$rom" ] && [ -n "$output" ] || usage
 [ -f "$rom" ] || { echo "ROM not found: $rom" >&2; exit 1; }
 command -v xdelta3 >/dev/null || { echo 'xdelta3 is required (brew install xdelta)' >&2; exit 1; }
+. "$repo_root/scripts/mips-llvm.sh"
+goldenpad_find_mips_llvm || exit 1
 mkdir -p "$work"
 work=$(cd "$work" && pwd)
 

@@ -20,8 +20,10 @@ converts the ROM with the pinned `vanilla_to_tlbfree.xdelta` and checks the
 result, then runs the steps below and the existing package checks. All
 ROM-derived files stay under `build-personal/`. The IPA is unsigned and
 contains game code translated from your ROM: sign it for your own device and
-never publish it. Requires `xdelta3` and Homebrew `llvm` and `lld` for the
-MIPS patch build.
+never publish it. Requires `xdelta3`, and LLVM's `clang` and `ld.lld` for the
+MIPS patch build (Apple's clang cannot target MIPS). PadMint downloads LLVM
+itself; by hand, `brew install llvm lld` or set `PADMINT_LLVM_ROOT` to an LLVM
+folder. `scripts/mips-llvm.sh` says which one it uses.
 
 GoldenPad's primary iPhone/iPad runtime is the recomp/RT64 target documented in
 [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). Its internal target

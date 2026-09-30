@@ -35,6 +35,9 @@
         "--output",
         "{output}"
       ],
+      "tools": [
+        "llvm"
+      ],
       "modes": {
         "full": []
       },
