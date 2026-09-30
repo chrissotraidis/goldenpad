@@ -72,7 +72,7 @@ later PadMint versions download LLVM themselves), download
 double-click `PadMint.command`, choose GoldenPad and pick your ROM. PadMint
 builds GoldenPad from this repository's
 [latest release](https://github.com/chrissotraidis/goldenpad/releases/latest) and
-saves an unsigned IPA in the folder you choose. Install it with AltStore Classic,
+saves an unsigned IPA in your Downloads folder. Install it with AltStore Classic,
 SideStore or Sideloadly, then choose the same ROM in the app on first launch.
 The IPA contains code translated from your ROM: it is yours alone; never share it.
 
