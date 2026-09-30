@@ -66,7 +66,7 @@ Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 
 
 Releases publish no app: GoldenPad contains code translated from the game, so
 you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
-`brew install cmake ninja xdelta`, download
+`brew install cmake ninja xdelta sdl2`, download
 [PadMint](https://github.com/chrissotraidis/padmint/releases/latest), unzip it,
 double-click `PadMint.command`, choose GoldenPad and pick your ROM. PadMint
 builds GoldenPad from this repository's
@@ -271,10 +271,11 @@ You need:
 - an Apple development team for a signed physical-device build; and
 - your own legally acquired supported US retail GoldenEye 007 N64 dump.
 
-Install CMake, then clone the repository:
+Install CMake, Ninja and SDL2 (the renderer's shader step looks for SDL2), then
+clone the repository:
 
 ```sh
-brew install cmake
+brew install cmake ninja sdl2
 git clone https://github.com/chrissotraidis/goldenpad.git
 cd goldenpad
 ```
