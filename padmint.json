@@ -64,13 +64,17 @@
         "version_args": [
           "--version"
         ],
-        "min_version": "3.28"
+        "min_version": "3.28",
+        "player": true,
+        "note": "Install CMake 3.28 or newer: brew install cmake"
       },
       {
         "name": "ninja",
         "version_args": [
           "--version"
-        ]
+        ],
+        "player": true,
+        "note": "Install Ninja: brew install ninja"
       },
       {
         "name": "python3",
@@ -82,7 +86,17 @@
         "name": "xdelta3",
         "version_args": [
           "-V"
-        ]
+        ],
+        "player": true,
+        "note": "Install xdelta: brew install xdelta"
+      },
+      {
+        "name": "sdl2-config",
+        "version_args": [
+          "--version"
+        ],
+        "player": true,
+        "note": "Install SDL2: brew install sdl2"
       },
       {
         "name": "xcodebuild",
