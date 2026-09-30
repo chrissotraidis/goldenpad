@@ -6,6 +6,9 @@ rom=$1
 output=$2
 [ ! -e "$output" ] || { echo 'Output must be new; refusing to overwrite private inputs.' >&2; exit 1; }
 [ "$(shasum -a 256 "$rom" | awk '{print $1}')" = 7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959 ] || { echo 'Unsupported prepared ROM.' >&2; exit 1; }
+. "$repo_root/scripts/mips-llvm.sh"
+goldenpad_find_mips_llvm || exit 1
+echo "N64 patch compiler: $GOLDENPAD_MIPS_CC, linker: $GOLDENPAD_MIPS_LD"
 python3 "$repo_root/scripts/check-sources.py" --component goldeneye --component rt64-ios
 source="$repo_root/vendor/goldeneye"
 tools="$repo_root/build-recomp-tools"
@@ -32,7 +35,7 @@ cp "$rom" "$output/ge007.tlbfree.z64"
 "$tools/N64Recomp" "$output/us.toml"
 python3 "$output/tools_weaken_patched.py"
 "$tools/RSPRecomp" "$output/aspMain.us.toml"
-make -C "$output/patches" CC="${GOLDENPAD_MIPS_CC:-/opt/homebrew/opt/llvm/bin/clang}" LD="${GOLDENPAD_MIPS_LD:-/opt/homebrew/opt/lld/bin/ld.lld}"
+make -C "$output/patches" CC="$GOLDENPAD_MIPS_CC" LD="$GOLDENPAD_MIPS_LD"
 "$tools/N64Recomp" "$output/patches.toml"
 xcrun clang++ -std=c++17 -O2 "$repo_root/vendor/rt64-ios/src/tools/file_to_c/file_to_c.cpp" -o "$tools/file_to_c"
 "$tools/file_to_c" "$output/patches/patches.bin" mm_patches_bin "$output/RecompiledPatches/patches_bin.c" "$output/RecompiledPatches/patches_bin.h"

@@ -48,7 +48,7 @@ fi
 
 shader_build_log="$probe_root/shader-build.log"
 if ! xargs ninja -C "$host_build" < "$shader_targets" >"$shader_build_log" 2>&1; then
-    rg -n 'FAILED:|error:' "$shader_build_log" | tail -n 40 >&2 || true
+    grep -nE 'FAILED:|error:' "$shader_build_log" | tail -n 40 >&2 || true
     tail -n 120 "$shader_build_log" >&2
     exit 1
 fi
@@ -139,7 +139,7 @@ for sdk in iphoneos iphonesimulator; do
 
     build_log="$probe_root/$sdk-build.log"
     if ! cmake --build "$build" --target rt64 --parallel 8 >"$build_log" 2>&1; then
-        rg -n 'FAILED:|error:' "$build_log" | tail -n 40 >&2 || true
+        grep -nE 'FAILED:|error:' "$build_log" | tail -n 40 >&2 || true
         tail -n 120 "$build_log" >&2
         exit 1
     fi
@@ -158,7 +158,7 @@ for sdk in iphoneos iphonesimulator; do
     done
 
     if ! xcrun -sdk "$sdk" nm -gU "${archives[0]}" |
-        rg '_goldenpad_rt64_depth_format_rebuild_stats$' >/dev/null; then
+        grep -E '_goldenpad_rt64_depth_format_rebuild_stats$' >/dev/null; then
         echo "$sdk RT64 archive does not export the Preview 6 depth-format rebuild counter." >&2
         exit 1
     fi
@@ -185,9 +185,9 @@ for sdk in iphoneos iphonesimulator; do
         -framework Foundation -framework UIKit \
         -o "$executable"
 
-    if xcrun -sdk "$sdk" nm -u "$executable" | rg -q 'SDL|NFD|AppKit|IOKit|X11|vkCreateMacOSSurface'; then
+    if xcrun -sdk "$sdk" nm -u "$executable" | grep -Eq 'SDL|NFD|AppKit|IOKit|X11|vkCreateMacOSSurface'; then
         echo "$sdk force-loaded closure retains a desktop-only undefined symbol." >&2
-        xcrun -sdk "$sdk" nm -u "$executable" | rg 'SDL|NFD|AppKit|IOKit|X11|vkCreateMacOSSurface' >&2
+        xcrun -sdk "$sdk" nm -u "$executable" | grep -E 'SDL|NFD|AppKit|IOKit|X11|vkCreateMacOSSurface' >&2
         exit 1
     fi
 
