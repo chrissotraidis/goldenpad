@@ -103,7 +103,30 @@
         "version_args": [
           "-version"
         ],
-        "note": "Install Xcode and its iOS platform"
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough."
+      },
+      {
+        "name": "xcrun",
+        "label": "Xcode iPhoneOS SDK",
+        "version_args": [
+          "--sdk",
+          "iphoneos",
+          "--show-sdk-path"
+        ],
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough."
+      },
+      {
+        "name": "xcrun",
+        "label": "Xcode iPhoneSimulator SDK",
+        "version_args": [
+          "--sdk",
+          "iphonesimulator",
+          "--show-sdk-path"
+        ],
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; GoldenPad's RT64 build also needs the iPhoneSimulator SDK."
       },
       {
         "name": "xcrun",
