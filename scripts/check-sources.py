@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Check immutable primary source pins without rewriting any source."""
-import argparse,json,pathlib,subprocess,sys
+import argparse,hashlib,json,pathlib,subprocess,sys
+def sha256_file(path):
+ digest=hashlib.sha256()
+ with path.open('rb') as source:
+  for chunk in iter(lambda:source.read(1024*1024),b''):digest.update(chunk)
+ return digest.hexdigest()
 root=pathlib.Path(__file__).resolve().parents[1]
 # Source exports carry a file manifest instead of Git administrative data.
 if not (root/'.git').exists() and (root/'source-manifest.json').exists():
- import hashlib
  manifest=json.loads((root/'source-manifest.json').read_text())
  for name,entry in manifest['files'].items():
   path=root/name
   if 'link' in entry:
    if not path.is_symlink() or str(path.readlink())!=entry['link']:raise SystemExit('Source link mismatch: '+name)
-  elif not path.is_file() or hashlib.file_digest(path.open('rb'),'sha256').hexdigest()!=entry['sha256']:raise SystemExit('Source content mismatch: '+name)
+  elif not path.is_file() or sha256_file(path)!=entry['sha256']:raise SystemExit('Source content mismatch: '+name)
  print('PASS: source archive manifest '+manifest['app_commit'])
  sys.exit(0)
 lock=json.loads((root/'sources.lock.json').read_text())

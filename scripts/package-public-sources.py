@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Export the app and exact public build inputs; never copy working directories."""
 import gzip,hashlib,json,pathlib,subprocess,tarfile,tempfile
+def sha256_file(path):
+ digest=hashlib.sha256()
+ with path.open('rb') as source:
+  for chunk in iter(lambda:source.read(1024*1024),b''):digest.update(chunk)
+ return digest.hexdigest()
 root=pathlib.Path(__file__).resolve().parents[1]
 subprocess.run(['python3',str(root/'scripts/check-sources.py')],check=True)
 if subprocess.check_output(['git','-C',str(root),'status','--porcelain','--untracked-files=no'],text=True).strip():raise SystemExit('Commit tracked changes before exporting source.')
@@ -27,7 +32,7 @@ with tempfile.TemporaryDirectory(prefix='goldenpad-source-') as tmp:
   if p.is_symlink():files[str(p.relative_to(stage))]={'link':str(p.readlink())}
   elif p.is_file():
    if p.suffix.lower() in {'.z64','.v64','.n64','.rom','.eep','.sav','.mobileprovision','.p12','.pem','.key'}:raise SystemExit('Disallowed source archive path: '+str(p.relative_to(stage)))
-   files[str(p.relative_to(stage))]={'sha256':hashlib.file_digest(p.open('rb'),'sha256').hexdigest()}
+   files[str(p.relative_to(stage))]={'sha256':sha256_file(p)}
  (stage/'source-manifest.json').write_text(json.dumps({'app_commit':revision,'scope':'Public software sources and reference headers. User ROM and generated game code excluded; not a legal corresponding-source certification.','files':files},indent=2)+'\n')
  output=root/'dist'/('GoldenPad-public-sources-'+revision[:12]+'.tar.gz');output.parent.mkdir(exist_ok=True)
  with output.open('wb') as raw,gzip.GzipFile(filename='',mode='wb',fileobj=raw,mtime=0) as gz,tarfile.open(fileobj=gz,mode='w') as tar:
@@ -36,5 +41,5 @@ with tempfile.TemporaryDirectory(prefix='goldenpad-source-') as tmp:
    if info.isfile():
     with p.open('rb') as f:tar.addfile(info,f)
    else:tar.addfile(info)
- digest=hashlib.file_digest(output.open('rb'),'sha256').hexdigest();output.with_suffix(output.suffix+'.sha256').write_text(digest+'  '+output.name+'\n')
+ digest=sha256_file(output);output.with_suffix(output.suffix+'.sha256').write_text(digest+'  '+output.name+'\n')
  print(output);print(digest);print(len(files),'source files/symlinks')
