@@ -2,6 +2,10 @@
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 if [ "$#" -ne 2 ]; then echo 'Usage: generate-recomp-inputs.sh VERIFIED_TLBFREE_ROM NEW_PRIVATE_OUTPUT_DIRECTORY' >&2; exit 2; fi
+build_jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-8}
+case "$build_jobs" in
+    0*|*[!0-9]*) echo 'CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer.' >&2; exit 2;;
+esac
 rom=$1
 output=$2
 [ ! -e "$output" ] || { echo 'Output must be new; refusing to overwrite private inputs.' >&2; exit 1; }
@@ -13,7 +17,7 @@ python3 "$repo_root/scripts/check-sources.py" --component goldeneye --component 
 source="$repo_root/vendor/goldeneye"
 tools="$repo_root/build-recomp-tools"
 cmake -S "$source/n64recomp-src" -B "$tools" -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build "$tools" --target N64Recomp RSPRecomp --parallel 8
+cmake --build "$tools" --target N64Recomp RSPRecomp --parallel "$build_jobs"
 mkdir -p "$output"
 output=$(cd "$output" && pwd)
 if [ -e "$source/.git" ]; then
