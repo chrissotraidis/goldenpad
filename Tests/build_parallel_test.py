@@ -175,8 +175,10 @@ class BuildParallelTests(unittest.TestCase):
                     "verify-rt64-ios-static.sh": []}[name]
         log = self.root / "calls.jsonl"
         log.write_text("")
+        # The RT64 fixture starts many Apple Python processes; allow startup
+        # overhead on busy hosts without changing any command or output checks.
         result = subprocess.run(["/bin/bash", str(self.root / "scripts" / name)] + args,
-                                cwd=self.root, env=env, text=True, capture_output=True, timeout=60)
+                                cwd=self.root, env=env, text=True, capture_output=True, timeout=120)
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         self.assertFalse((self.root / "private-output").exists(), "must stop before private input generation")
         self.assertFalse(list((self.root / "tmp").iterdir()), "RT64 probe trap must clean fixture outputs")
