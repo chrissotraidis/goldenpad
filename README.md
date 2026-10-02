@@ -113,7 +113,7 @@ includes statically recompiled game code.
 
 ## Latest mobile release
 
-GoldenPad 0.2.1 (build 14) is easier to make: PadMint (0.2.2 or newer) downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. The game is the same as 0.2.0. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md).
+GoldenPad 0.2.2 (build 15) is the current recipe-only release. It retains 0.2.1's easier build: PadMint (0.2.2 or newer) downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md). Their hardware test records are history, not new-version acceptance.
 
 ## Install status
 
@@ -258,7 +258,7 @@ retail input and generated output remain yours and must not be redistributed.
 
 ### Build from source
 
-> **Building is optional for IPA users.** Primary RT64/AOT builds use pinned
+> **Manual building is optional when using PadMint.** Primary RT64/AOT builds use pinned
 > public dependencies and private game-code inputs generated from your own
 > supported ROM. Follow [Building](docs/BUILDING.md) and
 > [Source maintenance](docs/SOURCE_MAINTENANCE.md) for that workflow. The commands
@@ -327,7 +327,7 @@ reference path.
 
 GoldenPad never downloads or bundles game data.
 
-1. Install the unsigned Preview 10 IPA by following
+1. Sign and install the completed personal IPA made with PadMint by following
    [Play on iPhone or iPad](#play-on-iphone-or-ipad).
 2. Launch GoldenPad and choose your own supported original NTSC-U retail ROM
    from Files. The importer accepts `.z64`, `.v64`, `.n64`, and `.rom` byte

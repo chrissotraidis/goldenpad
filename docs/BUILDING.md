@@ -41,13 +41,17 @@ game core and native Metal renderer.
 Requirements currently verified: Xcode 26.5, Swift 6.3.3, AppleClang 21, CMake
 4.4, Ninja 1.13, SDL2 2.32.70, and Apple Silicon macOS 26.5.2.
 
-## Primary mobile preview package
+## Historical primary mobile preview packaging (private local use)
 
 The complete primary target requires the ignored/generated AOT inputs and exact
 dependency archives described in
 [`RT64_N64RECOMP_PROTOTYPE.md`](RT64_N64RECOMP_PROTOTYPE.md). After the signed
-device app has been built and physically accepted, create the public unsigned
-package with:
+device app has been built and physically accepted, the historical packaging
+procedure below can create an unsigned local package. Current releases provide
+a recipe, not a public IPA; this package contains translated game code and
+must stay private. For a current personal build, use the one-command path above.
+
+Historical Preview 9 command:
 
 ```sh
 GOLDENPAD_RELEASE_NAME=0.1.0-preview.9 ./scripts/package-recomp-prototype-ipa.sh
@@ -147,7 +151,7 @@ only the internal CMake target. The packager adds notices, applies an ad-hoc
 signature, and runs the Mac artifact audit. No ROM, save, generated source or
 Apple signing identity is included.
 
-The published Preview 9 Alpha archive is
+The historical, now-retired Preview 9 Alpha archive was
 `GoldenPad-0.1.0-preview.9-macos-arm64-alpha.zip` at SHA-256
 `345c59477fb22a1eb8fce5f9dd4545351af6fb6c44c8edf45daab3775bea5b84`.
 It is native arm64, ad-hoc signed and not notarized. See the

@@ -3,6 +3,10 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 if [ "$#" -ne 2 ]; then echo 'Usage: build-recomp-apple.sh ios|macos PRIVATE_GENERATED_DIRECTORY' >&2; exit 2; fi
 platform=$1
+build_jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-}
+case "$build_jobs" in
+    0*|*[!0-9]*) echo 'CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer.' >&2; exit 2;;
+esac
 inputs=$(cd "$2" && pwd)
 python3 "$repo_root/scripts/check-sources.py"
 args=(-DGOLDENPAD_RECOMP_AOT_DIR="$inputs" -DGOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR="$inputs" -DGOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR="$repo_root/vendor/goldeneye/lib/N64ModernRuntime")
@@ -19,4 +23,4 @@ case "$platform" in
  *) echo 'Platform must be ios or macos' >&2; exit 2;;
 esac
 cmake -S "$repo_root" -B "$output" -G Xcode -DCMAKE_OSX_ARCHITECTURES=arm64 "${args[@]}"
-xcodebuild -quiet -project "$output/GoldenPad.xcodeproj" -target "$target" -configuration Release -sdk "$sdk" CODE_SIGNING_ALLOWED=NO build
+xcodebuild -quiet ${build_jobs:+-jobs "$build_jobs"} -project "$output/GoldenPad.xcodeproj" -target "$target" -configuration Release -sdk "$sdk" CODE_SIGNING_ALLOWED=NO build

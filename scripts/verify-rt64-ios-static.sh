@@ -2,6 +2,10 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
+build_jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-8}
+case "$build_jobs" in
+    0*|*[!0-9]*) echo 'CMAKE_BUILD_PARALLEL_LEVEL must be a positive integer.' >&2; exit 2;;
+esac
 rt64_path="$repo_root/vendor/rt64-ios"
 shim_path="$repo_root/Support/RT64"
 link_probe="$shim_path/rt64_link_probe.cpp"
@@ -47,7 +51,7 @@ if [ "$shader_target_count" -ne "$expected_shader_targets" ]; then
 fi
 
 shader_build_log="$probe_root/shader-build.log"
-if ! xargs ninja -C "$host_build" < "$shader_targets" >"$shader_build_log" 2>&1; then
+if ! xargs ninja ${CMAKE_BUILD_PARALLEL_LEVEL:+-j "$build_jobs"} -C "$host_build" < "$shader_targets" >"$shader_build_log" 2>&1; then
     grep -nE 'FAILED:|error:' "$shader_build_log" | tail -n 40 >&2 || true
     tail -n 120 "$shader_build_log" >&2
     exit 1
@@ -138,7 +142,7 @@ for sdk in iphoneos iphonesimulator; do
         -DRT64_EMBEDDED_APPLE_SOURCE_DIR="$shim_path" >/dev/null
 
     build_log="$probe_root/$sdk-build.log"
-    if ! cmake --build "$build" --target rt64 --parallel 8 >"$build_log" 2>&1; then
+    if ! cmake --build "$build" --target rt64 --parallel "$build_jobs" >"$build_log" 2>&1; then
         grep -nE 'FAILED:|error:' "$build_log" | tail -n 40 >&2 || true
         tail -n 120 "$build_log" >&2
         exit 1
