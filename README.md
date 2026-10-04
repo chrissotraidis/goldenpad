@@ -17,6 +17,8 @@
   <img alt="Native ARM64" src="https://img.shields.io/badge/runtime-native%20ARM64-30D158">
   <img alt="Developer preview" src="https://img.shields.io/badge/status-developer%20preview-FF9F0A">
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
+  <a href="https://github.com/chrissotraidis/padmint"><img alt="Build GoldenPad with PadMint" src="https://img.shields.io/badge/PadMint-build%20your%20own-3EB489"></a>
+  <a href="https://discord.gg/xwHfUD2bxW"><img alt="Join the GoldenPad Discord" src="https://img.shields.io/badge/Discord-Join%20the%20community-5865F2?logo=discord&amp;logoColor=white"></a>
 </p>
 
 <p align="center">
@@ -54,6 +56,13 @@ the primary development version.
 > never committed. Releases publish the build recipe only; everyone builds
 > their own app from their own ROM with PadMint. No official, commercial, or
 > App Store clearance is claimed.
+
+> [!NOTE]
+> **AI disclosure:** GoldenPad uses substantial AI assistance for code, tests,
+> documentation, debugging and maintenance. Some support replies and maintenance
+> tasks are automated. There is no audited percentage of AI-generated code.
+> Build, test and device records describe what was checked. This disclosure
+> concerns GoldenPad's workflow, not the authorship of its upstream projects.
 
 ## Play on iPhone or iPad
 
@@ -672,6 +681,16 @@ or gameplay defects can be filed through
 [GitHub Issues](https://github.com/chrissotraidis/goldenpad/issues). Never attach,
 request, or link to ROMs, extracted assets, leaked builds, saves containing
 private data, signing identities, or provisioning profiles.
+
+## Community and support
+
+[Join the Discord](https://discord.gg/xwHfUD2bxW) for help and news. It is one
+community for GoldenPad and its sibling projects, such as KartPad, BlueWake and
+MeleePad: ask about setup, building with PadMint, and installing, share how it
+runs on your device, and hear about new releases first.
+
+Found a bug? [Open an issue](https://github.com/chrissotraidis/goldenpad/issues)
+with your device, its OS version, and the steps that led to it.
 
 ## Legal and acknowledgements
 
