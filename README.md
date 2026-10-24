@@ -69,6 +69,11 @@ the primary development version.
 You need an iPhone or iPad running iOS/iPadOS 17 or later, an Apple Silicon
 Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
 
+GoldenPad has run on iPhones and iPads with A14, A15 and M2 chips. Devices with
+an A12 chip or older, such as the 2018 iPad Pro, are not supported yet: an A12X
+iPad Pro crashes on the first frame
+([issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)).
+
 > **No jailbreak or JIT is required. Do not search for a TLB-free ROM.**
 > Preview 9 accepts your ordinary `.z64`, `.v64`, `.n64`, or `.rom` dump and
 > prepares the required private runtime copy automatically on the device.
@@ -528,9 +533,9 @@ MGB64 symbols. The older MGB64 IPA workflow remains a fallback only.
   and the tank mapping. The Mac reporter confirmed both in Preview 6 and closed
   the report
   ([issue #17](https://github.com/chrissotraidis/goldenpad/issues/17)).
-- A deterministic first-frame RT64/Metal crash is reported on an A12X iPad Pro
-  with Preview 1. A12-family hardware is not yet validated; the compatibility
-  fix or minimum GPU policy remains open ([issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)).
+- Devices with an A12 chip or older are not supported yet. A deterministic
+  first-frame RT64/Metal crash is reported on an A12X iPad Pro, and no later
+  build claims a fix ([issue #9](https://github.com/chrissotraidis/goldenpad/issues/9)).
 - Preview 9 retains Preview 7's independent issue #19 correction, explicitly targeting
   every embedded Metal library at iOS 17. The diagnostic build passed on the
   affected iPhone 13 mini; the A12X first-draw crash remains separate.
