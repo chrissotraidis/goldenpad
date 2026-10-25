@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
@@ -24,6 +25,51 @@ class IsolatedPythonTests(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), build.identity())
+
+
+class VisualStudioTests(unittest.TestCase):
+    def select(self, machine, arm_available=True):
+        with tempfile.TemporaryDirectory(prefix="Visual Studio selection ") as temporary:
+            root = Path(temporary)
+            installer = root / "Microsoft Visual Studio/Installer/vswhere.exe"
+            installer.parent.mkdir(parents=True)
+            installer.touch()
+            x64, arm = root / "older x64", root / "newer ARM only"
+            for folder, arch in ((x64, "x64"), (arm, "arm64")):
+                compiler = folder / f"VC/Tools/MSVC/14.44/bin/Host{arch}/{arch}/cl.exe"
+                compiler.parent.mkdir(parents=True)
+                compiler.touch()
+            queries = []
+            def query(command, **kwargs):
+                queries.append(command)
+                # vswhere chooses the newest installation satisfying its query.
+                selected = arm if arm_available and "-requiresAny" in command else x64
+                return str(selected) + "\n"
+            with mock.patch.object(build, "os", SimpleNamespace(
+                    name="nt", environ={"ProgramFiles(x86)": str(root), "PATH": "managed tools"})), \
+                    mock.patch.object(build.platform, "machine", return_value=machine), \
+                    mock.patch.object(build.shutil, "which", side_effect=[None, "selected cl.exe"]), \
+                    mock.patch.object(build.subprocess, "check_output", side_effect=query), \
+                    mock.patch.object(build.subprocess, "run", return_value=SimpleNamespace(stdout="PATH=ready\n")) as run:
+                env = build.generator_environment()
+            self.assertEqual(env["PATH"], "ready")
+            return queries[0], run.call_args.args[0]
+
+    def test_x64_ignores_newer_arm_only_installation(self):
+        query, command = self.select("AMD64")
+        self.assertNotIn("-requiresAny", query)
+        self.assertIn("Microsoft.VisualStudio.Component.VC.Tools.x86.x64", query)
+        self.assertNotIn("Microsoft.VisualStudio.Component.VC.Tools.ARM64", query)
+        self.assertIn("older x64", command)
+        self.assertIn(" x64 >nul", command)
+
+    def test_arm_preserves_native_selection_and_x64_fallback(self):
+        for available, arch in ((True, "arm64"), (False, "x64")):
+            with self.subTest(arm_available=available):
+                query, command = self.select("ARM64", available)
+                self.assertIn("-requiresAny", query)
+                self.assertIn("Microsoft.VisualStudio.Component.VC.Tools.ARM64", query)
+                self.assertIn(f" {arch} >nul", command)
 
 
 class ConversionTests(unittest.TestCase):

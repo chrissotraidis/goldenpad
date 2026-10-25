@@ -86,12 +86,14 @@ def generator_environment():
     installer = Path(env.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio/Installer/vswhere.exe"
     if not installer.is_file():
         raise ValueError("Install Visual Studio Build Tools with Desktop development with C++ and a Windows SDK, then try again.")
-    installation = subprocess.check_output([str(installer), "-latest", "-products", "*", "-requiresAny", "-requires",
-                                            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-                                            "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+    arm_host = platform.machine().lower() in ("arm64", "aarch64")
+    requirements = ["-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64"]
+    if arm_host:
+        requirements = ["-requiresAny", *requirements, "Microsoft.VisualStudio.Component.VC.Tools.ARM64"]
+    installation = subprocess.check_output([str(installer), "-latest", "-products", "*", *requirements,
                                             "-property", "installationPath"], text=True).strip()
     versions = sorted((Path(installation) / "VC/Tools/MSVC").glob("*"), reverse=True)
-    arm = platform.machine().lower() in ("arm64", "aarch64") and any(
+    arm = arm_host and any(
         (version / "bin/Hostarm64/arm64/cl.exe").is_file() for version in versions)
     arch = "arm64" if arm else "x64"
     if not any((version / f"bin/Host{arch}/{arch}/cl.exe").is_file() for version in versions):
