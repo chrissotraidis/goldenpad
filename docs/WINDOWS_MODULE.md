@@ -63,7 +63,7 @@ registration source so host Mach/thread headers are not required there.
 
 Completed locally on Apple Silicon with Apple Python 3.9:
 
-- Twelve portable synthetic input/freshness/recovery and compiler tests,
+- Sixteen portable synthetic input/freshness/recovery and compiler tests,
   including entry points under isolated Python.
 - Seventeen cases using the actual native loader, including rejected identities,
   missing callbacks, retry after rejection, hidden symbols and both patch link
@@ -125,6 +125,27 @@ passes native Windows x64/ARM64 and Mac generator builds, portable tests and
 Mac loader checks without a ROM; that is not a game build or a device test.
 Cross-host source comparisons normalize CRLF/LF; they do not claim identical
 native binaries across different LLVM versions.
+
+The Windows path checks also cover Japanese characters in work and temporary
+folders. The host generators carry a process-local UTF-8 manifest, Visual Studio
+setup preserves Unicode environment values, and the module CLI and its Python
+helper handle redirected output without relying on environment encoding flags.
+Public fixtures exercise real generator CLI arguments, TOML input/output paths,
+and the existing callback-name tests; these fixtures check generation rather
+than game execution. The full existing Mac entry-point suite also passed.
+
+A complete private Windows ARM backend build from `12fdeb5` passes in fresh
+Japanese work/TEMP folders using bundled x64 Python with UTF-8 mode explicitly
+disabled. It took 164 seconds with one job and reused verified public source/tool
+caches. Its newly built matching empty shell passes both content audits; strict
+imports, sole module export, iOS compatibility and all eight original IPA entries
+pass, with only the private module added. The original ROM is unchanged, and all 69 generated files are byte-identical
+to the earlier Windows result. The same 66 of 69 generated files match the Mac reference, with the three previously
+explained patch-compiler differences. The Mac private pair was refreshed and
+checked before the final CLI-only change; the final matching empty shell and
+private module were then checked together in this Windows run. These are backend
+and packaging proofs; the earlier normal packaged-player command remains tied
+to its recorded revision.
 
 Physical iPhone/iPad launch, ROM import, audio, rendering, controls, save behavior
 and gameplay still require validation. No device or gameplay acceptance is
