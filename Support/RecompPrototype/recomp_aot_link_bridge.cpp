@@ -1,8 +1,11 @@
+#if !defined(GOLDENPAD_MODULE_SHELL)
 #include "funcs.h"
+#endif
 #include "recomp.h"
 #include "librecomp/rsp.hpp"
 
 extern RspUcodeFunc aspMain;
+extern "C" void recomp_entrypoint(uint8_t*, recomp_context*);
 gpr get_entrypoint_address();
 
 extern "C" uint32_t goldenpad_recomp_aot_entrypoint_address() {

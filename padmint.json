@@ -22,27 +22,41 @@
     "ios": {
       "hosts": {
         "macos-arm64": "experimental",
-        "linux-x86_64": "planned",
-        "windows-x86_64": "planned"
-      },
-      "command": [
-        "/bin/bash",
-        "{repo}/scripts/build-personal-ipa.sh",
-        "--rom",
-        "{disc}",
-        "--work",
-        "{work}",
-        "--output",
-        "{output}"
-      ],
-      "tools": [
-        "llvm"
-      ],
-      "modes": {
-        "full": []
+        "windows-arm64": "experimental",
+        "windows-x86_64": "experimental"
       },
       "output": "ipa",
-      "check": "ipa"
+      "check": "ipa",
+      "tools": [
+        "git",
+        "cmake",
+        "ninja",
+        "llvm",
+        "libcxx",
+        "mips-clang"
+      ],
+      "published_app": "GoldenPad-v{version}-ios-shell.ipa",
+      "ios_module": {
+        "file": "{work}/module/GoldenPadGame.dylib",
+        "into": "Frameworks/GoldenPadGame.dylib"
+      },
+      "steps": [
+        {
+          "stage": "compile",
+          "command": [
+            "{python}",
+            "{repo}/scripts/build-game-module.py",
+            "--rom",
+            "{disc}",
+            "--toolchain",
+            "{ios_toolchain}",
+            "--build-dir",
+            "{work}",
+            "--jobs",
+            "{jobs}"
+          ]
+        }
+      ]
     },
     "macos": {
       "hosts": {
@@ -51,92 +65,47 @@
     }
   },
   "requirements": {
-    "disk_gb": 20,
+    "disk_gb": 8,
     "tools": [
       {
-        "name": "git",
+        "name": "%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe",
         "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "cmake",
-        "version_args": [
-          "--version"
+          "-latest",
+          "-products",
+          "*",
+          "-requiresAny",
+          "-requires",
+          "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+          "Microsoft.VisualStudio.Component.VC.Tools.ARM64",
+          "-property",
+          "installationVersion"
         ],
-        "min_version": "3.28",
+        "min_version": "17",
         "player": true,
-        "note": "Install CMake 3.28 or newer: brew install cmake"
-      },
-      {
-        "name": "ninja",
-        "version_args": [
-          "--version"
+        "hosts": [
+          "windows-arm64"
         ],
-        "player": true,
-        "note": "Install Ninja: brew install ninja"
+        "label": "Visual Studio C++ Build Tools",
+        "note": "Install Visual Studio 2022 Build Tools with Desktop development with C++ and a Windows SDK. On Windows ARM64, add the ARM64 C++ tools (preferred) or the x64/x86 C++ tools."
       },
       {
-        "name": "python3",
+        "name": "%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe",
         "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "xdelta3",
-        "version_args": [
-          "-V"
+          "-latest",
+          "-products",
+          "*",
+          "-requires",
+          "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+          "-property",
+          "installationVersion"
         ],
+        "min_version": "17",
         "player": true,
-        "note": "Install xdelta: brew install xdelta"
-      },
-      {
-        "name": "sdl2-config",
-        "version_args": [
-          "--version"
+        "hosts": [
+          "windows-x86_64"
         ],
-        "player": true,
-        "note": "Install SDL2: brew install sdl2"
-      },
-      {
-        "name": "xcodebuild",
-        "version_args": [
-          "-version"
-        ],
-        "player": true,
-        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough."
-      },
-      {
-        "name": "xcrun",
-        "label": "Xcode iPhoneOS SDK",
-        "version_args": [
-          "--sdk",
-          "iphoneos",
-          "--show-sdk-path"
-        ],
-        "player": true,
-        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough."
-      },
-      {
-        "name": "xcrun",
-        "label": "Xcode iPhoneSimulator SDK",
-        "version_args": [
-          "--sdk",
-          "iphonesimulator",
-          "--show-sdk-path"
-        ],
-        "player": true,
-        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; GoldenPad's RT64 build also needs the iPhoneSimulator SDK."
-      },
-      {
-        "name": "xcrun",
-        "label": "Metal Toolchain",
-        "version_args": [
-          "metal",
-          "--version"
-        ],
-        "player": true,
-        "note": "Install Xcode's Metal Toolchain: xcodebuild -downloadComponent MetalToolchain"
+        "label": "Visual Studio C++ Build Tools",
+        "note": "Install Visual Studio 2022 Build Tools with Desktop development with C++, x64/x86 C++ tools and a Windows SDK."
       }
     ]
   },
@@ -145,15 +114,12 @@
     "dependencies",
     "convert-rom",
     "translate",
-    "patch-generated",
-    "runtime",
-    "renderer",
     "compile",
     "package"
   ],
-  "notes": "scripts/build-personal-ipa.sh chains scripts/bootstrap-sources.sh, TLB-free conversion with the pinned fork's vanilla_to_tlbfree.xdelta (identical to upstream a787fe0), scripts/generate-recomp-inputs.sh, runtime and RT64 archive builds, scripts/build-recomp-apple.sh ios and the existing package checks. See docs/BUILDING.md.",
+  "notes": "Next-release experimental module route. Requires a matching empty shell supplied with --app until an audited shell release exists. The static Mac route remains scripts/build-personal-ipa.sh. See docs/WINDOWS_MODULE.md for evidence and remaining gates.",
   "publication": {
     "public_binaries": false,
-    "reason": "The primary app contains game code translated from the player's ROM; public releases are source only."
+    "reason": "Personal apps and modules contain game code and conversion data derived from the player-owned ROM. The repository release pause still applies; publish source only."
   }
 }
