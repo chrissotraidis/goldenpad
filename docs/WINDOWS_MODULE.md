@@ -6,13 +6,14 @@ does not provide this route. Local validation supplies a privately built,
 matching empty shell with PadMint's `--app` option.
 
 The next-release recipe builds a personal iPhone/iPad app on an Apple Silicon
-Mac and experimentally on Windows ARM64. Windows requires Visual Studio 2022 Build Tools with
-Desktop development with C++ and a Windows SDK. PadMint supplies Python, Git,
+Mac and experimentally on Windows ARM64 and x64. Windows requires Visual Studio
+2022 Build Tools with Desktop development with C++ and a Windows SDK. Windows
+x64 needs the x64/x86 C++ component; Windows ARM64 can use its native ARM64
+component or x64 tools. PadMint supplies Python, Git,
 CMake, Ninja, LLVM and the open-source iOS headers, plus a separate MIPS-capable
 Clang for Windows. Older PadMint versions without `mips-clang` need updating.
-The recipe uses `{python}`
-so it also works with PadMint's bundled Python. Windows x64 and Linux are not
-advertised as supported by this recipe yet.
+The recipe uses `{python}` so it also works with PadMint's bundled Python.
+Linux is not advertised as supported by this recipe.
 
 The original static Mac build remains available:
 
@@ -98,6 +99,17 @@ verified cached official archive. These are cached-tool build tests, not a
 claim that an empty Windows machine or an iPhone was tested. Final IPA CRC,
 matching embedded identities and absence of a raw GEP1 resource were rechecked.
 
+A complete private backend build from `deb91ee` also passes with x64 MSVC
+generators, the managed x64 MIPS compiler and x64 LLVM 21.1.8 under Windows ARM64
+emulation. It completed in 145 seconds with one build job, existing tools/source
+and native ARM helper tools. Compiler caches and PE headers verify the actual
+x64 tools; all 69 generated sources match the native ARM Windows result after
+newline normalization. Independent IPA readback confirms an arm64 iOS module,
+matching identities and unchanged shell files, with only the module added.
+Strict imports again resolve 94 app names and seven runtime names. This supports
+the draft experimental x64 host flag; a fresh full private player build on native
+x64 hardware remains untested.
+
 After CRLF/LF normalization, 66 of 69 generated source files match the Mac build.
 The three differences are translated patch code, its byte array and overlay
 metadata, produced with Clang 18 on Windows versus Clang 22 on Mac. All nine
@@ -108,10 +120,11 @@ selection and relocations differ. These checks found no missing patch, renamed
 callback or table-layout discrepancy; they do not establish semantic or gameplay
 equivalence between compiler versions.
 
-Hosted CI compiles
-the pinned generators and synthetic tests without a ROM; that is not a game
-build or a device test. Cross-host source comparisons normalize CRLF/LF; they
-do not claim identical native binaries across different LLVM versions.
+[Hosted CI](https://github.com/chrissotraidis/goldenpad/actions/runs/40215751104)
+passes native Windows x64/ARM64 and Mac generator builds, portable tests and
+Mac loader checks without a ROM; that is not a game build or a device test.
+Cross-host source comparisons normalize CRLF/LF; they do not claim identical
+native binaries across different LLVM versions.
 
 Physical iPhone/iPad launch, ROM import, audio, rendering, controls, save behavior
 and gameplay still require validation. No device or gameplay acceptance is
