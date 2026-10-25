@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,6 +11,19 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import module_build as build
+
+
+class IsolatedPythonTests(unittest.TestCase):
+    def test_entry_points_can_import_helpers_under_isolated_python(self):
+        for script in ("build-game-module.py", "build-module-shell.py", "check-host-generators.py"):
+            with self.subTest(script=script):
+                result = subprocess.run([sys.executable, "-I", str(build.ROOT / "scripts" / script), "--help"],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+        result = subprocess.run([sys.executable, "-I", str(build.ROOT / "scripts/module-identity.py")],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), build.identity())
 
 
 class ConversionTests(unittest.TestCase):

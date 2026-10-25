@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from module_build import ROOT
 
 RUNTIME = ROOT / "vendor/goldeneye/lib/N64ModernRuntime"

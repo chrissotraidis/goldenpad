@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from module_build import ROOT, generate, generator_environment, normalize_rom, prepare_source, run
 
 

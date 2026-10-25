@@ -3,6 +3,9 @@
 import argparse
 import os
 import platform
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from module_build import ROOT, generator_environment, prepare_source, run
 
 parser = argparse.ArgumentParser(description=__doc__)

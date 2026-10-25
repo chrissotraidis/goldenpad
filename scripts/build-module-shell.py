@@ -6,6 +6,7 @@ from pathlib import Path
 import platform
 import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from module_build import ROOT, check_source, prepare_source, run
 
 
