@@ -38,6 +38,7 @@ def sha256(path):
 def identity():
     paths = [ROOT / "sources.lock.json", ROOT / "CMakeLists.txt",
              ROOT / "cmake/game-module/CMakeLists.txt", ROOT / "cmake/host-tools/CMakeLists.txt",
+             ROOT / "cmake/host-tools/windows-utf8.manifest",
              ROOT / "cmake/ModuleIdentity.cmake", ROOT / "scripts/module_build.py",
              ROOT / "scripts/module-identity.py", ROOT / "scripts/build-game-module.py",
              *list((ROOT / "patches").glob("*.patch")),
