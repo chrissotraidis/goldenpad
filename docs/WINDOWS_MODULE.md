@@ -89,7 +89,14 @@ compiler or linker. A private diagnostic using verified official Windows x64
 Clang 18.1.8 and native ARM LLVM 21.1.8 passes the real module build, matching
 identity, strict imports, sole-export check and IPA insertion under PadMint's
 bundled x64 Python on Windows ARM64. All twelve portable tests pass there too.
-The automatic managed-tool player path is checked separately before publication.
+The complete packaged PadMint player command also passes with a clean local
+Windows source checkout, bundled Python and normal tool selection: no compiler
+environment override. It uses the verified managed `mips-clang` installation
+and existing LLVM/header caches, then checks imports and creates the personal
+IPA. The installer itself passed a separate fresh, selective extraction from a
+verified cached official archive. These are cached-tool build tests, not a
+claim that an empty Windows machine or an iPhone was tested. Final IPA CRC,
+matching embedded identities and absence of a raw GEP1 resource were rechecked.
 
 After CRLF/LF normalization, 66 of 69 generated source files match the Mac build.
 The three differences are translated patch code, its byte array and overlay
