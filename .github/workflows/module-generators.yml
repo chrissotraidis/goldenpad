@@ -31,6 +31,9 @@ jobs:
           architecture: ${{ matrix.architecture }}
       - name: Portable synthetic input and recovery checks
         run: python -m unittest discover -s Tests -p module_build_test.py
+      - name: Existing Apple entry points and source archive checks
+        if: runner.os == 'macOS'
+        run: python -m unittest discover -s Tests -p '*_test.py'
       - name: Build pinned native generators and verify patch callback names
         run: python scripts/check-host-generators.py --jobs 4
       - name: Actual loader ABI and strong patch precedence

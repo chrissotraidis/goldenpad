@@ -92,7 +92,7 @@ def generator_environment():
     if arm_host:
         requirements = ["-requiresAny", *requirements, "Microsoft.VisualStudio.Component.VC.Tools.ARM64"]
     installation = subprocess.check_output([str(installer), "-latest", "-products", "*", *requirements,
-                                            "-property", "installationPath"], text=True).strip()
+                                            "-property", "installationPath", "-utf8"], text=True, encoding="utf-8").strip()
     versions = sorted((Path(installation) / "VC/Tools/MSVC").glob("*"), reverse=True)
     arm = arm_host and any(
         (version / "bin/Hostarm64/arm64/cl.exe").is_file() for version in versions)
@@ -100,8 +100,8 @@ def generator_environment():
     if not any((version / f"bin/Host{arch}/{arch}/cl.exe").is_file() for version in versions):
         raise ValueError(f"Visual Studio is missing its {arch} C++ compiler; add Desktop development with C++ and a Windows SDK.")
     script = Path(installation) / "VC/Auxiliary/Build/vcvarsall.bat"
-    command = subprocess.list2cmdline([env.get("COMSPEC", "cmd.exe")]) + f' /d /s /c ""{script}" {arch} >nul && set"'
-    result = subprocess.run(command, capture_output=True, text=True, check=True, env=env)
+    command = subprocess.list2cmdline([env.get("COMSPEC", "cmd.exe")]) + f' /d /u /s /c ""{script}" {arch} >nul && set"'
+    result = subprocess.run(command, capture_output=True, text=True, encoding="utf-16-le", check=True, env=env)
     for line in result.stdout.splitlines():
         key, separator, value = line.partition("=")
         if separator and key:

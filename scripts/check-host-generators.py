@@ -50,7 +50,10 @@ parser.add_argument("--jobs", type=int, choices=range(1, 17), default=4)
 parser.add_argument("--build", type=Path, help="Use a separate local build directory")
 args = parser.parse_args()
 prepare_source()
+os.environ["GOLDENPAD_UNICODE_ENV_PROBE"] = "public \u96ea value"
 env = generator_environment()
+if env.get("GOLDENPAD_UNICODE_ENV_PROBE") != "public \u96ea value":
+    raise RuntimeError("Visual Studio setup corrupted a non-English environment value")
 folder = (args.build or ROOT / "build-host-generator-check").resolve()
 run("cmake", "--fresh", "-S", ROOT / "cmake/host-tools", "-B", folder, "-G", "Ninja",
     "-DCMAKE_BUILD_TYPE=Release", env=env)
