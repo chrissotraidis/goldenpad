@@ -1,4 +1,9 @@
+#if defined(GOLDENPAD_MODULE_SHELL)
+#include "game_module.h"
+extern "C" void recomp_entrypoint(uint8_t*, recomp_context*);
+#else
 #include "funcs.h"
+#endif
 #include "performance_diagnostics.h"
 #include "librecomp/game.hpp"
 #include "librecomp/helpers.hpp"
@@ -1657,6 +1662,9 @@ extern "C" int32_t goldenpad_recomp_three_point_filtering_enabled() {
 }
 
 extern "C" const char *goldenpad_recomp_start_game(void *window, void *view, const char *romPath, const char *configPath) {
+#if defined(GOLDENPAD_MODULE_SHELL)
+    if (!goldenpad_game_module_ready()) return "The game module is not ready. Build this copy with PadMint again.";
+#endif
     if (window == nullptr || view == nullptr || romPath == nullptr || configPath == nullptr) {
         logEvent("launch", "rejected incomplete launch arguments");
         return "AOT runtime: missing launch input";

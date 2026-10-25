@@ -9,6 +9,9 @@
 #include <filesystem>
 #include <fstream>
 #include <vector>
+#if defined(GOLDENPAD_MODULE_SHELL)
+#include "game_module.h"
+#endif
 
 namespace {
 constexpr size_t kRetailROMSize = 0xC00000;
@@ -214,10 +217,17 @@ extern "C" int32_t goldenpad_recomp_import_rom(const char *sourcePath,
             return ImportUnsupportedROM;
         }
         std::vector<uint8_t> patch;
+#if defined(GOLDENPAD_MODULE_SHELL)
+        const uint8_t* patchBytes = nullptr;
+        size_t patchSize = 0;
+        if (!goldenpad_module_conversion_patch(&patchBytes, &patchSize)) return ImportPatchReadFailed;
+        patch.assign(patchBytes, patchBytes + patchSize);
+#else
         if (!readBoundedFile(std::filesystem::path(patchPath), 13,
                              kMaximumPatchSize, patch)) {
             return ImportPatchReadFailed;
         }
+#endif
         const bool applied = applyGEP1(patch, source.value, converted.value);
         clearBytes(patch);
         if (!applied) {

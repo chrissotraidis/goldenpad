@@ -1,0 +1,88 @@
+# Experimental Windows module build
+
+This is next-release source work. No matching shell release has been published,
+and the repository's release pause still applies. The current public release
+does not provide this route. Local validation supplies a privately built,
+matching empty shell with PadMint's `--app` option.
+
+The next-release recipe builds a personal iPhone/iPad app on an Apple Silicon
+Mac or Windows ARM64. Windows requires Visual Studio 2022 Build Tools with
+Desktop development with C++ and a Windows SDK. PadMint supplies Python, Git,
+CMake, Ninja, LLVM and the open-source iOS headers. The recipe uses `{python}`
+so it also works with PadMint's bundled Python. Windows x64 and Linux are not
+advertised as supported by this recipe yet.
+
+The original static Mac build remains available:
+
+```sh
+scripts/build-personal-ipa.sh --rom YOUR_ROM --output PERSONAL.ipa
+```
+
+## Boundary and input checks
+
+`scripts/build-module-shell.py` builds the opt-in empty shell on a Mac with
+Xcode and Metal tools. The shell owns the runtime, renderer, platform services
+and thread-local storage. It contains no generated game functions or GEP1
+conversion resource. It keeps ROM import disabled when its module is missing
+or incompatible, including import through an external file URL.
+
+`scripts/build-game-module.py` accepts only the supported 12 MiB US retail ROM,
+normalizes byte order in memory and checks its hash. Its original file is not
+modified. The pinned GEP1 conversion is bounded and its output is checked
+against the known TLB-free digest before generation. The private module owns
+the generated game functions, audio RSP, overlay tables, translated patches,
+patch bytes and conversion data. None of these private outputs may be published.
+
+One exported getter returns a versioned table of pointers and scalar sizes.
+The loader validates the table, required callbacks and a source identity before
+using it. The identity covers the source pins, module and host build settings,
+generation scripts, bridge sources and tracked patches. Both the shell and the
+module must come from the same identity. Runtime callbacks are imported from
+the shell; generated module symbols are hidden. Strong translated patches
+replace the weak base functions regardless of object link order.
+
+Generation checks the exact source revisions and rejects modified tracked
+vendor sources. It records the input/tool digests and every generated file's
+digest. A changed or incomplete set is rebuilt in a temporary folder. Existing
+outputs are preserved under a unique recovery name before a complete replacement
+is promoted; failure does not remove the previous output or its unique files.
+
+Both static and module generation use the same maintained host-tool wrapper.
+It sorts the pinned RSP generator's unordered emission loops and fixes its
+reference-call naming to match the base generator's canonical names. This fixes
+the observed `sprintf(rdram, ctx)` collision with the host C library: the game
+callback is `sprintf_recomp`. A test invokes the actual emitter and verifies raw,
+already-suffixed and unrelated callback names. The immutable vendor checkout is
+unchanged. The module omits an unused `game.hpp` include from its staged patch
+registration source so host Mach/thread headers are not required there.
+
+## Validation and remaining gates
+
+Completed locally on Apple Silicon with Apple Python 3.9:
+
+- Nine portable synthetic input/freshness/recovery tests.
+- Seventeen cases using the actual native loader, including rejected identities,
+  missing callbacks, retry after rejection, hidden symbols and both patch link
+  orders.
+- Real private-ROM conversion and generation with the pinned native generators.
+- Empty iOS shell build; both PadMint's shell audit and the private release gate
+  pass. No GEP1 resource or generated game function definitions are present.
+  The runtime contains a small number of address-shaped symbol-name strings;
+  those are not generated function definitions.
+- Real iOS module built with PadMint's LLVM 22.1.8 and open-source headers. Its
+  sole exported symbol is the module getter. Strict import checking resolves
+  94 names from the shell and seven known runtime names.
+- Matching embedded identities and personal IPA insertion pass. The static
+  iOS build also passes using the same maintained generator. Its patch-code
+  delta is exactly two corrected `sprintf_recomp` calls; private patch payload
+  bytes are unchanged (the Python and native byte-array formatting differs).
+
+Windows packaged-player validation is recorded separately as it completes. Hosted CI compiles
+the pinned generators and synthetic tests without a ROM; that is not a game
+build or a device test. Cross-host source comparisons normalize CRLF/LF; they
+do not claim identical native binaries across different LLVM versions.
+
+Physical iPhone/iPad launch, ROM import, audio, rendering, controls, save behavior
+and gameplay still require validation. No device or gameplay acceptance is
+claimed. Before any future release, the repository release pause, artifact
+audits and the required current-main PadMint player checks must all be satisfied.

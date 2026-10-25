@@ -1,0 +1,38 @@
+name: Module source generators
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generators:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            architecture: x64
+          - runner: windows-11-arm
+            architecture: arm64
+          - runner: macos-15
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.architecture }}
+      - name: Portable synthetic input and recovery checks
+        run: python -m unittest discover -s Tests -p module_build_test.py
+      - name: Build pinned native generators and verify patch callback names
+        run: python scripts/check-host-generators.py --jobs 4
+      - name: Actual loader ABI and strong patch precedence
+        if: runner.os == 'macOS'
+        run: python scripts/check-module-loader.py
