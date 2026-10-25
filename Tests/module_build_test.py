@@ -63,6 +63,15 @@ class VisualStudioTests(unittest.TestCase):
         self.assertIn("older x64", command)
         self.assertIn(" x64 >nul", command)
 
+    def test_recipe_queries_match_native_host_selection(self):
+        recipe = json.loads((build.ROOT / "padmint.json").read_text())
+        for machine, host in (("AMD64", "windows-x86_64"), ("ARM64", "windows-arm64")):
+            with self.subTest(host=host):
+                query, _command = self.select(machine)
+                requirement, = [item for item in recipe["requirements"]["tools"] if host in item["hosts"]]
+                arguments = requirement["version_args"]
+                self.assertEqual(arguments[:arguments.index("-property")], query[1:query.index("-property")])
+
     def test_arm_preserves_native_selection_and_x64_fallback(self):
         for available, arch in ((True, "arm64"), (False, "x64")):
             with self.subTest(arm_available=available):
