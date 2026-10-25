@@ -6,10 +6,11 @@ from pathlib import Path
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from module_build import ROOT, check_patch_tools, generate, generator_environment, normalize_rom, prepare_source, run
+from module_build import ROOT, check_patch_tools, configure_cli_streams, generate, generator_environment, normalize_rom, prepare_source, run
 
 
 def main():
+    configure_cli_streams()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rom", type=Path, required=True)
     parser.add_argument("--toolchain", type=Path)

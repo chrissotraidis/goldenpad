@@ -1,5 +1,6 @@
 """Portable conversion and complete-output freshness; no real game inputs."""
 import hashlib
+import io
 import json
 from pathlib import Path
 import struct
@@ -15,6 +16,22 @@ import module_build as build
 
 
 class IsolatedPythonTests(unittest.TestCase):
+    def test_windows_status_and_errors_preserve_unicode_paths(self):
+        output, errors = io.BytesIO(), io.BytesIO()
+        stdout = io.TextIOWrapper(output, encoding="cp1252")
+        stderr = io.TextIOWrapper(errors, encoding="cp1252")
+        with mock.patch.object(build, "os", SimpleNamespace(name="nt")), \
+                mock.patch.object(build.sys, "stdout", stdout), \
+                mock.patch.object(build.sys, "stderr", stderr):
+            build.configure_cli_streams()
+            print("Private module: C:/Build \u96ea/GoldenPadGame.dylib")
+            print("Preserving existing C:/Build \u96ea", file=sys.stderr)
+        stdout.flush(); stderr.flush()
+        self.assertEqual(output.getvalue().replace(b"\r\n", b"\n"),
+                         "Private module: C:/Build \u96ea/GoldenPadGame.dylib\n".encode("utf-8"))
+        self.assertEqual(errors.getvalue().replace(b"\r\n", b"\n"),
+                         "Preserving existing C:/Build \u96ea\n".encode("utf-8"))
+
     def test_entry_points_can_import_helpers_under_isolated_python(self):
         for script in ("build-game-module.py", "build-module-shell.py", "check-host-generators.py"):
             with self.subTest(script=script):

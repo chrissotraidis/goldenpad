@@ -27,6 +27,12 @@ def run(*args, cwd=ROOT, env=None):
     subprocess.run([str(arg) for arg in args], cwd=cwd, env=env, check=True)
 
 
+def configure_cli_streams():
+    if os.name == "nt":
+        for stream in (sys.stdout, sys.stderr):
+            stream.reconfigure(encoding="utf-8")
+
+
 def sha256(path):
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -275,7 +281,7 @@ def generate(source, rom, work, llvm, jobs, env):
         (stage / "ge007.tlbfree.z64").write_bytes(converted)
         (stage / "rsp").mkdir(exist_ok=True)
         run(n64, "us.toml", cwd=stage)
-        run(sys.executable, stage / "tools_weaken_patched.py", cwd=stage)
+        run(sys.executable, "-X", "utf8", stage / "tools_weaken_patched.py", cwd=stage)
         run(rsp, "aspMain.us.toml", cwd=stage)
         patches = stage / "patches"
         cflags = make_flags(patches / "Makefile", "CFLAGS") + make_flags(patches / "Makefile", "CPPFLAGS")
