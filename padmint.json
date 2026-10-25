@@ -22,7 +22,7 @@
     "ios": {
       "hosts": {
         "macos-arm64": "experimental",
-        "windows-arm64": "planned"
+        "windows-arm64": "experimental"
       },
       "output": "ipa",
       "check": "ipa",
@@ -31,7 +31,8 @@
         "cmake",
         "ninja",
         "llvm",
-        "libcxx"
+        "libcxx",
+        "mips-clang"
       ],
       "published_app": "GoldenPad-v{version}-ios-shell.ipa",
       "ios_module": {

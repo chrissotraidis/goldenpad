@@ -6,10 +6,11 @@ does not provide this route. Local validation supplies a privately built,
 matching empty shell with PadMint's `--app` option.
 
 The next-release recipe builds a personal iPhone/iPad app on an Apple Silicon
-Mac. Windows ARM64 remains planned until a MIPS-capable patch compiler is
-available through PadMint and the full packaged build passes. Windows requires Visual Studio 2022 Build Tools with
+Mac and experimentally on Windows ARM64. Windows requires Visual Studio 2022 Build Tools with
 Desktop development with C++ and a Windows SDK. PadMint supplies Python, Git,
-CMake, Ninja, LLVM and the open-source iOS headers. The recipe uses `{python}`
+CMake, Ninja, LLVM and the open-source iOS headers, plus a separate MIPS-capable
+Clang for Windows. Older PadMint versions without `mips-clang` need updating.
+The recipe uses `{python}`
 so it also works with PadMint's bundled Python. Windows x64 and Linux are not
 advertised as supported by this recipe yet.
 
@@ -79,14 +80,26 @@ Completed locally on Apple Silicon with Apple Python 3.9:
   delta is exactly two corrected `sprintf_recomp` calls; private patch payload
   bytes are unchanged (the Python and native byte-array formatting differs).
 
-The Windows packaged-player test built the pinned native generators and
-translated the private ROM, then exposed a missing MIPS backend in PadMint's
-Windows LLVM 21.1.8 compiler. Its native ARM linker does handle MIPS2/o32 ELF.
+The initial Windows packaged-player test exposed a missing MIPS backend in
+PadMint's Windows LLVM 21.1.8 compiler. Its native ARM linker does handle MIPS2/o32 ELF.
 The backend now checks the compiler's targets and actually compiles/links a
 synthetic MIPS2/o32 probe before fetching dependencies. A separate managed
 `PADMINT_MIPS_CC` can supply the patch compiler without changing the native iOS
-compiler or linker. Windows support is not claimed until this remaining tool
-and complete-build gate pass.
+compiler or linker. A private diagnostic using verified official Windows x64
+Clang 18.1.8 and native ARM LLVM 21.1.8 passes the real module build, matching
+identity, strict imports, sole-export check and IPA insertion under PadMint's
+bundled x64 Python on Windows ARM64. All twelve portable tests pass there too.
+The automatic managed-tool player path is checked separately before publication.
+
+After CRLF/LF normalization, 66 of 69 generated source files match the Mac build.
+The three differences are translated patch code, its byte array and overlay
+metadata, produced with Clang 18 on Windows versus Clang 22 on Mac. All nine
+handwritten patch inputs, 31 translated function names/order and 153 callback
+names agree. Overlay metadata has the same structure apart from numeric layout
+and size constants, and both private patch blobs are 14,884 bytes. Instruction
+selection and relocations differ. These checks found no missing patch, renamed
+callback or table-layout discrepancy; they do not establish semantic or gameplay
+equivalence between compiler versions.
 
 Hosted CI compiles
 the pinned generators and synthetic tests without a ROM; that is not a game
