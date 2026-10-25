@@ -56,6 +56,42 @@ class ConversionTests(unittest.TestCase):
             build.normalize_rom(b"wrong")
 
 
+class PatchToolTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="MIPS tools spaces ")
+        self.addCleanup(temporary.cleanup)
+        self.llvm = Path(temporary.name)
+        self.compiler = self.llvm / "separate clang.exe"
+        self.linker = self.llvm / ("bin/ld.lld.exe" if build.os.name == "nt" else "bin/ld.lld")
+        self.linker.parent.mkdir()
+        self.compiler.touch()
+        self.linker.touch()
+        self.env = {"PADMINT_MIPS_CC": str(self.compiler)}
+
+    def test_missing_mips_target_fails_before_compilation(self):
+        with mock.patch.object(build.subprocess, "check_output", return_value="  arm64 - ARM64\n"), \
+                mock.patch.object(build, "run") as run:
+            with self.assertRaisesRegex(ValueError, "no MIPS backend"):
+                build.check_patch_tools(self.llvm, self.env)
+            run.assert_not_called()
+
+    def test_separate_compiler_uses_native_linker_and_checks_elf_abi(self):
+        header = bytearray(52)
+        header[:6] = b"\x7fELF\x01\x02"
+        header[18:20] = b"\0\x08"
+        header[36:40] = bytes.fromhex("10001001")
+        def output(*args, **kwargs):
+            args[-1].write_bytes(header)
+        with mock.patch.object(build.subprocess, "check_output", return_value="  mips - MIPS (32-bit big endian)\n"), \
+                mock.patch.object(build, "run", side_effect=output) as run:
+            build.check_patch_tools(self.llvm, self.env)
+            self.assertEqual(run.call_args_list[0].args[0], self.compiler)
+            self.assertEqual(run.call_args_list[1].args[0], self.linker)
+            header[5] = 1
+            with self.assertRaisesRegex(ValueError, "MIPS2/o32"):
+                build.check_patch_tools(self.llvm, self.env)
+
+
 class GenerationChecks(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="GoldenPad module spaces ")

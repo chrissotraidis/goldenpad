@@ -6,7 +6,8 @@ does not provide this route. Local validation supplies a privately built,
 matching empty shell with PadMint's `--app` option.
 
 The next-release recipe builds a personal iPhone/iPad app on an Apple Silicon
-Mac or Windows ARM64. Windows requires Visual Studio 2022 Build Tools with
+Mac. Windows ARM64 remains planned until a MIPS-capable patch compiler is
+available through PadMint and the full packaged build passes. Windows requires Visual Studio 2022 Build Tools with
 Desktop development with C++ and a Windows SDK. PadMint supplies Python, Git,
 CMake, Ninja, LLVM and the open-source iOS headers. The recipe uses `{python}`
 so it also works with PadMint's bundled Python. Windows x64 and Linux are not
@@ -60,7 +61,8 @@ registration source so host Mach/thread headers are not required there.
 
 Completed locally on Apple Silicon with Apple Python 3.9:
 
-- Nine portable synthetic input/freshness/recovery tests.
+- Twelve portable synthetic input/freshness/recovery and compiler tests,
+  including entry points under isolated Python.
 - Seventeen cases using the actual native loader, including rejected identities,
   missing callbacks, retry after rejection, hidden symbols and both patch link
   orders.
@@ -77,7 +79,16 @@ Completed locally on Apple Silicon with Apple Python 3.9:
   delta is exactly two corrected `sprintf_recomp` calls; private patch payload
   bytes are unchanged (the Python and native byte-array formatting differs).
 
-Windows packaged-player validation is recorded separately as it completes. Hosted CI compiles
+The Windows packaged-player test built the pinned native generators and
+translated the private ROM, then exposed a missing MIPS backend in PadMint's
+Windows LLVM 21.1.8 compiler. Its native ARM linker does handle MIPS2/o32 ELF.
+The backend now checks the compiler's targets and actually compiles/links a
+synthetic MIPS2/o32 probe before fetching dependencies. A separate managed
+`PADMINT_MIPS_CC` can supply the patch compiler without changing the native iOS
+compiler or linker. Windows support is not claimed until this remaining tool
+and complete-build gate pass.
+
+Hosted CI compiles
 the pinned generators and synthetic tests without a ROM; that is not a game
 build or a device test. Cross-host source comparisons normalize CRLF/LF; they
 do not claim identical native binaries across different LLVM versions.

@@ -121,6 +121,36 @@ def normalize_rom(data):
     return data
 
 
+def patch_tools(llvm, env):
+    suffix = ".exe" if os.name == "nt" else ""
+    compiler = Path(env.get("PADMINT_MIPS_CC", str(llvm / ("bin/clang" + suffix))))
+    linker = llvm / ("bin/ld.lld" + suffix)
+    for tool in (compiler, linker):
+        if not tool.is_file():
+            raise ValueError(f"PadMint's patch tool is missing: {tool}")
+    return compiler, linker
+
+
+def check_patch_tools(llvm, env):
+    """Check real MIPS2/o32 code generation before fetching or translating inputs."""
+    compiler, linker = patch_tools(llvm, env)
+    targets = subprocess.check_output([str(compiler), "--print-targets"], text=True, env=env)
+    if not re.search(r"^\s*mips\s+-", targets, re.M):
+        raise ValueError("This LLVM compiler has no MIPS backend. GoldenPad needs PadMint's mips-clang tool "
+                         "(PADMINT_MIPS_CC); its normal iOS compiler can remain unchanged.")
+    with tempfile.TemporaryDirectory(prefix="GoldenPad MIPS probe ") as temporary:
+        folder = Path(temporary)
+        source, obj, linked = folder / "probe.c", folder / "probe.o", folder / "linked.o"
+        source.write_text("int goldenpad_probe(int value) { return value * 3 + 7; }\n")
+        run(compiler, "-target", "mips", "-mips2", "-mabi=32", "-mno-abicalls", "-G0",
+            "-mno-odd-spreg", "-mno-check-zero-division", "-c", source, "-o", obj, env=env)
+        run(linker, "-m", "elf32btsmip", "-r", obj, "-o", linked, env=env)
+        header = linked.read_bytes()[:52]
+        if (len(header) != 52 or header[:6] != b"\x7fELF\x01\x02" or header[18:20] != b"\0\x08"
+                or int.from_bytes(header[36:40], "big") & 0xF000F000 != 0x10001000):
+            raise ValueError("Patch tools did not produce the required big-endian MIPS2/o32 ELF")
+
+
 def apply_gep1(source, patch):
     """Bounded COPY/DATA conversion, matching the existing on-device importer."""
     if len(patch) < 13 or len(patch) > 1024 * 1024 or patch[:4] != b"GEP1":
@@ -208,10 +238,7 @@ def check_generated(folder):
 
 def generate(source, rom, work, llvm, jobs, env):
     suffix = ".exe" if os.name == "nt" else ""
-    compiler, linker = llvm / ("bin/clang" + suffix), llvm / ("bin/ld.lld" + suffix)
-    for tool in (compiler, linker):
-        if not tool.is_file():
-            raise ValueError(f"PadMint's LLVM tool is missing: {tool}")
+    compiler, linker = patch_tools(llvm, env)
     host_build = work / ("host-" + platform.system().lower() + "-" + platform.machine().lower())
     run("cmake", "--fresh", "-S", ROOT / "cmake/host-tools", "-B", host_build, "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", env=env)
     run("cmake", "--build", host_build, "--target", "N64RecompCLI", "RSPRecomp", "GoldenPadGeneratorTest", "--parallel", jobs, env=env)

@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from module_build import ROOT, generate, generator_environment, normalize_rom, prepare_source, run
+from module_build import ROOT, check_patch_tools, generate, generator_environment, normalize_rom, prepare_source, run
 
 
 def main():
@@ -25,6 +25,7 @@ def main():
     if args.rom.stat().st_size != 0xC00000:
         parser.error("Supply your supported 12 MiB US retail GoldenEye 007 ROM.")
     rom = normalize_rom(args.rom.read_bytes())
+    check_patch_tools(args.llvm.resolve(), os.environ)
     env = generator_environment()
     source = prepare_source()
     work = args.build_dir.resolve()

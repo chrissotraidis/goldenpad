@@ -22,7 +22,7 @@
     "ios": {
       "hosts": {
         "macos-arm64": "experimental",
-        "windows-arm64": "experimental"
+        "windows-arm64": "planned"
       },
       "output": "ipa",
       "check": "ipa",
