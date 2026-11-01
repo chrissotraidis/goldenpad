@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+#if GOLDENPAD_MODULE_SHELL
+@_silgen_name("goldenpad_load_game_module")
+private func goldenPadLoadGameModule(_ path: UnsafePointer<CChar>) -> UnsafePointer<CChar>?
+#endif
+
 #if GOLDENPAD_RECOMP_AOT_LINKED
 @_silgen_name("goldenpad_recomp_import_rom")
 private func goldenPadRecompImportROM(
@@ -21,6 +26,7 @@ final class RecompPrototypeROMStore: ObservableObject {
         case importing
         case ready
         case failed(String)
+        case requiresBuild(String)
     }
 
     @Published private(set) var state: State = .checking
@@ -33,6 +39,13 @@ final class RecompPrototypeROMStore: ObservableObject {
     init() {
         let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         destinationURL = documents.appendingPathComponent("GoldenEye_TLBFREE.z64")
+#if GOLDENPAD_MODULE_SHELL
+        let path = Bundle.main.bundleURL.appendingPathComponent("Frameworks/GoldenPadGame.dylib").path
+        if let error = path.withCString({ goldenPadLoadGameModule($0) }) {
+            state = .requiresBuild(String(cString: error))
+            return
+        }
+#endif
         refresh()
     }
 
@@ -43,11 +56,18 @@ final class RecompPrototypeROMStore: ObservableObject {
         return false
     }
 
+    var canImportROM: Bool {
+        if case .requiresBuild = state { return false }
+        return true
+    }
+
     func presentImporter() {
+        guard canImportROM else { return }
         isImporterPresented = true
     }
 
     func handleSelection(_ result: Result<URL, Error>) {
+        guard canImportROM else { return }
         switch result {
         case let .success(url):
             importROM(from: url)
@@ -64,7 +84,7 @@ final class RecompPrototypeROMStore: ObservableObject {
             pendingOpenURL = url
         case .needsROM, .failed:
             importROM(from: url)
-        case .importing, .ready:
+        case .importing, .ready, .requiresBuild:
             return
         }
     }
@@ -93,15 +113,21 @@ final class RecompPrototypeROMStore: ObservableObject {
     }
 
     private func importROM(from sourceURL: URL) {
+        guard canImportROM else { return }
         if case .importing = state {
             return
         }
         state = .importing
         let destinationURL = destinationURL
+        #if GOLDENPAD_MODULE_SHELL
+        // The private module owns conversion data. No GEP1 resource enters the shell.
+        let patchURL: URL? = Bundle.main.bundleURL
+        #else
         let patchURL = Bundle.main.url(
                 forResource: "vanilla_to_tlbfree",
                 withExtension: "gep1"
             )
+        #endif
         Task {
             guard let patchURL else {
                 state = .failed("This build is missing its ROM conversion data. Please reinstall GoldenPad.")
@@ -243,7 +269,7 @@ struct RecompPrototypeROMSetupView: View {
                     ProgressView()
                         .tint(.yellow)
                         .controlSize(.large)
-                } else {
+                } else if store.canImportROM {
                     Button("Choose Original ROM…") {
                         store.presentImporter()
                     }
@@ -267,7 +293,7 @@ struct RecompPrototypeROMSetupView: View {
         switch store.state {
         case .checking, .importing:
             true
-        case .needsROM, .ready, .failed:
+        case .needsROM, .ready, .failed, .requiresBuild:
             false
         }
     }
@@ -283,6 +309,8 @@ struct RecompPrototypeROMSetupView: View {
         case .ready:
             return "Your game is ready."
         case let .failed(message):
+            return message
+        case let .requiresBuild(message):
             return message
         }
     }

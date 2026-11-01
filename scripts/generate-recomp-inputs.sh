@@ -16,8 +16,9 @@ echo "N64 patch compiler: $GOLDENPAD_MIPS_CC, linker: $GOLDENPAD_MIPS_LD"
 python3 "$repo_root/scripts/check-sources.py" --component goldeneye --component rt64-ios
 source="$repo_root/vendor/goldeneye"
 tools="$repo_root/build-recomp-tools"
-cmake -S "$source/n64recomp-src" -B "$tools" -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build "$tools" --target N64Recomp RSPRecomp --parallel "$build_jobs"
+cmake --fresh -S "$repo_root/cmake/host-tools" -B "$tools" -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build "$tools" --target N64RecompCLI RSPRecomp GoldenPadGeneratorTest --parallel "$build_jobs"
+"$tools/GoldenPadGeneratorTest"
 mkdir -p "$output"
 output=$(cd "$output" && pwd)
 if [ -e "$source/.git" ]; then

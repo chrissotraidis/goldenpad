@@ -10,6 +10,7 @@ xcuserdata/
 build/
 build-*/
 .build/
+__pycache__/
 dist/
 *.ipa
 *.xcarchive

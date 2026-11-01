@@ -1,0 +1,1 @@
+public synthetic source fixture

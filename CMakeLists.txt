@@ -63,6 +63,10 @@ set(GOLDENPAD_RT64_SOURCE_DIR "" CACHE PATH "Pinned RT64 source checkout used fo
 set(GOLDENPAD_MGB64_SOURCE_DIR "" CACHE PATH "Pinned MGB64 checkout used for the native game core")
 option(GOLDENPAD_MGB64_RENDERER "Link the opt-in MGB64 Fast3D/Metal renderer probe" OFF)
 option(GOLDENPAD_RECOMP_PROTOTYPE "Build the isolated RT64/N64Recomp prototype host" OFF)
+option(GOLDENPAD_MODULE_SHELL "Build an empty iOS shell for a private PadMint game module" OFF)
+if(GOLDENPAD_MODULE_SHELL AND (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" OR NOT GOLDENPAD_RECOMP_PROTOTYPE))
+    message(FATAL_ERROR "GOLDENPAD_MODULE_SHELL requires the iOS recompilation app")
+endif()
 option(GOLDENPAD_LAN_NETPLAY_LAB "Enable the isolated two-device LAN netplay experiment" OFF)
 set(GOLDENPAD_RECOMP_BUNDLE_IDENTIFIER "com.chrissotraidis.goldenpad.recomp-prototype" CACHE STRING
     "Bundle identifier used by the isolated recompilation prototype")
@@ -292,7 +296,7 @@ if(goldenpad_apple_platform STREQUAL "mac")
         PROPERTIES COMPILE_OPTIONS "-Wno-implicit-function-declaration")
     set_source_files_properties(
         "${goldenpad_recomp_patch_output_dir}/patches.c"
-        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
+        PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h;-include;${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs/funcs.h")
     set_source_files_properties(
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor/goldeneye/src/main/rt64_render_context.cpp"
         PROPERTIES COMPILE_OPTIONS
@@ -386,8 +390,8 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         endforeach()
     endif()
 
-    if(GOLDENPAD_RECOMP_AOT_DIR OR GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR OR GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR OR GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR)
-        if(NOT GOLDENPAD_RECOMP_AOT_DIR OR NOT GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR OR NOT GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR OR NOT GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR)
+    if(GOLDENPAD_MODULE_SHELL OR GOLDENPAD_RECOMP_AOT_DIR OR GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR OR GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR OR GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR)
+        if((NOT GOLDENPAD_MODULE_SHELL AND NOT GOLDENPAD_RECOMP_AOT_DIR) OR NOT GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR OR NOT GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR OR NOT GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR)
             message(FATAL_ERROR "GOLDENPAD_RECOMP_AOT_DIR, GOLDENPAD_RECOMP_RUNTIME_SOURCE_DIR, GOLDENPAD_RECOMP_RUNTIME_ARCHIVE_DIR, and GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR must be set together")
         endif()
         if(NOT GOLDENPAD_RECOMP_RT64_ARCHIVE_DIR)
@@ -395,6 +399,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         endif()
         set(goldenpad_recomp_rt64_bridge Support/RecompPrototype/recomp_rt64_surface_bridge.cpp)
 
+        if(NOT GOLDENPAD_MODULE_SHELL)
         file(GLOB goldenpad_recomp_aot_c CONFIGURE_DEPENDS
             "${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs/*.c")
         set(goldenpad_recomp_patch_sources
@@ -478,6 +483,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             message(FATAL_ERROR
                 "GoldenEye64Recomp patches_bin.c is older than patches/patches.bin. Regenerate the matched patch outputs before building mobile GoldenPad.")
         endif()
+        endif()
         set(goldenpad_recomp_render_context
             "${CMAKE_CURRENT_SOURCE_DIR}/vendor/goldeneye/src/main/rt64_render_context.cpp")
         file(READ "${goldenpad_recomp_render_context}" goldenpad_recomp_render_context_text)
@@ -487,6 +493,9 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             message(FATAL_ERROR
                 "GoldenEye64Recomp is missing patches/goldeneye64recomp-ios-prototype-render-trace.patch; a clean iOS install would crash while RT64 creates its data directory")
         endif()
+        if(GOLDENPAD_MODULE_SHELL)
+            set(goldenpad_recomp_game_sources Support/RecompPrototype/game_module_loader.cpp)
+        else()
         set(goldenpad_recomp_rom_patch
             "${GOLDENPAD_RECOMP_REFERENCE_SOURCE_DIR}/vanilla_to_tlbfree.gep1")
         if(NOT EXISTS "${goldenpad_recomp_rom_patch}")
@@ -500,16 +509,19 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
                 "GoldenEye64Recomp GEP1 conversion patch does not match pinned revision a787fe0d95e8278fcba5ba2d768fa6a606e75f55")
         endif()
         set(goldenpad_recomp_resources "${goldenpad_recomp_rom_patch}")
-        set(goldenpad_recomp_aot_sources
+        set(goldenpad_recomp_game_sources
             ${goldenpad_recomp_patch_sources}
             ${goldenpad_recomp_aot_c}
             "${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs/lookup.cpp"
             "${GOLDENPAD_RECOMP_AOT_DIR}/rsp/aspMain.cpp"
+            Support/RecompPrototype/recomp_register_overlays.cpp)
+        endif()
+        set(goldenpad_recomp_aot_sources
+            ${goldenpad_recomp_game_sources}
             Support/RecompPrototype/recomp_aot_link_bridge.cpp
             Support/RecompPrototype/recomp_game_start.cpp
             Support/RecompPrototype/performance_diagnostics.mm
             Support/RecompPrototype/recomp_rom_import.cpp
-            Support/RecompPrototype/recomp_register_overlays.cpp
             Support/RecompPrototype/recomp_ultra_shims.cpp
             Support/RecompPrototype/recomp_ui_stub.cpp
             "${goldenpad_recomp_render_context}")
@@ -606,7 +618,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-force_load,${archive}")
         endforeach()
     endif()
-    if(GOLDENPAD_RECOMP_AOT_DIR)
+    if(GOLDENPAD_RECOMP_AOT_DIR OR GOLDENPAD_MODULE_SHELL)
         target_compile_definitions(GoldenPadRecompPrototype PRIVATE
             GOLDENPAD_RECOMP_AOT_LINKED=1
             RT64_EMBEDDED_APPLE=1)
@@ -628,14 +640,25 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
             "${GOLDENPAD_RECOMP_RT64_SOURCE_DIR}/src/contrib"
             "${GOLDENPAD_RECOMP_RT64_SOURCE_DIR}/src/contrib/hlslpp/include"
             "${GOLDENPAD_RECOMP_RT64_SOURCE_DIR}/src/contrib/mupen64plus-win32-deps/SDL2-2.26.3/include")
+        if(NOT GOLDENPAD_MODULE_SHELL)
         set_source_files_properties(${goldenpad_recomp_aot_c} PROPERTIES
             COMPILE_OPTIONS "-Wno-implicit-function-declaration")
         set_source_files_properties(
             "${goldenpad_recomp_patch_output_dir}/patches.c"
-            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h")
+            PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-Wno-implicit-function-declaration;-include;${CMAKE_CURRENT_SOURCE_DIR}/Support/RecompPrototype/recomp_patch_attributes.h;-include;${GOLDENPAD_RECOMP_AOT_DIR}/RecompiledFuncs/funcs.h")
+        endif()
         foreach(archive IN LISTS goldenpad_recomp_runtime_archives)
             target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-force_load,${archive}")
         endforeach()
+    endif()
+    if(GOLDENPAD_MODULE_SHELL)
+        include(cmake/ModuleIdentity.cmake)
+        goldenpad_module_identity("${CMAKE_CURRENT_SOURCE_DIR}" module_identity)
+        target_compile_definitions(GoldenPadRecompPrototype PRIVATE
+            GOLDENPAD_MODULE_SHELL=1 "GOLDENPAD_MODULE_ID=\"${module_identity}\"")
+        target_compile_options(GoldenPadRecompPrototype PRIVATE
+            "$<$<COMPILE_LANGUAGE:Swift>:-DGOLDENPAD_MODULE_SHELL>")
+        target_link_options(GoldenPadRecompPrototype PRIVATE "LINKER:-export_dynamic")
     endif()
 endif()
 

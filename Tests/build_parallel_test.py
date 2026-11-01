@@ -52,6 +52,7 @@ if tool == "python3":
         [str(root / "scripts/check-sources.py"), "--component", "goldeneye"],
         [str(root / "scripts/check-sources.py"), "--component", "rt64-ios"],
         [str(root / "scripts/check-sources.py"), "--component", "goldeneye", "--component", "rt64-ios"],
+        [str(root / "scripts/check-sources.py"), "--component", "goldeneye", "--component", "rt64-macos"],
     ):
         raise SystemExit("unexpected Python action")
     raise SystemExit(subprocess.call([sys.executable, "-B"] + args))
@@ -63,7 +64,7 @@ elif tool == "cmake":
         for name in ("rt64.a", "src/contrib/plume/libplume.a",
                      "src/contrib/re-spirv/libre-spirv.a", "src/contrib/zstd/build/cmake/lib/libzstd.a"):
             output(build / name)
-    elif args[0] == "-S":
+    elif args[0] == "-S" or args[:2] == ["--fresh", "-S"]:
         Path(args[args.index("-B") + 1]).mkdir(parents=True, exist_ok=True)
     else:
         raise SystemExit("unexpected CMake action")
@@ -312,7 +313,7 @@ class BuildParallelTests(unittest.TestCase):
     def test_missing_inputs_and_bad_platform_preserve_early_errors(self):
         for args, code, tools in (
             (["ios", str(self.root / "missing")], 1, []),
-            (["invalid-platform", str(self.root / "inputs")], 2, ["python3"]),
+            (["invalid-platform", str(self.root / "inputs")], 2, []),
         ):
             result, calls = self.run_entrypoint("build-recomp-apple.sh", "3", args=args)
             self.assertEqual(result.returncode, code)
@@ -330,15 +331,16 @@ class BuildParallelTests(unittest.TestCase):
 
 
 class ProductionByteTests(unittest.TestCase):
-    def test_non_job_bytes_match_initial_head(self):
-        # SHA256 of the complete original scripts at 90160c54. Undo only the
-        # exact permitted job edits; every other byte, including guards, source
-        # checks, helper order, configure, proof and packaging, must still match.
+    def test_non_job_bytes_match_reviewed_sources(self):
+        # Undo only the exact job edits. Runtime/RT64 baselines remain 90160c54;
+        # the two entry points use the reviewed 2a4267d Windows-module branch
+        # (native generator wrapper and the correct Mac renderer source pin).
+        # Every other byte, including guards, proof and packaging, must match.
         originals = {
-            "generate-recomp-inputs.sh": "dd4b414cf4b2bbdc7103add460aa0f80bb2a471b452b58165ac2a1511d8d6948",
+            "generate-recomp-inputs.sh": "1c2ec71b2c244438ce952febd4500db8f60b5af5c7af0531e8a38b338937a476",
             "build-recomp-runtime.sh": "d8dac6f516f9030da8bcb98b7ebc9d96af6574f6c97fc2bffdf16638e256ced9",
             "verify-rt64-ios-static.sh": "70fd0f4b9bf570e15e2dfaa9a4d3b492d541f1ae26307773ca2fd1b82557bff8",
-            "build-recomp-apple.sh": "03a1f90a595369362a7946da76bd794c75cf64cb35c6fc2528d2ee44cd597992",
+            "build-recomp-apple.sh": "d13530b5fccb905edb5c3901bc7d422cd690cdf6b1b0326c4c27f574f4673eca",
         }
         for name, digest in originals.items():
             with self.subTest(name=name):
