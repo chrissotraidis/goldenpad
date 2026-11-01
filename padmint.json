@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "goldenpad",
   "name": "GoldenPad",
   "game": "GoldenEye 007 (N64, US retail)",
@@ -28,19 +28,38 @@
       "output": "ipa",
       "check": "ipa",
       "tools": [
+        "llvm",
         "git",
         "cmake",
         "ninja",
-        "llvm",
         "libcxx",
         "mips-clang"
       ],
       "published_app": "GoldenPad-v{version}-ios-shell.ipa",
       "ios_module": {
         "file": "{work}/module/GoldenPadGame.dylib",
-        "into": "Frameworks/GoldenPadGame.dylib"
+        "into": "Frameworks/GoldenPadGame.dylib",
+        "on": [
+          "windows"
+        ]
       },
       "steps": [
+        {
+          "stage": "build",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/build-personal-ipa.sh",
+            "--rom",
+            "{disc}",
+            "--work",
+            "{work}",
+            "--output",
+            "{output}"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
         {
           "stage": "compile",
           "command": [
@@ -54,6 +73,9 @@
             "{work}",
             "--jobs",
             "{jobs}"
+          ],
+          "on": [
+            "windows"
           ]
         }
       ]
@@ -65,8 +87,123 @@
     }
   },
   "requirements": {
-    "disk_gb": 8,
+    "disk_gb": 20,
     "tools": [
+      {
+        "name": "git",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "cmake",
+        "version_args": [
+          "--version"
+        ],
+        "min_version": "3.28",
+        "player": true,
+        "note": "Install CMake 3.28 or newer: brew install cmake",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "ninja",
+        "version_args": [
+          "--version"
+        ],
+        "player": true,
+        "note": "Install Ninja: brew install ninja",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "python3",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xdelta3",
+        "version_args": [
+          "-V"
+        ],
+        "player": true,
+        "note": "Install xdelta: brew install xdelta",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "sdl2-config",
+        "version_args": [
+          "--version"
+        ],
+        "player": true,
+        "note": "Install SDL2: brew install sdl2",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcodebuild",
+        "version_args": [
+          "-version"
+        ],
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough.",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcrun",
+        "label": "Xcode iPhoneOS SDK",
+        "version_args": [
+          "--sdk",
+          "iphoneos",
+          "--show-sdk-path"
+        ],
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; Command Line Tools alone are not enough.",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcrun",
+        "label": "Xcode iPhoneSimulator SDK",
+        "version_args": [
+          "--sdk",
+          "iphonesimulator",
+          "--show-sdk-path"
+        ],
+        "player": true,
+        "note": "Install full Xcode and its iOS platform, then select that Xcode in Xcode Settings > Locations > Command Line Tools; GoldenPad's RT64 build also needs the iPhoneSimulator SDK.",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcrun",
+        "label": "Metal Toolchain",
+        "version_args": [
+          "metal",
+          "--version"
+        ],
+        "player": true,
+        "note": "Install Xcode's Metal Toolchain: xcodebuild -downloadComponent MetalToolchain",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
       {
         "name": "%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe",
         "version_args": [
@@ -114,10 +251,13 @@
     "dependencies",
     "convert-rom",
     "translate",
+    "patch-generated",
+    "runtime",
+    "renderer",
     "compile",
     "package"
   ],
-  "notes": "Next-release experimental module route. Requires a matching empty shell supplied with --app until an audited shell release exists. The static Mac route remains scripts/build-personal-ipa.sh. See docs/WINDOWS_MODULE.md for evidence and remaining gates.",
+  "notes": "scripts/build-personal-ipa.sh chains scripts/bootstrap-sources.sh, TLB-free conversion with the pinned fork's vanilla_to_tlbfree.xdelta (identical to upstream a787fe0), scripts/generate-recomp-inputs.sh, runtime and RT64 archive builds, scripts/build-recomp-apple.sh ios and the existing package checks. See docs/BUILDING.md. Windows: Next-release experimental module route. Requires a matching empty shell supplied with --app until an audited shell release exists. The static Mac route remains scripts/build-personal-ipa.sh. See docs/WINDOWS_MODULE.md for evidence and remaining gates.",
   "publication": {
     "public_binaries": false,
     "reason": "Personal apps and modules contain game code and conversion data derived from the player-owned ROM. The repository release pause still applies; publish source only."

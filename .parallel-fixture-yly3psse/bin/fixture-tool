@@ -1,0 +1,106 @@
+#!/Applications/Xcode.app/Contents/Developer/usr/bin/python3
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+tool = Path(sys.argv[0]).name
+args = sys.argv[1:]
+root = Path(os.environ["FIXTURE_ROOT"])
+with (root / "calls.jsonl").open("a") as log:
+    log.write(json.dumps([tool] + args) + "\n")
+
+def output(path, data="synthetic fixture; never executable\n"):
+    path = Path(path)
+    if root not in path.resolve().parents:
+        raise SystemExit("fixture output escaped root")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(data)
+
+def stop():
+    print("FIXTURE_COMPILATION_STOP", file=sys.stderr)
+    raise SystemExit(86)
+
+if tool == "python3":
+    if args != [str(root / "scripts/check-sources.py")] and args not in (
+        [str(root / "scripts/check-sources.py"), "--component", "goldeneye"],
+        [str(root / "scripts/check-sources.py"), "--component", "rt64-ios"],
+        [str(root / "scripts/check-sources.py"), "--component", "goldeneye", "--component", "rt64-ios"],
+        [str(root / "scripts/check-sources.py"), "--component", "goldeneye", "--component", "rt64-macos"],
+    ):
+        raise SystemExit("unexpected Python action")
+    raise SystemExit(subprocess.call([sys.executable, "-B"] + args))
+elif tool == "cmake":
+    if args[0] == "--build":
+        build = Path(args[1])
+        if build.name != "build-iphoneos" or os.environ["FIXTURE_MODE"] != "rt64-both":
+            stop()
+        for name in ("rt64.a", "src/contrib/plume/libplume.a",
+                     "src/contrib/re-spirv/libre-spirv.a", "src/contrib/zstd/build/cmake/lib/libzstd.a"):
+            output(build / name)
+    elif args[0] == "-S" or args[:2] == ["--fresh", "-S"]:
+        Path(args[args.index("-B") + 1]).mkdir(parents=True, exist_ok=True)
+    else:
+        raise SystemExit("unexpected CMake action")
+elif tool == "ninja":
+    if args[-3:] == ["-t", "targets", "all"]:
+        for kind, count in (("metal", 56), ("spirv", 56), ("rw", 1)):
+            for i in range(count):
+                print("src/shaders/fixture%d.%s.c: CUSTOM_COMMAND" % (i, kind))
+    else:
+        if os.environ["FIXTURE_MODE"] == "rt64-host-stop":
+            stop()
+        host = Path(args[args.index("-C") + 1])
+        for kind, count in (("metal", 56), ("spirv", 56), ("rw", 1)):
+            for i in range(count):
+                base = host / "src/shaders" / ("fixture%d.%s" % (i, kind))
+                output(str(base) + ".c", "extern const char fixture_array[];\n")
+                if kind == "metal":
+                    output(base)
+        generator = host / "src/tools/file_to_c/file_to_c"
+        generator.parent.mkdir(parents=True, exist_ok=True)
+        generator.symlink_to(root / "bin/file_to_c")
+elif tool == "rsync":
+    source, dest = map(Path, args[-2:])
+    for kind in ("spirv", "rw"):
+        for path in source.rglob("*." + kind + ".c"):
+            output(dest / path.relative_to(source), path.read_text())
+elif tool == "xcrun":
+    sdk = args[args.index("-sdk") + 1]
+    action = args[args.index("-sdk") + 2]
+    if action == "metal":
+        output(args[args.index("-o") + 1])
+    elif action == "metallib":
+        suffix = "-simulator" if sdk == "iphonesimulator" else ""
+        output(args[args.index("-o") + 1], "air64_vfixtureapple-ios17.0.0" + suffix + "\n")
+    elif action == "nm":
+        if "-gU" in args:
+            print("_goldenpad_rt64_depth_format_rebuild_stats")
+    elif action == "ar":
+        count = 210 if Path(args[-1]).name == "rt64.a" else 12
+        print("fixture.o\n" * count, end="")
+    elif action == "clang++":
+        output(args[args.index("-o") + 1])
+    else:
+        raise SystemExit("unexpected xcrun action")
+elif tool == "file_to_c":
+    output(args[2])
+    output(args[3])
+elif tool == "lipo":
+    print("arm64")
+elif tool == "otool":
+    print(args[-1] + ":\n /fixture/Foundation (fixture)")
+elif tool == "shasum":
+    path = Path(args[-1])
+    digest = ("7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959"
+              if path == root / "fixture-rom.txt" and os.environ["FIXTURE_MODE"] != "bad-rom"
+              else hashlib.sha256(path.read_bytes()).hexdigest())
+    print(digest + "  " + str(path))
+elif tool == "xcodebuild":
+    stop()
+elif tool in ("brew", "clang", "ld.lld", "git", "make", "patch"):
+    raise SystemExit("unexpected dependency/source/compiler action: " + tool)
+else:
+    raise SystemExit("unknown fixture tool: " + tool)

@@ -66,13 +66,15 @@ the primary development version.
 
 ## Play on iPhone or iPad
 
-**No Mac?** Building GoldenPad for iPhone or iPad needs an Apple Silicon Mac
-today. GoldenPad reads your own ROM while it builds, so it can't use [GitHub's
-Mac](https://github.com/chrissotraidis/padmint#no-mac-build-on-githubs-mac) the
-way some other ports do: that would mean uploading your game file. A Windows
-build is in progress; [PadMint's Windows
-list](https://github.com/chrissotraidis/padmint/blob/main/docs/WINDOWS.md) shows
-where it stands.
+**No Mac? Build it on a Windows PC (experimental).** PadMint 0.5.27 or newer
+builds GoldenPad for iPhone or iPad on Windows 11 (x64 or ARM64) from your own
+GoldenEye 007 (US) ROM. Install Visual Studio 2022 Build Tools with **Desktop development with
+C++**, then choose GoldenPad in PadMint. PadMint downloads the game-free GoldenPad app
+from this release and adds the game code it builds from your file on your PC;
+nothing of yours is uploaded. The Mac build is unchanged. This Windows route is
+new: builds pass on Windows 11 ARM64, but a Windows-built copy has not yet been
+played on a device. GitHub's Mac can't build GoldenPad, because that would mean
+uploading your game file. Details: [Windows module](docs/WINDOWS_MODULE.md).
 
 You need an iPhone or iPad running iOS/iPadOS 17 or later, an Apple Silicon
 Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
