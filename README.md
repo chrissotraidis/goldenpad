@@ -76,6 +76,8 @@ new: builds pass on Windows 11 ARM64, but a Windows-built copy has not yet been
 played on a device. GitHub's Mac can't build GoldenPad, because that would mean
 uploading your game file. Details: [Windows module](docs/WINDOWS_MODULE.md).
 
+**On Linux (experimental).** PadMint 0.5.34 or newer builds GoldenPad for iPhone or iPad on Linux (x64 or ARM64) the same way, from your own GoldenEye 007 (US) ROM. Install a C++ compiler first (`sudo apt install build-essential`, or `sudo dnf install gcc-c++`); PadMint checks for it, and for the libxml2 library its linker needs, before downloading anything. On 8 November PadMint 0.5.34 built it from the v0.3.0 release on Debian 12 ARM64 (24 s) and x86-64 (56 s, under Rosetta), in clean containers on a Mac; a Linux-built copy has not yet been played on a device. Installing the IPA still needs a Windows PC or Mac, because Sideloadly has no Linux version.
+
 You need an iPhone or iPad running iOS/iPadOS 17 or later, an Apple Silicon
 Mac with Xcode, an Apple ID, and your own original US GoldenEye 007 Nintendo 64 ROM.
 

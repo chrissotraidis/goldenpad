@@ -23,7 +23,9 @@
       "hosts": {
         "macos-arm64": "experimental",
         "windows-arm64": "experimental",
-        "windows-x86_64": "experimental"
+        "windows-x86_64": "experimental",
+        "linux-arm64": "experimental",
+        "linux-x86_64": "experimental"
       },
       "output": "ipa",
       "check": "ipa",
@@ -40,7 +42,8 @@
         "file": "{work}/module/GoldenPadGame.dylib",
         "into": "Frameworks/GoldenPadGame.dylib",
         "on": [
-          "windows"
+          "windows",
+          "linux"
         ]
       },
       "steps": [
@@ -75,7 +78,8 @@
             "{jobs}"
           ],
           "on": [
-            "windows"
+            "windows",
+            "linux"
           ]
         }
       ]
@@ -243,6 +247,19 @@
         ],
         "label": "Visual Studio C++ Build Tools",
         "note": "Install Visual Studio 2022 Build Tools with Desktop development with C++, x64/x86 C++ tools and a Windows SDK."
+      },
+      {
+        "name": "c++",
+        "label": "C++ compiler",
+        "version_args": [
+          "--version"
+        ],
+        "player": true,
+        "hosts": [
+          "linux-arm64",
+          "linux-x86_64"
+        ],
+        "note": "Install a C++ compiler and its standard library first: sudo apt install build-essential (Debian, Ubuntu, Chromebook Linux) or sudo dnf install gcc-c++ (Fedora)."
       }
     ]
   },
