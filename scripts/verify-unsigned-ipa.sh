@@ -38,7 +38,7 @@ fi
 
 known_hash='abe01e4aeb033b6c0836819f549c791b26cfde83'
 while IFS= read -r -d '' file_path; do
-  size=$(stat -f '%z' "$file_path")
+  size=$(wc -c < "$file_path" | tr -d ' ')
   magic=$(od -An -tx1 -N4 "$file_path" | tr -d ' \n')
   case "$magic" in
     80371240|37804012|40123780)

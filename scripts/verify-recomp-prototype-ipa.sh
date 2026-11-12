@@ -70,7 +70,7 @@ fi
 known_hash='abe01e4aeb033b6c0836819f549c791b26cfde83'
 known_tlbfree_sha256='7ec491ee3164851d0995e3e8ad19999df5e3028be6ba3729c4ac16c31a9c0959'
 while IFS= read -r -d '' file_path; do
-  size=$(stat -f '%z' "$file_path")
+  size=$(wc -c < "$file_path" | tr -d ' ')
   magic=$(od -An -tx1 -N4 "$file_path" | tr -d ' \n')
   case "$magic" in
     80371240|37804012|40123780)

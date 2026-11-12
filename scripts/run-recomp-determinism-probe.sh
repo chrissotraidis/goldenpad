@@ -21,7 +21,7 @@ test "$actual_bundle_id" = "$bundle_id" || {
     echo "Refusing non-experiment bundle ID: $actual_bundle_id" >&2
     exit 2
 }
-rom_size=$(stat -f '%z' "$rom_path")
+rom_size=$(wc -c < "$rom_path" | tr -d ' ')
 test "$rom_size" = 12653664 || {
     echo "Unexpected converted ROM size: $rom_size" >&2
     exit 2
