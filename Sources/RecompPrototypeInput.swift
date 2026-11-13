@@ -165,28 +165,18 @@ final class RecompPrototypeInput: ObservableObject {
         static let cRight: UInt16 = 0x0001
     }
 
-    private struct InputOwnershipRoute: Equatable {
-        var externalPort: Int32?
-        var touchPort: Int32?
-        var twoPlayerActive: Bool
-    }
+    private typealias InputOwnershipRoute = RecompInputOwnershipRoute
 
     private enum InputOwnershipRouter {
         static func route(
             controllerPresent: Bool,
-            twoPlayerRequested: Bool
+            twoPlayerRequested: Bool,
+            autoHideTouch: Bool = true
         ) -> InputOwnershipRoute {
-            if controllerPresent {
-                return InputOwnershipRoute(
-                    externalPort: 0,
-                    touchPort: twoPlayerRequested ? 1 : nil,
-                    twoPlayerActive: twoPlayerRequested
-                )
-            }
-            return InputOwnershipRoute(
-                externalPort: nil,
-                touchPort: twoPlayerRequested ? nil : 0,
-                twoPlayerActive: false
+            RecompInputOwnership.route(
+                controllerPresent: controllerPresent,
+                twoPlayerRequested: twoPlayerRequested,
+                autoHideTouch: autoHideTouch
             )
         }
 
@@ -293,6 +283,9 @@ final class RecompPrototypeInput: ObservableObject {
     private var controllerCrouchWasPressed = false
     private var twoPlayerTestModeRequested = false
     private var fourPlayerTestModeRequested = false
+    // The saved "Auto-hide Touch Controls with Controller" choice. Show Touch
+    // Controls turns it off, which keeps touch on Player 1 beside a controller.
+    private var autoHideTouchControls = true
     private var overlayInputSuspended = false
     private var sceneInputSuspended = false
     private var controllerRequiresNeutralRelease = false
@@ -459,10 +452,17 @@ final class RecompPrototypeInput: ObservableObject {
         updateTestModes()
     }
 
+    func configureAutoHideTouchControls(_ enabled: Bool) {
+        let previousOwnership = ownershipRoute
+        autoHideTouchControls = enabled
+        updateTestModes(previousOwnership: previousOwnership)
+    }
+
     private var ownershipRoute: InputOwnershipRoute {
         InputOwnershipRouter.route(
             controllerPresent: controller != nil,
-            twoPlayerRequested: twoPlayerTestModeRequested
+            twoPlayerRequested: twoPlayerTestModeRequested,
+            autoHideTouch: autoHideTouchControls
         )
     }
 
@@ -701,7 +701,17 @@ final class RecompPrototypeInput: ObservableObject {
             if externalWeaponActive { externalButtons |= N64.a }
             for port in 0..<4 {
                 let resolvedPort = Int32(port)
-                if route.externalPort == resolvedPort {
+                if route.externalPort == resolvedPort && route.touchPort == resolvedPort {
+                    let shared = RecompInputOwnership.sharedPort(
+                        external: (externalButtons, externalStick),
+                        touch: (touchButtons, touchMovement))
+                    publishController(
+                        port: resolvedPort,
+                        buttons: shared.buttons,
+                        stick: shared.stick,
+                        look: controllerLook
+                    )
+                } else if route.externalPort == resolvedPort {
                     publishController(
                         port: resolvedPort,
                         buttons: externalButtons,
@@ -787,7 +797,17 @@ final class RecompPrototypeInput: ObservableObject {
 
         for port in 0..<4 {
             let resolvedPort = Int32(port)
-            if route.externalPort == resolvedPort {
+            if route.externalPort == resolvedPort && route.touchPort == resolvedPort {
+                let shared = RecompInputOwnership.sharedPort(
+                    external: (externalMovement.buttons, externalMovement.stick),
+                    touch: (mappedTouchMovement.buttons, mappedTouchMovement.stick))
+                publishController(
+                    port: resolvedPort,
+                    buttons: shared.buttons,
+                    stick: shared.stick,
+                    look: publishedControllerLook
+                )
+            } else if route.externalPort == resolvedPort {
                 publishController(
                     port: resolvedPort,
                     buttons: externalMovement.buttons,

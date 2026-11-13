@@ -559,6 +559,7 @@ if(GOLDENPAD_RECOMP_PROTOTYPE)
         Sources/RecompPrototypeMetalCanvas.swift
         Sources/RecompPrototypeROMStore.swift
         Sources/RecompTouchFireState.swift
+        Sources/RecompTouchOwnership.swift
         Sources/RecompPrototypeTouchLayout.swift
         ${goldenpad_recomp_resources}
         ${goldenpad_recomp_rt64_bridge}

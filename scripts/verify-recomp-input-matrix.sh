@@ -24,6 +24,14 @@ xcrun swiftc \
 
 "$test_root/verify-recomp-touch-fire"
 
+xcrun swiftc \
+  -module-cache-path "$test_root/swift-module-cache" \
+  "$repo_root/Sources/RecompTouchOwnership.swift" \
+  "$repo_root/Tests/RecompTouchOwnershipTests.swift" \
+  -o "$test_root/verify-recomp-touch-ownership"
+
+"$test_root/verify-recomp-touch-ownership"
+
 for secondary_fire_marker in \
   'case move, look, fire, secondaryFire' \
   'placement(.secondaryFire, 0.24, 0.58, enabled: false)' \
