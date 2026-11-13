@@ -480,7 +480,10 @@ accepted tablet profile.
 ## Controllers and multiplayer
 
 The primary build automatically uses the first Xbox/MFi extended gamepad for
-Player 1 and hides the touch overlay while it is connected. Movement, modern
+Player 1 and hides the touch overlay while it is connected. **Show Touch
+Controls** at the top of the ⋯ menu brings the overlay back as Player 1 beside
+the controller and turns **Settings → Controller → Auto-hide Touch Controls with
+Controller** off until it is turned on again (it is on by default). Movement, modern
 right-stick look, aim, fire, action, weapon, crouch and Start are physically
 accepted. **Settings → Controller → Right stick → Original N64 C-buttons**
 restores GoldenEye's native C-left/C-right sidestep input, but replaces modern
@@ -489,7 +492,8 @@ Controller → Button mapping** can reassign the face
 buttons, bumpers, and triggers; sticks, D-pad, and Menu/Start retain their
 standard roles. For hardware-limited testing, **Cheats & Testing → Two-player input
 test** keeps the attached controller as Player 1 and exposes touch controls as
-Player 2. Turning it off hides touch and keeps the controller as Player 1. The
+Player 2. Turning it off returns touch to normal play and keeps the controller
+as Player 1. The
 former multiplayer process crash and large split-screen corruption have
 targeted repairs. A physical four-player render test kept all quadrants coherent
 without the former black/checkerboard failure, but slight lighting flicker and

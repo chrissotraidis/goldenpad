@@ -56,6 +56,8 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.unlockAllMissions") private var unlockAllMissions = false
     @AppStorage("recomp.twoPlayerTestMode") private var twoPlayerTestMode = false
     @AppStorage("recomp.fourPlayerTestMode") private var fourPlayerTestMode = false
+    // On when nothing is saved; Show Touch Controls turns it off.
+    @AppStorage("recomp.autoHideTouchControls") private var autoHideTouchControls = true
     @State private var presentedSheet: RecompPrototypeSheet?
     @State private var diagnosticExportFailed = false
     @State private var showReturnToMenuConfirmation = false
@@ -133,7 +135,7 @@ struct GoldenPadApp: App {
                         onDone: { isEditingTouchLayout = false }
                     )
                     .ignoresSafeArea()
-                } else if input.externalControllerName == nil || input.twoPlayerTestModeActive {
+                } else if input.externalControllerName == nil || input.touchControlsVisible {
                     RecompPrototypeTouchControls(
                         input: input,
                         placements: touchLayout.placements(for: touchDeviceClass),
@@ -151,7 +153,9 @@ struct GoldenPadApp: App {
                                 .frame(width: 280)
                                 .position(
                                     x: utilityMenuPanelX(in: geometry.size),
-                                    y: 184
+                                    // The Show row adds one row; keep the
+                                    // panel's top clear of the menu button.
+                                    y: touchHiddenByController ? 208 : 184
                                 )
                                 .zIndex(1)
                         }
@@ -192,6 +196,7 @@ struct GoldenPadApp: App {
                 input.configureUnlockAllMissions(unlockAllMissions)
                 input.configureTwoPlayerTestMode(twoPlayerTestMode)
                 input.configureFourPlayerTestMode(fourPlayerTestMode)
+                input.configureAutoHideTouchControls(autoHideTouchControls)
                 surface.setAppActive(true)
                 audio.activate()
             }
@@ -218,6 +223,9 @@ struct GoldenPadApp: App {
             }
             .onChange(of: fourPlayerTestMode) { _, value in
                 input.configureFourPlayerTestMode(value)
+            }
+            .onChange(of: autoHideTouchControls) { _, value in
+                input.configureAutoHideTouchControls(value)
             }
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
@@ -292,6 +300,7 @@ struct GoldenPadApp: App {
                         unlockAllMissions: $unlockAllMissions,
                         twoPlayerTestMode: $twoPlayerTestMode,
                         fourPlayerTestMode: $fourPlayerTestMode,
+                        autoHideTouchControls: $autoHideTouchControls,
                         touchLayoutStore: touchLayout,
                         touchDeviceClass: touchDeviceClass,
                         onEditTouchLayout: beginTouchLayoutEditing,
@@ -372,6 +381,14 @@ struct GoldenPadApp: App {
 
     private var utilityMenuPanel: some View {
         VStack(spacing: 0) {
+            if touchHiddenByController {
+                // A controller has hidden the touch controls: bring them back
+                // on Player 1 beside it, and keep them until auto-hide is on.
+                utilityMenuRow("Show Touch Controls", systemImage: "hand.tap") {
+                    autoHideTouchControls = false
+                }
+                Divider().padding(.horizontal, 12)
+            }
             utilityMenuRow(
                 "Return to Main Menu",
                 systemImage: "arrow.uturn.backward",
@@ -400,6 +417,10 @@ struct GoldenPadApp: App {
                 .stroke(.white.opacity(0.22), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.4), radius: 16, y: 8)
+    }
+
+    private var touchHiddenByController: Bool {
+        input.externalControllerName != nil && !input.touchControlsVisible
     }
 
     private func utilityMenuRow(
@@ -648,6 +669,7 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var unlockAllMissions: Bool
     @Binding var twoPlayerTestMode: Bool
     @Binding var fourPlayerTestMode: Bool
+    @Binding var autoHideTouchControls: Bool
     @ObservedObject var touchLayoutStore: RecompTouchLayoutStore
     let touchDeviceClass: RecompTouchDeviceClass
     let onEditTouchLayout: () -> Void
@@ -740,6 +762,10 @@ private struct RecompPrototypeSettingsView: View {
                     Text("The left stick, directional pad, and Menu/Start button keep their standard roles. Face buttons, bumpers, and triggers can be reassigned.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    Toggle("Auto-hide Touch Controls with Controller", isOn: $autoHideTouchControls)
+                    Text("When off, touch controls stay on screen and keep working as Player 1 beside a connected controller. Show Touch Controls in the ⋯ menu turns this off.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 Section("Shared Controls") {
                     Toggle("Invert GoldenPad direct aim", isOn: $invertAimY)
@@ -759,7 +785,7 @@ private struct RecompPrototypeSettingsView: View {
                         ? (twoPlayerTestMode
                             ? "The test is inactive while the controller is disconnected. Turn it off or reconnect the controller."
                             : "Connect an Xbox or MFi controller to enable this test.")
-                        : "The connected controller remains Player 1 and touch controls become Player 2. Turn this off to hide touch controls and restore normal controller-only play.")
+                        : "The connected controller remains Player 1 and touch controls become Player 2. Turn this off to return to normal play.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Toggle("Experimental four-player render test", isOn: $fourPlayerTestMode)
