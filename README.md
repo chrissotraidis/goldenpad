@@ -137,7 +137,7 @@ includes statically recompiled game code.
 
 ## Latest mobile release
 
-GoldenPad 0.3.1 (build 17) is the current recipe-only release. It retains 0.2.1's easier build: PadMint (0.2.2 or newer) downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md). Their hardware test records are history, not new-version acceptance.
+GoldenPad 0.3.2 (build 18) is the current recipe release. It retains 0.2.1's easier build: PadMint (0.2.2 or newer) downloads the LLVM compiler for the game-code patches itself, so you no longer install Homebrew's `llvm` and `lld`, and the build no longer needs ripgrep. Earlier previews: [Preview 11 (build 12)](docs/RELEASE_NOTES_0.1.0-preview.11.md). Their hardware test records are history, not new-version acceptance.
 
 ## Install status
 
@@ -480,8 +480,7 @@ accepted tablet profile.
 ## Controllers and multiplayer
 
 The primary build automatically uses the first Xbox/MFi extended gamepad for
-Player 1 and hides the touch overlay while it is connected. GoldenPad 0.3.2, not
-released yet, adds **Show Touch Controls** at the top of the ⋯ menu: it brings the
+Player 1 and hides the touch overlay while it is connected. GoldenPad 0.3.2 adds **Show Touch Controls** at the top of the ⋯ menu: it brings the
 overlay back as Player 1 beside the controller and turns **Settings → Controller →
 Auto-hide Touch Controls with Controller** off until it is turned on again (it is
 on by default). Movement, modern
