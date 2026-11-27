@@ -76,6 +76,16 @@ set(GOLDENPAD_RECOMP_DISPLAY_NAME "GoldenPad" CACHE STRING
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.json" goldenpad_version_json)
 string(JSON GOLDENPAD_VERSION GET "${goldenpad_version_json}" version)
 string(JSON goldenpad_version_build GET "${goldenpad_version_json}" build)
+# Reconfigure when version.json changes, and let the cached build number follow
+# it unless someone set a different one (a build folder otherwise keeps the old
+# number and the IPA check refuses the package).
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.json")
+if(NOT DEFINED goldenpad_version_build_seen
+   OR GOLDENPAD_RECOMP_BUILD_VERSION STREQUAL goldenpad_version_build_seen)
+    set(GOLDENPAD_RECOMP_BUILD_VERSION "${goldenpad_version_build}" CACHE STRING
+        "Bundle build version used by the isolated recompilation prototype" FORCE)
+endif()
+set(goldenpad_version_build_seen "${goldenpad_version_build}" CACHE INTERNAL "")
 set(GOLDENPAD_RECOMP_BUILD_VERSION "${goldenpad_version_build}" CACHE STRING
     "Bundle build version used by the isolated recompilation prototype")
 set(GOLDENPAD_RECOMP_MAC_BUILD_VERSION "5" CACHE STRING "Mac bundle build version")

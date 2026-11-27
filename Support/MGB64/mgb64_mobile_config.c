@@ -45,7 +45,8 @@ void goldenpad_mgb64_set_fps_overlay(int enabled) {
 float g_pcGamepadDeadzone = 0.0f;
 int g_pcGamepadFpsScale = 1;
 float g_pcGamepadLookCurve = 1.0f;
-float g_pcGamepadLookSpeed = 20.0f;
+/* Right-stick look speed at full tilt; 34 (the original 20 felt slow on a TV, 28 still did). */
+float g_pcGamepadLookSpeed = 34.0f;
 int g_pcGamepadRadialDeadzone = 1;
 int g_pcHitMarkers = 1;
 int g_pcIntroSkipStyle = 0;
