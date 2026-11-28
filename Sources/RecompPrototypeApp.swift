@@ -40,6 +40,7 @@ struct GoldenPadApp: App {
     @AppStorage("recomp.lookSensitivity") private var lookSensitivity = 4.0
     @AppStorage("recomp.aimBehavior") private var aimBehavior = RecompPrototypeAimBehavior.toggle.rawValue
     @AppStorage("recomp.controllerLookMode") private var controllerLookMode = RecompPrototypeControllerLookMode.analog.rawValue
+    @AppStorage("recomp.controllerLookSpeed") private var controllerLookSpeed = 1.0
     @AppStorage("recomp.controllerMap.buttonA") private var controllerButtonA = RecompPrototypeControllerControl.buttonA.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonB") private var controllerButtonB = RecompPrototypeControllerControl.buttonB.defaultAction.rawValue
     @AppStorage("recomp.controllerMap.buttonX") private var controllerButtonX = RecompPrototypeControllerControl.buttonX.defaultAction.rawValue
@@ -191,6 +192,7 @@ struct GoldenPadApp: App {
                 input.configureLookSensitivity(lookSensitivity)
                 input.configureAimBehavior(aimBehavior)
                 input.configureControllerLookMode(controllerLookMode)
+                input.configureControllerLookSpeed(controllerLookSpeed)
                 input.configureControllerMapping(controllerMapping)
                 input.configureInvertAimY(invertAimY)
                 input.configureUnlockAllMissions(unlockAllMissions)
@@ -208,6 +210,9 @@ struct GoldenPadApp: App {
             }
             .onChange(of: controllerLookMode) { _, value in
                 input.configureControllerLookMode(value)
+            }
+            .onChange(of: controllerLookSpeed) { _, value in
+                input.configureControllerLookSpeed(value)
             }
             .onChange(of: controllerMappingRawValues) { _, _ in
                 input.configureControllerMapping(controllerMapping)
@@ -284,6 +289,7 @@ struct GoldenPadApp: App {
                         ),
                         aimBehavior: $aimBehavior,
                         controllerLookMode: $controllerLookMode,
+                        controllerLookSpeed: $controllerLookSpeed,
                         controllerButtonA: $controllerButtonA,
                         controllerButtonB: $controllerButtonB,
                         controllerButtonX: $controllerButtonX,
@@ -468,6 +474,7 @@ struct GoldenPadApp: App {
                 lookSensitivity: lookSensitivity,
                 aimBehavior: aimBehavior,
                 controllerLookMode: controllerLookMode,
+                controllerLookSpeed: controllerLookSpeed,
                 activeControlStyle: input.activeControlStyle,
                 controllerMapping: controllerMapping,
                 invertAimY: invertAimY,
@@ -653,6 +660,7 @@ private struct RecompPrototypeSettingsView: View {
     @Binding var lookSensitivity: Double
     @Binding var aimBehavior: String
     @Binding var controllerLookMode: String
+    @Binding var controllerLookSpeed: Double
     @Binding var controllerButtonA: String
     @Binding var controllerButtonB: String
     @Binding var controllerButtonX: String
@@ -745,6 +753,16 @@ private struct RecompPrototypeSettingsView: View {
                             Text(mode.title).tag(mode.rawValue)
                         }
                     }
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Right-stick speed")
+                            Spacer()
+                            Text(String(format: "%.2f×", controllerLookSpeed))
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $controllerLookSpeed, in: 0.5...3.0, step: 0.25)
+                    }
+                    .disabled(controllerLookMode != RecompPrototypeControllerLookMode.analog.rawValue)
                     NavigationLink {
                         RecompPrototypeControllerMappingView(
                             buttonA: $controllerButtonA,
@@ -883,6 +901,7 @@ private enum RecompPrototypeDiagnostics {
         lookSensitivity: Double,
         aimBehavior: String,
         controllerLookMode: String,
+        controllerLookSpeed: Double,
         activeControlStyle: Int32,
         controllerMapping: [RecompPrototypeControllerControl: String],
         invertAimY: Bool,
@@ -909,6 +928,7 @@ private enum RecompPrototypeDiagnostics {
         Look sensitivity: \(String(format: "%.2f", lookSensitivity))x
         Aim behavior: \(aimBehavior)
         Controller right stick: \((RecompPrototypeControllerLookMode(rawValue: controllerLookMode) ?? .analog).title)
+        Controller right-stick speed: \(String(format: "%.2f", controllerLookSpeed))x
         Active GoldenEye control style: \(controlStyleTitle(activeControlStyle))
         Controller mapping: \(controllerMappingSummary(controllerMapping))
         Invert vertical while aiming: \(invertAimY ? "On" : "Off")

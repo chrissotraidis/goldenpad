@@ -35,6 +35,9 @@ private func goldenPadRecompRequestCrouchToggle(_ controller: Int32)
 @_silgen_name("goldenpad_recomp_set_invert_aim_y")
 private func goldenPadRecompSetInvertAimY(_ enabled: Int32)
 
+@_silgen_name("goldenpad_recomp_set_controller_look_speed")
+private func goldenPadRecompSetControllerLookSpeed(_ speed: Float)
+
 @_silgen_name("goldenpad_recomp_set_unlock_all_missions")
 private func goldenPadRecompSetUnlockAllMissions(_ enabled: Int32)
 
@@ -371,6 +374,10 @@ final class RecompPrototypeInput: ObservableObject {
 
     func configureLookSensitivity(_ value: Double) {
         lookSensitivity = Float(min(max(value, 0.5), 8.0))
+    }
+
+    func configureControllerLookSpeed(_ value: Double) {
+        goldenPadRecompSetControllerLookSpeed(Float(min(max(value, 0.5), 3.0)))
     }
 
     func configureAimBehavior(_ rawValue: String) {
