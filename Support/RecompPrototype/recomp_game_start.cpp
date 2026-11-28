@@ -80,6 +80,7 @@ std::atomic<bool> prototypeMsaaEnabled = true;
 std::atomic<int32_t> prototypeResolutionMode = 2;
 std::atomic<bool> prototypeThreePointFiltering = true;
 std::atomic<bool> invertAimY = false;
+std::atomic<float> controllerLookSpeed = 1.0f;
 std::atomic<bool> unlockAllMissions = false;
 std::atomic<bool> returnToTitleRequested = false;
 std::atomic<bool> appActive = true;
@@ -2330,6 +2331,10 @@ extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t enabled) {
     invertAimY.store(enabled != 0, std::memory_order_relaxed);
 }
 
+extern "C" void goldenpad_recomp_set_controller_look_speed(float speed) {
+    controllerLookSpeed.store(std::clamp(speed, 0.5f, 3.0f), std::memory_order_relaxed);
+}
+
 extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t enabled) {
     const bool next = enabled != 0;
     const bool previous = unlockAllMissions.exchange(next, std::memory_order_relaxed);
@@ -2506,9 +2511,12 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
     // bridge compensates for that implementation detail while producing the
     // same final 1.872 degrees per frame in both states.
     constexpr float kControllerAimDegreesPerFrame = kControllerHipDegreesPerFrame;
+    // The player's Right-stick speed setting scales hip look only (1x keeps
+    // the accepted 1.872 degrees per frame). Aim keeps GoldenEye's own sight.
+    const float hipLookSpeed = controllerLookSpeed.load(std::memory_order_relaxed);
     const float controllerScale = aiming
         ? (kControllerAimDegreesPerFrame / 1.0f)
-        : (kControllerHipDegreesPerFrame / 3.0f);
+        : (kControllerHipDegreesPerFrame / 3.0f * hipLookSpeed);
     float x = static_cast<float>(controllerLookX[port].load(std::memory_order_relaxed)) /
             32'767.0f * controllerScale +
         static_cast<float>(queuedTouchLookX[port].exchange(0, std::memory_order_acq_rel)) / 32'767.0f;
@@ -2523,8 +2531,11 @@ extern "C" void recomp_get_camera_inputs(uint8_t *rdram, recomp_context *ctx) {
         32'767.0f * mouseAimCompensation;
     y += static_cast<float>(queuedMouseLookY[port].exchange(0, std::memory_order_acq_rel)) /
         32'767.0f * mouseAimCompensation;
-    x = std::clamp(x, -1.0f, 1.0f);
-    y = std::clamp(y, -1.0f, 1.0f);
+    // A faster right stick may pass one full unit (3 degrees per frame) while
+    // not aiming; the game patch only adds this to the view angles.
+    const float limit = aiming ? 1.0f : std::max(1.0f, controllerScale);
+    x = std::clamp(x, -limit, limit);
+    y = std::clamp(y, -limit, limit);
     // Relative touch and mouse look use the same host setting on every target.
     // External gamepads use GoldenEye's native manual-sight path while aiming.
     if (aiming && invertAimY.load(std::memory_order_relaxed)) {

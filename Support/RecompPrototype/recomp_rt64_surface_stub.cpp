@@ -65,6 +65,7 @@ extern "C" void goldenpad_recomp_request_crouch_toggle(int32_t) {}
 extern "C" void goldenpad_recomp_request_inventory_slot(int32_t, int32_t) {}
 extern "C" void goldenpad_recomp_request_reload(int32_t) {}
 extern "C" void goldenpad_recomp_set_invert_aim_y(int32_t) {}
+extern "C" void goldenpad_recomp_set_controller_look_speed(float) {}
 extern "C" void goldenpad_recomp_set_unlock_all_missions(int32_t) {}
 extern "C" void goldenpad_recomp_request_return_to_title() {}
 extern "C" int32_t goldenpad_recomp_previous_session_ended_unexpectedly() { return 0; }
